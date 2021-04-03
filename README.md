@@ -138,7 +138,7 @@ Added 6 frames
 
 The "stopped read" message indicates that ``flimmaker`` didn't find the image 735 and assumed (correctly) that the flim should ends at 734. You can also use ``--from`` and ``--to`` to control which part you want the flim to be created from (in which case you would extract a larger part of the source media and manually search for the first and last images you want you flim to include)
 
-``flimmaker`` generates everything in batches of 20, for internal reasons that are linked to playback. For 24fps streams, if the source material is not a multiple of 20 frames, it will duplicate the last frames to round it to generate an integral number of 20 frames blocks. For 12fps streams, it will duplicate the last frames is the total source is not a multiple of 40.
+``flimmaker`` generates everything in batches of 20, for internal reasons that are linked to playback. For 24fps streams, if the source material is not a multiple of 20 frames, it will duplicate the last frames to generate an integral number of 20 frames blocks. For 12fps streams, it will duplicate the last frames if the total source if not a multiple of 40.
  
 The "added nn frames" message indicates that it added frames at the end. You can tweak the extract duration if you want to be "perfect" (the '-t 00:00:30' of the extract part)
 
@@ -166,9 +166,9 @@ This uses ImageMagick to create a simple gif, suitable for insertion in web page
 
 ``convert cover-000000.pgm sample-poster.gif``
 
-Note: if you plan to get this image on you vintage mac, I suggest you generate a tga file and open it with Photoshop 1.3. You can also generate png. Note that you want to avoid lossy compression.
+Note: if you plan to get this image on your vintage mac, I suggest you generate a ``tga`` file and open it with Photoshop 1.3. For web display, you can also choose to generate ``png`` images. Note that you absolutely want to avoid lossy compression, as black and white dithered images are a worst case for lossy compression.
 
-## Generating the animated cover gif (the one I use on macflimcom)
+## Generating the animated cover gif (the one I use on macflim.com)
 
 ``convert -delay 5 -loop 0 "cover-*.pgm" sample.gif``
 
@@ -217,7 +217,7 @@ Release or comments. Had to choose.
 
 # Why templates?
 
-It sounded like a good idea in the beginning. And I was tired.
+It sounded like a good idea in the beginning, and I was tired.
 
 # Why so many hard-coded behaviors?
 
