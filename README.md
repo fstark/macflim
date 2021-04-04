@@ -211,6 +211,23 @@ sample.mp4 : the original source material
 
 sample-poster.gif : a simple black and white poster
 
+# Do I really need to type all that?
+
+No, if you already have a 512x342 24fps grayscale mp4 that you want to flimize,
+you just need to execute the _"Extract all the grayscale images"_ and _"Execute flimmaker on the images, to generate the flim"_ commands, which, at their simplest expressions are:
+
+``ffmpeg -r 24 -i 512x342.mp4 -r 24 movie-%06d.pgm``
+
+(change the first 24 to your source framerate)
+
+and
+
+``flimmaker --out myflim.flim``
+
+(because 'movie-%06d.pgm' is the default for the '--in' option)
+
+Just remember to execute them in a temporary directory...
+
 # Where are the code comments?
 
 Release or comments. Had to choose.
