@@ -1,14 +1,32 @@
+/**
+ * The flimmaker tool takes a set of pgm images and generate a flim file suitable for playback by MacFlim on a vintage Mac
+ */
+
 #include <stdlib.h>
 #include <memory.h>
 #include <math.h>
 #include <assert.h>
 #include <limits>
+#include <iostream>
+#include <stdio.h>
+#include <vector>
 
+//  True if the global '-g' option was set
 bool debug = false;
+
+//  If defined, we add a "stamp" to each stream, to know where it is coming from
+#define noSTAMP
+
+#ifdef STAMP
+static int sStream = 0;
+#endif
 
 #if 0
 
-//  I wrote this implementation of packbits, but it is currently not used
+//  This part contains some compression routines that were used in a previous version.
+//  They will be used again in a future version, for sure
+
+//  Almost completely tested implementation of packbits
 int pack( u_int8_t *out, const u_int8_t *buffer, int length )
 {
     const u_int8_t *orig = out;
@@ -193,11 +211,13 @@ Else encode specific
 
 #endif
 
-
+//  Screen size constants. MacFlim is supposed to be from a universe where the only framebuffer larger than 512x243 was the Lisa2 / Macintosh XL one.
 const int WIDTH = 512;
 const int HEIGHT = 342;
 const int FB_SIZE = ((WIDTH*HEIGHT)/8);   //  aka 21888
 
+//  This is an image, represented as a bunch of floating point values (0==black and 1==white)
+//  Sometime, a pixel can be <0 or >1, when error propagates during dithering
 template <int W, int H>
 class image
 {
@@ -213,6 +233,10 @@ public:
     void *data() const { return (void *)image_; }
     static const size_t encoded_size = (W*H)/8;
 
+#ifdef STAMP
+        //  Code to "stamp" every stream by placing a small number in the top left
+        //  This helps identify what stream is currently playing 
+        //  Disable for release
     void stamp( int stamp )
     {
         static int sStamps[8][8] = 
@@ -227,23 +251,26 @@ public:
             {0x00,0x7c,0x04,0x04,0x08,0x10,0x10,0x10}
         };
 
-        // for (int y=0;y!=8;y++)
-        //     for (int x=0;x!=8;x++)
-        //     image_[x+8][y+24] = (sStamps[stamp][y] & (1<<(7-x))) ? 1 : 0;
-
-        //  No stamps in release flims
+        for (int y=0;y!=8;y++)
+            for (int x=0;x!=8;x++)
+            image_[x+8][y+24] = (sStamps[stamp][y] & (1<<(7-x))) ? 1 : 0;
     }
+#endif
+
 };
 
+//  The two "standard" formats of images
 using mac_image = image<WIDTH,HEIGHT>;
 using mac_image_small = image<WIDTH/2,HEIGHT/2>;
 
+//  Image copy
 template <int W, int H>
 void copy_image( image<W,H> &dest, const image<W,H> &source )
 {
     memcpy( dest.data(), source.data(), W*H*sizeof(source[0][0]) );
 }
 
+//  Fills image with constant color, 50% gray by default
 template <int W, int H>
 void fill( image<W,H> &img, float value = 0.5 )
 {
@@ -252,9 +279,8 @@ void fill( image<W,H> &img, float value = 0.5 )
             img[x][y] = value;
 }
 
-#include <iostream>
-
-
+//  Basic "standard" floyd-steinberg, suitable for static images
+//  Dest will only contain 0 or 1, corresponding to the dithering of the source
 template <int W, int H>
 void quantize( image<W,H> &dest, const image<W,H> &source )
 {
@@ -284,9 +310,10 @@ void quantize( image<W,H> &dest, const image<W,H> &source )
         }
 }
 
-//  Takes an array of grayscale pixels
-//  0 is black, white is 1
-//  At exit, the array contains only 0 or ones
+//  Motion floyd-steinberg
+//  This will create a black/white 'dest' image from a grayscale 'source'
+//  while trying to respect the placement of pixels
+//  from the black/white 'previous' image
 template <int W, int H>
 void quantize( image<W,H> &dest, const image<W,H> &source, const image<W,H> &previous )
 {
@@ -298,34 +325,25 @@ void quantize( image<W,H> &dest, const image<W,H> &source, const image<W,H> &pre
             //  The color we'd like this pixel to be
             float source_color = dest[x][y];
 
-            //  We chose how to represent it for this pixel
-            //  Less than 50% is black, more is white
-            //  We add a .1 bonus for the color of the previous frame
+            //  Increasing this value will makes the image choose previous frame's pixel more often
+            //  Images will be "stable", but there will be some "ghosting artifacts"
+            const float stability = 0.3;
 
-            //  The color (0 or 1) we decide to encode as
-            float color;
-            //  By doing this, we made an error (too much white or too much black)
-            float error;
-            
-            float previous_pixel = previous[x][y];
-            float stability = 0.3;
-
-            color = source_color<=0.5-(previous_pixel-0.5)*stability?0:1;
-            error = source_color - color;
+            //  We chose either back or white for this pixel
+            //  Starting with the current color, including error propageated form previous pixels,
+            //  we decide that:
+            //  If previous frame pixel was black, we stay back if color<0.65
+            //  If previous frame pixel was white, we stay white if color>0.35
+            float color = source_color<=0.5-(previous[x][y]-0.5)*stability?0:1;
             dest[x][y] = color;
+
+            //  By doing this, we made an error (too much white or too much black)
+            //  that we need to keep track of
+            float error = source_color - color;
 
             //  We now distribute the error between the 4 next values
             //  (if they exist). The values may over or underflow
             //  but it is fine as pixels can be <0 or >1
-            // if (x<WIDTH-1)
-            //     dest[x+1][y] = dest[x+1][y] + error * 7 / 16;
-            // if (x>0 && y<HEIGHT-1)
-            //     dest[x-1][y+1] = dest[x-1][y+1] + error * 3 / 16;
-            // if (y<HEIGHT-1)
-            //     dest[x][y+1] = dest[x][y+1] + error * 5 / 16;
-            // if (x<WIDTH-1 && y<HEIGHT-1)
-            //     dest[x+1][y+1] = dest[x+1][y+1] + error * 1 / 16;
-
             float e0 = error * 7 / 16;
             float e1 = error * 3 / 16;
             float e2 = error * 5 / 16;
@@ -342,8 +360,8 @@ void quantize( image<W,H> &dest, const image<W,H> &source, const image<W,H> &pre
         }
 }
 
-#include <stdio.h>
-
+//  Reads an image from a grayscale PGM file of the right size
+//  No tests are done, no error are managed, which is shamefull
 template <int W, int H>
 bool read_image( image<W,H> &img, const char *file )
 {
@@ -367,6 +385,7 @@ bool read_image( image<W,H> &img, const char *file )
     return true;
 }
 
+//  Generates a PGM image
 template <int W, int H>
 void write_image( const char *file, image<W,H> &img )
 {
@@ -382,6 +401,7 @@ void write_image( const char *file, image<W,H> &img )
     fclose( f );
 }
 
+//  Write a bunch of bytes in a file
 void write_data( const char *file, u_int8_t *data, size_t len )
 {
     // fprintf( stderr, "Writing [%s]\n", file );
@@ -402,7 +422,8 @@ void write_data( const char *file, u_int8_t *data, size_t len )
 //            diff[x][y] = fabs( img1[x][y] - img2[x][y] );
 //}
 
-//  Encodes B&W image as Macintosh framebuffer
+//  Takes an image, compose of only black and white
+//  and generates W*H/8 bytes corresponding to a Macintosh framebuffer
 template <int W, int H, typename T>
 void encode( T out, const image<W,H> &img )
 {
@@ -413,6 +434,7 @@ void encode( T out, const image<W,H> &img )
                       img[x+4][y]*  8+img[x+5][y]* 4+img[x+6][y]* 2+img[x+7][y]     ) ^ 0xff;
 }
 
+//  Reduce an image to half the size
 template <int W, int H>
 void reduce_image( image<W,H> &dest, const image<2*W,2*H> &source )
 {
@@ -422,12 +444,14 @@ void reduce_image( image<W,H> &dest, const image<2*W,2*H> &source )
             dest[x][y] = (source[2*x][2*y]+source[2*x+1][2*y]+source[2*x][2*y+1]+source[2*x+1][2*y+1])/4;
 }
 
+//  Reduce an image to the same size (ie: copies)
 template <int W, int H>
 void reduce_image( image<W,H> &dest, const image<W,H> &source )
 {
     dest = source;
 }
 
+//  Adds a pixel in the 4 corners of the image
 template <int W, int H>
 void plot4( image<W,H> &img, int x, int y, int c )
 {
@@ -437,6 +461,7 @@ void plot4( image<W,H> &img, int x, int y, int c )
     img[W-1-x][H-1-y] = c;
 }
 
+//  Draw a horizonal line in the 4 corners of the image
 template <int W, int H>
 void hlin4( image<W,H> &img, int x0, int x1, int y, int c )
 {
@@ -444,7 +469,7 @@ void hlin4( image<W,H> &img, int x0, int x1, int y, int c )
         plot4( img, x0++, y, c );
 }
 
-//  As Steve Jobs asked for Mac desktops to have round corners, we force rounded corners on generated flims.
+//  As Steve Jobs asked for Mac desktops to have round corners, forces rounded corners on generated flims.
 template <int W, int H>
 void round_corners( image<W,H> &img )
 {
@@ -455,10 +480,9 @@ void round_corners( image<W,H> &img )
     hlin4( img, 0, 1, 4, 0 );
 }
 
-#include <vector>
-
-static int sStream = 0;
-
+//  Encodes a set of files at the correct size
+//  If skip is 2, only half of the images will be used
+//  Encoded result writen into the out iterator
 template <int W, int H, typename T>
 int encode( T out, const std::string &in_arg, int from_index, int to_index, int skip=1, bool dump=false, int cover_index=-1 )
 {
@@ -492,7 +516,9 @@ int encode( T out, const std::string &in_arg, int from_index, int to_index, int 
 
         reduce_image( source, original );
 
+#ifdef STAMP
         source.stamp( sStream );
+#endif
 
         if (i==from_index)
         {
@@ -507,8 +533,9 @@ int encode( T out, const std::string &in_arg, int from_index, int to_index, int 
 
         round_corners( dest_smooth );
 
-#if 0
+#ifdef STAMP
         //  Useful for debugging, adds a progress-bar like line of pixels in the images
+        //  So one can know where an image should be in the stream
 
         for (int x=0;x!=i%W;x++)
         {
@@ -560,18 +587,11 @@ typedef enum { kVideo = 0 } eStreamType;
 typedef enum { kSilent = 0 } eStreamSubType;
 typedef enum { kSD = 0, kHD = 1 } eResolution;
 
+//  Confused class that performs the encoding
+//  (Confused because it keeps a pointer to a shared data structure to be able to
+//  write the header. All this is pretty badly designed, if you ask me)
 class stream_encoder
 {
-    // eStreamType type_ = kVideo;
-    // eStreamSubType sub_type_ = kSilent;
-
-    // eResolution resolution_;
-
-    // float fps_;
-
-    // int frame_count_;
-    // int offset_;
-
     std::vector<u_int8_t> &vec_;
     int index_;
 
@@ -660,7 +680,7 @@ public:
     }
 };
 
-
+//  The main function, does all the work
 //  flimmaker [-g] --in <%d.pgm> --from <index> --to <index> --cover <index> --out <file>
 int main( int argc, char **argv )
 {
@@ -783,81 +803,29 @@ int main( int argc, char **argv )
     data.clear();
     count = encode<256,171>( std::back_inserter(data), in_arg, from_index, to_index, 2 );
     se0.add_encoded_data( count, data );
+#ifdef STAMP
     sStream++;
+#endif
 
     data.clear();
     count = encode<256,171>( std::back_inserter(data), in_arg, from_index, to_index, 1 );
     se1.add_encoded_data( count, data );
+#ifdef STAMP
     sStream++;
+#endif
 
     data.clear();
     count = encode<512,342>( std::back_inserter(data), in_arg, from_index, to_index, 2 );
     se2.add_encoded_data( count, data );
+#ifdef STAMP
     sStream++;
+#endif
 
     data.clear();
     count = encode<512,342>( std::back_inserter(data), in_arg, from_index, to_index, 1, true, cover_index );
     se3.add_encoded_data( count, data );
+#ifdef STAMP
     sStream++;
-
-#if 0
-//  short stream type: 0 = video
-    res.push_back( 0x00 );
-    res.push_back( 0x00 );
-
-//  short tream subtype: 0 = movie
-    res.push_back( 0x00 );
-    res.push_back( 0x00 );
-
-//  shortx2 resolution: 512x342 / 256x171
-    // res.push_back( 512/256 );
-    // res.push_back( 512%256 );
-    // res.push_back( 342/256 );
-    // res.push_back( 342%256 );
-    res.push_back( 256/256 );
-    res.push_back( 256%256 );
-    res.push_back( 171/256 );
-    res.push_back( 171%256 );
-
-// fixed short.short fps: frames per second, in 65536th of frames
-    res.push_back( 0 );
-    res.push_back( 24 );
-    res.push_back( 0 );
-    res.push_back( 0 );
-
-//  long frame count: number of frames [ouch]
-    long l = to_index-from_index;
-    res.push_back( l>>24 );
-    res.push_back( l>>16 );
-    res.push_back( l>>8 );
-    res.push_back( l );
-
-//  long offset: offset to the flim from begining of file.
-    res.push_back( 0xff );
-    res.push_back( 0xff );
-    res.push_back( 0xff );
-    res.push_back( 0xff );
-//  long length: length of the stream (width * height * frame count / 8 for movies)
-    res.push_back( 0xff );
-    res.push_back( 0xff );
-    res.push_back( 0xff );
-    res.push_back( 0xff );
-
-    long offset = res.size();
-
-xxx
-
-    long len = res.size()-offset;
-
-    res[28] = offset>>24;
-    res[29] = offset>>16;
-    res[30] = offset>>8;
-    res[31] = offset;
-
-    res[32] = len>>24;
-    res[33] = len>>16;
-    res[34] = len>>8;
-    res[35] = len;
 #endif
 
     FILE *movie_file = fopen( out_arg.c_str(), "wb" );
