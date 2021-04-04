@@ -1,7 +1,5 @@
 # MacFlim Video player source code
 
-[DOES NOT CONTAIN THE MacFlim Macintosh application SOURCE CODE YET]
-
 Please do not barf on code quality. It was not in releasable state, but people wanted to use it. You may even be one of those people. Hi!
 
 ## Content
@@ -10,7 +8,9 @@ Please do not barf on code quality. It was not in releasable state, but people w
 
 ``flimutil`` : A C utility that can manipulate flim files
 
-# How to compile on linux?
+``MacFlim Source Code.dsk`` :  A dsk file with the source code of the client application and the full development environment.
+
+# How to compile the tools to generate flims on linux?
 
 Just use ``make``
 
@@ -166,7 +166,7 @@ This uses ImageMagick to create a simple gif, suitable for insertion in web page
 
 ``convert cover-000000.pgm sample-poster.gif``
 
-Note: if you plan to get this image on your vintage mac, I suggest you generate a ``tga`` file and open it with Photoshop 1.3. For web display, you can also choose to generate ``png`` images. Note that you absolutely want to avoid lossy compression, as black and white dithered images are a worst case for lossy compression.
+Note: if you plan to get this image on your vintage mac, I suggest you generate a ``tga`` file and open it with Photoshop 1.0.7. For web display, you can also choose to generate ``png`` images. Note that you absolutely want to avoid lossy compression, as black and white dithered images are a worst case for lossy compression.
 
 ## Generating the animated cover gif (the one I use on macflim.com)
 
@@ -239,6 +239,46 @@ It sounded like a good idea in the beginning, and I was tired.
 # Why so many hard-coded behaviors?
 
 See above.
+
+# Oh, I see that there is also the Mac application source code, can you tell me more about it?
+
+Sure. First, it is **absolutely not fit for release**, but again, people manifested interest, so here it is, in all its ugly glory.
+
+## Why a .dsk file?
+
+Well, having the files on the host machine would make things difficult for the Think C project and the Resource file, which cannot be represented easily on a non-Mac file system. I opted for a completely vintage approach, and the content of the dsk is what you could find on a development environment of the late 80s.
+
+I also wanted to have something turnkey, you don't have to know anything about those things to start playing with the source code.
+
+## Can you explain me what I will find on the dsk file?
+
+Yep:
+
+A universal system 6.0.8. This makes the dsk file bootable on a real mac, or on minivmac (which I use for development).
+
+A 'src' directory, containing the THINK C project, the source code, including the resource file, release README documents, and a sample flim for development purposes.
+
+THINK Reference, a very handy tool containing all the reference you need to toolbox routines.
+
+Super ResEdit 2.1.3, the resource editor, for hacking the resource file.
+
+3 support applications, included for testing purposes (testing the export and copy-paste functions): MacPaint 1.5, AdobePhotoshop and MacWrite 4.6
+
+TeachText, to edit and distribute the README documents.
+
+ImportF1 and ExportF1, to enable easy copy in and out minivmac
+
+THINK C, the complete C development environment
+
+## You mean I can build the app myself?
+
+Yep. Boot the .dsk drive, go in the 'src' folder, double-click on the MacFlim project, choose "Project/Build Application...", select an output directory, and here you go.
+
+## Anything else?
+
+Please don't change and distribute it too widely, it is going to be difficult to collaborate on a vintage Mac app (to be honest, I still have trouble understanding how to do it in a productive way). I'd rather centralize the version, and make sure that there aren't too many different and confusing versions around.
+
+I also plan major rewrites and features, so consider this a preview, not a release.
 
 # Any other things?
 
