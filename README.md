@@ -109,7 +109,7 @@ As files are just huge for now, you probably want to select a minute or so that 
 
 ## Rescale it to 512x342
 
-The command is a testament to the exterme user friendliness of ``ffmpeg``.
+The command is a testament to the extreme user friendliness of ``ffmpeg``.
 
 ``ffmpeg -v warning -stats -y -i extract.mp4 -vf "scale=(iw*sar)*max(512.1/(iw*sar)\,342.1/ih):ih*max(512.1/(iw*sar)\,342.1/ih), crop=512:342" 512x342.mp4``
 
