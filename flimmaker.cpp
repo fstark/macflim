@@ -844,14 +844,36 @@ void round_corners( image<W,H> &img )
 
 //  Encodes a set of N images (N=20)
 template <int W, int H, int N>
-std::array<std::vector<u_int8_t>,N> compress( const image<W,H> &previous, image<W,H> &last, const std::array<image<W,H>,N> &source, float stability, size_t &total, size_t &theorical_total, std::array<image<W,H>,N> &imgs )
+std::array<std::vector<u_int8_t>,N> compress(
+    const image<W,H> &current_image,
+    image<W,H> &last,
+    const std::array<image<W,H>,N> &source,
+    float stability,
+    size_t &total,
+    size_t &theorical_total,
+    std::array<image<W,H>,N> &imgs,
+    size_t skip = 0
+    )
 {
     std::array<std::vector<u_int8_t>,N> result;
 
     //  We dither the images, using previous as the base
-    quantize( (imgs)[0], source[0], previous, stability );
-    for (int i=1;i!=N;i++)
-        quantize( (imgs)[i], source[i], (imgs)[i-1], stability /* beurk: *((i%2)+0.5) */ );
+    auto img = current_image;
+    float partial = 0;
+    for (int i=0;i!=N;i++)
+    {
+        partial += skip*1.0/N;
+        if (partial>1)
+        {
+            imgs[i] = img;      //  Skip image
+            partial -= 1;
+        }
+        else
+            quantize( (imgs)[i], source[i], img, stability );
+        img = (imgs)[i];
+    }
+    //  Return last image so it can be used for encoding of first image of next block
+    last = img;
 
     //  We apply round-corners
     for (auto &img:(imgs))
@@ -869,17 +891,10 @@ std::array<std::vector<u_int8_t>,N> compress( const image<W,H> &previous, image<
     // auto data = fbs[0].raw_data();
     // result.insert(std::end(result), std::begin(data), std::end(data));
 
-    auto size = fbs[0].packed_size( framebuffer<W,H>::kPackBits );
-    auto data = fbs[0].packed_data( framebuffer<W,H>::kPackBits );
-    result[0] = std::vector<u_int8_t>( data, data+size );
-
-    total += size;
-    theorical_total += framebuffer<W,H>::size;
-
     //  We xor the framebuffers
-    for (int i=1;i!=N;i++)
+    for (int i=0;i!=N;i++)
     {
-        framebuffer<W,H> &a{ fbs[i-1] };
+        framebuffer<W,H> a =  i==0?current_image:fbs[i-1];
         framebuffer<W,H> &b = fbs[i];
 
         auto c = a^b;
@@ -890,15 +905,15 @@ std::array<std::vector<u_int8_t>,N> compress( const image<W,H> &previous, image<
 
 // std::clog << i << " [" << (int)data[0] << " " << (int)data[1] << "]\n";
 
-        total += framesize;
+        total += 2 + framesize;
         theorical_total += framebuffer<W,H>::size;
 
         fbs[i] = c;
-        result[i] = std::vector<u_int8_t>( data, data+framesize );
+        result[i] = std::vector<u_int8_t>();
+        result[i].push_back( 0 );
+        result[i].push_back( 2 );   //  PackByte Zero
+        result[i].insert( std::end( result[i] ), data, data+framesize );
     }
-
-//  Return last image so it can be used for encoding of first image of next block
-    copy_image( last, (imgs)[N-1] );
 
     return result;
 }
@@ -982,19 +997,51 @@ int encode(
             //  We compress until we are happy with the result
         size_t target = BATCH_SIZE*W*H/8*compression_target;   //  compression target
         size_t total;
-        float stability = g_stability;
+        float stability;
         size_t theorical_total;
         std::array<std::vector<u_int8_t>,BATCH_SIZE> packed_frames;
 
-        do
-        {
-            packed_frames = compress<W,H,BATCH_SIZE>( previous_smooth, last_smooth, (*source), stability, total, theorical_total, *result );
-            std::clog << blk << ": " << (float)total/theorical_total*100.0 << "\r";
-            stability += 0.05;
-        }   while (total>target && stability<=g_max_stability+0.05);
-        stability -= 0.05;
+        int skip;
 
-        fprintf( stderr, "%4d => %1.02f %6.02f%% %6ld ", blk, stability, (float)total/theorical_total*100.0, total );
+        for (skip=0;skip!=BATCH_SIZE;skip++)
+        {
+            float first_stability = g_stability;
+            float last_stability = g_max_stability;
+
+            //  We test at max to know if it is even worth looping
+            stability = g_max_stability;
+            packed_frames = compress<W,H,BATCH_SIZE>( previous_smooth, last_smooth, (*source), stability, total, theorical_total, *result, skip );
+            if (total>target)
+                continue;
+
+            while (first_stability+.05<=last_stability)
+            {
+                stability = (first_stability+last_stability)/2;
+                packed_frames = compress<W,H,BATCH_SIZE>( previous_smooth, last_smooth, (*source), stability, total, theorical_total, *result, skip );
+                std::clog << blk << ": " << skip << " " << (float)total/theorical_total*100.0 << "\r";
+                if (total<target)
+                    last_stability = stability;
+                else
+                    first_stability = stability;
+            }
+
+            if (total<=target)
+                break;
+
+            // do
+            // {
+            //     packed_frames = compress<W,H,BATCH_SIZE>( previous_smooth, last_smooth, (*source), stability, total, theorical_total, *result, skip );
+            //     std::clog << blk << ": " << skip << " " << (float)total/theorical_total*100.0 << "\r";
+            //     if (total<=target)
+            //         goto done;
+            //     stability += 0.05;
+            // }   while (stability<=g_max_stability+0.05);
+        }
+
+done:
+        // stability -= 0.05;
+
+        fprintf( stderr, "%4d => %1.02f/%02d %6.02f%% %6ld ", blk, stability, skip, (float)total/theorical_total*100.0, total );
 
             //  We are happy, packed_frames contains the packed data for the frames
 
