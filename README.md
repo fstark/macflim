@@ -246,7 +246,7 @@ Sure. First, it is **absolutely not fit for release**, but again, people manifes
 
 ## Why a .dsk file?
 
-Well, having the files on the host machine would make things difficult for the Think C project and the Resource file, which cannot be represented easily on a non-Mac file system. I opted for a completely vintage approach, and the content of the dsk is what you could find on a development environment of the late 80s.
+Well, having the files on the host machine would make things difficult for the Think C project and the resource file, which cannot be represented easily on a non-Mac file system. I opted for a completely vintage approach, and the content of the dsk is what you could find on a development environment of the late 80s.
 
 I also wanted to have something turnkey, you don't have to know anything about those things to start playing with the source code.
 
