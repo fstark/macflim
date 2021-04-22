@@ -27,624 +27,17 @@ bool debug = false;
 static int sStream = 0;
 #endif
 
-//  Almost completely tested implementation of packbits
-//  Compresses 'length' bytes from 'buffer' into 'out', and return the compressed size
-int packbits( u_int8_t *out, const u_int8_t *buffer, int length )
-{
-    const u_int8_t *orig = out;
-    const u_int8_t *end = buffer+length;
-
-    while (buffer<end)
-    {
-        //  We look for the next pair of identical characters
-        const u_int8_t *next_pair = buffer;
-        for (next_pair = buffer;next_pair<end-1;next_pair++)
-            if (next_pair[0]==next_pair[1])
-                break;
-
-        //  If we didn't find a pair up to the last two chars, we skip to the end
-        if (next_pair==end-1)
-            next_pair = end;
-
-        //  All character until next_pair don't repeat
-        if (next_pair!=buffer)
-        {
-                //  We have to write len litterals
-            u_int32_t len = next_pair-buffer;
-            while (len)
-            {
-                    //  We can write at most 128 literals in one go
-                u_int8_t sub_length = len>128?128:len;
-                len -= sub_length;
-                *out++ = sub_length-1;
-                while (sub_length--)
-                    *out++ = *buffer++;
-            }
-        }
-
-        assert( buffer==next_pair );
-
-        //  Now, we are at the start of the next run, or at the end of the stream
-        if (buffer==end)
-            break;
-
-        assert( buffer<end-1 ); //  As we have a run, we have at least two chars
-
-        u_int8_t c = *buffer;
-
-        //  Find the len of the run
-        int len = 0;
-        while (*buffer==c)
-        {
-            len++;
-            buffer++;
-            if (len==128)
-                break;
-            if (buffer==end)
-                break;
-        }
-
-        *out++ = -len+1;
-        *out++ = c;
-
-        //  We don't care about the fact that the run may continue, it will be handled by the next loop iteration
-    }
-
-    return out-orig;
-}
-
-void pack_test()
-{
-    u_int8_t in0[] =
-    {
-        0xAA, 0xAA, 0xAA, 0x80, 0x00, 0x2A, 0xAA, 0xAA, 0xAA,
-        0xAA, 0x80, 0x00, 0x2A, 0x22, 0xAA, 0xAA, 0xAA, 0xAA,
-        0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA
-    };
-    u_int8_t out0[] =
-    {
-        0xFE, 0xAA, 0x02, 0x80, 0x00, 0x2A, 0xFD, 0xAA, 0x03,
-        0x80, 0x00, 0x2A, 0x22, 0xF7, 0xAA
-    };
-
-    u_int8_t buffer[1024];
-    int len;
-    
-    len = packbits( buffer, in0, sizeof(in0) );
-    assert( len==sizeof(out0) );
-    assert( memcmp( buffer, out0, len )==0 );
-
-    u_int8_t in1[] = {};
-    u_int8_t out1[] = {};
-
-    len = packbits( buffer, in1, sizeof(in1) );
-    assert( len==sizeof(out1) );
-    assert( memcmp( buffer, out1, len )==0 );
-
-    u_int8_t in2[] = {
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-    };
-    u_int8_t out2[] = { 0x81, 0x00, 0xF1, 0x00 };
-
-    len = packbits( buffer, in2, sizeof(in2) );
-    assert( len==sizeof(out2) );
-    assert( memcmp( buffer, out2, len )==0 );
-
-    u_int8_t in3[] = {
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-    };
-
-    u_int8_t out3[] = {
-        0x7f,
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x0f,
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
-    };
-
-    len = packbits( buffer, in3, sizeof(in3) );
-    assert( len==sizeof(out3) );
-    assert( memcmp( buffer, out3, len )==0 );
-}
 
 
+#include "image.hpp"
 
-/*
-Another packing idea for run-length encoding at bit level. Would be goot for long black or white sequences, but would be awful on 50% grays
-
-0=>7 bits of data
-10=> up to 32+7 black
-11=> up to 32+7 white
-
-Take next 7 bits
-If all equal => encode equal
-Else encode specific
-*/
-
-/*  Another packing idea, as most of the data is zero anyway
-    unsure about the values at the limit...
-*/
-int packzeroes( u_int8_t *out, const u_int8_t * const buffer, int length )
-{
-    const u_int8_t *orig = out;
-    const u_int8_t *start = buffer;
-    const u_int8_t *end = start+length;
-
-    while (start<end)
-    {
-        //  We look for the next zero
-        const u_int8_t *next_zero;
-        for (next_zero = start;next_zero<end;next_zero++)
-        {
-            if (!*next_zero)
-                break;
-        }
-
-        //  All character until next_zero don't repeat
-        if (next_zero!=start)
-        {
-                //  We have to write len litterals
-            u_int32_t len = next_zero-start;
-            while (len)
-            {
-                    //  We can write at most 127 literals in one go
-                u_int8_t sub_length = len>127?127:len;
-                len -= sub_length;
-                *out++ = sub_length;
-                while (sub_length--)
-                    *out++ = *start++;
-            }
-        }
-
-        assert( next_zero==start );
-
-        //  Now, we are at the start of the next run of zeroes, or at the end of the stream
-        if (start==end)
-            break;
-
-        //  Find the len of the run
-        int len = 0;
-        while (!*start)
-        {
-            len++;
-            start++;
-            if (len==128)
-                break;
-            if (start==end)
-                break;
-        }
-        *out++ = -len;
-
-        //  We don't care about the fact that the run may continue, it will be handled by the next loop iteration
-    }
-
-    *out++ = 0;
-
-    // for (int i=0;i!=std::min(32768,length);i++)
-    //     printf( "-> %02x ", buffer[i] );
-    // printf( "\n" );
-
-    // for (int i=0;i!=std::min(32768L,out-orig);i++)
-    //     printf( "<- %02x ", orig[i] );
-    // printf( "\n" );
-
-    return out-orig;
-}
-
-/*
-    Assembly unpack & xor:
-
-*/
-
-//  Screen size constants. MacFlim is supposed to be from a universe where the only framebuffer larger than 512x243 was the Lisa2 / Macintosh XL one.
-const int WIDTH = 512;
-const int HEIGHT = 342;
-const int FB_SIZE = ((WIDTH*HEIGHT)/8);   //  aka 21888
-
-//  This is an image, represented as a bunch of floating point values (0==black and 1==white)
-//  Sometime, a pixel can be <0 or >1, when error propagates during dithering
-template <int W, int H>
-class image
-{
-    float image_[W][H];
-public:
-    // image() {}
-    // image( const image &o ) = default;
-
-    image &operator=( const image &o ) = default;
-
-    const float *operator[]( int index ) const { return image_[index]; }
-    float *operator[]( int index ) { return image_[index]; }
-    void *data() const { return (void *)image_; }
-    static const size_t encoded_size = (W*H)/8;
-
-#ifdef STAMP
-        //  Code to "stamp" every stream by placing a small number in the top left
-        //  This helps identify what stream is currently playing 
-        //  Disable for release
-    void stamp( int stamp )
-    {
-        static int sStamps[8][8] = 
-        {
-            {0x00,0x38,0x44,0x4c,0x54,0x64,0x44,0x38},
-            {0x00,0x10,0x30,0x50,0x10,0x10,0x10,0x38},
-            {0x00,0x38,0x44,0x04,0x38,0x40,0x40,0x7c},
-            {0x00,0x38,0x44,0x04,0x18,0x04,0x44,0x38},
-            {0x00,0x08,0x18,0x28,0x48,0x7c,0x08,0x08},
-            {0x00,0x7c,0x40,0x40,0x78,0x04,0x44,0x38},
-            {0x00,0x38,0x44,0x40,0x78,0x44,0x44,0x38},
-            {0x00,0x7c,0x04,0x04,0x08,0x10,0x10,0x10}
-        };
-
-        for (int y=0;y!=8;y++)
-            for (int x=0;x!=8;x++)
-            image_[x+8][y+24] = (sStamps[stamp][y] & (1<<(7-x))) ? 1 : 0;
-    }
-#endif
-
-};
-
-//  The two "standard" formats of images
-using mac_image = image<WIDTH,HEIGHT>;
-using mac_image_small = image<WIDTH/2,HEIGHT/2>;
-
-//  Image copy
-template <int W, int H>
-void copy_image( image<W,H> &dest, const image<W,H> &source )
-{
-    memcpy( dest.data(), source.data(), W*H*sizeof(source[0][0]) );
-}
-
-//  Fills image with constant color, 50% gray by default
-template <int W, int H>
-void fill( image<W,H> &img, float value = 0.5 )
-{
-    for (int y=0;y!=H;y++)
-        for (int x=0;x!=W;x++)
-            img[x][y] = value;
-}
 
 static float g_stability = 0.30;
 static float g_max_stability = 1.00;
 
-//  Basic "standard" floyd-steinberg, suitable for static images
-//  Dest will only contain 0 or 1, corresponding to the dithering of the source
-template <int W, int H>
-void quantize( image<W,H> &dest, const image<W,H> &source )
-{
-    copy_image( dest, source );
-
-    for (int y=0;y!=H;y++)
-        for (int x=0;x!=W;x++)
-        {
-            float source_color = dest[x][y];
-            float color;
-            float error;
-            color = source_color<=0.5?0:1;
-            error = source_color - color;
-            dest[x][y] = color;
-            float e0 = error * 7 / 16;
-            float e1 = error * 3 / 16;
-            float e2 = error * 5 / 16;
-            float e3 = error * 1 / 16;
-            if (x<W-1)
-                dest[x+1][y] = dest[x+1][y] + e0;
-            if (x>0 && y<H-1)
-                dest[x-1][y+1] = dest[x-1][y+1] + e1;
-            if (y<H-1)
-                dest[x][y+1] = dest[x][y+1] + e2;
-            if (x<W-1 && y<H-1)
-                dest[x+1][y+1] = dest[x+1][y+1] + e3;
-        }
-}
-
-static int dither[8][8] =
-{
-    { 0, 32, 8, 40, 2, 34, 10, 42},
-    {48, 16, 56, 24, 50, 18, 58, 26},
-    {12, 44, 4, 36, 14, 46, 6, 38},
-    {60, 28, 52, 20, 62, 30, 54, 22},
-    { 3, 35, 11, 43, 1, 33, 9, 41},
-    {51, 19, 59, 27, 49, 17, 57, 25},
-    {15, 47, 7, 39, 13, 45, 5, 37},
-    {63, 31, 55, 23, 61, 29, 53, 21}
-};
-
-
-//  Motion floyd-steinberg
-//  This will create a black/white 'dest' image from a grayscale 'source'
-//  while trying to respect the placement of pixels
-//  from the black/white 'previous' image
-template <int W, int H>
-void quantize( image<W,H> &dest, const image<W,H> &source, const image<W,H> &previous, float stability )
-{
-    copy_image( dest, source );
-
-    for (int y=0;y!=H;y++)
-        for (int x=0;x!=W;x++)
-        {
-            //  The color we'd like this pixel to be
-            float source_color = dest[x][y];
-
-            //  Increasing the stability value will makes the image choose previous frame's pixel more often
-            //  Images will be "stable", but there will be some "ghosting artifacts"
-
-            double stability2 = stability;
-
-/*
-            //  We lookup at the real color we are targetting
-            float real_color = source[x][y];
-
-            //  We look at our position in the dithering matrix
-            int xd = x%8;
-            int yd = y%8;
-
-            //  We look if we are in the threshold
-            bool threshold = dither[xd][yd]<real_color*63;
-
-            if (threshold)
-                stability2 *= 1.5;
-            else
-                stability2 /= 1.5;
-*/
-
-            //  We chose either back or white for this pixel
-            //  Starting with the current color, including error propageated form previous pixels,
-            //  we decide that:
-            //  If previous frame pixel was black, we stay back if color<0.5+stability/2
-            //  If previous frame pixel was white, we stay white if color>0.5-stability/2
-            float color = source_color<=0.5-(previous[x][y]-0.5)*stability2?0:1;
-            dest[x][y] = color;
-
-            //  By doing this, we made an error (too much white or too much black)
-            //  that we need to keep track of
-            float error = source_color - color;
-
-            //  We now distribute the error between the 4 next values
-            //  (if they exist). The values may over or underflow
-            //  but it is fine as pixels can be <0 or >1
-            float e0 = error * 7 / 16;
-            float e1 = error * 3 / 16;
-            float e2 = error * 5 / 16;
-            float e3 = error * 1 / 16;
-
-            if (x<W-1)
-                dest[x+1][y] = dest[x+1][y] + e0;
-            if (x>0 && y<H-1)
-                dest[x-1][y+1] = dest[x-1][y+1] + e1;
-            if (y<H-1)
-                dest[x][y+1] = dest[x][y+1] + e2;
-            if (x<W-1 && y<H-1)
-                dest[x+1][y+1] = dest[x+1][y+1] + e3;
-        }
-}
-
-template <int W, int H>
-image<W,H> sharpen( const image<W,H> &src )
-{
-    float kernel[3][3] = {
-        {  0.0, -1.0,  0.0 },
-        { -1.0,  5.0, -1.0 },
-        {  0.0, -1.0,  0.0 },
-    };
-
-    auto res = src;
-
-    for (int x=1;x!=W-1;x++)
-        for (int y=1;y!=H-1;y++)
-        {
-            float v = 0;
-            for (int x0=0;x0!=3;x0++)
-                for (int y0=0;y0!=3;y0++)
-                {
-                    v += src[x+x0-1][y+y0-1]*kernel[x0][y0];
-                }
-            res[x][y] = v;
-        }
-
-    return res;
-}
-
-template <int W, int H>
-image<W,H> blur3( const image<W,H> &src )
-{
-    float kernel[3][3] = {
-        { 1.0/9, 1.0/9, 1.0/9 },
-        { 1.0/9, 1.0/9, 1.0/9 },
-        { 1.0/9, 1.0/9, 1.0/9 },
-    };
-
-    auto res = src;
-
-    for (int x=1;x!=W-1;x++)
-        for (int y=1;y!=H-1;y++)
-        {
-            float v = 0;
-            for (int x0=0;x0!=3;x0++)
-                for (int y0=0;y0!=3;y0++)
-                {
-                    v += src[x+x0-1][y+y0-1]*kernel[x0][y0];
-                }
-            res[x][y] = v;
-        }
-
-    return res;
-}
-
-template <int W, int H>
-image<W,H> blur5( const image<W,H> &src )
-{
-    float kernel[5][5] = {
-        { 1.0/256, 4.0/256, 6.0/256, 4.0/256, 1.0/256},
-        { 4.0/256,16.0/256,24.0/256,16.0/256, 4.0/256},
-        { 6.0/256,24.0/256,36.0/256,24.0/256, 6.0/256},
-        { 4.0/256,16.0/256,24.0/256,16.0/256, 4.0/256},
-        { 1.0/256, 4.0/256, 6.0/256, 4.0/256, 1.0/256},
-    };
-
-    auto res = src;
-
-    for (int x=2;x!=W-2;x++)
-        for (int y=2;y!=H-2;y++)
-        {
-            float v = 0;
-            for (int x0=0;x0!=5;x0++)
-                for (int y0=0;y0!=5;y0++)
-                {
-                    v += src[x+x0-2][y+y0-2]*kernel[x0][y0];
-                }
-            res[x][y] = v;
-        }
-
-    return res;
-}
-
-
-template <int W, int H>
-image<W,H> gamma( const image<W,H> &src, double gamma )
-{
-    image<W,H> res;
-
-    for (int x=0;x!=W;x++)
-        for (int y=0;y!=H;y++)
-        {
-            res[x][y] = pow( src[x][y], gamma );
-        }
-
-    return res;
-}
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-int correct( int v )
-{
-    if (v<=0x01)
-        v = 0;
-    if (v>=0xfc)
-        v = 0xff;
-    return v;
-}
-
-// int correct( int v )
-// {
-//     v = ((v+8)/16)*16;
-//     if (v>=255)
-//         v = 255;
-//     return v;
-// }
-
-//  Reads an image from a grayscale PGM file of the right size
-//  No tests are done, no error are managed, which is shamefull
-template <int W, int H>
-bool read_image( image<W,H> &result, const char *file )
-{
-    // fprintf( stderr, "Reading [%s]\n", file );
-
-    image<W,H> image;
-
-    FILE *f = fopen( file, "rb" );
-
-    if (!f)
-        return false;
-
-    for (int i=0;i!=15;i++)
-        fgetc( f );
-
-    for (int y=0;y!=H;y++)
-        for (int x=0;x!=W;x++)
-        {    // img[x][y] = ((int)(fgetc(f)/255.0*16))/16.0;
-            image[x][y] = correct( fgetc(f) )/255.0;
-        }
-
-    fclose( f );
-
-    //  result = sharpen( image );
-    //  result = blur5(blur5(blur5(blur5( image ))));
-    // result = sharpen(sharpen(blur5( image )));
-
-    // result = blur5( image );
-
-    result = gamma( image, 1.6 );
-    result = sharpen( result );
-
-    return true;
-}
-
-//  Generates a PGM image
-template <int W, int H>
-void write_image( const char *file, image<W,H> &img )
-{
-    // fprintf( stderr, "Writing [%s]\n", file );
-
-    FILE *f = fopen( file, "wb" );
-
-    fprintf( f, "P5\n%d %d\n255\n", W, H );
-    for (int y=0;y!=H;y++)
-        for (int x=0;x!=W;x++)
-            fputc( img[x][y]*255, f );
-
-    fclose( f );
-}
 
 //  Write a bunch of bytes in a file
 void write_data( const char *file, u_int8_t *data, size_t len )
@@ -667,180 +60,82 @@ void write_data( const char *file, u_int8_t *data, size_t len )
 //            diff[x][y] = fabs( img1[x][y] - img2[x][y] );
 //}
 
-//  Takes an image, compose of only black and white
-//  and generates W*H/8 bytes corresponding to a Macintosh framebuffer
-template <int W, int H, typename T>
-void encode( T out, const image<W,H> &img )
+
+#if 0
+/**
+ * A pack is an encoded series of transformation from a framebuffer into another one
+ */
+template <int W, ing H>
+class pack
 {
-    // static char c = 0;
-    for (int y=0;y!=H;y++)
-        for (int x=0;x!=W;x+=8)
-            *out++ = (int)(img[x  ][y]*128+img[x+1][y]*64+img[x+2][y]*32+img[x+3][y]*16+
-                      img[x+4][y]*  8+img[x+5][y]* 4+img[x+6][y]* 2+img[x+7][y]     ) ^ 0xff;
-}
+    std::vector<u_int8_t> data_;
 
-template <int W,int H>
-class framebuffer
-{
-public:
-    static const size_t size = W*H/8;
-
-    typedef enum
-    {
-        kPackBits = 0,
-        kPackZeroes = 1
-    } ePack;
-
-private:
-    u_int8_t data_[size];
-
-    u_int8_t *packed_data_ = nullptr;
-    size_t packed_size_;
-
-    void pack( ePack method )
-    {
-#ifndef LZG
-        u_int8_t buffer[W*H+1];   //  Waaaay too much
-
-        switch (method)
+    public:
+        pack( const framebuffer<W,H> &x )
+            : data_{
+                x.packed_data( framebuffer<W,H>::kPackZeroes ),
+                x.packed_size( framebuffer<W,H>::kPackZeroes )
+            }
         {
-            case kPackBits:
-                packed_size_ = ::packbits( buffer, data_, size );
-                break;
-            case kPackZeroes:
-                packed_size_ = ::packzeroes( buffer, data_, size );
-                break;
         }
 
-        packed_data_ = new u_int8_t[packed_size_];
-        memcpy( packed_data_, buffer, packed_size_ );
-#else
-        auto maxEncSize = LZG_MaxEncodedSize( size );
-        auto buffer = new unsigned char[maxEncSize];
-        packed_size_ = LZG_Encode( data_, size, buffer, maxEncSize, NULL );
-        packed_data_ = new u_int8_t[packed_size_];
-        memcpy( packed_data_, buffer, packed_size_ );
-        delete[] buffer;
-#endif
-    }
-
-    void check_pack( ePack method )
-    {
-        if (!packed_data_)
-            pack( method );
-    }
-    framebuffer() {}
-
-public:
-    framebuffer( const image<W,H> &img )
-    {
-        auto *p = data_;
-        for (int y=0;y!=H;y++)
-            for (int x=0;x!=W;x+=8)
-                *p++ = (int)(img[x  ][y]*128+img[x+1][y]*64+img[x+2][y]*32+img[x+3][y]*16+
-                       img[x+4][y]*  8+img[x+5][y]* 4+img[x+6][y]* 2+img[x+7][y]     ) ^ 0xff;
-    }
-
-    framebuffer( const framebuffer &other ) : packed_data_( nullptr )
-    {
-        memcpy( data_, other.data_, size );
-    }
-
-    framebuffer& operator=(const framebuffer& other)
-    {
-        if (this == &other)
-            return *this;
-    
-        delete[] packed_data_;
-        packed_data_ = nullptr;
-
-        return *this;
-    }
-
-    u_int8_t *packed_data( ePack method ) { check_pack( method ); return packed_data_; }
-    size_t packed_size( ePack method ) { check_pack( method ); return packed_size_; }
-
-    ~framebuffer()
-    {
-        if (packed_data_)
+        framebuffer<W,H> apply( const framebuffer<W,H> &source ) const
         {
-            // std::cout << (void*)packed_data_ << "\n";
-            delete[] packed_data_;
-            packed_data_ = nullptr;
+            auto res = source;
+
+            auto s = data_.data();  //  source
+            auto d = res.data();    //  destination
+
+            while (1)
+            {
+                auto n = *s++;
+                if (n==0)
+                    break;
+                if (n>0)
+                {
+                    while (n--)
+                        *d++ ^= *s++;
+                }
+                else
+                    d -= n;
+            }
+
+            return res;
         }
-    }
-
-    framebuffer operator^(const framebuffer &o)
-    {
-        framebuffer result;
-        for (size_t i=0;i!=size;i++)
-            result.data_[i] = data_[i] ^ o.data_[i];
-        return result;
-    }
-
-    std::vector<u_int8_t> raw_data() const
-    {
-        std::vector<u_int8_t> result;
-        for (size_t i=0;i!=size;i++)
-            result.push_back( data_[i] );
-        return result;
-    }
-
-    std::vector<u_int8_t> packed_data( ePack method ) const
-    {
-        std::vector<u_int8_t> result;
-        auto p = packed_data( method );
-        for (size_t i=0;i!=packed_size_;i++)
-            result.push_back( *p++ );
-        return result;
-    }
 };
 
-//  Reduce an image to half the size
-template <int W, int H>
-void reduce_image( image<W,H> &dest, const image<2*W,2*H> &source )
-{
-    fill( dest, 0 );
-    for (int y=0;y!=H;y++)
-        for (int x=0;x!=W;x++)
-            dest[x][y] = (source[2*x][2*y]+source[2*x+1][2*y]+source[2*x][2*y+1]+source[2*x+1][2*y+1])/4;
-}
 
-//  Reduce an image to the same size (ie: copies)
-template <int W, int H>
-void reduce_image( image<W,H> &dest, const image<W,H> &source )
-{
-    dest = source;
-}
 
-//  Adds a pixel in the 4 corners of the image
-template <int W, int H>
-void plot4( image<W,H> &img, int x, int y, int c )
-{
-    img[x][y] = c;
-    img[W-1-x][y] = c;
-    img[x][H-1-y] = c;
-    img[W-1-x][H-1-y] = c;
-}
 
-//  Draw a horizonal line in the 4 corners of the image
-template <int W, int H>
-void hlin4( image<W,H> &img, int x0, int x1, int y, int c )
-{
-    while (x0<x1)
-        plot4( img, x0++, y, c );
-}
 
-//  As Steve Jobs asked for Mac desktops to have round corners, forces rounded corners on generated flims.
+/**
+ * This compresses a frame
+ * We try to increment compression incresing stability
+ * If this fails, we can collapse the 2 ticks
+*/
 template <int W, int H>
-void round_corners( image<W,H> &img )
+class FrameCompressor
 {
-    hlin4( img, 0, 5, 0, 0 );
-    hlin4( img, 0, 3, 1, 0 );
-    hlin4( img, 0, 2, 2, 0 );
-    hlin4( img, 0, 1, 3, 0 );
-    hlin4( img, 0, 1, 4, 0 );
-}
+public:
+    FrameCompressor(
+        const framebuffer<W,H> &before,
+        const image<W,H> &before_img_,
+        const image<W,H> &img_,
+        const image<W,H> &next_img_,
+        size_t ticks_,
+        size_t next_ticks
+    )
+    {
+        img = img_;
+        before_img = before_img_;
+
+        quantize( quantized_img, img, before_img, stability );
+        framebuffer<W,H> fb{ quantized_img };
+
+
+    }
+};
+#endif
 
 //  Encodes a set of N images (N=20)
 template <int W, int H, int N>
@@ -966,6 +261,9 @@ int encode(
     std::unique_ptr<std::array<image<W,H>,BATCH_SIZE>> result;
     result = std::make_unique<std::array<image<W,H>,BATCH_SIZE>>();
 
+    double cur_tick = 0;
+    size_t last_integral_tick = 0;
+
     for (int blk=from_index;blk<=to_index;blk+=BATCH_SIZE)
     {
             //  Loads all the images into 'source'
@@ -1075,32 +373,69 @@ done:
             frame_count++;
         }
 
-        // encode( out, (*result)[j] );
-        size_t SOUND_LEN = 370*BATCH_SIZE*2;
+        std::vector<u_int8_t> block_data;
+        auto p = std::back_inserter( block_data );
 
-        write4( out, 4+4+4+6+SOUND_LEN +2+2*BATCH_SIZE+total );
-        write4( out, 0x41424344 );
-        fprintf( stderr, " BLOCK_SIZE = %7ld, ", 4+4+ 6+SOUND_LEN +2+2*BATCH_SIZE+total );
-        write4( out, 6+SOUND_LEN );
-        write2( out, 0 );       //  ffMode
-        write4( out, 65536 );   //  Fixed(1,1)
-        for (int i=0;i!=SOUND_LEN;i++)
-//            write1( out, (i%74)<37?0:127 );
-            write1( out, *g_soundptr++ );
-        write2( out, BATCH_SIZE );
-        fprintf( stderr, "  FRAMES : " );
-        for (auto v:packed_frames)
+        write4( p, 0x41424344 );    //  'ABCD'
+
+        auto lt = last_integral_tick;
+
+        for (auto &video_frame:packed_frames)
         {
-            write2( out, v.size() );
-            fprintf( stderr, "%5ld ", v.size() );
-            for (auto b:v)
+            std::vector<u_int8_t> frame_data;
+            auto q = std::back_inserter( frame_data );
+
+            write4( q, 0x45464748 );    //  'EFGH'
+
+                //  Where we should be when we will have displayed this frame
+            cur_tick += 60.0/25.0;
+
+                //  How much we can really move
+            size_t delta_ticks = (cur_tick+0.5) - last_integral_tick;
+            
+            assert( delta_ticks!=0 );
+
+            last_integral_tick += delta_ticks;
+
+                //  This frame will have that amount of ticks
+            write2( q, delta_ticks );
+
+                //  Let's write the sound
+                                    //  FFSYnth header
+            write2( q, 0 );         //  ffMode
+            write4( q, 65536 );     //  Fixed(1,1)
+
+                                    //  Samples
+            for (int t=0;t!=delta_ticks;t++)
+                for (int i=0;i!=370;i++)
+                    write1( q, *g_soundptr++ );
+
+                //  Current encoding: byte-level xor
+            // write2( p, 0x0001 );
+            //  already present in frame encoded data
+
+            fprintf( stderr, "%5ld/%1ld ", video_frame.size(), delta_ticks );
+
+            // fprintf( stderr, "\n %d %d %d %d\n", video_frame[0], video_frame[1], video_frame[2], video_frame[3] );
+            for (auto b:video_frame)
             {
-                write1( out, b );
-                // printf( " %02x ", b );
+                write1( q, b );
             }
-            // printf( "\n" );
+
+            while ((frame_data.size()%4)!=0)
+                write1( q, 0xff );
+
+            write4( p, frame_data.size()+4 );
+            std::copy( std::begin( frame_data ), std::end( frame_data ), p );
         }
-        fprintf( stderr, "\n" );
+
+        while ((block_data.size()%4)!=0)
+            write1( p, 0xff );
+
+        write4( out, block_data.size()+4 );
+        std::copy( std::begin( block_data ), std::end( block_data ), out );
+
+        fprintf( stderr, " %ld ticks\n", last_integral_tick-lt );
 
         if (failed)
             break;
