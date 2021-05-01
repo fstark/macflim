@@ -16,6 +16,9 @@
 #ifdef LZG
 #include "lzg.h"
 #endif
+#include "flimcompressor.hpp"
+
+using namespace std::string_literals;
 
 //  True if the global '-g' option was set
 bool debug = false;
@@ -32,7 +35,7 @@ static int sStream = 0;
 #include "image.hpp"
 
 
-static float g_stability = 0.30;
+// static float g_stability = 0.30;
 static float g_max_stability = 1.00;
 
 
@@ -217,6 +220,7 @@ static const int BATCH_SIZE=20;
 
 float compression_target = 1;
 
+/*
 template <typename T>
 void write1( T &out, int v )
 {
@@ -236,7 +240,9 @@ void write4( T &out, int v )
     write2( out, v/65536 );
     write2( out, v%65536 );
 }
+*/
 
+/*
 int8_t *g_soundptr;
 
 template <int W, int H, typename T>
@@ -445,6 +451,7 @@ done:
 
     return frame_count;
 }
+*/
 
 //  The main function, does all the work
 //  flimmaker [-g] --in <%d.pgm> --from <index> --to <index> --cover <index> --audio <audio.waw> --out <file>
@@ -456,17 +463,49 @@ int main( int argc, char **argv )
     int from_index = 1;
     int to_index = std::numeric_limits<int>::max();
     int cover_index = -1;
+    size_t byterate = 6000;
+    double fps = 24.0;
+    size_t block_size = 20;
+    double stability = 0.3;
+
+    packz32_test();
+    packz32opt_test();
 
     argc--;
     argv++;
 
     while (argc)
     {
-        if (!strcmp(*argv,"--compression-target"))
+        // if (!strcmp(*argv,"--compression-target"))
+        // {
+        //     argc--;
+        //     argv++;
+        //     compression_target = atof(*argv)/100.0;
+        //     argc--;
+        //     argv++;
+        // }
+        // else
+        if (!strcmp(*argv,"--byterate"))
         {
             argc--;
             argv++;
-            compression_target = atof(*argv)/100.0;
+            byterate = atoi(*argv);
+            argc--;
+            argv++;
+        }
+        else if (!strcmp(*argv,"--fps"))
+        {
+            argc--;
+            argv++;
+            fps = atof(*argv);
+            argc--;
+            argv++;
+        }
+        else if (!strcmp(*argv,"--block-size"))
+        {
+            argc--;
+            argv++;
+            block_size = atoi(*argv);
             argc--;
             argv++;
         }
@@ -500,14 +539,14 @@ int main( int argc, char **argv )
             argc--;
             argv++;
         }
-        else if (!strcmp(*argv,"--cover"))
-        {
-            argc--;
-            argv++;
-            cover_index = atoi(*argv);
-            argc--;
-            argv++;
-        }
+        // else if (!strcmp(*argv,"--cover"))
+        // {
+        //     argc--;
+        //     argv++;
+        //     cover_index = atoi(*argv);
+        //     argc--;
+        //     argv++;
+        // }
         else if (!strcmp(*argv,"--audio"))
         {
             argc--;
@@ -520,18 +559,18 @@ int main( int argc, char **argv )
         {
             argc--;
             argv++;
-            g_stability = atof( *argv );
+            stability = atof( *argv );
             argc--;
             argv++;
         }
-        else if (!strcmp(*argv,"--max-stability"))
-        {
-            argc--;
-            argv++;
-            g_max_stability = atof( *argv );
-            argc--;
-            argv++;
-        }
+        // else if (!strcmp(*argv,"--max-stability"))
+        // {
+        //     argc--;
+        //     argv++;
+        //     g_max_stability = atof( *argv );
+        //     argc--;
+        //     argv++;
+        // }
         else if (!strcmp(*argv,"--out"))
         {
             argc--;
@@ -547,42 +586,12 @@ int main( int argc, char **argv )
         }
     }
 
-    //  Load audio
-    int8_t *audio_buffer;
-    long audio_size;
-    FILE *f = fopen( audio_arg.c_str(), "rb" );
-    if (f)
-    {
-        fseek( f, 0L, SEEK_END );
-        audio_size = ftell( f );
-        rewind( f );
-        audio_buffer = (int8_t *)malloc( audio_size ) ;
-        if (fread( audio_buffer, audio_size, 1, f )!=1)
-            std::cerr << "**** WARNING: CANNOT READ AUDIO FILE [" << audio_arg << "]\n";
-        fclose( f );
-    }
-    else
-        std::cerr << "**** ERROR: CANNOT OPEN AUDIO FILE [" << audio_arg << "]\n";
-
-    g_soundptr = audio_buffer;
-
-    if (cover_index==-1)
-        cover_index = from_index+(to_index-from_index)/3;
-
-//    pack_test();
-
-
-    std::vector<u_int8_t> data;
-    int count;
-    count = encode<512,342>( std::back_inserter(data), in_arg, from_index, to_index, true, cover_index );
-
-    if (g_soundptr!=audio_buffer+audio_size)
-        fprintf( stderr, "???? SOUND ENCODED %ld samples instead of %ld\n", g_soundptr-audio_buffer, audio_size );
-
-    FILE *movie_file = fopen( out_arg.c_str(), "wb" );
-    // fwrite( res.data(), res.size(), 1, movie_file );
-    fwrite( data.data(), data.size(), 1, movie_file );
-    fclose( movie_file );
+    auto encoder = flimencoder<512,342>{ in_arg, audio_arg };
+    encoder.set_byterate( byterate );
+    encoder.set_fps( fps );
+    encoder.set_block_size( block_size );
+    encoder.set_stability( stability );
+    encoder.make_flim( out_arg, from_index, to_index );
 
     return EXIT_SUCCESS;
 }

@@ -195,7 +195,9 @@ int packzeroes( u_int8_t *out, const u_int8_t *const buffer, int length )
         const u_int8_t *next_zero;
         for (next_zero = start;next_zero<end;next_zero++)
         {
-            if (!*next_zero)
+            if (next_zero==end-1 && !*next_zero)
+                break;
+            if (!*next_zero && *(next_zero+1)==0)
                 break;
         }
 
@@ -234,6 +236,7 @@ int packzeroes( u_int8_t *out, const u_int8_t *const buffer, int length )
         }
         *out++ = -len;
 
+            // fprintf( stderr, "%d ", len );
         //  We don't care about the fact that the run may continue, it will be handled by the next loop iteration
     }
 
@@ -272,3 +275,98 @@ void unpackzeroesx( char *d, const char *s, size_t maxlen )
         assert( d<=m );
     }
 }
+
+
+
+
+int packz32( u_int32_t *out, const u_int32_t *const buffer, int length )
+{
+    const u_int32_t *orig = out;
+    const u_int32_t *start = buffer;
+    const u_int32_t *end = start+length;
+
+    while (start<end)
+    {
+        //  We look for the next non-zero
+        const u_int32_t *next_non_zero;
+        for (next_non_zero = start;next_non_zero<end;next_non_zero++)
+        {
+            if (*next_non_zero)
+                break;
+        }
+
+        //  Here, we have:
+        //  [ 0 0 0 0 0 ] x0 x1 x2
+
+        u_int16_t zero_count = next_non_zero-start;
+        start += zero_count;
+
+        //  We look for the next zero
+        const u_int32_t *next_zero;
+        for (next_zero = start;next_zero<end;next_zero++)
+        {
+            if (!*next_zero)
+                break;
+        }
+
+        u_int16_t non_zero_count = next_zero-start;
+
+        u_int32_t header = (zero_count<<16)+non_zero_count;
+
+        *out++ = header;
+
+        while (non_zero_count--)
+            *out++ = *start++;
+    }
+
+    *out++ = 0;
+
+    return out-orig;
+}
+
+#include <iostream>
+
+void packz32_test()
+{
+    u_int32_t in0[] =
+    {
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000001, 0x00000002, 0x00000003, 0x00000000
+    };
+    u_int32_t out0[] =
+    {
+        0x00040003, 0x00000001, 0x00000002, 0x00000003, 0x00010000, 0x00000000
+    };
+
+    u_int32_t buffer[1024];
+    int len;
+    
+    len = packz32( buffer, in0, sizeof(in0)/sizeof(*in0) );
+    std::clog << len << "\n";
+
+    assert( len==sizeof(out0)/sizeof(*in0) );
+    assert( memcmp( buffer, out0, len )==0 );
+}
+
+
+void packz32opt_test()
+{
+    std::vector<u_int32_t> in0 =
+    {
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000001, 0x00000002, 0x00000003, 0x00000000
+    };
+    std::vector<bool> in0b =
+    {
+        false, false, false, false, true, true, true, false
+    };
+    std::vector<uint32_t> out0 =
+    {
+        0x00040003, 0x00000001,
+        0x00000002, 0x00000003,
+        0x00000000
+    };
+
+    auto res0 = packz32opt( in0, in0b );
+
+    assert( res0==out0 );
+}
+

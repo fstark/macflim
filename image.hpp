@@ -28,6 +28,13 @@ public:
     // image() {}
     // image( const image &o ) = default;
 
+    // image()
+    // {
+    //     for (int y=0;y!=H;y++)
+    //         for (int x=0;x!=W;x++)
+    //             image_[x][y] = 0;
+    // }
+
     image &operator=( const image &o ) = default;
 
     const float *operator[]( int index ) const { return image_[index]; }
@@ -100,6 +107,13 @@ image<W,H> sharpen( const image<W,H> &src )
 
     auto res = src;
 
+    for (int x=0;x!=W;x++)
+        res[x][0] = res[x][H-1] = 0;
+    for (int y=0;y!=H;y++)
+        res[0][y] = res[W-1][y] = 0;
+
+    fill( res, 0 );
+
     for (int x=1;x!=W-1;x++)
         for (int y=1;y!=H-1;y++)
         {
@@ -128,6 +142,13 @@ image<W,H> blur3( const image<W,H> &src )
     };
 
     auto res = src;
+
+    for (int x=0;x!=W;x++)
+        res[x][0] = res[x][H-1] = 0;
+    for (int y=0;y!=H;y++)
+        res[0][y] = res[W-1][y] = 0;
+
+    fill( res, 0 );
 
     for (int x=1;x!=W-1;x++)
         for (int y=1;y!=H-1;y++)
@@ -159,6 +180,13 @@ image<W,H> blur5( const image<W,H> &src )
     };
 
     auto res = src;
+
+    for (int x=0;x!=W;x++)
+        res[x][0] = res[x][H-1] = res[x][1] = res[x][H-2] = 0;
+    for (int y=0;y!=H;y++)
+        res[0][y] = res[W-1][y] = res[1][y] = res[W-2][y] = 0;
+
+    fill( res, 0 );
 
     for (int x=2;x!=W-2;x++)
         for (int y=2;y!=H-2;y++)
@@ -317,6 +345,7 @@ bool read_image( image<W,H> &result, const char *file )
     // fprintf( stderr, "Reading [%s]\n", file );
 
     image<W,H> image;
+    fill( image, 0 );
 
     FILE *f = fopen( file, "rb" );
 
@@ -502,7 +531,8 @@ class framebuffer
 {
 public:
     static const size_t row_bytes = W/8;
-    static const size_t size = W*row_bytes;
+    static const size_t size = H*row_bytes;
+    static const size_t lsize = size/sizeof(uint32_t);
 
     typedef enum
     {
@@ -527,7 +557,8 @@ private:
                 packed_size_ = ::packbits( buffer, data_, size );
                 break;
             case kPackZeroes:
-                packed_size_ = ::packzeroes( buffer, data_, size );
+            //    packed_size_ = ::packzeroes( buffer, data_, size );
+                packed_size_ = ::packz32( (u_int32_t *)buffer, (u_int32_t *)data_, size/4 )*4;
                 break;
         }
 
@@ -548,9 +579,70 @@ private:
         if (!packed_data_)
             pack( method );
     }
-    framebuffer() {}
 
 public:
+
+    std::array<uint32_t,lsize> raw32_horizontal() const
+    {
+        std::array<uint32_t,lsize> res;
+        for (int i=0;i!=lsize;i++)
+        {
+            res[i] = data_[i*4];
+            res[i] = (res[i]<<8) + data_[i*4+1];
+            res[i] = (res[i]<<8) + data_[i*4+2];
+            res[i] = (res[i]<<8) + data_[i*4+3];
+        }
+        return res;
+    }
+
+    std::array<uint32_t,lsize> raw32_vertical() const
+    {
+        std::array<uint32_t,lsize> res;
+        for (int i=0;i!=lsize;i++)
+        {
+            size_t x = (i/H)*4;
+            size_t y = i%H;
+
+            size_t offset = x+y*row_bytes;
+
+assert( x<row_bytes );
+assert( y<H );
+assert( offset<21888 );
+
+            res[i] = data_[offset];
+            res[i] = (res[i]<<8) + data_[offset+1];
+            res[i] = (res[i]<<8) + data_[offset+2];
+            res[i] = (res[i]<<8) + data_[offset+3];
+        }
+        return res;
+    }
+
+    std::array<uint32_t,lsize> raw32() const
+    {
+        return raw32_vertical();
+    }
+
+    framebuffer( const std::array<uint32_t,lsize> &data )
+    {
+        for (int i=0;i!=lsize;i++)
+        {
+            size_t x = (i/H)*4;
+            size_t y = i%H;
+
+            size_t offset = x+y*row_bytes;
+
+            data_[offset] = data[i]>>24;
+            data_[offset+1] = data[i]>>16;
+            data_[offset+2] = data[i]>>8;
+            data_[offset+3] = data[i];
+        }
+    }
+
+    framebuffer()
+    {
+        memset( data_, 0, size );
+    }
+
     framebuffer( const image<W,H> &img )
     {
         auto *p = data_;
@@ -565,7 +657,7 @@ public:
         image<W,H> res;
         for (int y=0;y!=H;y++)
             for (int x=0;x!=W;x++)
-                res[x][y] = !!(data_[y*row_bytes+x/8] & (1<<(x%8)));
+                res[x][y] = !(data_[y*row_bytes+x/8] & (1<<(7-(x%8))));
         return res;
     }
 
