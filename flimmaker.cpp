@@ -465,8 +465,9 @@ int main( int argc, char **argv )
     int cover_index = -1;
     size_t byterate = 6000;
     double fps = 24.0;
-    size_t block_size = 20;
+    size_t buffer_size = 300000;
     double stability = 0.3;
+    bool half_rate = false;
 
     packz32_test();
     packz32opt_test();
@@ -501,11 +502,17 @@ int main( int argc, char **argv )
             argc--;
             argv++;
         }
-        else if (!strcmp(*argv,"--block-size"))
+        else if (!strcmp(*argv,"--buffer-size"))
         {
             argc--;
             argv++;
-            block_size = atoi(*argv);
+            buffer_size = atoi(*argv);
+            argc--;
+            argv++;
+        }
+        else if (!strcmp(*argv,"--half-rate"))
+        {
+            half_rate = true;
             argc--;
             argv++;
         }
@@ -589,8 +596,9 @@ int main( int argc, char **argv )
     auto encoder = flimencoder<512,342>{ in_arg, audio_arg };
     encoder.set_byterate( byterate );
     encoder.set_fps( fps );
-    encoder.set_block_size( block_size );
+    encoder.set_buffer_size( buffer_size );
     encoder.set_stability( stability );
+    encoder.set_half_rate( half_rate );
     encoder.make_flim( out_arg, from_index, to_index );
 
     return EXIT_SUCCESS;

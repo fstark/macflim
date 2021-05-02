@@ -63,6 +63,25 @@ void write( T &out, const std::array<uint8_t,N> &arr )
         write1( out, v );
 }
 
+class offset_t
+{
+    size_t offset_ = 0;
+
+public:
+    size_t linear() { return offset_; }
+    bool increment()
+    {
+        offset_ += 64;
+        if (offset_>21888)
+        {
+            offset_ -= 21888-4;
+            return true;
+        }
+        return false;
+    }
+};
+
+
 //  ------------------------------------------------------------------
 //  Conditionally pack data
 //  ------------------------------------------------------------------
@@ -77,16 +96,19 @@ std::vector<uint32_t> packz32opt( T0 data, T1 pack_begin, T1 pack_end, size_t ma
     std::vector<uint32_t> output_buffer;
     auto out = std::back_inserter(output_buffer);
 
+    offset_t offset;
+    uint32_t linear_offset;
+
     while (pack_begin<pack_end)
     {
         //  We look for the next non-zero
-        size_t zero_count = 0;
         while (pack_begin<pack_end && !*pack_begin)
         {
-            zero_count++;
+            data++;
             pack_begin++;
+            offset.increment();
         }
-        data += zero_count;
+        linear_offset = offset.linear();
 
         //  We look for the next zero
         size_t non_zero_count = 0;
@@ -95,6 +117,9 @@ std::vector<uint32_t> packz32opt( T0 data, T1 pack_begin, T1 pack_end, size_t ma
             non_zero_count++;
             pack_begin++;
 
+            if (offset.increment())
+                break;
+
             if (1+non_zero_count+output_buffer.size()>=max_pack)
                 break;
         }
@@ -102,7 +127,7 @@ std::vector<uint32_t> packz32opt( T0 data, T1 pack_begin, T1 pack_end, size_t ma
         if (non_zero_count==0)      //  Don't skip at the end if nothing needs to be copied
             break;
 
-        *out++ = (zero_count<<16)+non_zero_count;
+        *out++ = ((non_zero_count-1)<<16)+(linear_offset+4);
 
         while (non_zero_count--)
             *out++ = *data++;
