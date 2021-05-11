@@ -135,18 +135,18 @@ image<W,H> sharpen( const image<W,H> &src )
 template <int W, int H>
 image<W,H> blur3( const image<W,H> &src )
 {
-    float kernel[3][3] = {
+    static float kernel[3][3] = {
         { 1.0/9, 1.0/9, 1.0/9 },
         { 1.0/9, 1.0/9, 1.0/9 },
         { 1.0/9, 1.0/9, 1.0/9 },
     };
 
-    auto res = src;
+    image<W,H> res;
 
-    for (int x=0;x!=W;x++)
-        res[x][0] = res[x][H-1] = 0;
-    for (int y=0;y!=H;y++)
-        res[0][y] = res[W-1][y] = 0;
+    // for (int x=0;x!=W;x++)
+    //     res[x][0] = res[x][H-1] = 0;
+    // for (int y=0;y!=H;y++)
+    //     res[0][y] = res[W-1][y] = 0;
 
     fill( res, 0 );
 
@@ -159,6 +159,8 @@ image<W,H> blur3( const image<W,H> &src )
                 {
                     v += src[x+x0-1][y+y0-1]*kernel[x0][y0];
                 }
+            if (v<0) v = 0;
+            if (v>1) v = 1;
             res[x][y] = v;
         }
 
@@ -221,6 +223,30 @@ image<W,H> gamma( const image<W,H> &src, double gamma )
 }
 
 //  ------------------------------------------------------------------
+template <int W, int H>
+image<W,H> zoom_out( const image<W,H> &src )
+{
+    const double bx = 32;
+    const double a = ((W/2)-bx)/(W/2);
+    const double by = H/2-a*(H/2);
+
+    image<W,H> res;
+    for (int y=0;y!=H;y++)
+        for (int x=0;x!=W;x++)
+        {
+            int from_x = (x-bx)/a;
+            int from_y = (y-by)/a;
+
+            if (from_x>0 && from_x<W && from_y>0 && from_y<H)
+                res[x][y] = src[from_x][from_y];
+            else
+                res[x][y] = 0;
+        }
+    
+    return res;
+}
+
+//  ------------------------------------------------------------------
 //  Reduce an image to half the size
 //  ------------------------------------------------------------------
 template <int W, int H>
@@ -276,6 +302,26 @@ void round_corners( image<W,H> &img )
     hlin4( img, 0, 1, 4, 0 );
 }
 
+template <int W, int H>
+image<W,H> round_corners( const image<W,H> &img )
+{
+    image<W,H> res = img;
+    round_corners( res );
+    return res;
+}
+
+template <int W, int H>
+image<W,H> quantize( const image<W,H> &img, int n )
+{
+    image<W,H> res;
+
+    for (int y=0;y!=H;y++)
+        for (int x=0;x!=W;x++)
+            res[x][y] = ((int)(img[x][y]*(n-1)+.5))/(double)(n-1);
+
+    return res;
+}
+
 //  ------------------------------------------------------------------
 //  Apply a filter on an image
 //  ------------------------------------------------------------------
@@ -285,11 +331,13 @@ typedef enum
     kBlur5 = 'B',
     kSharpen = 's',
     kGamma = 'g',
-    kRoundCorners = 'c'
+    kRoundCorners = 'c',
+    kZoomOut = 'z',
+    kQuantize16 = 'Q'
 }   eFilters;
 
 template <int W, int H>
-image<W,H> filter( const image<W,H> &from, eFilters filter )
+image<W,H> filter( const image<W,H> &from, eFilters filter, double arg=0 )
 {
     switch (filter)
     {
@@ -300,22 +348,62 @@ image<W,H> filter( const image<W,H> &from, eFilters filter )
         case kSharpen:
             return sharpen( from );
         case kGamma:
-            return gamma( from, 1.6 );
+            return gamma( from, arg?arg:1.6 );
         case kRoundCorners:
             return round_corners( from );
+        case kZoomOut:
+            return zoom_out( from );
+        case kQuantize16:
+            return quantize( from, arg?arg:16 );
     }
+    std::cerr << "**** ERROR: filter ['" << (char)filter << "'] (" << (int)filter << ") unknown\n";
     throw "Unknown filter";
+}
+
+inline bool extract_filter( const char *&p, char &f, double &arg )
+{
+    arg = 0;
+    if (!*p)
+        return 0;
+
+        //  Filter name
+    f = *p++;
+
+        //  Filter argument (int)
+    while (*p>='0' && *p<='9')
+        arg = arg*10+ (*p++)-'0';
+
+        //  Decimal part of filter argument
+    if (*p=='.')
+    {
+        p++;
+        double scale = 0.1;
+        while (*p>='0' && *p<='9')
+        {
+            arg += ((*p++)-'0')*scale;
+            scale /= 10;
+        }
+    }
+
+    // printf( "filter==%c arg==%f\n", f, arg );
+
+    return true;
 }
 
 //  ------------------------------------------------------------------
 //  Apply a sequence of filters
 //  ------------------------------------------------------------------
+
 template <int W, int H>
 image<W,H> filter( const image<W,H> &from, const char *filters )
 {
     image<W,H> res = from;
-    while (*filters)
-        res = filter( from, *filters++ );
+    char f;
+    double arg;
+
+    while (extract_filter( filters, f, arg ))
+        res = filter( res, (eFilters)f, arg );
+
     return res;
 }
 
@@ -363,15 +451,19 @@ bool read_image( image<W,H> &result, const char *file )
 
     fclose( f );
 
+    result = image;
+
     //  result = sharpen( image );
     //  result = blur5(blur5(blur5(blur5( image ))));
     // result = sharpen(sharpen(blur5( image )));
 
     // result = blur5( image );
 
-    result = gamma( image, 1.6 );
-    result = sharpen( result );
-    
+//    result = gamma( image, 1.6 );
+//    result = blur5( image );
+//    result = sharpen( result );
+//    result = sharpen( result );
+//    result = zoom_out( result );
     //  result = filter( image, "gs" );
 
     return true;
@@ -443,6 +535,28 @@ static int dither[8][8] =
     {63, 31, 55, 23, 61, 29, 53, 21}
 };
 
+template <int W, int H>
+void quantize2( image<W,H> &dest, const image<W,H> &source, const image<W,H> &previous, float stability )
+{
+    for (int y=0;y!=H;y++)
+        for (int x=0;x!=W;x++)
+        {
+            //  The color we'd like this pixel to be
+            float color = source[x][y];
+
+            //  We look at our position in the dithering matrix
+            int xd = x%8;
+            int yd = y%8;
+
+            //  We look if we are in the threshold
+            bool threshold = dither[xd][yd]<color*64;
+
+            if (threshold)
+                dest[x][y] = 1;
+            else
+                dest[x][y] = 0;
+        }
+}
 
 //  ------------------------------------------------------------------
 //  Motion floyd-steinberg
@@ -484,7 +598,7 @@ void quantize( image<W,H> &dest, const image<W,H> &source, const image<W,H> &pre
 */
 
             //  We chose either back or white for this pixel
-            //  Starting with the current color, including error propageated form previous pixels,
+            //  Starting with the current color, including error propagated form previous pixels,
             //  we decide that:
             //  If previous frame pixel was black, we stay back if color<0.5+stability/2
             //  If previous frame pixel was white, we stay white if color>0.5-stability/2
@@ -494,6 +608,9 @@ void quantize( image<W,H> &dest, const image<W,H> &source, const image<W,H> &pre
             //  By doing this, we made an error (too much white or too much black)
             //  that we need to keep track of
             float error = source_color - color;
+
+            // if (fabs(error)<0.10)
+            //     error = 0;
 
             //  We now distribute the error between the 4 next values
             //  (if they exist). The values may over or underflow
@@ -534,51 +651,8 @@ public:
     static const size_t size = H*row_bytes;
     static const size_t lsize = size/sizeof(uint32_t);
 
-    typedef enum
-    {
-        kPackBits = 0,
-        kPackZeroes = 1
-    } ePack;
-
 private:
     u_int8_t data_[size];
-
-    u_int8_t *packed_data_ = nullptr;
-    size_t packed_size_;
-
-    void pack( ePack method )
-    {
-#ifndef LZG
-        u_int8_t buffer[W*H+1];   //  Waaaay too much
-
-        switch (method)
-        {
-            case kPackBits:
-                packed_size_ = ::packbits( buffer, data_, size );
-                break;
-            case kPackZeroes:
-            //    packed_size_ = ::packzeroes( buffer, data_, size );
-                packed_size_ = ::packz32( (u_int32_t *)buffer, (u_int32_t *)data_, size/4 )*4;
-                break;
-        }
-
-        packed_data_ = new u_int8_t[packed_size_];
-        memcpy( packed_data_, buffer, packed_size_ );
-#else
-        auto maxEncSize = LZG_MaxEncodedSize( size );
-        auto buffer = new unsigned char[maxEncSize];
-        packed_size_ = LZG_Encode( data_, size, buffer, maxEncSize, NULL );
-        packed_data_ = new u_int8_t[packed_size_];
-        memcpy( packed_data_, buffer, packed_size_ );
-        delete[] buffer;
-#endif
-    }
-
-    void check_pack( ePack method )
-    {
-        if (!packed_data_)
-            pack( method );
-    }
 
 public:
 
@@ -643,7 +717,11 @@ assert( offset<21888 );
         memset( data_, 0, size );
     }
 
-    framebuffer( const image<W,H> &img )
+     ~framebuffer()
+    {
+    }
+
+   framebuffer( const image<W,H> &img )
     {
         auto *p = data_;
         for (int y=0;y!=H;y++)
@@ -661,34 +739,18 @@ assert( offset<21888 );
         return res;
     }
 
-    framebuffer( const framebuffer &other ) : packed_data_( nullptr )
-    {
-        memcpy( data_, other.data_, size );
-    }
+    // framebuffer( const framebuffer &other )
+    // {
+    //     memcpy( data_, other.data_, size );
+    // }
 
-    framebuffer& operator=(const framebuffer& other)
-    {
-        if (this == &other)
-            return *this;
+    // framebuffer& operator=(const framebuffer& other)
+    // {
+    //     if (this == &other)
+    //         return *this;
     
-        delete[] packed_data_;
-        packed_data_ = nullptr;
-
-        return *this;
-    }
-
-    u_int8_t *packed_data( ePack method ) { check_pack( method ); return packed_data_; }
-    size_t packed_size( ePack method ) { check_pack( method ); return packed_size_; }
-
-    ~framebuffer()
-    {
-        if (packed_data_)
-        {
-            // std::cout << (void*)packed_data_ << "\n";
-            delete[] packed_data_;
-            packed_data_ = nullptr;
-        }
-    }
+    //     return *this;
+    // }
 
     framebuffer operator^(const framebuffer &o)
     {
@@ -703,15 +765,6 @@ assert( offset<21888 );
         std::vector<u_int8_t> result;
         for (size_t i=0;i!=size;i++)
             result.push_back( data_[i] );
-        return result;
-    }
-
-    std::vector<u_int8_t> packed_data( ePack method ) const
-    {
-        std::vector<u_int8_t> result;
-        auto p = packed_data( method );
-        for (size_t i=0;i!=packed_size_;i++)
-            result.push_back( *p++ );
         return result;
     }
 };

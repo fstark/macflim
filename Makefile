@@ -1,9 +1,9 @@
 all: flimmaker flimutil
 
-imgcompress.o: imgcompress.cpp imgcompress.hpp
+imgcompress.o: imgcompress.cpp imgcompress.hpp image.hpp
 	c++ -c -O3 imgcompress.cpp -o imgcompress.o
 
-flimmaker.o: flimmaker.cpp image.hpp flimcompressor.hpp imgcompress.hpp
+flimmaker.o: flimmaker.cpp image.hpp flimcompressor.hpp imgcompress.hpp image.hpp
 	c++ -c -O3 -I liblzg/src/include flimmaker.cpp -o flimmaker.o
 
 flimmaker: flimmaker.o encode.o checksum.o imgcompress.o

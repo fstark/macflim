@@ -9,7 +9,7 @@
 #define VERBOSE
 
 using namespace std::string_literals;
-    
+
 template <int W, int H>
 class compressor
 {
@@ -67,6 +67,9 @@ public:
         }
     }
 
+    framebuffer<W,H> get_current_framebuffer() const { return current_data_; }
+    framebuffer<W,H> get_target_framebuffer() const { return target_data_; }
+
     double quality() const
     {
         int b = 0;
@@ -74,74 +77,6 @@ public:
             b += xcountbits( current_data_[i]^target_data_[i] );
         return 1-b/(double)(W*H);
     }
-
-    // std::array<bool,size> over( int age ) const
-    // {
-    //     std::array<bool,size> need;
-    //     for (int i=0;i!=size;i++)
-    //         need[i] = diff_[i]>=age;
-
-    //     auto p = std::begin( need );
-
-    //     for (int y=0;y!=H;y++)
-    //         for (int x=0;x!=W/32;x++)
-    //         {
-    //             // if ((((y*3)/342))!=(frame%3))
-    //             // if ((y%3)!=(frame%3))
-    //             //     *p = false;
-    //             p++;
-    //         }
-        
-    //     return need;
-    // }
-
-    // std::vector<uint32_t> compress_age( int age, size_t max_size ) const
-    // {
-    //     return packz32opt( target_data_, over(age), max_size );
-    // }
-
-    // std::vector<uint32_t> compress_age( int age ) const
-    // {
-    //     packzmap<size> foo;
-    //     packz32opt( target_data_, foo );
-    //     return packz32opt( target_data_, over(age) );
-    // }
-
-//     int best_age( size_t max_size ) const
-//     {
-// #ifdef VERBOSE
-//         std::clog << "BEST AGE FOR " << max_size << "\n  ";
-// #endif
-//         auto mx = *std::max_element( std::begin(diff_), std::end(diff_) );
-//         if (mx==0)
-//             mx = 1;
-// #ifdef VERBOSE
-//         for (int i=0;i<=mx;i++)
-//             std::clog << i << ":" << std::count( std::begin(diff_), std::end(diff_), i ) <<"  ";
-//         std::clog << "\n  ";
-// #endif
-//         for (int s=2;s<=mx;s++)
-//         {
-//             auto res = compress_age( s );
-// #ifdef VERBOSE
-//             std::clog << s << " => " << res.size() << " ";
-// #endif
-//             if (res.size()<=max_size)
-//             {
-// #ifdef VERBOSE
-//                 std::clog << " (done with " << s-1 << ")\n";
-// #endif
-//                 return s-1;
-//             }
-//         }
-//         //  This is a problem: we can't compress well enough -- let's limit the compression
-        
-// #ifdef VERBOSE
-//         std::clog << " done with max" << "\n";
-// #endif
-//         return mx;
-//     }
-
 
     std::vector<uint32_t> compress( size_t max_size )
     {
@@ -257,10 +192,12 @@ public:
         {
             static int img = 1;
             char buffer[1024];
-            sprintf( buffer, "out-%06d.pgm", img++ );
+            sprintf( buffer, "out-%06d.pgm", img );
             framebuffer<W,H> fb{current_data_};
             auto logimg = fb.as_image();
             write_image( buffer, logimg );
+
+            img++;
         }
         return res;
     }
@@ -286,14 +223,20 @@ public:
     }
 };
 
+inline size_t ticks_from_frame( size_t n, double fps ) { return n/fps*60; }
+
 template <int W, int H>
 class flimcompressor
 {
 public:
     struct frame
     {
-        std::array<uint8_t,370> audio;
+        size_t ticks;
+        std::vector<uint8_t> audio;
         std::vector<uint32_t> video;
+        framebuffer<W,H> result;
+
+        size_t get_size() { return audio.size()+video.size()*4; }
     };
 
 private:
@@ -315,7 +258,7 @@ public:
 
     const std::vector<frame> &get_frames() const { return frames_; }
 
-    void compress( double stability, size_t byterate )
+    void compress( double stability, size_t byterate, bool group, const std::string &filters )
     {
         std::vector<std::uint32_t> data = header();
 
@@ -325,55 +268,80 @@ public:
         fill( previous, 0 );
 
         int in_fr=0;
-        int out_fr=0;
-        double current_time = 0;
-        double theorical_time = 0;
+
+        size_t current_tick = 0;
 
         size_t fail1=0;
         size_t fail2=0;
 
         double total_q = 0;
 
+            //  The audio ptr
+        auto audio = std::begin( audio_ );
+
         for (auto &source_image:images_)
         {
             image<W,H> dest;
 
-            in_fr++;
-            theorical_time = in_fr*(1/fps_);
+            image <W,H> img = filter( source_image, filters.c_str() );
 
-            quantize( dest, source_image, previous, stability );
+            quantize( dest, img, previous, stability );
             previous = dest;
-
+            //  dest = filter( dest, "gsc" );
+            
             round_corners( dest );
             framebuffer<W,H> fb{dest};
-
             c.set_target_image( fb );
 
-            while (theorical_time>current_time)
+                //  Let's see how many ticks we have to display this image
+            in_fr++;
+            size_t next_tick = ticks_from_frame( in_fr, fps_ );
+            size_t ticks = next_tick-current_tick;
+            assert( ticks>0 );
+
+
+            size_t local_ticks = 1;
+
+            if (group)
+                local_ticks = ticks;
+
+            for (int i=0;i!=ticks;i+=local_ticks)
             {
+
+                    //  Build the frame
                 frame f;
-//                std::clog << "time: " << current_time << " " << theorical_time << "\n";
-                // std::clog << "AUDIO OFFSETS " << 370*out_fr << "\n";
-//  #### WORKAROUND
-                if (std::begin(audio_)+370*out_fr+370<=std::end(audio_))
-                    std::copy( std::begin(audio_)+370*out_fr, std::begin(audio_)+370*out_fr+370, std::begin(f.audio) );
-                f.video = c.next_tick( byterate );
+
+                f.ticks = local_ticks;
+
+                std::copy( audio, audio+370*local_ticks, std::back_inserter(f.audio) );
+                audio += 370*local_ticks;
+                assert( audio<=std::end(audio_) );
+
+                    //  What is the video budget?
+                size_t video_budget = byterate*local_ticks;
+
+                    //  Encode withing that budget
+                f.video = c.next_tick( video_budget );
+
+                    //  Add the current frame buffer
+                f.result = c.get_current_framebuffer();
+
                 frames_.push_back( f );
-                out_fr++;
-                // fprintf( stderr, "# %4d/%4d (%5.3f) %5ld bytes\n", in_fr, out_fr, current_time, data.size()*sizeof(data[0]) );
-                current_time += 1/60.0;
             }
+
 
             auto q = c.quality();
             total_q += q;
             if (q!=1)
             {
-                fprintf( stderr, "# %4d/%4d (%5.3f) \u001b[%sm%05.3f%%\u001b[0m\n", in_fr, out_fr, current_time, q<.9?"91":"0", q*100 );
+                fprintf( stderr, "# %4d (%5.3f) \u001b[%sm%05.3f%%\u001b[0m\n", in_fr, current_tick/60.0, q<.9?"91":"0", q*100 );
             }
             if (q<0.9)
                 fail2++;
             if (q<1)
                 fail1++;
+
+            current_tick = next_tick;
         }
 
         fprintf( stderr, "Total input frames: %d. Rendered at 80%%: %ld. Rendered at 90%%: %ld. Average rendering %7.5f%%.\n", in_fr, fail2, fail1, total_q/in_fr*100 );
@@ -399,10 +367,18 @@ class flimencoder
     double stability_ = 0.3;
 
     bool half_rate_ = false;
+    bool group_ = true;
+
+    std::string comment_;
+
+    std::string filters_;
+
+    size_t cover_begin_;        /// Begin index of cover image
+    size_t cover_end_;          /// End index of cover image 
 
     size_t frame_from_image( size_t n ) const
     {
-        return (n-1)/fps_*60;
+        return ticks_from_frame( n-1, fps_ );
     }
 
     //  Read all images from disk
@@ -467,6 +443,10 @@ class flimencoder
         else
             std::cerr << "**** ERROR: CANNOT OPEN AUDIO FILE [" << audio_ << "]\n";
         std::clog << "AUDIO: READ " << audio_size << " bytes from offset " << audio_start << "\n";
+
+        auto min_sample = *std::min( std::begin(audio_samples_), std::end(audio_samples_) );
+        auto max_sample = *std::max( std::begin(audio_samples_), std::end(audio_samples_) );
+        std::clog << "MIN= " << (int)min_sample << " MAX= " << (int)max_sample << "\n";
     }
 
     void fix()
@@ -486,7 +466,7 @@ class flimencoder
         if (frame_from_image(images_.size()+1)*370 != audio_samples_.size())
         {
             std::cerr << "**** ERROR : " << frame_from_image(images_.size()+1)*370 << "!=" << audio_samples_.size() << "\n";
-            assert( false );
+            // assert( false );
         }
     }
 
@@ -498,6 +478,10 @@ public:
     void set_buffer_size( size_t buffer_size ) { buffer_size_ = buffer_size; }
     void set_stability( double stability ) { stability_ = stability; }
     void set_half_rate( bool half_rate ) { half_rate_ = half_rate; }
+    void set_group( bool group ) { group_ = group; }
+    void set_comment( const std::string &comment ) { comment_ = comment; }
+    void set_filters( const std::string &filters ) { filters_ = filters; }
+    void set_cover( size_t cover_begin, size_t cover_end ) { cover_begin_ = cover_begin; cover_end_ = cover_end; }
 
     //  Encode all the blocks
     void make_flim( const std::string flim_pathname, size_t from, size_t to )
@@ -514,14 +498,73 @@ public:
 
         flimcompressor<W,H> fc{ images_, audio_samples_, fps_ };
 
-        fc.compress( stability_, byterate_/4 );
+        fc.compress( stability_, byterate_/4, group_, filters_ );
 
         auto frames = fc.get_frames();
-        auto frame_count = frames.size();
 
         std::vector<uint8_t> movie;
+        auto out_movie = std::back_inserter( movie );
 
-        int frames_per_buffer = buffer_size_/(byterate_+370+70 /* overhhead max */);
+        auto block_first_frame = std::begin(frames);
+
+        auto current_frame = block_first_frame;
+        while(current_frame!=std::end(frames))
+        {
+            std::vector<u_int8_t> block_content;
+            auto block_ptr = std::back_inserter( block_content );
+            size_t current_block_size = 0;
+
+            while (current_block_size+current_frame->get_size()<buffer_size_ && current_frame!=std::end(frames))
+            {
+                write2( block_ptr, current_frame->ticks*370+8 );           //  size of sound + header + size itself
+                write2( block_ptr, 0 );                       //  ffMode
+                write4( block_ptr, 65536 );                   //  rate
+                write( block_ptr, current_frame->audio );
+                write2( block_ptr, current_frame->video.size()*4+2 );
+                write( block_ptr, current_frame->video );
+
+                current_block_size += current_frame->get_size();
+                current_frame++;
+            }
+            write4( out_movie, block_content.size()+4 /* size */+4 /* 'FLIM' */+2/* frames */ );
+            write4( out_movie, 0x464C494D );
+            write2( out_movie, current_frame-block_first_frame );
+
+            write( out_movie, block_content );
+            block_first_frame = current_frame;
+        }
+        FILE *movie_file = fopen( flim_pathname.c_str(), "wb" );
+
+        char buffer[1024];
+        std::fill( std::begin(buffer), std::end(buffer), 0 );
+        strcpy( buffer, comment_.c_str() );
+        fwrite( buffer, 1024, 1, movie_file );
+
+            //  Adds end mark
+        movie.push_back( 0x00 );
+        movie.push_back( 0x00 );
+        movie.push_back( 0x00 );
+        movie.push_back( 0x00 );
+
+        fwrite( movie.data(), movie.size(), 1, movie_file );
+        fclose( movie_file );
+
+        //  Generating the cover
+        for (size_t i=cover_begin_;i<=cover_end_;i++)
+        {
+            if (i<frames.size())
+            {
+                char buffer[1024];
+                std::clog << "COVER " << i << "\n";
+                sprintf( buffer, "cover-%06ld.pgm", i-cover_begin_+1 );
+                auto logimg = frames[i].result.as_image();
+                write_image( buffer, logimg );
+            }
+        }
+
+
+    /*
+        int frames_per_buffer = buffer_size_/(byterate_+370+70); //overhhead max 
 
         for (int i=0;i<frame_count;i+=frames_per_buffer)
         {
@@ -535,14 +578,14 @@ public:
 
             write4( out, 0x464C494D );
             write2( out, frames_in_buffer );
-            write2( out, 0xffff );
             for (int j=0;j!=frames_in_buffer;j++)
             {
                 const typename flimcompressor<W,H>::frame &f = frames[i+j];
-                write2( out, 0 );           //  ffMode
-                write4( out, 65536 );       //  rate
+                write2( out, f.ticks*370+8 );           //  size of sound + header + size itself
+                write2( out, 0 );                       //  ffMode
+                write4( out, 65536 );                   //  rate
                 write( out, f.audio );
-                write2( out, f.video.size()*4 );
+                write2( out, f.video.size()*4+2 );
                 write( out, f.video );
             }
 
@@ -554,6 +597,7 @@ public:
         FILE *movie_file = fopen( flim_pathname.c_str(), "wb" );
         fwrite( movie.data(), movie.size(), 1, movie_file );
         fclose( movie_file );
+    */
     }
 };
 

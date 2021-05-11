@@ -453,21 +453,49 @@ done:
 }
 */
 
+const char *version = "2.0.0";
+
+#include <iostream>
+#include <chrono>
+#include <ctime>    
+
 //  The main function, does all the work
 //  flimmaker [-g] --in <%d.pgm> --from <index> --to <index> --cover <index> --audio <audio.waw> --out <file>
 int main( int argc, char **argv )
 {
     std::string in_arg = "movie-%06d.pgm";
     std::string out_arg = "out.flim";
-    std::string audio_arg = "audio.wav";
+    std::string audio_arg = "audio.raw";
     int from_index = 1;
     int to_index = std::numeric_limits<int>::max();
-    int cover_index = -1;
+    int cover_from = -1;
+    int cover_to = -1;
     size_t byterate = 6000;
     double fps = 24.0;
     size_t buffer_size = 300000;
     double stability = 0.3;
     bool half_rate = false;
+    bool group = false;
+    std::string filters = "gsc";
+
+    std::string comment = "FLIM\n";
+    
+    comment += "command-line:";
+
+    for (int i=0;i!=argc;i++)
+    {
+        comment += " ";
+        comment += argv[i];
+    }
+
+    comment += "\n";
+    comment += "flimmaker-version: ";
+    comment += version;
+    comment += "\n";
+
+    std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    comment += "date: ";
+    comment += std::ctime(&time);
 
     packz32_test();
     packz32opt_test();
@@ -516,6 +544,12 @@ int main( int argc, char **argv )
             argc--;
             argv++;
         }
+        else if (!strcmp(*argv,"--group"))
+        {
+            group = true;
+            argc--;
+            argv++;
+        }
         else if (!strcmp(*argv,"-g"))
         {
             debug = true;
@@ -546,14 +580,31 @@ int main( int argc, char **argv )
             argc--;
             argv++;
         }
-        // else if (!strcmp(*argv,"--cover"))
-        // {
-        //     argc--;
-        //     argv++;
-        //     cover_index = atoi(*argv);
-        //     argc--;
-        //     argv++;
-        // }
+        else if (!strcmp(*argv,"--cover-from"))
+        {
+            argc--;
+            argv++;
+            cover_from = atoi(*argv);
+            argc--;
+            argv++;
+        }
+        else if (!strcmp(*argv,"--cover-to"))
+        {
+            argc--;
+            argv++;
+            cover_to = atoi(*argv);
+            argc--;
+            argv++;
+        }
+        else if (!strcmp(*argv,"--cover"))
+        {
+            argc--;
+            argv++;
+            cover_from = atoi(*argv);
+            cover_to = cover_from+23;
+            argc--;
+            argv++;
+        }
         else if (!strcmp(*argv,"--audio"))
         {
             argc--;
@@ -586,6 +637,24 @@ int main( int argc, char **argv )
             argc--;
             argv++;
         }
+        else if (!strcmp(*argv,"--comment"))
+        {
+            argc--;
+            argv++;
+            comment += "comment: ";
+            comment += *argv;
+            comment += "\n";
+            argc--;
+            argv++;
+        }
+        else if (!strcmp(*argv,"--filters"))
+        {
+            argc--;
+            argv++;
+            filters = *argv;
+            argc--;
+            argv++;
+        }
         else
         {
             std::cerr << "Unknown argument " << *argv << "\n";
@@ -599,6 +668,12 @@ int main( int argc, char **argv )
     encoder.set_buffer_size( buffer_size );
     encoder.set_stability( stability );
     encoder.set_half_rate( half_rate );
+    encoder.set_group( group );
+    std::clog << "[" << comment << "]\n";
+    encoder.set_comment( comment );
+    encoder.set_filters( filters );
+    encoder.set_cover( cover_from, cover_to+1 );
+
     encoder.make_flim( out_arg, from_index, to_index );
 
     return EXIT_SUCCESS;

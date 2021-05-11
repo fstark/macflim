@@ -1,0 +1,142 @@
+#!/bin/bash 
+
+set -e
+# set -v
+
+STEM="z-$1-$$"
+
+echo "MAKING FLIM $1 in ${STEM}"
+
+FLIM_MACPLUS="YES"
+# FLIM_MACSE="YES"
+# FLIM_SE30="YES"
+
+GENERATE_MP4="YES"
+GENERATE_YTMP4="NO"
+
+# encode MOVIE "MOVIE FILE" "START_TIME" "DURATION" "FRAME_RATE" "COVER_INDEX"
+
+MOVIE="$1"
+MOVIE_FILE="$2"
+START_TIME="$3"
+DURATION="$4"
+FRAME_RATE="$5"
+COVER_INDEX="$6"
+FILTERS="$7"
+
+if [ "$FILTERS" = "" ]; then
+    FILTERS="gsc"
+fi
+
+mkdir -p "${STEM}"
+
+rm -f current
+ln -s "${STEM}" current
+
+FFMPEG_ARGS="-loglevel warning"
+# FFMPEG_ARGS="-stats"
+
+# Extract short clip
+echo "${STEM} : EXTRACTING CLIP FROM $MOVIE_FILE"
+ffmpeg ${FFMPEG_ARGS} -y -ss "$START_TIME" -t "$DURATION" -i "$MOVIE_FILE" "${STEM}/shorter.mp4"
+
+# Rescale the clip
+echo "RESCALING CLIP TO 512x342"
+ffmpeg  ${FFMPEG_ARGS} -y -i "${STEM}/shorter.mp4" -vf "scale=(iw*sar)*max(512.1/(iw*sar)\,342.1/ih):ih*max(512.1/(iw*sar)\,342.1/ih), crop=512:342" "${STEM}/512x342.mp4"
+
+# Extract all images as B&W
+echo "${STEM} : EXTRACTING B&W IMAGES"
+# ffmpeg -v warning -stats -y -r "$FRAME_RATE" -i "${STEM}/512x342.mp4" -r 24 "${STEM}/movie-%06d.pgm"
+ffmpeg ${FFMPEG_ARGS} -y -r "$FRAME_RATE" -i "${STEM}/512x342.mp4" "${STEM}/movie-%06d.pgm"
+
+# Extract the sound track
+echo "${STEM} : EXTRACTING AUDIO"
+ffmpeg  ${FFMPEG_ARGS} -i "${STEM}/512x342".mp4 "${STEM}/audio.wav"
+sox -V2 "${STEM}/audio.wav" -r 22200 -e unsigned-integer -b 8 "${STEM}/audio.raw" remix 1 norm
+
+if [ "${FLIM_MACPLUS}" = "YES" ]
+    then
+        # Encode as flim
+        echo "${STEM} : PERFORMING FLIM CONVERSION FOR MACPLUS"
+        rm -f "${STEM}"/out*.pgm
+        ( cd "${STEM}" && ../../flimmaker --from 1 --to 10000 --byterate 1600 --fps "$FRAME_RATE" --buffer-size 300000 --stability 0.5 --comment "${MOVIE}-MacPlus" --filters gsQc --out "$MOVIE"-macplus.flim --half-rate )
+
+        if [ "${GENERATE_MP4}" = "YES" ]
+            then
+                # Generate mp4
+                echo "${STEM} : GENERATING 512x342 MP4 version FOR MACPLUS"
+                ffmpeg ${FFMPEG_ARGS} -y -framerate 24 -pattern_type sequence -start_number 1 -framerate 60 -i "${STEM}/out-%06d.pgm" -s 512x342 -c:v libx264 "${STEM}/$MOVIE"-macplus.mp4
+        fi
+
+        if [ "${GENERATE_YTMP4}" = "YES" ]
+            then
+                # With correct aspect ratio for 512x342 in 1280x1080 (+90 height, offset 45)
+                echo "${STEM} : GENERATING HIGH RES YOUTUBE MOVIE FOR MACPLUS"
+                ffmpeg ${FFMPEG_ARGS} -y -framerate 24 -pattern_type sequence -start_number 1 -framerate 60 -i "${STEM}/out-%06d.pgm" -filter:v pad="in_w:in_h+90:0:-45" -s 1280x1080 "${STEM}/$MOVIE"-macplus-yt.mp4
+        fi
+fi
+
+if [ "${FLIM_MACSE}" = "YES" ]
+    then
+        # Encode as flim
+        echo "${STEM} : PERFORMING FLIM CONVERSION FOR SE"
+        rm -f "${STEM}"/out*.pgm
+        ( cd "${STEM}" && ../../flimmaker --from 1 --to 10000 --byterate 2500 --fps "$FRAME_RATE" --buffer-size 300000 --stability 0.5 --comment "${MOVIE}-MacSE" --filters "$FILTERS" --out "$MOVIE"-macse.flim --half-rate )
+
+        if [ "${GENERATE_MP4}" = "YES" ]
+            then
+                # Generate mp4
+                echo "${STEM} : GENERATING 512x342 MP4 version FOR SE"
+                ffmpeg ${FFMPEG_ARGS} -y -framerate 24 -pattern_type sequence -start_number 1 -framerate 60 -i "${STEM}/out-%06d.pgm" -s 512x342 "${STEM}/$MOVIE"-macse.mp4
+        fi
+
+        if [ "${GENERATE_YTMP4}" = "YES" ]
+            then
+                # With correct aspect ratio for 512x342 in 1280x1080 (+90 height, offset 45)
+                echo "${STEM} : GENERATING HIGH RES YOUTUBE MOVIE FOR MACSE"
+                ffmpeg ${FFMPEG_ARGS} -y -framerate 24 -pattern_type sequence -start_number 1 -framerate 60 -i "${STEM}/out-%06d.pgm" -filter:v pad="in_w:in_h+90:0:-45" -s 1280x1080 "${STEM}/$MOVIE"-macse-yt.mp4
+        fi
+fi
+
+if [ "${FLIM_SE30}" = "YES" ]
+    then
+        # Encode as flim
+        echo "${STEM} : PERFORMING FLIM CONVERSION FOR SE30"
+        pwd
+        rm -f "${STEM}"/out*.pgm
+        ( cd "${STEM}" && ../../flimmaker --from 1 --to 10000 --byterate 6000 --fps "$FRAME_RATE" --buffer-size 300000 --stability 0.3 --comment "${MOVIE}-SE/30" --filters "$FILTERS" --out "$MOVIE"-se30.flim --group  --cover "${COVER_INDEX}" )
+
+        # Generate gif for cover
+        # echo "CREATING POSTER IMAGE"
+        # convert "${STEM}"/cover-000001.pgm "${STEM}/$1"-poster.gif
+        echo "${STEM} : CREATING POSTER GIF"
+        convert -delay 5 -loop 0 "${STEM}/cover-*.pgm" "${STEM}/${MOVIE}".gif
+
+        if [ "${GENERATE_MP4}" = "YES" ]
+            then
+                # Generate mp4
+                echo "${STEM} : GENERATING 512x342 MP4 version FOR SE30"
+                ffmpeg ${FFMPEG_ARGS} -y -framerate 24 -pattern_type sequence -start_number 1 -framerate "$FRAME_RATE" -i "${STEM}/out-%06d.pgm" -s 512x342 "${STEM}/$MOVIE"-se30.mp4
+        fi
+
+        if [ "${GENERATE_YTMP4}" = "YES" ]
+            then
+                # With correct aspect ratio for 512x342 in 1280x1080 (+90 height, offset 45)
+                echo "${STEM} : GENERATING HIGH RES YOUTUBE MOVIE FOR SE30"
+                ffmpeg ${FFMPEG_ARGS} -y -framerate 24 -pattern_type sequence -start_number 1 -framerate "$FRAME_RATE" -i "${STEM}/out-%06d.pgm" -filter:v pad="in_w:in_h+90:0:-45" -s 1280x1080 "${STEM}/$MOVIE"-se30-yt.mp4
+        fi
+fi
+
+# echo "COPY FOR LATER FUN"
+# mv "${STEM}"/movie*.pgm .
+# mv "${STEM}"/out*.pgm .
+# mv "${STEM}/audio.raw" .
+
+echo "${STEM} : CLEANING UP"
+#rm -rf "${STEM}"
+
+
+
+echo "Done. Use:"
+echo "   cd ${STEM}"
+echo "to inspect generated files."
