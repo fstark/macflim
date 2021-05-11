@@ -355,9 +355,11 @@ public:
 
 #include <string>
 
-template <int W, int H>
 class flimencoder
 {
+    size_t W_;
+    size_t H_;
+
     const std::string in_;
     const std::string audio_;
 
@@ -410,7 +412,7 @@ class flimencoder
             char buffer[1024];
             sprintf( buffer, in_.c_str(), i );
 
-            image img( W, H );
+            image img( W_, H_ );
 
             if (!read_image( img, buffer ))
                 return;
@@ -476,7 +478,7 @@ class flimencoder
     }
 
 public:
-    flimencoder( const std::string &in, const std::string &audio ) : in_{in}, audio_{audio} {}
+    flimencoder( size_t W, size_t H, const std::string &in, const std::string &audio ) : W_{W}, H_{H}, in_{in}, audio_{audio} {}
 
     void set_byterate( size_t byterate ) { byterate_ = byterate; }
     void set_fps( double fps ) { fps_ = fps; }
@@ -501,7 +503,7 @@ public:
 
         fix();
 
-        flimcompressor fc{ W, H, images_, audio_samples_, fps_ };
+        flimcompressor fc{ W_, H_, images_, audio_samples_, fps_ };
 
         fc.compress( stability_, byterate_/4, group_, filters_ );
 

@@ -260,7 +260,7 @@ int main( int argc, char **argv )
         }
     }
 
-    auto encoder = flimencoder<512,342>{ in_arg, audio_arg };
+    auto encoder = flimencoder{ 512, 342, in_arg, audio_arg };
     encoder.set_byterate( byterate );
     encoder.set_fps( fps );
     encoder.set_buffer_size( buffer_size );
