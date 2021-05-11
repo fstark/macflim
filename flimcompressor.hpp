@@ -226,16 +226,17 @@ public:
 
 inline size_t ticks_from_frame( size_t n, double fps ) { return n/fps*60; }
 
-template <int W, int H>
 class flimcompressor
 {
 public:
     struct frame
     {
+        frame( size_t W, size_t H ) : result{ W, H } {}
+
         size_t ticks;
         std::vector<uint8_t> audio;
         std::vector<uint32_t> video;
-        framebuffer result{ W, H };
+        framebuffer result;
 
         size_t get_size() { return audio.size()+video.size()*4; }
     };
@@ -247,8 +248,11 @@ private:
 
     std::vector<frame> frames_;
 
+    size_t W_;
+    size_t H_;
+
 public:
-    flimcompressor( const std::vector<image> &images, const std::vector<uint8_t> &audio, double fps ) : images_{images}, audio_{audio}, fps_{fps} {}
+    flimcompressor( size_t W, size_t H, const std::vector<image> &images, const std::vector<uint8_t> &audio, double fps ) : W_{W}, H_{H}, images_{images}, audio_{audio}, fps_{fps} {}
 
     std::vector<std::uint32_t> header()
     {
@@ -263,9 +267,9 @@ public:
     {
         std::vector<std::uint32_t> data = header();
 
-        compressor c{W,H};
+        compressor c{W_,H_};
 
-        image previous( W, H );
+        image previous( W_, H_ );
         fill( previous, 0 );
 
         int in_fr=0;
@@ -282,7 +286,7 @@ public:
 
         for (auto &source_image:images_)
         {
-            image dest( W, H );
+            image dest( W_, H_ );
 
             image img = filter( source_image, filters.c_str() );
 
@@ -310,7 +314,7 @@ public:
             {
 
                     //  Build the frame
-                frame f;
+                frame f{ W_, H_ };
 
                 f.ticks = local_ticks;
 
@@ -497,7 +501,7 @@ public:
 
         fix();
 
-        flimcompressor<W,H> fc{ images_, audio_samples_, fps_ };
+        flimcompressor fc{ W, H, images_, audio_samples_, fps_ };
 
         fc.compress( stability_, byterate_/4, group_, filters_ );
 
