@@ -10,14 +10,17 @@
 
 using namespace std::string_literals;
 
-template <int W, int H>
 class compressor
 {
-    static const size_t size = W*H/8/4;
+    size_t W_;
+    size_t H_;
+    // static const size_t data_size = W_*H_/8/4;
 
     std::vector<uint32_t> current_data_;    //  The data present on screen (for optimisation purposes)
     std::vector<uint32_t> target_data_;     //  The data we are trying to converge to
     std::vector<size_t> delta_;                //  0: it is sync'ed
+
+    size_t  get_uint32_size() const { return W_*H_/8/4; }
 
     size_t xcountbits( uint32_t v ) const
     {
@@ -57,37 +60,34 @@ class compressor
     int frame = 0;
 
 public:
-    compressor() : current_data_(size), target_data_(size), delta_(size)
+    compressor( size_t W, size_t H) : current_data_(W*H/8/4), target_data_(W*H/8/4), delta_(W*H/8/4), W_{W}, H_{H}
     {
-        for (int i=0;i!=size;i++)
-        {
-            current_data_[i] = 0xffffffff;
-            target_data_[i] = 0xffffffff;
-            delta_[i] = 0;
-        }
+        std::fill( std::begin(current_data_), std::end(current_data_), 0xffffffff );
+        std::fill( std::begin(target_data_), std::end(target_data_), 0xffffffff );
+        std::fill( std::begin(delta_), std::end(delta_), 0x00000000 );
     }
 
-    framebuffer get_current_framebuffer() const { return framebuffer(current_data_,W,H); }
-    framebuffer get_target_framebuffer() const { return framebuffer(target_data_,W,H); }
+    framebuffer get_current_framebuffer() const { return framebuffer(current_data_,W_,H_); }
+    framebuffer get_target_framebuffer() const { return framebuffer(target_data_,W_,H_); }
 
     double quality() const
     {
         int b = 0;
-        for (int i=0;i!=size;i++)
+        for (int i=0;i!=get_uint32_size();i++)
             b += xcountbits( current_data_[i]^target_data_[i] );
-        return 1-b/(double)(W*H);
+        return 1-b/(double)(W_*H_);
     }
 
     std::vector<uint32_t> compress( size_t max_size )
     {
-        packzmap packmap{ size };
+        packzmap packmap{ get_uint32_size() };
 
         auto mx = *std::max_element( std::begin(delta_), std::end(delta_) );
 
         std::vector<std::vector<size_t>> deltas;
         deltas.resize( mx+1 );
 
-        for (int i=0;i!=size;i++)
+        for (int i=0;i!=get_uint32_size();i++)
             if (delta_[i])
                 deltas[delta_[i]].push_back( i );
 
@@ -193,7 +193,7 @@ public:
             static int img = 1;
             char buffer[1024];
             sprintf( buffer, "out-%06d.pgm", img );
-            framebuffer fb{current_data_, W, H};
+            framebuffer fb{current_data_, W_, H_};
             auto logimg = fb.as_image();
             write_image( buffer, logimg );
 
@@ -205,9 +205,9 @@ public:
         /// Sets the new target image
     void set_target_image( const framebuffer &image )
     {
-        assert( image.W()==W && image.H()==H );
+        assert( image.W()==W_ && image.H()==H_ );
         auto new_data = image.raw32();
-        for (int i=0;i!=size;i++)
+        for (int i=0;i!=get_uint32_size();i++)
         {
             target_data_[i] = new_data[i];
             if (current_data_[i]==target_data_[i])
@@ -263,7 +263,7 @@ public:
     {
         std::vector<std::uint32_t> data = header();
 
-        compressor<W,H> c;
+        compressor c{W,H};
 
         image previous( W, H );
         fill( previous, 0 );

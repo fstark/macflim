@@ -612,25 +612,8 @@ void quantize( image &dest, const image &source, const image &previous, float st
         }
 }
 
-//  Takes an image, composed of only black and white
-//  and generates W*H/8 bytes corresponding to a Macintosh framebuffer
-template <typename T>
-void encode( T out, const image &img )
-{
-    // static char c = 0;
-    for (int y=0;y!=img.H();y++)
-        for (int x=0;x!=img.W();x+=8)
-            *out++ = (int)(img.at(x  ,y)*128+img.at(x+1,y)*64+img.at(x+2,y)*32+img.at(x+3,y)*16+
-                      img.at(x+4,y)*  8+img.at(x+5,y)* 4+img.at(x+6,y)* 2+img.at(x+7,y)     ) ^ 0xff;
-}
-
 class framebuffer
 {
-public:
-    // static const size_t row_bytes = W/8;
-    // static const size_t size = H*row_bytes;
-    // static const size_t lsize = size/sizeof(uint32_t);
-
 private:
     std::vector<u_int8_t> data_;
     size_t W_;
@@ -645,7 +628,7 @@ public:
     size_t W() const { return W_; }
     size_t H() const { return H_; }
 
-        //  #### Can be rewrite in modern C++
+        //  #### Can be rewriten in modern C++
     std::vector<uint32_t> raw32_horizontal() const
     {
         std::vector<uint32_t> res;
