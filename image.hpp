@@ -20,12 +20,17 @@ const int FB_SIZE = ((WIDTH*HEIGHT)/8);   //  aka 21888
 
 //  This is an image, represented as a bunch of floating point values (0==black and 1==white)
 //  Sometime, a pixel can be <0 or >1, when error propagates during dithering
-template <int W, int H>
-class image
+class image_impl
 {
-    float image_[W][H];
 public:
-    // image() {}
+    std::vector<float> image_;
+    size_t W_;
+    size_t H_;
+
+public:
+    image_impl( size_t W, size_t H ) : image_( W*H ), W_{W}, H_{H}
+    {
+    }
     // image( const image &o ) = default;
 
     // image()
@@ -35,12 +40,52 @@ public:
     //             image_[x][y] = 0;
     // }
 
-    image &operator=( const image &o ) = default;
+    const float &at( int x, int y ) const
+    {
+        assert( x<W_ );
+        assert( y<H_ );
+        return image_[x+y*W_];
+    }
+    float &at( int x, int y )
+    {
+        assert( x<W_ );
+        assert( y<H_ );
+        return image_[x+y*W_];
+    }
 
-    const float *operator[]( int index ) const { return image_[index]; }
-    float *operator[]( int index ) { return image_[index]; }
-    void *data() const { return (void *)image_; }
-    static const size_t encoded_size = (W*H)/8;
+    class access
+    {
+        image_impl &image_;
+        size_t x_;
+        public:
+            access( image_impl &image, size_t x ) : image_{ image }, x_{ x } {}
+
+            float &operator[]( int y )
+            {
+                return image_.at( x_, y );
+            }
+    };
+
+    class const_access
+    {
+        const image_impl &image_;
+        size_t x_;
+        public:
+            const_access( const image_impl &image, size_t x ) : image_{ image }, x_{ x } {}
+
+            const float &operator[]( int y ) const
+            {
+                return image_.at( x_, y );
+            }
+    };
+
+    image_impl &operator=( const image_impl &o ) = default;
+
+        //  Double ugly
+    const_access operator[]( int index ) const { return const_access{*this,index}; }
+    access operator[]( int index ) { return access{*this,index}; }
+
+//    static const size_t encoded_size = (W*H)/8;
 
 #ifdef STAMP
         //  Code to "stamp" every stream by placing a small number (0 to 7) in the top left
@@ -67,11 +112,12 @@ public:
 #endif
 };
 
-//  ------------------------------------------------------------------
-//  The two "standard" formats of images
-//  ------------------------------------------------------------------
-using mac_image = image<WIDTH,HEIGHT>;
-using mac_image_small = image<WIDTH/2,HEIGHT/2>;
+template <int W, int H>
+class image : public image_impl
+{
+public:
+    image() : image_impl( W, H ) {}
+};
 
 //  ------------------------------------------------------------------
 //  Copy image (#### : is operator=?)
@@ -79,7 +125,9 @@ using mac_image_small = image<WIDTH/2,HEIGHT/2>;
 template <int W, int H>
 void copy_image( image<W,H> &dest, const image<W,H> &source )
 {
-    memcpy( dest.data(), source.data(), W*H*sizeof(source[0][0]) );
+    dest.W_ = source.W_;
+    dest.H_ = source.H_;
+    dest.image_ = source.image_;
 }
 
 //  ------------------------------------------------------------------
