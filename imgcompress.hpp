@@ -90,7 +90,7 @@ public:
 //data: iterator to start of data
 //pack_begin: iterator begin of pack instruction (boolean array => true means keep, false means skip)
 //pack_end: iterator end of pack instruction.
-inline std::vector<uint32_t> packz32opt_impl( std::vector<uint32_t>::const_iterator data, std::vector<bool>::const_iterator pack_begin, std::vector<bool>::const_iterator pack_end, size_t max_pack )
+inline std::vector<uint32_t> packz32opt( std::vector<uint32_t>::const_iterator data, std::vector<bool>::const_iterator pack_begin, std::vector<bool>::const_iterator pack_end, size_t max_pack )
 {
     std::vector<uint32_t> output_buffer;
     auto out = std::back_inserter(output_buffer);
@@ -141,21 +141,6 @@ inline std::vector<uint32_t> packz32opt_impl( std::vector<uint32_t>::const_itera
     return output_buffer;
 }
 
-//  Temporary
-template <typename T>
-inline std::vector<uint32_t> packz32opt( T data, std::vector<bool>::const_iterator pack_begin, std::vector<bool>::const_iterator pack_end, size_t max_pack )
-{
-    std::vector<uint32_t> tmp;
-    for (size_t i=0;i!=pack_end-pack_begin;i++)
-        tmp.push_back( *data++ );
-    return packz32opt_impl( std::begin(tmp), pack_begin, pack_end, max_pack );
-}
-
-template <typename T, typename U>
-std::vector<uint32_t> packz32opt( T data, U pack, size_t max_pack = 21888 ) { return packz32opt( std::begin(data), std::begin(pack), std::end(pack), max_pack ); }
-
-
-void packz32opt_test();
 
 #include <array>
 
@@ -191,8 +176,8 @@ public:
         size_ = 1;  //  End marker
     }
 
-    auto begin() const { return std::begin(mask_); }
-    auto end() const { return std::end(mask_); }
+    const std::vector<bool> &mask() const { return mask_; }
+
     size_t size() const { return size_; }
 
     size_t set( size_t n )
@@ -239,3 +224,9 @@ public:
         return size();
     }
 };
+
+
+inline std::vector<uint32_t> packz32opt( const std::vector<uint32_t> &data, const std::vector<bool> &pack, size_t max_pack = 21888 ) { return packz32opt( std::begin(data), std::begin(pack), std::end(pack), max_pack ); }
+
+
+void packz32opt_test();

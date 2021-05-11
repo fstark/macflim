@@ -99,7 +99,7 @@ public:
                     break;
                 }
 
-        return packz32opt( target_data_, packmap );
+        return packz32opt( target_data_, packmap.mask() );
     }
 
     void dump_histogram( const std::string msg )
