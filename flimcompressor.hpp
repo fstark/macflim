@@ -80,7 +80,7 @@ public:
 
     std::vector<uint32_t> compress( size_t max_size )
     {
-        packzmap<size> packmap;
+        packzmap packmap{ size };
 
         auto mx = *std::max_element( std::begin(delta_), std::end(delta_) );
 

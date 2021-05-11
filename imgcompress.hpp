@@ -150,16 +150,18 @@ void packz32opt_test();
 
 #include <array>
 
-template <size_t N>
 class packzmap
 {
 private:
-    std::array<bool,N> mask_;
+    std::vector<bool> mask_;
+    size_t N;
+
     size_t size_;
 
         //  Fills hole if free or better
     void auto_fill( size_t n )
     {
+        assert( n<N );
         // if (n>N)
             // exit(1);
         if (!mask_[n])
@@ -174,7 +176,7 @@ private:
     }
 
 public:
-    packzmap()
+    packzmap( size_t map_size ) : mask_( map_size ), N{ map_size }
     {
         std::fill( std::begin(mask_), std::end(mask_), false );
         size_ = 1;  //  End marker
@@ -186,6 +188,8 @@ public:
 
     size_t set( size_t n )
     {
+        assert( n<N );
+
         if (mask_[n])
             return size();
         mask_[n] = true;
@@ -198,14 +202,18 @@ public:
             size_--;
 
         //  Auto-optimize
-        auto_fill( n-1 );
-        auto_fill( n+1 );
+        if (n>0)
+            auto_fill( n-1 );
+        if (n+1<N)
+            auto_fill( n+1 );
 
         return size();
     }
 
     size_t clear( size_t n )
     {
+        assert( n<N );
+
         if (!mask_[n])
             return size();
         mask_[n] = false;
