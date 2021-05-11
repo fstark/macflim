@@ -13,11 +13,11 @@ using namespace std::string_literals;
 template <int W, int H>
 class compressor
 {
-    static const size_t size = framebuffer<W,H>::lsize;
+    static const size_t size = W*H/8/4;
 
-    std::array<uint32_t,size> current_data_;    //  The data present on screen (for optimisation purposes)
-    std::array<uint32_t,size> target_data_;     //  The data we are trying to converge to
-    std::array<size_t,size> delta_;                //  0: it is sync'ed
+    std::vector<uint32_t> current_data_;    //  The data present on screen (for optimisation purposes)
+    std::vector<uint32_t> target_data_;     //  The data we are trying to converge to
+    std::vector<size_t> delta_;                //  0: it is sync'ed
 
     size_t xcountbits( uint32_t v ) const
     {
@@ -57,7 +57,7 @@ class compressor
     int frame = 0;
 
 public:
-    compressor()
+    compressor() : current_data_(size), target_data_(size), delta_(size)
     {
         for (int i=0;i!=size;i++)
         {
@@ -67,8 +67,8 @@ public:
         }
     }
 
-    framebuffer<W,H> get_current_framebuffer() const { return current_data_; }
-    framebuffer<W,H> get_target_framebuffer() const { return target_data_; }
+    framebuffer get_current_framebuffer() const { return framebuffer(current_data_,W,H); }
+    framebuffer get_target_framebuffer() const { return framebuffer(target_data_,W,H); }
 
     double quality() const
     {
@@ -193,7 +193,7 @@ public:
             static int img = 1;
             char buffer[1024];
             sprintf( buffer, "out-%06d.pgm", img );
-            framebuffer<W,H> fb{current_data_};
+            framebuffer fb{current_data_, W, H};
             auto logimg = fb.as_image();
             write_image( buffer, logimg );
 
@@ -203,8 +203,9 @@ public:
     }
 
         /// Sets the new target image
-    void set_target_image( const framebuffer<W,H> &image )
+    void set_target_image( const framebuffer &image )
     {
+        assert( image.W()==W && image.H()==H );
         auto new_data = image.raw32();
         for (int i=0;i!=size;i++)
         {
@@ -234,7 +235,7 @@ public:
         size_t ticks;
         std::vector<uint8_t> audio;
         std::vector<uint32_t> video;
-        framebuffer<W,H> result;
+        framebuffer result{ W, H };
 
         size_t get_size() { return audio.size()+video.size()*4; }
     };
@@ -290,7 +291,7 @@ public:
             //  dest = filter( dest, "gsc" );
             
             round_corners( dest );
-            framebuffer<W,H> fb{dest};
+            framebuffer fb{ dest };
             c.set_target_image( fb );
 
                 //  Let's see how many ticks we have to display this image

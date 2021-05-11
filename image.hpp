@@ -624,90 +624,101 @@ void encode( T out, const image &img )
                       img.at(x+4,y)*  8+img.at(x+5,y)* 4+img.at(x+6,y)* 2+img.at(x+7,y)     ) ^ 0xff;
 }
 
-template <int W,int H>
 class framebuffer
 {
 public:
-    static const size_t row_bytes = W/8;
-    static const size_t size = H*row_bytes;
-    static const size_t lsize = size/sizeof(uint32_t);
+    // static const size_t row_bytes = W/8;
+    // static const size_t size = H*row_bytes;
+    // static const size_t lsize = size/sizeof(uint32_t);
 
 private:
-    u_int8_t data_[size];
+    std::vector<u_int8_t> data_;
+    size_t W_;
+    size_t H_;
+
+    size_t get_rowbytes() const { return W_/8; }
+    size_t get_byte_size() const { return W_*H_/8; }
+    size_t get_uint32_size() const { return get_byte_size()/4; }
 
 public:
 
-    std::array<uint32_t,lsize> raw32_horizontal() const
+    size_t W() const { return W_; }
+    size_t H() const { return H_; }
+
+        //  #### Can be rewrite in modern C++
+    std::vector<uint32_t> raw32_horizontal() const
     {
-        std::array<uint32_t,lsize> res;
-        for (int i=0;i!=lsize;i++)
+        std::vector<uint32_t> res;
+        for (int i=0;i!=get_uint32_size();i++)
         {
-            res[i] = data_[i*4];
-            res[i] = (res[i]<<8) + data_[i*4+1];
-            res[i] = (res[i]<<8) + data_[i*4+2];
-            res[i] = (res[i]<<8) + data_[i*4+3];
+            uint32_t    v = data_[i*4];
+                        v = (v<<8) + data_[i*4+1];
+                        v = (v<<8) + data_[i*4+2];
+                        v = (v<<8) + data_[i*4+3];
+            res.push_back( v );
         }
         return res;
     }
 
-    std::array<uint32_t,lsize> raw32_vertical() const
+    std::vector<uint32_t> raw32_vertical() const
     {
-        std::array<uint32_t,lsize> res;
-        for (int i=0;i!=lsize;i++)
+        std::vector<uint32_t> res;
+        for (int i=0;i!=get_uint32_size();i++)
         {
-            size_t x = (i/H)*4;
-            size_t y = i%H;
+            size_t x = (i/H_)*4;
+            size_t y = i%H_;
 
-            size_t offset = x+y*row_bytes;
+            size_t offset = x+y*get_rowbytes();
 
-assert( x<row_bytes );
-assert( y<H );
-assert( offset<21888 );
+assert( x<get_rowbytes() );
+assert( y<H_ );
+assert( offset<get_byte_size() );
 
-            res[i] = data_[offset];
-            res[i] = (res[i]<<8) + data_[offset+1];
-            res[i] = (res[i]<<8) + data_[offset+2];
-            res[i] = (res[i]<<8) + data_[offset+3];
+            uint32_t    v = data_[offset];
+                        v = (v<<8) + data_[offset+1];
+                        v = (v<<8) + data_[offset+2];
+                        v = (v<<8) + data_[offset+3];
+            res.push_back( v );
         }
         return res;
     }
 
-    std::array<uint32_t,lsize> raw32() const
+    std::vector<uint32_t> raw32() const
     {
         return raw32_vertical();
     }
 
-    framebuffer( const std::array<uint32_t,lsize> &data )
+    framebuffer( const std::vector<uint32_t> &data, size_t W, size_t H ) : data_( W*H/8 ), W_{W}, H_{H}
     {
-        for (int i=0;i!=lsize;i++)
+        for (int i=0;i!=get_uint32_size();i++)
         {
-            size_t x = (i/H)*4;
-            size_t y = i%H;
+            size_t x = (i/H_)*4;
+            size_t y = i%H_;
 
-            size_t offset = x+y*row_bytes;
+            size_t offset = x+y*get_rowbytes();
 
-            data_[offset] = data[i]>>24;
+            data_[offset]   = data[i]>>24;
             data_[offset+1] = data[i]>>16;
             data_[offset+2] = data[i]>>8;
             data_[offset+3] = data[i];
         }
     }
 
-    framebuffer()
+    framebuffer( size_t W, size_t H ) : data_( W*H/8 ), W_{W}, H_{H}
     {
-        memset( data_, 0, size );
+        std::fill( std::begin(data_), std::end(data_), 0 );
     }
 
      ~framebuffer()
     {
     }
 
-   framebuffer( const image &img )
+    framebuffer( const image &img ) : data_( img.W()*img.H()/8 ), W_{ img.W() }, H_{ img.H() }
     {
-        assert( img.W()==W && img.H()==H );
-        auto *p = data_;
-        for (int y=0;y!=H;y++)
-            for (int x=0;x!=W;x+=8)
+        assert( img.W()==W_ && img.H()==H_ );
+        auto p = std::begin(data_);
+        for (int y=0;y!=H_;y++)
+            for (int x=0;x!=W_;x+=8)
                 // *p++ = (int)(img[x  ][y]*128+img[x+1][y]*64+img[x+2][y]*32+img[x+3][y]*16+
                 //        img[x+4][y]*  8+img[x+5][y]* 4+img[x+6][y]* 2+img[x+7][y]     ) ^ 0xff;
                 *p++ = (int)(img.at(x  ,y)*128+img.at(x+1,y)*64+img.at(x+2,y)*32+img.at(x+3,y)*16+
@@ -716,10 +727,10 @@ assert( offset<21888 );
 
     image as_image() const
     {
-        image res( W, H );
-        for (int y=0;y!=H;y++)
-            for (int x=0;x!=W;x++)
-                res.at(x,y) = !(data_[y*row_bytes+x/8] & (1<<(7-(x%8))));
+        image res( W_, H_ );
+        for (int y=0;y!=H_;y++)
+            for (int x=0;x!=W_;x++)
+                res.at(x,y) = !(data_[y*get_rowbytes()+x/8] & (1<<(7-(x%8))));
         return res;
     }
 
@@ -738,8 +749,9 @@ assert( offset<21888 );
 
     framebuffer operator^(const framebuffer &o)
     {
-        framebuffer result;
-        for (size_t i=0;i!=size;i++)
+        assert( W_==o.W_ && H_==o.H_ );
+        framebuffer result( W_, H_ );
+        for (size_t i=0;i!=get_byte_size();i++)
             result.data_[i] = data_[i] ^ o.data_[i];
         return result;
     }
@@ -747,20 +759,19 @@ assert( offset<21888 );
     std::vector<u_int8_t> raw_data() const
     {
         std::vector<u_int8_t> result;
-        for (size_t i=0;i!=size;i++)
+        for (size_t i=0;i!=get_byte_size();i++)
             result.push_back( data_[i] );
         return result;
     }
 };
 
 
-template <int W, int H>
-framebuffer<W,H> convert( const image &source, const framebuffer<W,H> &previous_fb, float stability )
+framebuffer convert( const image &source, const framebuffer &previous_fb, float stability )
 {
-    image dest( W, H );
+    image dest( previous_fb.W(), previous_fb.H() );
     image previous = previous_fb.as_image();
     quantize( dest, source, previous, stability );
-    return framebuffer<W,H>{ dest };
+    return framebuffer{ dest };
 }
 
 #endif
