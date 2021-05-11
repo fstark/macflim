@@ -20,7 +20,7 @@ const int FB_SIZE = ((WIDTH*HEIGHT)/8);   //  aka 21888
 
 //  This is an image, represented as a bunch of floating point values (0==black and 1==white)
 //  Sometime, a pixel can be <0 or >1, when error propagates during dithering
-class image_impl
+class image
 {
 public:
     std::vector<float> image_;
@@ -28,7 +28,7 @@ public:
     size_t H_;
 
 public:
-    image_impl( size_t W, size_t H ) : image_( W*H ), W_{W}, H_{H}
+    image( size_t W, size_t H ) : image_( W*H ), W_{W}, H_{H}
     {
     }
     // image( const image &o ) = default;
@@ -39,6 +39,9 @@ public:
     //         for (int x=0;x!=W;x++)
     //             image_[x][y] = 0;
     // }
+
+    size_t W() const { return W_; }
+    size_t H() const { return H_; }
 
     const float &at( int x, int y ) const
     {
@@ -53,39 +56,7 @@ public:
         return image_[x+y*W_];
     }
 
-    class access
-    {
-        image_impl &image_;
-        size_t x_;
-        public:
-            access( image_impl &image, size_t x ) : image_{ image }, x_{ x } {}
-
-            float &operator[]( int y )
-            {
-                return image_.at( x_, y );
-            }
-    };
-
-    class const_access
-    {
-        const image_impl &image_;
-        size_t x_;
-        public:
-            const_access( const image_impl &image, size_t x ) : image_{ image }, x_{ x } {}
-
-            const float &operator[]( int y ) const
-            {
-                return image_.at( x_, y );
-            }
-    };
-
-    image_impl &operator=( const image_impl &o ) = default;
-
-        //  Double ugly
-    const_access operator[]( int index ) const { return const_access{*this,index}; }
-    access operator[]( int index ) { return access{*this,index}; }
-
-//    static const size_t encoded_size = (W*H)/8;
+    image &operator=( const image &o ) = default;
 
 #ifdef STAMP
         //  Code to "stamp" every stream by placing a small number (0 to 7) in the top left
@@ -112,40 +83,28 @@ public:
 #endif
 };
 
-template <int W, int H>
-class image : public image_impl
-{
-public:
-    image() : image_impl( W, H ) {}
-};
-
 //  ------------------------------------------------------------------
 //  Copy image (#### : is operator=?)
 //  ------------------------------------------------------------------
-template <int W, int H>
-void copy_image( image<W,H> &dest, const image<W,H> &source )
+void copy_image( image &dest, const image &source )
 {
-    dest.W_ = source.W_;
-    dest.H_ = source.H_;
-    dest.image_ = source.image_;
+    dest = source;
 }
 
 //  ------------------------------------------------------------------
 //  Fills image with constant color, 50% gray by default
 //  ------------------------------------------------------------------
-template <int W, int H>
-void fill( image<W,H> &img, float value = 0.5 )
+void fill( image &img, float value = 0.5 )
 {
-    for (int y=0;y!=H;y++)
-        for (int x=0;x!=W;x++)
-            img[x][y] = value;
+    for (int y=0;y!=img.H();y++)
+        for (int x=0;x!=img.W();x++)
+            img.at(x,y) = value;
 }
 
 //  ------------------------------------------------------------------
 //  Sharpens the image
 //  ------------------------------------------------------------------
-template <int W, int H>
-image<W,H> sharpen( const image<W,H> &src )
+image sharpen( const image &src )
 {
     float kernel[3][3] = {
         {  0.0, -1.0,  0.0 },
@@ -155,23 +114,23 @@ image<W,H> sharpen( const image<W,H> &src )
 
     auto res = src;
 
-    for (int x=0;x!=W;x++)
-        res[x][0] = res[x][H-1] = 0;
-    for (int y=0;y!=H;y++)
-        res[0][y] = res[W-1][y] = 0;
+    for (int x=0;x!=src.W();x++)
+        res.at(x,0) = res.at(x,src.H()-1) = 0;
+    for (int y=0;y!=src.H();y++)
+        res.at(0,y) = res.at(src.W()-1,y) = 0;
 
     fill( res, 0 );
 
-    for (int x=1;x!=W-1;x++)
-        for (int y=1;y!=H-1;y++)
+    for (int x=1;x!=src.W()-1;x++)
+        for (int y=1;y!=src.H()-1;y++)
         {
             float v = 0;
             for (int x0=0;x0!=3;x0++)
                 for (int y0=0;y0!=3;y0++)
                 {
-                    v += src[x+x0-1][y+y0-1]*kernel[x0][y0];
+                    v += src.at(x+x0-1,y+y0-1)*kernel[x0][y0];
                 }
-            res[x][y] = v;
+            res.at(x,y) = v;
         }
 
     return res;
@@ -180,8 +139,7 @@ image<W,H> sharpen( const image<W,H> &src )
 //  ------------------------------------------------------------------
 //  Blurs the image with a 3x3 kernel
 //  ------------------------------------------------------------------
-template <int W, int H>
-image<W,H> blur3( const image<W,H> &src )
+image blur3( const image &src )
 {
     static float kernel[3][3] = {
         { 1.0/9, 1.0/9, 1.0/9 },
@@ -189,7 +147,7 @@ image<W,H> blur3( const image<W,H> &src )
         { 1.0/9, 1.0/9, 1.0/9 },
     };
 
-    image<W,H> res;
+    auto res = src;
 
     // for (int x=0;x!=W;x++)
     //     res[x][0] = res[x][H-1] = 0;
@@ -198,18 +156,18 @@ image<W,H> blur3( const image<W,H> &src )
 
     fill( res, 0 );
 
-    for (int x=1;x!=W-1;x++)
-        for (int y=1;y!=H-1;y++)
+    for (int x=1;x!=src.W()-1;x++)
+        for (int y=1;y!=src.H()-1;y++)
         {
             float v = 0;
             for (int x0=0;x0!=3;x0++)
                 for (int y0=0;y0!=3;y0++)
                 {
-                    v += src[x+x0-1][y+y0-1]*kernel[x0][y0];
+                    v += src.at(x+x0-1,y+y0-1)*kernel[x0][y0];
                 }
             if (v<0) v = 0;
             if (v>1) v = 1;
-            res[x][y] = v;
+            res.at(x,y) = v;
         }
 
     return res;
@@ -218,8 +176,7 @@ image<W,H> blur3( const image<W,H> &src )
 //  ------------------------------------------------------------------
 //  Blurs the image more with a 5x5 kernel
 //  ------------------------------------------------------------------
-template <int W, int H>
-image<W,H> blur5( const image<W,H> &src )
+image blur5( const image &src )
 {
     float kernel[5][5] = {
         { 1.0/256, 4.0/256, 6.0/256, 4.0/256, 1.0/256},
@@ -231,23 +188,23 @@ image<W,H> blur5( const image<W,H> &src )
 
     auto res = src;
 
-    for (int x=0;x!=W;x++)
-        res[x][0] = res[x][H-1] = res[x][1] = res[x][H-2] = 0;
-    for (int y=0;y!=H;y++)
-        res[0][y] = res[W-1][y] = res[1][y] = res[W-2][y] = 0;
+    for (int x=0;x!=src.W();x++)
+        res.at(x,0) = res.at(x,src.H()-1) = res.at(x,1) = res.at(x,src.H()-2) = 0;
+    for (int y=0;y!=src.H();y++)
+        res.at(0,y) = res.at(src.W()-1,y) = res.at(1,y) = res.at(src.W()-2,y) = 0;
 
     fill( res, 0 );
 
-    for (int x=2;x!=W-2;x++)
-        for (int y=2;y!=H-2;y++)
+    for (int x=2;x!=src.W()-2;x++)
+        for (int y=2;y!=src.H()-2;y++)
         {
             float v = 0;
             for (int x0=0;x0!=5;x0++)
                 for (int y0=0;y0!=5;y0++)
                 {
-                    v += src[x+x0-2][y+y0-2]*kernel[x0][y0];
+                    v += src.at(x+x0-2,y+y0-2)*kernel[x0][y0];
                 }
-            res[x][y] = v;
+            res.at(x,y) = v;
         }
 
     return res;
@@ -256,39 +213,37 @@ image<W,H> blur5( const image<W,H> &src )
 //  ------------------------------------------------------------------
 //  Gamma corrects the image
 //  ------------------------------------------------------------------
-template <int W, int H>
-image<W,H> gamma( const image<W,H> &src, double gamma )
+image gamma( const image &src, double gamma )
 {
-    image<W,H> res;
+    image res = src;
 
-    for (int x=0;x!=W;x++)
-        for (int y=0;y!=H;y++)
+    for (int x=0;x!=src.W();x++)
+        for (int y=0;y!=src.H();y++)
         {
-            res[x][y] = pow( src[x][y], gamma );
+            res.at(x,y) = pow( src.at(x,y), gamma );
         }
 
     return res;
 }
 
 //  ------------------------------------------------------------------
-template <int W, int H>
-image<W,H> zoom_out( const image<W,H> &src )
+image zoom_out( const image &src )
 {
     const double bx = 32;
-    const double a = ((W/2)-bx)/(W/2);
-    const double by = H/2-a*(H/2);
+    const double a = ((src.W()/2)-bx)/(src.W()/2);
+    const double by = src.H()/2-a*(src.H()/2);
 
-    image<W,H> res;
-    for (int y=0;y!=H;y++)
-        for (int x=0;x!=W;x++)
+    image res = src;
+    for (int y=0;y!=src.H();y++)
+        for (int x=0;x!=src.W();x++)
         {
             int from_x = (x-bx)/a;
             int from_y = (y-by)/a;
 
-            if (from_x>0 && from_x<W && from_y>0 && from_y<H)
-                res[x][y] = src[from_x][from_y];
+            if (from_x>0 && from_x<src.W() && from_y>0 && from_y<src.H())
+                res.at(x,y) = src.at(from_x,from_y);
             else
-                res[x][y] = 0;
+                res.at(x,y) = 0;
         }
     
     return res;
@@ -297,41 +252,29 @@ image<W,H> zoom_out( const image<W,H> &src )
 //  ------------------------------------------------------------------
 //  Reduce an image to half the size
 //  ------------------------------------------------------------------
-template <int W, int H>
-void reduce_image( image<W,H> &dest, const image<2*W,2*H> &source )
+void reduce_image_half( image &dest, const image &source )
 {
     fill( dest, 0 );
-    for (int y=0;y!=H;y++)
-        for (int x=0;x!=W;x++)
-            dest[x][y] = (source[2*x][2*y]+source[2*x+1][2*y]+source[2*x][2*y+1]+source[2*x+1][2*y+1])/4;
-}
-
-//  ------------------------------------------------------------------
-//  Reduce an image to the same size (ie: copies)
-//  ------------------------------------------------------------------
-template <int W, int H>
-void reduce_image( image<W,H> &dest, const image<W,H> &source )
-{
-    dest = source;
+    for (int y=0;y!=dest.H();y++)
+        for (int x=0;x!=dest.W();x++)
+            dest.at(x,y) = (source.at(2*x,2*y)+source.at(2*x+1,2*y)+source.at(2*x,2*y+1)+source.at(2*x+1,2*y+1))/4;
 }
 
 //  ------------------------------------------------------------------
 //  Adds a pixel in the 4 corners of the image
 //  ------------------------------------------------------------------
-template <int W, int H>
-void plot4( image<W,H> &img, int x, int y, int c )
+void plot4( image &img, int x, int y, int c )
 {
-    img[x][y] = c;
-    img[W-1-x][y] = c;
-    img[x][H-1-y] = c;
-    img[W-1-x][H-1-y] = c;
+    img.at(x,y) = c;
+    img.at(img.W()-1-x,y) = c;
+    img.at(x,img.H()-1-y) = c;
+    img.at(img.W()-1-x,img.H()-1-y) = c;
 }
 
 //  ------------------------------------------------------------------
 //  Draw a horizonal line in the 4 corners of the image
 //  ------------------------------------------------------------------
-template <int W, int H>
-void hlin4( image<W,H> &img, int x0, int x1, int y, int c )
+void hlin4( image &img, int x0, int x1, int y, int c )
 {
     while (x0<x1)
         plot4( img, x0++, y, c );
@@ -340,8 +283,7 @@ void hlin4( image<W,H> &img, int x0, int x1, int y, int c )
 //  ------------------------------------------------------------------
 //  As Steve Jobs asked for Mac desktops to have round corners, forces rounded corners on generated flims.
 //  ------------------------------------------------------------------
-template <int W, int H>
-void round_corners( image<W,H> &img )
+void round_corners( image &img )
 {
     hlin4( img, 0, 5, 0, 0 );
     hlin4( img, 0, 3, 1, 0 );
@@ -350,22 +292,20 @@ void round_corners( image<W,H> &img )
     hlin4( img, 0, 1, 4, 0 );
 }
 
-template <int W, int H>
-image<W,H> round_corners( const image<W,H> &img )
+image round_corners( const image& img )
 {
-    image<W,H> res = img;
+    image res = img;
     round_corners( res );
     return res;
 }
 
-template <int W, int H>
-image<W,H> quantize( const image<W,H> &img, int n )
+image quantize( const image &img, int n )
 {
-    image<W,H> res;
+    image res = img;
 
-    for (int y=0;y!=H;y++)
-        for (int x=0;x!=W;x++)
-            res[x][y] = ((int)(img[x][y]*(n-1)+.5))/(double)(n-1);
+    for (int y=0;y!=res.H();y++)
+        for (int x=0;x!=res.W();x++)
+            res.at(x,y) = ((int)(img.at(x,y)*(n-1)+.5))/(double)(n-1);
 
     return res;
 }
@@ -384,8 +324,7 @@ typedef enum
     kQuantize16 = 'Q'
 }   eFilters;
 
-template <int W, int H>
-image<W,H> filter( const image<W,H> &from, eFilters filter, double arg=0 )
+image filter( const image &from, eFilters filter, double arg=0 )
 {
     switch (filter)
     {
@@ -442,10 +381,9 @@ inline bool extract_filter( const char *&p, char &f, double &arg )
 //  Apply a sequence of filters
 //  ------------------------------------------------------------------
 
-template <int W, int H>
-image<W,H> filter( const image<W,H> &from, const char *filters )
+image filter( const image &from, const char *filters )
 {
-    image<W,H> res = from;
+    image res = from;
     char f;
     double arg;
 
@@ -475,12 +413,11 @@ inline int correct( int v )
 //     return v;
 // }
 
-template <int W, int H>
-bool read_image( image<W,H> &result, const char *file )
+bool read_image( image &result, const char *file )
 {
     // fprintf( stderr, "Reading [%s]\n", file );
 
-    image<W,H> image;
+    image image( 512, 342 );
     fill( image, 0 );
 
     FILE *f = fopen( file, "rb" );
@@ -491,10 +428,10 @@ bool read_image( image<W,H> &result, const char *file )
     for (int i=0;i!=15;i++)
         fgetc( f );
 
-    for (int y=0;y!=H;y++)
-        for (int x=0;x!=W;x++)
+    for (int y=0;y!=image.H();y++)
+        for (int x=0;x!=image.W();x++)
         {    // img[x][y] = ((int)(fgetc(f)/255.0*16))/16.0;
-            image[x][y] = correct( fgetc(f) )/255.0;
+            image.at(x,y) = correct( fgetc(f) )/255.0;
         }
 
     fclose( f );
@@ -520,17 +457,16 @@ bool read_image( image<W,H> &result, const char *file )
 //  ------------------------------------------------------------------
 //  Generates a PGM image
 //  ------------------------------------------------------------------
-template <int W, int H>
-void write_image( const char *file, image<W,H> &img )
+void write_image( const char *file, image &img )
 {
     // fprintf( stderr, "Writing [%s]\n", file );
 
     FILE *f = fopen( file, "wb" );
 
-    fprintf( f, "P5\n%d %d\n255\n", W, H );
-    for (int y=0;y!=H;y++)
-        for (int x=0;x!=W;x++)
-            fputc( img[x][y]*255, f );
+    fprintf( f, "P5\n%ld %ld\n255\n", img.W(), img.H() );
+    for (int y=0;y!=img.H();y++)
+        for (int x=0;x!=img.W();x++)
+            fputc( img.at(x,y)*255, f );
 
     fclose( f );
 }
@@ -542,32 +478,31 @@ void write_image( const char *file, image<W,H> &img )
 //  Dest will only contain 0 or 1, corresponding to the dithering of the source
 //  Here for reference, not used
 //  ------------------------------------------------------------------
-template <int W, int H>
-void quantize( image<W,H> &dest, const image<W,H> &source )
+void quantize( image &dest, const image &source )
 {
-    copy_image( dest, source );
+    dest = source;
 
-    for (int y=0;y!=H;y++)
-        for (int x=0;x!=W;x++)
+    for (int y=0;y!=source.H();y++)
+        for (int x=0;x!=source.W();x++)
         {
-            float source_color = dest[x][y];
+            float source_color = dest.at(x,y);
             float color;
             float error;
             color = source_color<=0.5?0:1;
             error = source_color - color;
-            dest[x][y] = color;
+            dest.at(x,y) = color;
             float e0 = error * 7 / 16;
             float e1 = error * 3 / 16;
             float e2 = error * 5 / 16;
             float e3 = error * 1 / 16;
-            if (x<W-1)
-                dest[x+1][y] = dest[x+1][y] + e0;
-            if (x>0 && y<H-1)
-                dest[x-1][y+1] = dest[x-1][y+1] + e1;
-            if (y<H-1)
-                dest[x][y+1] = dest[x][y+1] + e2;
-            if (x<W-1 && y<H-1)
-                dest[x+1][y+1] = dest[x+1][y+1] + e3;
+            if (x<source.W()-1)
+                dest.at(x+1,y) = dest.at(x+1,y) + e0;
+            if (x>0 && y<source.H()-1)
+                dest.at(x-1,y+1) = dest.at(x-1,y+1) + e1;
+            if (y<source.H()-1)
+                dest.at(x,y+1) = dest.at(x,y+1) + e2;
+            if (x<source.W()-1 && y<source.H()-1)
+                dest.at(x+1,y+1) = dest.at(x+1,y+1) + e3;
         }
 }
 
@@ -583,14 +518,13 @@ static int dither[8][8] =
     {63, 31, 55, 23, 61, 29, 53, 21}
 };
 
-template <int W, int H>
-void quantize2( image<W,H> &dest, const image<W,H> &source, const image<W,H> &previous, float stability )
+void quantize2( image &dest, const image &source, const image &previous, float stability )
 {
-    for (int y=0;y!=H;y++)
-        for (int x=0;x!=W;x++)
+    for (int y=0;y!=source.H();y++)
+        for (int x=0;x!=source.W();x++)
         {
             //  The color we'd like this pixel to be
-            float color = source[x][y];
+            float color = source.at(x,y);
 
             //  We look at our position in the dithering matrix
             int xd = x%8;
@@ -600,9 +534,9 @@ void quantize2( image<W,H> &dest, const image<W,H> &source, const image<W,H> &pr
             bool threshold = dither[xd][yd]<color*64;
 
             if (threshold)
-                dest[x][y] = 1;
+                dest.at(x,y) = 1;
             else
-                dest[x][y] = 0;
+                dest.at(x,y) = 0;
         }
 }
 
@@ -612,16 +546,15 @@ void quantize2( image<W,H> &dest, const image<W,H> &source, const image<W,H> &pr
 //  while trying to respect the placement of pixels
 //  from the black/white 'previous' image
 //  ------------------------------------------------------------------
-template <int W, int H>
-void quantize( image<W,H> &dest, const image<W,H> &source, const image<W,H> &previous, float stability )
+void quantize( image &dest, const image &source, const image &previous, float stability )
 {
-    copy_image( dest, source );
+    dest = source;
 
-    for (int y=0;y!=H;y++)
-        for (int x=0;x!=W;x++)
+    for (int y=0;y!=source.H();y++)
+        for (int x=0;x!=source.W();x++)
         {
             //  The color we'd like this pixel to be
-            float source_color = dest[x][y];
+            float source_color = dest.at(x,y);
 
             //  Increasing the stability value will makes the image choose previous frame's pixel more often
             //  Images will be "stable", but there will be some "ghosting artifacts"
@@ -650,8 +583,8 @@ void quantize( image<W,H> &dest, const image<W,H> &source, const image<W,H> &pre
             //  we decide that:
             //  If previous frame pixel was black, we stay back if color<0.5+stability/2
             //  If previous frame pixel was white, we stay white if color>0.5-stability/2
-            float color = source_color<=0.5-(previous[x][y]-0.5)*stability2?0:1;
-            dest[x][y] = color;
+            float color = source_color<=0.5-(previous.at(x,y)-0.5)*stability2?0:1;
+            dest.at(x,y) = color;
 
             //  By doing this, we made an error (too much white or too much black)
             //  that we need to keep track of
@@ -668,27 +601,27 @@ void quantize( image<W,H> &dest, const image<W,H> &source, const image<W,H> &pre
             float e2 = error * 5 / 16;
             float e3 = error * 1 / 16;
 
-            if (x<W-1)
-                dest[x+1][y] = dest[x+1][y] + e0;
-            if (x>0 && y<H-1)
-                dest[x-1][y+1] = dest[x-1][y+1] + e1;
-            if (y<H-1)
-                dest[x][y+1] = dest[x][y+1] + e2;
-            if (x<W-1 && y<H-1)
-                dest[x+1][y+1] = dest[x+1][y+1] + e3;
+            if (x<source.W()-1)
+                dest.at(x+1,y) = dest.at(x+1,y) + e0;
+            if (x>0 && y<source.H()-1)
+                dest.at(x-1,y+1) = dest.at(x-1,y+1) + e1;
+            if (y<source.H()-1)
+                dest.at(x,y+1) = dest.at(x,y+1) + e2;
+            if (x<source.W()-1 && y<source.H()-1)
+                dest.at(x+1,y+1) = dest.at(x+1,y+1) + e3;
         }
 }
 
 //  Takes an image, composed of only black and white
 //  and generates W*H/8 bytes corresponding to a Macintosh framebuffer
-template <int W, int H, typename T>
-void encode( T out, const image<W,H> &img )
+template <typename T>
+void encode( T out, const image &img )
 {
     // static char c = 0;
-    for (int y=0;y!=H;y++)
-        for (int x=0;x!=W;x+=8)
-            *out++ = (int)(img[x  ][y]*128+img[x+1][y]*64+img[x+2][y]*32+img[x+3][y]*16+
-                      img[x+4][y]*  8+img[x+5][y]* 4+img[x+6][y]* 2+img[x+7][y]     ) ^ 0xff;
+    for (int y=0;y!=img.H();y++)
+        for (int x=0;x!=img.W();x+=8)
+            *out++ = (int)(img.at(x  ,y)*128+img.at(x+1,y)*64+img.at(x+2,y)*32+img.at(x+3,y)*16+
+                      img.at(x+4,y)*  8+img.at(x+5,y)* 4+img.at(x+6,y)* 2+img.at(x+7,y)     ) ^ 0xff;
 }
 
 template <int W,int H>
@@ -769,21 +702,24 @@ assert( offset<21888 );
     {
     }
 
-   framebuffer( const image<W,H> &img )
+   framebuffer( const image &img )
     {
+        assert( img.W()==W && img.H()==H );
         auto *p = data_;
         for (int y=0;y!=H;y++)
             for (int x=0;x!=W;x+=8)
-                *p++ = (int)(img[x  ][y]*128+img[x+1][y]*64+img[x+2][y]*32+img[x+3][y]*16+
-                       img[x+4][y]*  8+img[x+5][y]* 4+img[x+6][y]* 2+img[x+7][y]     ) ^ 0xff;
+                // *p++ = (int)(img[x  ][y]*128+img[x+1][y]*64+img[x+2][y]*32+img[x+3][y]*16+
+                //        img[x+4][y]*  8+img[x+5][y]* 4+img[x+6][y]* 2+img[x+7][y]     ) ^ 0xff;
+                *p++ = (int)(img.at(x  ,y)*128+img.at(x+1,y)*64+img.at(x+2,y)*32+img.at(x+3,y)*16+
+                             img.at(x+4,y)*  8+img.at(x+5,y)* 4+img.at(x+6,y)* 2+img.at(x+7,y)     ) ^ 0xff;
     }
 
-    image<W,H> as_image() const
+    image as_image() const
     {
-        image<W,H> res;
+        image res( W, H );
         for (int y=0;y!=H;y++)
             for (int x=0;x!=W;x++)
-                res[x][y] = !(data_[y*row_bytes+x/8] & (1<<(7-(x%8))));
+                res.at(x,y) = !(data_[y*row_bytes+x/8] & (1<<(7-(x%8))));
         return res;
     }
 
@@ -819,10 +755,10 @@ assert( offset<21888 );
 
 
 template <int W, int H>
-framebuffer<W,H> convert( const image<W,H> &source, const framebuffer<W,H> &previous_fb, float stability )
+framebuffer<W,H> convert( const image &source, const framebuffer<W,H> &previous_fb, float stability )
 {
-    image<W,H> dest;
-    image<W,H> previous = previous_fb.as_image();
+    image dest( W, H );
+    image previous = previous_fb.as_image();
     quantize( dest, source, previous, stability );
     return framebuffer<W,H>{ dest };
 }

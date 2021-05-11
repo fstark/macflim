@@ -240,14 +240,14 @@ public:
     };
 
 private:
-    const std::vector<image<W,H>> &images_;
+    const std::vector<image> &images_;
     const std::vector<uint8_t> &audio_;
     const double fps_;
 
     std::vector<frame> frames_;
 
 public:
-    flimcompressor( const std::vector<image<W,H>> &images, const std::vector<uint8_t> &audio, double fps ) : images_{images}, audio_{audio}, fps_{fps} {}
+    flimcompressor( const std::vector<image> &images, const std::vector<uint8_t> &audio, double fps ) : images_{images}, audio_{audio}, fps_{fps} {}
 
     std::vector<std::uint32_t> header()
     {
@@ -264,7 +264,7 @@ public:
 
         compressor<W,H> c;
 
-        image<W,H> previous;
+        image previous( W, H );
         fill( previous, 0 );
 
         int in_fr=0;
@@ -281,9 +281,9 @@ public:
 
         for (auto &source_image:images_)
         {
-            image<W,H> dest;
+            image dest( W, H );
 
-            image <W,H> img = filter( source_image, filters.c_str() );
+            image img = filter( source_image, filters.c_str() );
 
             quantize( dest, img, previous, stability );
             previous = dest;
@@ -356,7 +356,7 @@ class flimencoder
     const std::string in_;
     const std::string audio_;
 
-    std::vector<image<W,H>> images_;
+    std::vector<image> images_;
     std::vector<uint8_t> audio_samples_;
 
     size_t byterate_ = 2000;
@@ -405,7 +405,7 @@ class flimencoder
             char buffer[1024];
             sprintf( buffer, in_.c_str(), i );
 
-            image<W,H> img;
+            image img( W, H );
 
             if (!read_image( img, buffer ))
                 return;
