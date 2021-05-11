@@ -87,11 +87,10 @@ public:
 //  ------------------------------------------------------------------
 //  Packs the buffer where pack is true, returns the packed data
 // std::vector<uint32_t> packz32opt( const std::vector<uint32_t> buffer, const std::vector<bool> pack );
-template <typename T0, typename T1>
 //data: iterator to start of data
 //pack_begin: iterator begin of pack instruction (boolean array => true means keep, false means skip)
 //pack_end: iterator end of pack instruction.
-std::vector<uint32_t> packz32opt( T0 data, T1 pack_begin, T1 pack_end, size_t max_pack )
+inline std::vector<uint32_t> packz32opt_impl( std::vector<uint32_t>::const_iterator data, std::vector<bool>::const_iterator pack_begin, std::vector<bool>::const_iterator pack_end, size_t max_pack )
 {
     std::vector<uint32_t> output_buffer;
     auto out = std::back_inserter(output_buffer);
@@ -105,7 +104,7 @@ std::vector<uint32_t> packz32opt( T0 data, T1 pack_begin, T1 pack_end, size_t ma
         while (pack_begin<pack_end && !*pack_begin)
         {
             data++;
-            pack_begin++;
+            ++pack_begin;
             offset.increment();
         }
         linear_offset = offset.linear();
@@ -115,7 +114,7 @@ std::vector<uint32_t> packz32opt( T0 data, T1 pack_begin, T1 pack_end, size_t ma
         while (pack_begin<pack_end && *pack_begin)
         {
             non_zero_count++;
-            pack_begin++;
+            ++pack_begin;
 
             if (offset.increment())
                 break;
@@ -140,6 +139,16 @@ std::vector<uint32_t> packz32opt( T0 data, T1 pack_begin, T1 pack_end, size_t ma
     *out++ = 0;
 
     return output_buffer;
+}
+
+//  Temporary
+template <typename T>
+inline std::vector<uint32_t> packz32opt( T data, std::vector<bool>::const_iterator pack_begin, std::vector<bool>::const_iterator pack_end, size_t max_pack )
+{
+    std::vector<uint32_t> tmp;
+    for (size_t i=0;i!=pack_end-pack_begin;i++)
+        tmp.push_back( *data++ );
+    return packz32opt_impl( std::begin(tmp), pack_begin, pack_end, max_pack );
 }
 
 template <typename T, typename U>
