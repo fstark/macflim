@@ -2,6 +2,9 @@
 #define FILM_COMPRESSOR_INCLUDED__
 
 #include "image.hpp"
+#include "framebuffer.hpp"
+#include "imgcompress.hpp"
+
 #include <vector>
 #include <bitset>
 #include <algorithm>
@@ -206,7 +209,7 @@ public:
     void set_target_image( const framebuffer &image )
     {
         assert( image.W()==W_ && image.H()==H_ );
-        auto new_data = image.raw32();
+        auto new_data = image.raw_values<uint32_t>();
         for (int i=0;i!=get_uint32_size();i++)
         {
             target_data_[i] = new_data[i];
