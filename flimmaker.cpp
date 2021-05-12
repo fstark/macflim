@@ -16,7 +16,7 @@
 #ifdef LZG
 #include "lzg.h"
 #endif
-#include "flimcompressor.hpp"
+#include "flimencoder.hpp"
 
 using namespace std::string_literals;
 

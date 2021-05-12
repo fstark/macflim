@@ -1,25 +1,22 @@
 all: flimmaker flimutil
 
+image.o: image.cpp imgcompress.hpp image.hpp
+	c++ -c -O3 image.cpp -o image.o
+
 imgcompress.o: imgcompress.cpp imgcompress.hpp image.hpp
 	c++ -c -O3 imgcompress.cpp -o imgcompress.o
 
-flimmaker.o: flimmaker.cpp image.hpp flimcompressor.hpp imgcompress.hpp image.hpp
+flimmaker.o: flimmaker.cpp flimencoder.hpp flimcompressor.hpp compressor.hpp imgcompress.hpp framebuffer.hpp image.hpp 
 	c++ -c -O3 -I liblzg/src/include flimmaker.cpp -o flimmaker.o
 
-flimmaker: flimmaker.o encode.o checksum.o imgcompress.o
-	c++ flimmaker.o imgcompress.o encode.o checksum.o -o flimmaker
-
-encode.o: liblzg/src/lib/encode.c
-	c++ -c -O3 liblzg/src/lib/encode.c -o encode.o
-
-checksum.o: liblzg/src/lib/checksum.c
-	c++ -c -O3 liblzg/src/lib/checksum.c -o checksum.o
+flimmaker: flimmaker.o imgcompress.o image.o 
+	c++ flimmaker.o imgcompress.o image.o -o flimmaker
 
 flimutil: flimutil.c
 	cc -O3 -Wno-unused-result  flimutil.c -o flimutil
 
 clean:
-	rm -f flimmaker flimutil flimmaker.o imgcompress.o
+	rm -f flimmaker flimutil flimmaker.o imgcompress.o image.o
 
 debug: flimmaker.cpp flimutil.c imgcompress.cpp
 	c++ -c -g -fsanitize=undefined imgcompress.cpp -o imgcompress.o
