@@ -90,6 +90,7 @@ public:
             //  dest = filter( dest, "gsc" );
             
             round_corners( dest );
+            watermark( dest, ""s );
             framebuffer fb{ dest };
             c.set_target_image( fb );
 

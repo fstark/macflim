@@ -1,3 +1,6 @@
+#ifndef IMAGECOMPRESS_INCLUDED__
+#define IMAGECOMPRESS_INCLUDED__
+
 //  ------------------------------------------------------------------
 //  Compression utilities for B&W images
 //  ------------------------------------------------------------------
@@ -230,3 +233,5 @@ inline std::vector<uint32_t> packz32opt( const std::vector<uint32_t> &data, cons
 
 
 void packz32opt_test();
+
+#endif
