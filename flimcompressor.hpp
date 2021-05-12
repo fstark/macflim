@@ -30,7 +30,7 @@ public:
 
         size_t ticks;
         std::vector<uint8_t> audio;
-        std::vector<uint32_t> video;
+        std::vector<uint8_t> video;
         framebuffer result;
 
         size_t get_size() { return audio.size()+video.size()*4; }
@@ -49,20 +49,11 @@ private:
 public:
     flimcompressor( size_t W, size_t H, const std::vector<image> &images, const std::vector<uint8_t> &audio, double fps ) : W_{W}, H_{H}, images_{images}, audio_{audio}, fps_{fps} {}
 
-    std::vector<std::uint32_t> header()
-    {
-        std::vector<std::uint32_t> header;
-
-        return header;
-    }        
-
     const std::vector<frame> &get_frames() const { return frames_; }
 
-    void compress( double stability, size_t byterate, bool group, const std::string &filters )
+    void compress( double stability, size_t byterate, bool group, const std::string &filters, const std::string &watermark )
     {
-        std::vector<std::uint32_t> data = header();
-
-        compressor c{W_,H_};
+        compressor<u_int32_t> c{W_,H_};
 
         image previous( W_, H_ );
         fill( previous, 0 );
@@ -90,7 +81,7 @@ public:
             //  dest = filter( dest, "gsc" );
             
             round_corners( dest );
-            watermark( dest, ""s );
+            ::watermark( dest, watermark );
             framebuffer fb{ dest };
             c.set_target_image( fb );
 

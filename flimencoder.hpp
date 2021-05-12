@@ -30,6 +30,8 @@ class flimencoder
 
     std::string filters_;
 
+    std::string watermark_;
+
     size_t cover_begin_;        /// Begin index of cover image
     size_t cover_end_;          /// End index of cover image 
 
@@ -101,8 +103,8 @@ class flimencoder
             std::cerr << "**** ERROR: CANNOT OPEN AUDIO FILE [" << audio_ << "]\n";
         std::clog << "AUDIO: READ " << audio_size << " bytes from offset " << audio_start << "\n";
 
-        auto min_sample = *std::min( std::begin(audio_samples_), std::end(audio_samples_) );
-        auto max_sample = *std::max( std::begin(audio_samples_), std::end(audio_samples_) );
+        auto min_sample = *std::min_element( std::begin(audio_samples_), std::end(audio_samples_) );
+        auto max_sample = *std::max_element( std::begin(audio_samples_), std::end(audio_samples_) );
         std::clog << "MIN= " << (int)min_sample << " MAX= " << (int)max_sample << "\n";
     }
 
@@ -139,6 +141,7 @@ public:
     void set_comment( const std::string &comment ) { comment_ = comment; }
     void set_filters( const std::string &filters ) { filters_ = filters; }
     void set_cover( size_t cover_begin, size_t cover_end ) { cover_begin_ = cover_begin; cover_end_ = cover_end; }
+    void set_watermark( const std::string &watermark ) { watermark_ = watermark; }
 
     //  Encode all the blocks
     void make_flim( const std::string flim_pathname, size_t from, size_t to )
@@ -155,7 +158,7 @@ public:
 
         flimcompressor fc{ W_, H_, images_, audio_samples_, fps_ };
 
-        fc.compress( stability_, byterate_/4, group_, filters_ );
+        fc.compress( stability_, byterate_, group_, filters_, watermark_ );
 
         auto frames = fc.get_frames();
 
@@ -177,7 +180,7 @@ public:
                 write2( block_ptr, 0 );                       //  ffMode
                 write4( block_ptr, 65536 );                   //  rate
                 write( block_ptr, current_frame->audio );
-                write2( block_ptr, current_frame->video.size()*4+2 );
+                write2( block_ptr, current_frame->video.size()+2 );
                 write( block_ptr, current_frame->video );
 
                 current_block_size += current_frame->get_size();

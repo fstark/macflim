@@ -75,6 +75,8 @@ int main( int argc, char **argv )
     bool half_rate = false;
     bool group = false;
     std::string filters = "gsc";
+    std::string watermark = "";
+    bool auto_watermark = false;
 
     std::string comment = "FLIM\n";
     
@@ -95,7 +97,7 @@ int main( int argc, char **argv )
     comment += "date: ";
     comment += std::ctime(&time);
 
-    packz32_test();
+    // packz32_test();
     packz32opt_test();
 
     argc--;
@@ -245,6 +247,14 @@ int main( int argc, char **argv )
             argc--;
             argv++;
         }
+        else if (!strcmp(*argv,"--watermark"))
+        {
+            argc--;
+            argv++;
+            watermark = *argv;
+            argc--;
+            argv++;
+        }
         else if (!strcmp(*argv,"--filters"))
         {
             argc--;
@@ -253,11 +263,26 @@ int main( int argc, char **argv )
             argc--;
             argv++;
         }
+        else if (!strcmp(*argv,"--auto-watermark"))
+        {
+            argc--;
+            argv++;
+            auto_watermark = true;
+        }
         else
         {
             std::cerr << "Unknown argument " << *argv << "\n";
             return EXIT_FAILURE;
         }
+    }
+
+    if (auto_watermark)
+    {
+        char buffer[1024];
+        sprintf( buffer, "br:%ld st:%.2f%s%s fi:%s", byterate, stability, half_rate?" half-rate":"", group?" group":"", filters.c_str() );
+        if (watermark.size()>0)
+            watermark += " ";
+        watermark += buffer;
     }
 
     auto encoder = flimencoder{ 512, 342, in_arg, audio_arg };
@@ -271,6 +296,7 @@ int main( int argc, char **argv )
     encoder.set_comment( comment );
     encoder.set_filters( filters );
     encoder.set_cover( cover_from, cover_to+1 );
+    encoder.set_watermark( watermark );
 
     encoder.make_flim( out_arg, from_index, to_index );
 

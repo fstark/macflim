@@ -66,18 +66,24 @@ void write( T &out, const std::array<uint8_t,N> &arr )
         write1( out, v );
 }
 
+//  Maps a linear offset to the vertical data to the horizonal offsets
 class offset_t
 {
+    size_t width_;
+    size_t height_;
+
     size_t offset_ = 0;
 
 public:
+    offset_t( size_t width, size_t height ) : width_{ width }, height_{ height } {}
+
     size_t linear() { return offset_; }
     bool increment()
     {
-        offset_ += 64;
-        if (offset_>21888)
+        offset_ += width_;
+        if (offset_>width_*height_)
         {
-            offset_ -= 21888-4;
+            offset_ -= width_*height_-1;
             return true;
         }
         return false;
@@ -85,6 +91,82 @@ public:
 };
 
 
+template <typename T>
+struct run
+{
+    size_t offset;          //  Offset expressed in Ts
+    std::vector<T> data;    //  Data to be written at offset
+
+    bool operator==( const run &rhs ) const
+    {
+        return offset==rhs.offset && data==rhs.data;
+    }
+};
+
+#include <iostream>
+
+template <typename T>
+inline std::vector<run<T>> pack(
+    typename std::vector<T>::const_iterator data,
+    std::vector<bool>::const_iterator pack_begin,
+    std::vector<bool>::const_iterator pack_end,
+    size_t max_pack_bytes,
+    size_t width,
+    size_t height
+        )
+{
+    std::vector<run<T>> output_buffer;
+    offset_t offset{ width, height };
+    size_t linear_offset;
+
+    size_t total_bytes = 4; //  marker
+
+    while (pack_begin<pack_end)
+    {
+        run<T> run;
+
+        //  We look for the next non-zero
+        while (pack_begin<pack_end && !*pack_begin)
+        {
+            data++;
+            ++pack_begin;
+            offset.increment();
+        }
+        run.offset = offset.linear();
+
+        //  We look for the next zero
+        size_t non_zero_count = 0;
+        while (pack_begin<pack_end && *pack_begin)
+        {
+            non_zero_count++;
+            ++pack_begin;
+
+            if (offset.increment())
+                break;
+
+            if (total_bytes+4+sizeof(T)*non_zero_count>=max_pack_bytes)
+                break;
+        }
+
+        if (non_zero_count==0)      //  Don't skip at the end if nothing needs to be copied
+            break;
+
+        total_bytes += 4 + sizeof(T)*non_zero_count;
+
+        while (non_zero_count--)
+            run.data.push_back( *data++ );
+
+        output_buffer.push_back( run );
+
+            //  Abort if more than max_pack bytes
+        if (total_bytes>=max_pack_bytes)
+            break;
+    }
+
+    return output_buffer;
+}
+
+#if 0
 //  ------------------------------------------------------------------
 //  Conditionally pack data
 //  ------------------------------------------------------------------
@@ -143,7 +225,7 @@ inline std::vector<uint32_t> packz32opt( std::vector<uint32_t>::const_iterator d
 
     return output_buffer;
 }
-
+#endif
 
 #include <array>
 
@@ -229,7 +311,7 @@ public:
 };
 
 
-inline std::vector<uint32_t> packz32opt( const std::vector<uint32_t> &data, const std::vector<bool> &pack, size_t max_pack = 21888 ) { return packz32opt( std::begin(data), std::begin(pack), std::end(pack), max_pack ); }
+// inline std::vector<uint32_t> packz32opt( const std::vector<uint32_t> &data, const std::vector<bool> &pack, size_t max_pack = 21888 ) { return packz32opt( std::begin(data), std::begin(pack), std::end(pack), max_pack ); }
 
 
 void packz32opt_test();

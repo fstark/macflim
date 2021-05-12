@@ -172,6 +172,7 @@ void pack_test()
     assert( memcmp( buffer, out3, len )==0 );
 }
 
+#if 0
 /*
 Another packing idea for run-length encoding at bit level. Would be goot for long black or white sequences, but would be awful on 50% grays
 
@@ -347,26 +348,27 @@ void packz32_test()
     assert( memcmp( buffer, out0, len )==0 );
 }
 
+#endif
 
 void packz32opt_test()
 {
     std::vector<u_int32_t> in0 =
     {
-        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000001, 0x00000002, 0x00000003, 0x00000000
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000001, 0x00000002, 0x00000003, 0x00000000,
+        0x00000000, 0x00000005, 0x00000006, 0x00000007
     };
     std::vector<bool> in0b =
     {
-        false, false, false, false, true, true, true, false
+        false, false, false, false, true, true, true, false,
+        false, true, true, true
     };
-    std::vector<uint32_t> out0 =
+    std::vector<run<uint32_t>> out0 =
     {
-        0x00020104, 0x00000001,
-        0x00000002, 0x00000003,
-        0x00000000
+        run<uint32_t>{ 4, {1,2,3} },
+        run<uint32_t>{ 9, {5,6,7} }
     };
 
-    auto res0 = packz32opt( in0, in0b );
+    auto res0 = pack<uint32_t>( std::begin(in0), std::begin(in0b), std::end(in0b), 1024, 1, 100 );
 
     assert( res0==out0 );
 }
-

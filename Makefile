@@ -24,6 +24,8 @@ clean:
 debug: flimmaker.cpp flimutil.c imgcompress.cpp
 	c++ -c -g -fsanitize=undefined imgcompress.cpp -o imgcompress.o
 	c++ -c -g -fsanitize=undefined flimmaker.cpp -o flimmaker.o
-	c++ -g -fsanitize=undefined imgcompress.o flimmaker.o -o flimmaker
+	c++ -c -g -fsanitize=undefined watermark.cpp -o watermark.o
+	c++ -c -g -fsanitize=undefined image.cpp -o image.o
+	c++ -g -fsanitize=undefined imgcompress.o flimmaker.o watermark.o image.o -o flimmaker
 	cc -g -Wno-unused-result flimutil.c -o flimutil
 #	gdb ./flimmaker

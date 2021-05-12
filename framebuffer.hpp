@@ -6,6 +6,53 @@
 #include <cstdint>
 
 
+template <typename T>
+std::array<uint8_t,sizeof(T)> from_value( T v )
+{
+    std::array<uint8_t,sizeof(T)> res;
+    for (int i=0;i!=sizeof(T);i++)
+    {
+        res[sizeof(T)-i-1] = v & 0xff;
+        v >>= 8;
+    }
+    return res;
+}
+
+template <typename T>
+std::vector<uint8_t> from_values( const std::vector<T> &values )
+{
+    std::vector<uint8_t> res;
+    for (auto &v:values)
+    {
+        auto a = from_value( v );
+        res.insert( std::end(res), std::begin(a), std::end(a) );
+    }
+    return res;
+}
+
+    //  unpack a single value
+template <typename T>
+void copy_from_value_be( std::vector<uint8_t>::iterator p, T v )
+{
+    for (int i=0;i!=sizeof(T);i++)
+    {
+        p[sizeof(T)-i-1] = v & 0xff;
+        v >>= 8;
+    }
+}
+
+    //  Unpack into q, with arbitrary stride, increments p
+template <typename IT>
+void copy_from_values_be( std::vector<uint8_t>::iterator destination, IT source, size_t count, size_t stride )
+{
+    while (count--)
+    {
+        copy_from_value_be( destination, *source++ );
+        destination += stride;
+    }
+}
+
+
 //  ------------------------------------------------------------------
 //  A framebuffer is a packed black and white screen
 //  One can xor framebuffers together
@@ -37,28 +84,6 @@ private:
         //  vertical means consecutive values corresponds to verticall adjacent pixels (better for compression)
 
         //  Everything about writing values into the framebuffer
-
-        //  unpack a single value
-    template <typename T>
-    void copy_from_value_be( std::vector<uint8_t>::iterator p, T v ) const
-    {
-        for (int i=0;i!=sizeof(T);i++)
-        {
-            p[sizeof(T)-i-1] = v & 0xff;
-            v >>= 8;
-        }
-    }
-
-        //  Unpack into q, with arbitrary stride, increments p
-    template <typename IT>
-    void copy_from_values_be( std::vector<uint8_t>::iterator destination, IT source, size_t count, size_t stride ) const
-    {
-        while (count--)
-        {
-            copy_from_value_be( destination, *source++ );
-            destination += stride;
-        }
-    }
 
         //  Unpack the whole buffer horizontally
     template <typename IT>
