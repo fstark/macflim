@@ -253,7 +253,7 @@ typedef enum
     kGamma = 'g',
     kRoundCorners = 'c',
     kZoomOut = 'z',
-    kQuantize16 = 'Q'
+    kQuantize16 = 'q'
 }   eFilters;
 
 image filter( const image &from, eFilters filter, double arg=0 )
@@ -273,6 +273,7 @@ image filter( const image &from, eFilters filter, double arg=0 )
         case kZoomOut:
             return zoom_out( from );
         case kQuantize16:
+        case 'Q':
             return quantize( from, arg?arg:16 );
     }
     std::cerr << "**** ERROR: filter ['" << (char)filter << "'] (" << (int)filter << ") unknown\n";

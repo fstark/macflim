@@ -105,6 +105,8 @@ struct run
 
 #include <iostream>
 
+const size_t kHeaderSize = 2;
+
 template <typename T>
 inline std::vector<run<T>> pack(
     typename std::vector<T>::const_iterator data,
@@ -119,7 +121,7 @@ inline std::vector<run<T>> pack(
     offset_t offset{ width, height };
     size_t linear_offset;
 
-    size_t total_bytes = 4; //  marker
+    size_t total_bytes = kHeaderSize; //  end-marker
 
     while (pack_begin<pack_end)
     {
@@ -144,14 +146,14 @@ inline std::vector<run<T>> pack(
             if (offset.increment())
                 break;
 
-            if (total_bytes+4+sizeof(T)*non_zero_count>=max_pack_bytes)
+            if (total_bytes+kHeaderSize+sizeof(T)*non_zero_count>=max_pack_bytes)
                 break;
         }
 
         if (non_zero_count==0)      //  Don't skip at the end if nothing needs to be copied
             break;
 
-        total_bytes += 4 + sizeof(T)*non_zero_count;
+        total_bytes += kHeaderSize + sizeof(T)*non_zero_count;
 
         while (non_zero_count--)
             run.data.push_back( *data++ );
@@ -162,6 +164,16 @@ inline std::vector<run<T>> pack(
         if (total_bytes>=max_pack_bytes)
             break;
     }
+
+    //  Count the number of unpacked items (quality of the packmap)
+
+#if 0
+    size_t err_count = 0;
+    while (pack_begin!=pack_end)
+        err_count += *pack_begin++;
+
+    std::clog << "UNPACKED = " << err_count << "\n";
+#endif
 
     return output_buffer;
 }
@@ -229,13 +241,18 @@ inline std::vector<uint32_t> packz32opt( std::vector<uint32_t>::const_iterator d
 
 #include <array>
 
+//  Computing the size
+//  Each run have a fixed overrhead of 4 bytes
 class packzmap
 {
 private:
     std::vector<bool> mask_;
     size_t N;
 
-    size_t size_;
+    size_t byte_size_;
+
+    size_t header_cost_;
+    size_t elem_cost_;
 
         //  Fills hole if free or better
     void auto_fill( size_t n )
@@ -255,15 +272,19 @@ private:
     }
 
 public:
-    packzmap( size_t map_size ) : mask_( map_size ), N{ map_size }
+    packzmap( size_t map_size, size_t header_cost, size_t elem_cost ) : mask_( map_size ), N{ map_size }, header_cost_{header_cost}, elem_cost_{elem_cost}
     {
         std::fill( std::begin(mask_), std::end(mask_), false );
-        size_ = 1;  //  End marker
+        byte_size_ = header_cost_;  //  End marker
     }
 
     const std::vector<bool> &mask() const { return mask_; }
 
-    size_t size() const { return size_; }
+    size_t size() const
+    {
+        assert( byte_size_<=header_cost_+N*elem_cost_ );
+        return byte_size_;
+    }
 
     size_t set( size_t n )
     {
@@ -272,13 +293,13 @@ public:
         if (mask_[n])
             return size();
         mask_[n] = true;
-        size_ += 2;
+        byte_size_ += header_cost_ + elem_cost_;
             //  Collapses with previous
         if (n>0 && mask_[n-1])
-            size_--;
+            byte_size_-= header_cost_;
             //  Collapses with next
         if (n<N-1 && mask_[n+1])
-            size_--;
+            byte_size_-= header_cost_;
 
         //  Auto-optimize
         if (n>0)
@@ -296,14 +317,15 @@ public:
         if (!mask_[n])
             return size();
         mask_[n] = false;
-            //  by default, removes one data, but adds a header, so no change
-        size_ += 0;
+            //  by default, removes one data, but adds a header
+        byte_size_ += header_cost_;
+        byte_size_ -= elem_cost_;
             //  Collapses with next if previous empty (don't add header)
         if (n>1 && !mask_[n-1])
-            size_--;
+            byte_size_ -= header_cost_;
             //  Collapses with previous if next empty (don't add header)
         if (n<N-1 && !mask_[n+1])
-            size_--;
+            byte_size_ -= header_cost_;
             //  If both, we removes both header and data
 
         return size();

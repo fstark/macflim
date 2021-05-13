@@ -53,7 +53,11 @@ public:
 
     void compress( double stability, size_t byterate, bool group, const std::string &filters, const std::string &watermark )
     {
-        compressor<u_int32_t> c{W_,H_};
+        // compressor<u_int8_t> c8{W_,H_};
+        // compressor<u_int16_t> c16{W_,H_};
+        compressor<u_int32_t> c32{W_,H_};
+
+        compressor<u_int32_t> &c = c32;
 
         image previous( W_, H_ );
         fill( previous, 0 );
@@ -83,6 +87,9 @@ public:
             round_corners( dest );
             ::watermark( dest, watermark );
             framebuffer fb{ dest };
+            // c8.set_target_image( fb );
+            // c16.set_target_image( fb );
+            // c32.set_target_image( fb );
             c.set_target_image( fb );
 
                 //  Let's see how many ticks we have to display this image
@@ -112,15 +119,18 @@ public:
                     //  What is the video budget?
                 size_t video_budget = byterate*local_ticks;
 
-                    //  Encode withing that budget
+                    //  Encode within that budget
                 f.video = c.next_tick( video_budget );
+
+                // c8.next_tick( video_budget );
+                // c32.next_tick( video_budget );
+                // std::clog << "Q8=" << c8.quality() << " Q16=" << c16.quality() << " Q32=" << c32.quality() << "\n";
 
                     //  Add the current frame buffer
                 f.result = c.get_current_framebuffer();
 
                 frames_.push_back( f );
             }
-
 
             auto q = c.quality();
             total_q += q;

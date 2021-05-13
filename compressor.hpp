@@ -89,7 +89,9 @@ public:
 
     std::vector<run<T>> compress( size_t max_size )
     {
-        packzmap packmap{ get_T_size() };
+        size_t header_size = sizeof(T)==4?4:2;
+
+        packzmap packmap{ get_T_size(), header_size, sizeof(T) };
 
         auto mx = *std::max_element( std::begin(delta_), std::end(delta_) );
 
@@ -102,8 +104,9 @@ public:
 
         for (int i=deltas.size()-1;i!=0;i--)
             for (auto ix:deltas[i])
-                if (packmap.set(ix)*sizeof(T)>=max_size)
+                if (packmap.set(ix)>=max_size)
                 {
+                    // std::clog << "Clearing at delta " << i << " size " << packmap.size() << " (index was:" << ix << ")\n";
                     packmap.clear(ix);
                     break;
                 }
@@ -143,7 +146,7 @@ public:
             size += 4;
             size += run.data.size()*sizeof(T);
         }
-        // std::clog << "COMPRESSED SIZE " << size << "\n";
+        // std::clog << "COMPRESSED SIZE " << size << " / MAXSIZE " << max_size << "\n";
 
             //  #### Decompresses -- needs to be moved to the right object
 
@@ -161,7 +164,7 @@ public:
             size_t scr_x = offset%64;
             size_t scr_y = offset/64;
 
-            scr_x /= 4;
+            scr_x /= sizeof(T);
 
             offset = scr_x * 342 + scr_y;
 
