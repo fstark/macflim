@@ -174,7 +174,7 @@ public:
             auto block_ptr = std::back_inserter( block_content );
             size_t current_block_size = 0;
 
-            while (current_block_size+current_frame->get_size()<buffer_size_ && current_frame!=std::end(frames))
+            while (current_frame!=std::end(frames) && current_block_size+current_frame->get_size()<buffer_size_)
             {
                 write2( block_ptr, current_frame->ticks*370+8 );           //  size of sound + header + size itself
                 write2( block_ptr, 0 );                       //  ffMode

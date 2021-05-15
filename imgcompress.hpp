@@ -81,7 +81,7 @@ public:
     bool increment()
     {
         offset_ += width_;
-        if (offset_>width_*height_)
+        if (offset_>=width_*height_)
         {
             offset_ -= width_*height_-1;
             return true;
@@ -101,6 +101,31 @@ struct run
     {
         return offset==rhs.offset && data==rhs.data;
     }
+
+        //  Split the run in a series of new runs, none larger than max_size
+    std::vector<run> split( size_t max_size, size_t strideT ) const
+    {
+        std::vector<run> res;
+
+        run r;
+        r.offset = offset;
+
+        auto p = std::begin(data);
+        while (p!=std::end(data))
+        {
+            r.data.push_back( *p++ );
+            if (r.data.size()==max_size && p!=std::end(data))
+            {
+                res.push_back( r );
+                r.offset += max_size*strideT;
+                r.data.resize(0);
+            }
+        }
+
+        res.push_back( r );
+
+        return res;
+    }
 };
 
 #include <iostream>
@@ -110,8 +135,8 @@ const size_t kHeaderSize = 2;
 template <typename T>
 inline std::vector<run<T>> pack(
     typename std::vector<T>::const_iterator data,
-    std::vector<bool>::const_iterator pack_begin,
-    std::vector<bool>::const_iterator pack_end,
+    std::vector<bool>::const_iterator pack_begin,   //  Given in real screen order, probably a mistake
+    std::vector<bool>::const_iterator pack_end,     //  (offset_t does the automatic conversion, so we scan in vertical order)
     size_t max_pack_bytes,
     size_t width,
     size_t height

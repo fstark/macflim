@@ -7,6 +7,7 @@
 #include "compressor.hpp"
 
 #include <vector>
+#include <array>
 #include <bitset>
 #include <algorithm>
 
@@ -53,11 +54,10 @@ public:
 
     void compress( double stability, size_t byterate, bool group, const std::string &filters, const std::string &watermark )
     {
-        // compressor<u_int8_t> c8{W_,H_};
-        // compressor<u_int16_t> c16{W_,H_};
+            //  The 3 possible compressor
+        compressor<u_int8_t> c8{W_,H_};
+        compressor<u_int16_t> c16{W_,H_};
         compressor<u_int32_t> c32{W_,H_};
-
-        compressor<u_int32_t> &c = c32;
 
         image previous( W_, H_ );
         fill( previous, 0 );
@@ -87,10 +87,11 @@ public:
             round_corners( dest );
             ::watermark( dest, watermark );
             framebuffer fb{ dest };
-            // c8.set_target_image( fb );
-            // c16.set_target_image( fb );
-            // c32.set_target_image( fb );
-            c.set_target_image( fb );
+
+                //  Direct the 3 encoders to try this image
+            c8.set_target_image( fb );
+            c16.set_target_image( fb );
+            c32.set_target_image( fb );
 
                 //  Let's see how many ticks we have to display this image
             in_fr++;
@@ -118,21 +119,66 @@ public:
 
                     //  What is the video budget?
                 size_t video_budget = byterate*local_ticks;
+               
+                    //  Encode within that budget with every codec
+                std::array<std::vector<uint8_t>,3> encodes = 
+                {
+                    c8.next_tick( video_budget*.5 ),
+                    c16.next_tick( video_budget ),
+                    c32.next_tick( video_budget )
+                };
 
-                    //  Encode within that budget
-                f.video = c.next_tick( video_budget );
+                std::array<double,3> qualities = { c8.quality(), c16.quality(), c32.quality() };
+                auto best_ix = std::max_element( std::begin(qualities), std::end(qualities) )-std::begin(qualities);
 
-                // c8.next_tick( video_budget );
-                // c32.next_tick( video_budget );
-                // std::clog << "Q8=" << c8.quality() << " Q16=" << c16.quality() << " Q32=" << c32.quality() << "\n";
+                if (qualities[1]>qualities[2])
+                    best_ix = 1;
+                else
+                    best_ix = 2;
+
+                // std::clog << " [" << qualities[0] << "," << qualities[1] << "," << qualities[2] << "]=";
+
+                std::clog << best_ix;
+
+                f.video = encodes[best_ix];
+                f.video.insert( std::begin(f.video), best_ix );
+
+                // f.video = c32.next_tick( video_budget );
+                // f.video.insert( std::begin(f.video), 2 );
+
+                f.video.insert( std::begin(f.video), 0x00 );
+                f.video.insert( std::begin(f.video), 0x00 );
+                f.video.insert( std::begin(f.video), 0x00 );
 
                     //  Add the current frame buffer
-                f.result = c.get_current_framebuffer();
+                if (best_ix==0)
+                {
+                    c16.set_current_image( c8.get_current_framebuffer() );
+                    c32.set_current_image( c8.get_current_framebuffer() );
+                    f.result = c8.get_current_framebuffer();
+                }
+                if (best_ix==1)
+                {
+                    c8.set_current_image( c16.get_current_framebuffer() );
+                    c32.set_current_image( c16.get_current_framebuffer() );
+                    f.result = c16.get_current_framebuffer();
+                }
+                if (best_ix==2)
+                {
+                    c8.set_current_image( c32.get_current_framebuffer() );
+                    c16.set_current_image( c32.get_current_framebuffer() );
+                    f.result = c32.get_current_framebuffer();
+                }
+
+                // f.result = c32.get_current_framebuffer();
 
                 frames_.push_back( f );
             }
 
-            auto q = c.quality();
+            // auto q = c.quality();
+
+            auto q = c32.quality();
+
             total_q += q;
             if (q!=1)
             {

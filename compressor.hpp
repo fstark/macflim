@@ -5,6 +5,7 @@
 #include <bitset>
 #include <iostream>
 #include <algorithm>
+#include <numeric>
 
 #include "framebuffer.hpp"
 
@@ -77,7 +78,13 @@ public:
     }
 
     framebuffer get_current_framebuffer() const { return framebuffer(current_data_,W_,H_); }
-    framebuffer get_target_framebuffer() const { return framebuffer(target_data_,W_,H_); }
+ 
+    void set_current_image( const framebuffer &image )
+    {
+        current_data_ = image.raw_values<T>();
+    }
+
+   framebuffer get_target_framebuffer() const { return framebuffer(target_data_,W_,H_); }
 
     double quality() const
     {
@@ -85,6 +92,27 @@ public:
         for (int i=0;i!=get_T_size();i++)
             b += xcountbits( current_data_[i]^target_data_[i] );
         return 1-b/(double)(W_*H_);
+    }
+
+        /// Sets the new target image
+    void set_target_image( const framebuffer &image )
+    {
+        assert( image.W()==W_ && image.H()==H_ );
+        auto new_data = image.raw_values<T>();
+        for (int i=0;i!=get_T_size();i++)
+        {
+            target_data_[i] = new_data[i];
+            if (current_data_[i]==target_data_[i])
+                    //  Data is identical, we don't care about updating this
+                delta_[i] = 0;
+            else
+            {
+                    //  Let's increase the importance of updating this
+                // delta_[i] += countbits( target_data_[i] ^ current_data_[i] );
+                delta_[i] = distance( target_data_[i], current_data_[i] );
+                // printf( "DIFF %x %x = %ld\n", target_data_[i], current_data_[i], delta_[i] );
+            }
+        }
     }
 
     std::vector<run<T>> compress( size_t max_size )
@@ -140,17 +168,134 @@ public:
 
         auto runs = compress( max_size );
 
-        size_t size = 4;
+        for (auto &run:runs)
+            if (run.offset>=get_T_size())
+            {
+                std::clog << "\n\n" << sizeof(T) << ": at " << run.offset << " " << run.data.size() << " data elements\n";
+                assert( run.offset<get_T_size() );
+            }
+
+
+        // size_t size = 4;
+        // for (auto &run:runs)
+        // {
+        //     size += sizeof(T);
+        //     size += run.data.size()*sizeof(T);
+        // }
+        // std::clog << "APPROX COMPRESSED SIZE " << size << " / MAXSIZE " << max_size << "\n";
+
+            //  Encode the runs
+        std::vector<uint8_t> res;
+
+        const int max_run_len = 127;
+            //  Runs must not contain more than 256 bytes
+        std::vector<run<T>> smaller;
         for (auto &run:runs)
         {
-            size += 4;
-            size += run.data.size()*sizeof(T);
+            // if (run.data.size()<255)
+            //     smaller.push_back( run );
+            // else
+            //     std::clog << "SKIPPING!\n";
+                //  #### : FIXME 32 words on screen
+            auto rs = run.split( max_run_len, 64/sizeof(T) );
+
+            for (auto &run2:rs)
+                if (run2.offset>=get_T_size())
+                {
+                    std::clog << "\n" << sizeof(T) << ": at " << run.offset << " " << run.data.size() << " data elements split:\n";
+                    std::clog << "" << sizeof(T) << ": at " << run2.offset << " " << run2.data.size() << " data elements\n";
+                }
+
+            smaller.insert( std::end(smaller), std::begin(rs), std::end(rs) );
         }
-        // std::clog << "COMPRESSED SIZE " << size << " / MAXSIZE " << max_size << "\n";
+
+        for (auto &run:smaller)
+        {
+            if (run.offset>=get_T_size())
+                std::clog << "\n\n" << sizeof(T) << ": at " << run.offset << " " << run.data.size() << " data elements\n";
+            assert( run.offset<get_T_size() );
+        }
+
+            //  Sorts the runs
+        std::sort( std::begin(smaller), std::end(smaller), [](auto &a, auto &b) {return a.offset < b.offset; } );
+
+            //  Runs must be separated by at most 255 items
+        std::vector<run<T>> closer;
+        size_t offset = 0;
+        for (auto &run:smaller)
+        {
+            while (run.offset-offset>255)
+            {
+                offset += 255;
+                closer.push_back( { offset, {} } );
+            }
+            closer.push_back( run );
+            offset = run.offset;
+        }
+
+        for (auto &run:closer)
+            assert( run.offset<get_T_size() );
+
+        // for (auto &run:closer)
+        //     if (run.data.size()==0 && run.offset!=255)
+        //         std::clog << "???" << "\n";
+
+        //  Split long runs
+
+            //  Compute the difference
+        // size_t cur = 0;
+        // for (auto &run:closer)
+        // {
+            // std::clog << run.offset-cur << "/" << run.data.size() << " ";
+
+            // assert( run.data.size()<=max_run_len );
+            // assert( run.offset-cur<=255 );
+
+// << "[" << run.offset << "]"
+            // cur = run.offset;
+        // }
+        // std::clog << "\n";
+
+
+            //  Encode Z32
+        if (sizeof(T)==4)
+        {
+            for (auto &run:runs)
+            {
+                uint32_t header = ((run.data.size()-1)<<16)+((run.offset+1)*sizeof(T));
+
+                auto v = from_value( header );
+                res.insert( std::end(res), std::begin(v), std::end(v) );
+                auto vs = from_values( run.data );
+                res.insert( std::end(res), std::begin(vs), std::end(vs) );
+            }
+            res.push_back( 0x00 );
+            res.push_back( 0x00 );
+            res.push_back( 0x00 );
+            res.push_back( 0x00 );
+        }
+
+            //  Encode Z16
+        if (sizeof(T)==2)
+        {
+            size_t current = 0;
+            for (auto &run:closer)
+            {
+                uint16_t header = ((run.offset-current)<<8)+run.data.size();    //  oooooooo 0 sssssss
+                current = run.offset;
+
+                auto v = from_value( header );
+                res.insert( std::end(res), std::begin(v), std::end(v) );
+                auto vs = from_values( run.data );
+                res.insert( std::end(res), std::begin(vs), std::end(vs) );
+            }
+            res.push_back( 0x00 );
+            res.push_back( 0x00 );
+        }
 
             //  #### Decompresses -- needs to be moved to the right object
 
-        for (auto &run:runs)
+        for (auto &run:closer)
         {
             
         // auto s = std::begin(res);
@@ -161,6 +306,8 @@ public:
 
             size_t offset = run.offset*sizeof(T);
 
+            assert( run.offset<get_T_size() );
+
             size_t scr_x = offset%64;
             size_t scr_y = offset/64;
 
@@ -170,6 +317,7 @@ public:
 
             for (auto &v:run.data)
             {
+                assert( offset<get_T_size() );
                 current_data_[offset] = v;
                 delta_[offset] = 0;
                 offset++;
@@ -200,44 +348,7 @@ public:
             img++;
         }
 
-            //  Encode the runs
-        std::vector<uint8_t> res;
-        for (auto &run:runs)
-        {
-            uint32_t header = ((run.data.size()-1)<<16)+((run.offset+1)*sizeof(T));
-
-            auto v = from_value( header );
-            res.insert( std::end(res), std::begin(v), std::end(v) );
-            auto vs = from_values( run.data );
-            res.insert( std::end(res), std::begin(vs), std::end(vs) );
-        }
-        res.push_back( 0x00 );
-        res.push_back( 0x00 );
-        res.push_back( 0x00 );
-        res.push_back( 0x00 );
-
         return res;
-    }
-
-        /// Sets the new target image
-    void set_target_image( const framebuffer &image )
-    {
-        assert( image.W()==W_ && image.H()==H_ );
-        auto new_data = image.raw_values<T>();
-        for (int i=0;i!=get_T_size();i++)
-        {
-            target_data_[i] = new_data[i];
-            if (current_data_[i]==target_data_[i])
-                    //  Data is identical, we don't care about updating this
-                delta_[i] = 0;
-            else
-            {
-                    //  Let's increase the importance of updating this
-                // delta_[i] += countbits( target_data_[i] ^ current_data_[i] );
-                delta_[i] = distance( target_data_[i], current_data_[i] );
-                // printf( "DIFF %x %x = %ld\n", target_data_[i], current_data_[i], delta_[i] );
-            }
-        }
     }
 };
 

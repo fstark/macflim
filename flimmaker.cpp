@@ -80,11 +80,10 @@ int main( int argc, char **argv )
 
     std::string comment = "FLIM\n";
     
-    comment += "command-line:";
-
     for (int i=0;i!=argc;i++)
     {
-        comment += " ";
+        if (i!=0)
+            comment += " ";
         comment += argv[i];
     }
 
