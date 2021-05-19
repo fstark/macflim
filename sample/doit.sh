@@ -4,37 +4,37 @@
 
 # rm -f *.pgm
 
-# The Shining Johnny
-# youtube-dl -f 22 https://www.youtube.com/watch?v=d-ABIIZV3vA -o source/The_Shining_Johnny.mp4
+# # The Shining Johnny
+# # youtube-dl -f 22 https://www.youtube.com/watch?v=d-ABIIZV3vA -o source/The_Shining_Johnny.mp4
 ./encode The_Shining_Johnny source/The_Shining_Johnny.mp4 00:00:00 00:02:45 25 1687
 
-# Amiga Boing
-# youtube-dl -f 22 https://www.youtube.com/watch?v=YlAhRJjOhDg -o source/Amiga_Ball.mp4
+# # Amiga Boing
+# # youtube-dl -f 22 https://www.youtube.com/watch?v=YlAhRJjOhDg -o source/Amiga_Ball.mp4
 ./encode Amiga_Ball source/Amiga_Ball.mp4 00:00:00 00:02:45 30 1048
 
-# ADB Color Classic 1
-# youtube-dl -f 22 https://www.youtube.com/watch?v=yRvyrUFgGU8 -o source/Adrian1.mp4
-./encode Adrian1 source/Adrian1.mp4 00:00:00 00:02:45 29.970 770
+# # ADB Color Classic 1
+# # youtube-dl -f 22 https://www.youtube.com/watch?v=yRvyrUFgGU8 -o source/Adrian1.mp4
+# ./encode Adrian1 source/Adrian1.mp4 00:00:00 00:02:45 29.970 770
 
-# Star Wars Intro
+# # Star Wars Intro
 ./encode Star_Wars_Intro source/StarWars.mp4 00:01:53 00:01:00 23.976 915
 
-# MayTheForceBeWithYou
-# youtube-dl -f 22 https://www.youtube.com/watch?v=66Ux1D9MDOk -o source/May_The_Force.mp4
+# # MayTheForceBeWithYou
+# # youtube-dl -f 22 https://www.youtube.com/watch?v=66Ux1D9MDOk -o source/May_The_Force.mp4
 ./encode May_The_Force source/May_The_Force.mp4 00:00:00 01:00:00.000 29.970 2481
 
-# Star Wars Attack
+# # Star Wars Attack
 ./encode Star_Wars_Death_Star source/StarWars.mp4 01:53:38 00:03:59.950 23.976 1841
 
-# 300
+# # 300
 ./encode 300 source/300.mp4 00:11:38 00:01:40 23.976 1630
 
 # Matrix Bullet Time
-./encode Matrix_Bullet_Time source/Matrix.mp4 01:46:15 00:00:43.280 23.976 918 &
+./encode Matrix_Bullet_Time source/Matrix.mp4 01:46:15 00:00:43.280 23.976 918
 
 # Bad Apple
 #youtube-dl -f 18 https://www.youtube.com/watch?v=i41KoE0iMYU -o source/Bad_Apple.mp4
-./encode Bad_Apple source/Bad_Apple.mp4 00:00:00 00:10:00 23.976 1823
+./encode Bad_Apple source/Bad_Apple.mp4 00:00:00 00:10:00 29.970 1823
 
 # Tron race
 #youtube-dl -f 22 https://www.youtube.com/watch?v=1kyiQzc4134 -o source/Tron_Race.mp4
@@ -98,8 +98,8 @@
 
 # youtube-dl -f 22 https://www.youtube.com/watch?v=pWhB-6MR4qs -o source/The_Neo_Demon.mp4
 
-cp -up z-*/*.flim /mnt/data0/WebSites/www.macflim.com/techdemo/
-cp -up z-*/*.gif /mnt/data0/WebSites/www.macflim.com/techdemo/
-cp -up z-*/*macplus.mp4 /mnt/data0/WebSites/www.macflim.com/techdemo/
-cp -up z-*/*macse.mp4 /mnt/data0/WebSites/www.macflim.com/techdemo/
-cp -up z-*/*se30.mp4 /mnt/data0/WebSites/www.macflim.com/techdemo/
+# cp -up z-*/*.flim /mnt/data0/WebSites/www.macflim.com/techdemo/
+# cp -up z-*/*.gif /mnt/data0/WebSites/www.macflim.com/techdemo/
+# cp -up z-*/*macplus.mp4 /mnt/data0/WebSites/www.macflim.com/techdemo/
+# cp -up z-*/*macse.mp4 /mnt/data0/WebSites/www.macflim.com/techdemo/
+# cp -up z-*/*se30.mp4 /mnt/data0/WebSites/www.macflim.com/techdemo/

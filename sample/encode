@@ -37,7 +37,8 @@ FFMPEG_ARGS="-loglevel warning"
 # FFMPEG_ARGS="-stats"
 
 # Extract short clip
-echo "${STEM} : EXTRACTING CLIP FROM $MOVIE_FILE"
+echo -n "${STEM} : EXTRACTING CLIP FROM $MOVIE_FILE AT "
+date
 ffmpeg ${FFMPEG_ARGS} -y -ss "$START_TIME" -t "$DURATION" -i "$MOVIE_FILE" "${STEM}/shorter.mp4"
 
 # Rescale the clip
@@ -59,7 +60,7 @@ if [ "${FLIM_MACPLUS}" = "YES" ]
         # Encode as flim
         echo "${STEM} : PERFORMING FLIM CONVERSION FOR MACPLUS"
         rm -f "${STEM}"/out*.pgm
-        ( cd "${STEM}" && ../../flimmaker --from 1 --to 10000 --byterate 1600 --fps "$FRAME_RATE" --buffer-size 300000 --stability 0.5 --comment "${MOVIE}-MacPlus" --filters gsQc --out "$MOVIE"-macplus.flim --half-rate )
+        ( cd "${STEM}" && ../../flimmaker --from 1 --to 10000 --byterate 1600 --fps "$FRAME_RATE" --buffer-size 300000 --stability 0.5 --watermark "macplus" --auto-watermark true --filters gsqc --out "$MOVIE"-macplus.flim --half-rate true --codec z32 --codec lines:count=35 --codec invert )
 
         if [ "${GENERATE_MP4}" = "YES" ]
             then
@@ -81,7 +82,7 @@ if [ "${FLIM_MACSE}" = "YES" ]
         # Encode as flim
         echo "${STEM} : PERFORMING FLIM CONVERSION FOR SE"
         rm -f "${STEM}"/out*.pgm
-        ( cd "${STEM}" && ../../flimmaker --from 1 --to 10000 --byterate 2500 --fps "$FRAME_RATE" --buffer-size 300000 --stability 0.5 --comment "${MOVIE}-MacSE" --filters "$FILTERS" --out "$MOVIE"-macse.flim --half-rate )
+        ( cd "${STEM}" && ../../flimmaker --from 1 --to 10000 --byterate 2500 --fps "$FRAME_RATE" --buffer-size 300000 --stability 0.5 --comment "${MOVIE}-MacSE" --filters "$FILTERS" --out "$MOVIE"-macse.flim --half-rate true )
 
         if [ "${GENERATE_MP4}" = "YES" ]
             then
@@ -104,7 +105,7 @@ if [ "${FLIM_SE30}" = "YES" ]
         echo "${STEM} : PERFORMING FLIM CONVERSION FOR SE30"
         pwd
         rm -f "${STEM}"/out*.pgm
-        ( cd "${STEM}" && ../../flimmaker --from 1 --to 10000 --byterate 6000 --fps "$FRAME_RATE" --buffer-size 300000 --stability 0.3 --comment "${MOVIE}-SE/30" --filters "$FILTERS" --out "$MOVIE"-se30.flim --group  --cover "${COVER_INDEX}" )
+        ( cd "${STEM}" && ../../flimmaker --from 1 --to 10000 --byterate 6000 --fps "$FRAME_RATE" --buffer-size 300000 --stability 0.3 --comment "${MOVIE}-SE/30" --filters "$FILTERS" --out "$MOVIE"-se30.flim --group true --cover "${COVER_INDEX}" )
 
         # Generate gif for cover
         # echo "CREATING POSTER IMAGE"

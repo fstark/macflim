@@ -1,0 +1,33 @@
+#!/bin/bash
+
+cd current
+
+set -e
+
+FLIMAKER_ARGS="--from 1 --to 10000 --byterate 1500 --fps 23.976 --buffer-size 300000 --stability 0.5 --filters gbbscz --codec z32 --codec invert --codec lines:count=35 --auto-watermark true --byterate 1500 --half-rate true"
+
+FFMPEG_ARGS="-loglevel warning -y -pattern_type sequence -start_number 1 -i "out-%06d.pgm" -s 512x342 -c:v libx264"
+
+rm -f out*.pgm
+../../flimmaker ${FLIMAKER_ARGS} --stability 0.5 --out output1.flim --filters gscz
+ffmpeg -framerate 23.976 ${FFMPEG_ARGS} output1.mp4
+
+rm -f out*.pgm
+../../flimmaker ${FLIMAKER_ARGS} --stability 0.5 --out output2.flim --filters gscz --dither ordered
+ffmpeg  -framerate 23.976 ${FFMPEG_ARGS} output2.mp4
+
+rm -f out*.pgm
+../../flimmaker ${FLIMAKER_ARGS} --stability 0.5 --out output3.flim --filters gsqcz
+ffmpeg -framerate 23.976 ${FFMPEG_ARGS} output3.mp4
+
+rm -f out*.pgm
+../../flimmaker ${FLIMAKER_ARGS} --stability 0.5 --out output4.flim --filters gsqcz --dither ordered
+ffmpeg -framerate 23.976 ${FFMPEG_ARGS} output4.mp4
+
+ffmpeg -y -i output1.mp4 -i output2.mp4 -i output3.mp4 -i output4.mp4 -filter_complex "[0:v][1:v]hstack=inputs=2[top]; [2:v][3:v]hstack=inputs=2[bottom]; [top][bottom]vstack=inputs=2[v]" -map "[v]" grid.mp4
+
+
+#../../flimmaker ${FLIMAKER_ARGS} --stability 0.5 --out output1.flim --byterate 6000 --half-rate 
+#ffmpeg -framerate 60 ${FFMPEG_ARGS} output1.mp4
+#../../flimmaker ${FLIMAKER_ARGS} --stability 0.3 --out output4.flim --byterate 21888 --group
+#ffmpeg -framerate 23.976 ${FFMPEG_ARGS} output4.mp4
