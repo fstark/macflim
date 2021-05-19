@@ -5,35 +5,178 @@
 
 #include "flimcompressor.hpp"
 
+/**
+ * A set of encoding parameters
+ */
+class encoding_profile
+{
+protected:
+    size_t W_ = 512;
+    size_t H_ = 342;
+
+    size_t byterate_ = 2000;
+    size_t buffer_size_ = 300000;
+    double stability_ = 0.3;
+    bool half_rate_ = false;
+    bool group_ = true;
+    std::string filters_ = "c";
+    
+    image::dithering dither_ = image::floyd_steinberg;
+
+    std::vector<flimcompressor::codec_spec> codecs_;
+
+public:
+
+    size_t width() const { return W_; }
+    size_t height() const { return H_; }
+    void set_size( size_t W, size_t H ) { W_ = W; H_ = H; }
+
+    size_t byterate() const { return byterate_; }
+    void set_byterate( size_t byterate ) { byterate_ = byterate; }
+
+    size_t buffer_size() const { return buffer_size_; }
+    void set_buffer_size( size_t buffer_size ) { buffer_size_ = buffer_size; }
+
+    bool half_rate() const { return half_rate_; }
+    void set_half_rate( bool half_rate ) { half_rate_ = half_rate; }
+
+    bool group() const { return group_; }
+    void set_group( bool group ) { group_ = group; }
+
+    std::string filters() const { return filters_; }
+    void set_filters( const std::string filters ) { filters_ = filters; }
+
+    image::dithering dither() const { return dither_; }
+    bool set_dither( std::string dither )
+    {
+        if (dither=="ordered")
+            dither_ = image::ordered;
+        else if (dither=="floyd")
+            dither_ = image::floyd_steinberg;
+        else
+            return false;
+        return true;
+    }
+    void set_dither( image::dithering dither ) { dither_ = dither; }
+
+    double stability() const { return stability_; }
+    void set_stability( double stability ) { stability_ = stability; }
+
+    const std::vector<flimcompressor::codec_spec> &codecs() const { return codecs_; }
+    void set_codecs( const std::vector<flimcompressor::codec_spec> &codecs ) { codecs_ = codecs; }
+
+    static encoding_profile profile_named( const std::string name )
+    {
+        encoding_profile result;
+        result.set_size( 512, 342 );
+        result.set_buffer_size( 300000 );
+
+        if (name=="macplus"s)
+        {
+            result.set_byterate( 1500 );
+            result.set_filters( "gbbscz" );
+            result.set_half_rate( true );
+            result.set_group( false );
+            result.set_dither( "ordered" );
+            result.set_stability( 0.5 );
+            result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "lines:count=30", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
+        }
+        if (name=="macse"s)
+        {
+            result.set_byterate( 2500 );
+            result.set_filters( "gbsc" );
+            result.set_half_rate( true );
+            result.set_group( false );
+            result.set_dither( "floyd" );
+            result.set_stability( 0.5 );
+            result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "lines:count=50", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
+        }
+        if (name=="se30"s)
+        {
+            result.set_byterate( 6000 );
+            result.set_filters( "gsc" );
+            result.set_half_rate( false );
+            result.set_group( true );
+            result.set_dither( "floyd" );
+            result.set_stability( 0.3 );
+            result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "lines:count=70", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
+        }
+
+        return result;
+    }
+
+    std::string dither_string() const
+    {
+        switch (dither_)
+        {
+            case image::floyd_steinberg:
+                return "floyd";
+            case image::ordered:
+                return "ordered";
+        }
+        return "???";
+    }
+
+    std::string description() const
+    {
+        char buffer[1024];
+        sprintf( buffer, "br:%ld st:%.2f%s%s fi:%s %s\n", byterate_, stability_, half_rate_?" half-rate":"", group_?" group":"", filters_.c_str(), dither_string().c_str() );
+        std::string res = buffer;
+        for (auto &c:codecs_)
+        {
+            char buffer2[1024];
+            sprintf( buffer2, "%.2g*%s\n", c.penality, c.coder->description().c_str() );
+            res += buffer2;
+        }
+        return res;
+    }
+};
+
 class flimencoder
 {
-    size_t W_;
-    size_t H_;
+    const encoding_profile &profile_;
 
     const std::string in_;
     const std::string audio_;
 
+    std::string out_pattern_ = "out-%06d.pgm"s;
+    std::string change_pattern_ = "change-%06d.pgm"s;
+    std::string diff_pattern_ = "diff-%06d.pgm"s;
+    std::string target_pattern_ = "target-%06d.pgm"s;
+
     std::vector<image> images_;
     std::vector<uint8_t> audio_samples_;
 
-    size_t byterate_ = 2000;
     double fps_ = 24.0;
 
-    size_t buffer_size_ = 300000;
-
-    double stability_ = 0.3;
-
-    bool half_rate_ = false;
-    bool group_ = true;
-
     std::string comment_;
-
-    std::string filters_;
 
     std::string watermark_;
 
     size_t cover_begin_;        /// Begin index of cover image
     size_t cover_end_;          /// End index of cover image 
+
+    void delete_files_of_pattern( const std::string &pattern )
+    {
+        int i = 0;
+        char filepath[1024];
+        std::clog << "Deleting files of pattern [" << pattern << "] ..." << std::flush;
+        do
+        {
+            i++;
+            sprintf( filepath, pattern.c_str(), i );
+        }   while (!remove(filepath));
+        std::clog << i << " files deleted\n";
+    }
 
     size_t frame_from_image( size_t n ) const
     {
@@ -64,7 +207,7 @@ class flimencoder
             char buffer[1024];
             sprintf( buffer, in_.c_str(), i );
 
-            image img( W_, H_ );
+            image img( profile_.width(), profile_.height() );
 
             if (!read_image( img, buffer ))
                 return;
@@ -105,7 +248,7 @@ class flimencoder
 
         auto min_sample = *std::min_element( std::begin(audio_samples_), std::end(audio_samples_) );
         auto max_sample = *std::max_element( std::begin(audio_samples_), std::end(audio_samples_) );
-        std::clog << "MIN= " << (int)min_sample << " MAX= " << (int)max_sample << "\n";
+        std::clog << " SAMPLE MIN:" << (int)min_sample << " SAMPLE MAX:" << (int)max_sample << "\n";
     }
 
     void fix()
@@ -130,35 +273,48 @@ class flimencoder
     }
 
 public:
-    flimencoder( size_t W, size_t H, const std::string &in, const std::string &audio ) : W_{W}, H_{H}, in_{in}, audio_{audio} {}
+    flimencoder( const encoding_profile &profile, const std::string &in, const std::string &audio ) : profile_{ profile }, in_{in}, audio_{audio} {}
 
-    void set_byterate( size_t byterate ) { byterate_ = byterate; }
     void set_fps( double fps ) { fps_ = fps; }
-    void set_buffer_size( size_t buffer_size ) { buffer_size_ = buffer_size; }
-    void set_stability( double stability ) { stability_ = stability; }
-    void set_half_rate( bool half_rate ) { half_rate_ = half_rate; }
-    void set_group( bool group ) { group_ = group; }
-    void set_comment( const std::string &comment ) { comment_ = comment; }
-    void set_filters( const std::string &filters ) { filters_ = filters; }
+    void set_comment( const std::string comment ) { comment_ = comment; }
     void set_cover( size_t cover_begin, size_t cover_end ) { cover_begin_ = cover_begin; cover_end_ = cover_end; }
-    void set_watermark( const std::string &watermark ) { watermark_ = watermark; }
+    void set_watermark( const std::string watermark ) { watermark_ = watermark; }
+    void set_out_pattern( const std::string pattern ) { out_pattern_ = pattern; }
+    void set_diff_pattern( const std::string pattern ) { diff_pattern_ = pattern; }
+    void set_change_pattern( const std::string pattern ) { change_pattern_ = pattern; }
+    void set_target_pattern( const std::string pattern ) { target_pattern_ = pattern; }
 
     //  Encode all the blocks
     void make_flim( const std::string flim_pathname, size_t from, size_t to )
     {  
-        if (half_rate_)
+        if (profile_.half_rate())
         {
             fps_ /= 2;
         }
 
-        read_images( from, to, half_rate_ );
+        read_images( from, to, profile_.half_rate() );
+        // framebuffer r0{ W_, H_ };
+        // framebuffer r1{ W_, H_ };
+        // r0.randomize( 0 );
+        // r1.randomize( 1 );
+        // auto i0 = r0.as_image();
+        // auto i1 = r1.as_image();
+        // images_.push_back( i0 );
+        // for (int i=from+1;i<to+1;i++)
+        //     images_.push_back( i1 );
+
         read_audio( from, images_.size() );
 
         fix();
 
-        flimcompressor fc{ W_, H_, images_, audio_samples_, fps_ };
+        flimcompressor fc{ profile_.width(), profile_.height(), images_, audio_samples_, fps_ };
 
-        fc.compress( stability_, byterate_, group_, filters_, watermark_ );
+        fc.compress( profile_.stability(), profile_.byterate(), profile_.group(), profile_.filters(), watermark_, profile_.codecs(), profile_.dither() );
+
+        if (out_pattern_!="") delete_files_of_pattern( out_pattern_ );
+        if (diff_pattern_!="") delete_files_of_pattern( diff_pattern_ );
+        if (change_pattern_!="") delete_files_of_pattern( change_pattern_ );
+        if (target_pattern_!="") delete_files_of_pattern( target_pattern_ );
 
         auto frames = fc.get_frames();
 
@@ -167,6 +323,9 @@ public:
 
         auto block_first_frame = std::begin(frames);
 
+        framebuffer previous_frame{ profile_.width(), profile_.height() };
+        previous_frame.fill( 0xff );
+
         auto current_frame = block_first_frame;
         while(current_frame!=std::end(frames))
         {
@@ -174,8 +333,40 @@ public:
             auto block_ptr = std::back_inserter( block_content );
             size_t current_block_size = 0;
 
-            while (current_frame!=std::end(frames) && current_block_size+current_frame->get_size()<buffer_size_)
+            while (current_frame!=std::end(frames) && current_block_size+current_frame->get_size()<profile_.buffer_size())
             {
+                //  logs current image
+                {
+                    static int img = 1;
+                    char buffer[1024];
+                    if (out_pattern_!="")
+                    {
+                        sprintf( buffer, out_pattern_.c_str(), img );
+                        auto logimg = current_frame->result.as_image();
+                        write_image( buffer, logimg );
+                    }
+                    if (diff_pattern_!="")
+                    {
+                        sprintf( buffer, diff_pattern_.c_str(), img );
+                        auto logimg = (current_frame->result^current_frame->source).inverted().as_image();
+                        write_image( buffer, logimg );
+                    }
+                    if (change_pattern_!="")
+                    {
+                        sprintf( buffer, change_pattern_.c_str(), img );
+                        auto logimg = (current_frame->result^previous_frame).inverted().as_image();
+                        write_image( buffer, logimg );
+                        previous_frame = current_frame->result;
+                    }
+                    if (target_pattern_!="")
+                    {
+                        sprintf( buffer, target_pattern_.c_str(), img );
+                        auto logimg = current_frame->source.as_image();
+                        write_image( buffer, logimg );
+                    }
+                    img++;
+                }
+
                 write2( block_ptr, current_frame->ticks*370+8 );           //  size of sound + header + size itself
                 write2( block_ptr, 0 );                       //  ffMode
                 write4( block_ptr, 65536 );                   //  rate
@@ -221,43 +412,6 @@ public:
                 write_image( buffer, logimg );
             }
         }
-
-
-    /*
-        int frames_per_buffer = buffer_size_/(byterate_+370+70); //overhhead max 
-
-        for (int i=0;i<frame_count;i+=frames_per_buffer)
-        {
-            int frames_in_buffer = frames_per_buffer;
-
-            if (i+frames_in_buffer>frame_count)
-                frames_in_buffer = frame_count-i;
-
-            std::vector<uint8_t> block;
-            auto out = std::back_inserter(block);
-
-            write4( out, 0x464C494D );
-            write2( out, frames_in_buffer );
-            for (int j=0;j!=frames_in_buffer;j++)
-            {
-                const typename flimcompressor<W,H>::frame &f = frames[i+j];
-                write2( out, f.ticks*370+8 );           //  size of sound + header + size itself
-                write2( out, 0 );                       //  ffMode
-                write4( out, 65536 );                   //  rate
-                write( out, f.audio );
-                write2( out, f.video.size()*4+2 );
-                write( out, f.video );
-            }
-
-            auto out_movie = std::back_inserter( movie );
-            write4( out_movie, block.size()+4 );
-            write( out_movie, block );
-        }
-
-        FILE *movie_file = fopen( flim_pathname.c_str(), "wb" );
-        fwrite( movie.data(), movie.size(), 1, movie_file );
-        fclose( movie_file );
-    */
     }
 };
 

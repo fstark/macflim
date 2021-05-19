@@ -6,116 +6,146 @@
 #include <iostream>
 #include <algorithm>
 #include <numeric>
+#include <cstdint>
+#include <bit>
+#include <limits>
 
 #include "framebuffer.hpp"
+#include "ruler.hpp"
+
+inline bool bool_from( const std::string &v )
+{
+    if (v=="true")
+        return true;
+    return false;
+}
 
 /**
- * A compressor is a statefull object that generated the data needed to progress from an image to the next
- * It keeps track of what is currently on screen, and what should be, and find an efficient way
- * to generates the best update in a limited bandwidth
+ * Encapsulate a way to compress a single frame transition
  */
-
-template <typename T>
 class compressor
 {
-    size_t W_;
-    size_t H_;
-    // static const size_t data_size = W_*H_/8/4;
+protected:
+    mutable bool verbose_ = false;
 
-    std::vector<T> current_data_;    //  The data present on screen (for optimisation purposes)
-    std::vector<T> target_data_;     //  The data we are trying to converge to
-    std::vector<size_t> delta_;                //  0: it is sync'ed
-
-    size_t get_T_size() const { return W_*H_/8/sizeof(T); }
-
-    static constexpr size_t get_T_bitcount() { return sizeof(T)*8; }
-
-    size_t xcountbits( T v ) const
+    static size_t size_t_from( const std::string &v )
     {
-        std::bitset<get_T_bitcount()> b{ v };
-        return b.count();
+        return atoi(v.c_str());
     }
-
-    size_t countbits( T v, size_t from, size_t to ) const
-    {
-        size_t res = 0;
-        for (int i=from;i!=to;i++)
-            res += !!(v&(1<<i));
-        return res;
-    }
-
-    size_t distancebits( T v0, T v1, size_t from, size_t to ) const
-    {
-        auto c0 = countbits( v0, from, to );
-        auto c1 = countbits( v1, from, to );
-        return std::abs( (int)c0-(int)c1 );
-    }
-
-    size_t distance( T v0, T v1, size_t width ) const
-    {
-        size_t res = 0;
-        for (size_t i=0;i!=get_T_bitcount();i+=width)
-            res += distancebits( v0, v1, i, i+width );
-        return res;
-    }
-
-    size_t distance( T v0, T v1 ) const
-    {
-        size_t v = xcountbits( v0^v1 );
-        for (size_t i=1;i!=get_T_bitcount();i*=2)
-            v += distance( v0, v1, i*2 );
-        return v;
-    }
-
-    int frame = 0;
 
 public:
-    compressor( size_t W, size_t H) :  W_{W}, H_{H}, current_data_(get_T_size()), target_data_(get_T_size()), delta_(get_T_size())
+    virtual ~compressor() {}
+    virtual std::vector<uint8_t> compress( framebuffer &current, const framebuffer &target, /* weigths, */ size_t budget ) const = 0;
+
+    virtual bool set_parameter( const std::string parameter, const std::string value )
     {
-        std::fill( std::begin(current_data_), std::end(current_data_), 0xffffffff );
-        std::fill( std::begin(target_data_), std::end(target_data_), 0xffffffff );
-        std::fill( std::begin(delta_), std::end(delta_), 0x00000000 );
+        if (parameter=="verbose")
+            verbose_ = bool_from( value );
+        return false;
     }
 
-    framebuffer get_current_framebuffer() const { return framebuffer(current_data_,W_,H_); }
- 
-    void set_current_image( const framebuffer &image )
+    virtual std::string name() const = 0;
+
+    virtual std::string description() const
     {
-        current_data_ = image.raw_values<T>();
+        return name();
+    }
+};
+
+class null_compressor : public compressor
+{
+    virtual std::string name() const { return "null"; };
+public:
+    virtual std::vector<uint8_t> compress( framebuffer &current, const framebuffer &target, /* weigths, */ size_t budget ) const
+    {
+        return {};
+    }
+};
+
+class invert_compressor : public compressor
+{
+    virtual std::string name() const { return "invert"; };
+public:
+    virtual std::vector<uint8_t> compress( framebuffer &current, const framebuffer &target, /* weigths, */ size_t budget ) const
+    {
+        current = current.inverted();
+        return {};
+    }
+};
+
+class copy_line_compressor : public compressor
+{
+    virtual std::string name() const { return "lines"; };
+
+    size_t count_ = 35;
+
+    virtual bool set_parameter( const std::string parameter, const std::string value )
+    {
+        if (parameter=="count")
+            count_ = size_t_from(value);
+        return compressor::set_parameter( parameter, value );
     }
 
-   framebuffer get_target_framebuffer() const { return framebuffer(target_data_,W_,H_); }
-
-    double quality() const
+    virtual std::string description() const
     {
-        int b = 0;
-        for (int i=0;i!=get_T_size();i++)
-            b += xcountbits( current_data_[i]^target_data_[i] );
-        return 1-b/(double)(W_*H_);
+        return compressor::description()+":count="+std::to_string(count_);
     }
 
-        /// Sets the new target image
-    void set_target_image( const framebuffer &image )
+    virtual std::vector<uint8_t> compress( framebuffer &current, const framebuffer &target, /* weigths, */ size_t budget ) const
     {
-        assert( image.W()==W_ && image.H()==H_ );
-        auto new_data = image.raw_values<T>();
-        for (int i=0;i!=get_T_size();i++)
+        framebuffer result{current};
+
+        size_t q = 0;
+
+        size_t line_start = 0;
+        size_t line_count = 0;
+
+        for (size_t i=0;i<342;i+=count_)
         {
-            target_data_[i] = new_data[i];
-            if (current_data_[i]==target_data_[i])
-                    //  Data is identical, we don't care about updating this
-                delta_[i] = 0;
-            else
+            framebuffer fb = current;
+            size_t lc = std::min( count_, 342-i );
+            fb.copy_lines_from( target, i, lc );
+            auto res = fb.count_differences( current );
+            if (res>q)
             {
-                    //  Let's increase the importance of updating this
-                // delta_[i] += countbits( target_data_[i] ^ current_data_[i] );
-                delta_[i] = distance( target_data_[i], current_data_[i] );
-                // printf( "DIFF %x %x = %ld\n", target_data_[i], current_data_[i], delta_[i] );
+                q = res;
+                result = fb;
+                // std::clog << "[" << q << "]";
+                line_start = i;
+                line_count = lc;
             }
         }
-    }
+        current = result;
 
-    std::vector<run<T>> compress( size_t max_size )
+        std::vector<uint8_t> data;
+        auto out = std::back_inserter( data );
+
+        write2( out, line_count*64 );
+        write2( out, line_start*64 );
+
+        target.extract( out, 0, line_start, line_count*64 );
+
+        return data;
+    }
+};
+
+/**
+ * Compresses an image using vertical strips of various width
+ */
+template <typename T>
+class vertical_compressor : public compressor
+{
+    virtual std::string name() const { char buffer[1024]; sprintf( buffer, "z%lu", sizeof(T)*8 ); return buffer; }
+
+    size_t W_;
+    size_t H_;
+
+    const ruler<T> &ruler_;
+
+    size_t get_T_width() const { return W_/8/sizeof(T); }
+    size_t get_T_size() const { return get_T_width()*H_; }
+
+    std::vector<run<T>> compress( size_t max_size, const std::vector<T> &target_data_, const std::vector<size_t> &delta_ ) const
     {
         size_t header_size = sizeof(T)==4?4:2;
 
@@ -130,16 +160,38 @@ public:
             if (delta_[i])
                 deltas[delta_[i]].push_back( i );
 
+        bool done = false;
+
         for (int i=deltas.size()-1;i!=0;i--)
+        {
             for (auto ix:deltas[i])
                 if (packmap.set(ix)>=max_size)
                 {
                     // std::clog << "Clearing at delta " << i << " size " << packmap.size() << " (index was:" << ix << ")\n";
                     packmap.clear(ix);
+                    done = true;
                     break;
                 }
 
-        return pack<T>(
+            if (done)
+                break;
+
+            //  We add the borders of the packmap if not "expensive"
+            for (int ix=0;ix!=get_T_size();ix++)
+                if (((ix%H_)!=0) && ((ix%H_)!=H_-1) && packmap.empty_border(ix))
+                    if (delta_[ix]*2>=i)
+                        if (packmap.set(ix)>=max_size)
+                        {
+                            packmap.clear(ix);
+                            done = true;
+                            break;
+                        }
+
+            if (done)
+                break;
+        }
+
+        auto res = pack<T>(
             std::begin( target_data_ ),
             std::begin( packmap.mask() ),
             std::end( packmap.mask() ),
@@ -147,26 +199,86 @@ public:
             W_/8/sizeof(T),
             H_
         );
+
+        if (verbose_)
+            std::clog << "=> z" << sizeof(T)*8 << " Generated " << res.size() << " runs\n";
+
+        return res;
     }
 
-    void dump_histogram( const std::string msg )
+public:
+    vertical_compressor( size_t W, size_t H, const ruler<T> &ruler ) :  W_{W}, H_{H}, ruler_{ruler}
     {
-        auto mx = *std::max_element( std::begin(delta_), std::end(delta_) );
-        std::clog << msg << " ";
-        for (int i=0;i<=mx;i++)
-            fprintf( stderr, "%3d:%5ld ", i, std::count( std::begin(delta_), std::end(delta_), i ) );
-            // std::clog << i << ":" << std::count( std::begin(delta_), std::end(delta_), i ) <<"  ";
-        std::clog << "\n";
     }
 
-        /// Progress toward the target image, using less than max_size bytes
-    std::vector<u_int8_t> next_tick( size_t max_size )
+size_t vertical_from_horizontal( size_t h ) const
+{
+    size_t offset = h*sizeof(T);
+
+    assert( h<get_T_size() );
+
+    size_t scr_x = offset%64;
+    size_t scr_y = offset/64;
+
+    scr_x /= sizeof(T);
+
+    offset = scr_x * 342 + scr_y;
+
+    return offset;
+}
+
+
+    virtual std::vector<uint8_t> compress( framebuffer &current, const framebuffer &target, /* weigths, */ size_t budget ) const
     {
-        frame++;
+
+            //  transient
+        auto current_data_ = current.raw_values<T>();    //  The data present on screen (for optimisation purposes) (vertical)
+        auto target_data_ = target.raw_values<T>();      //  The data we are trying to converge to
+        std::vector<size_t> delta_(get_T_size());        //  0: it is sync'ed
+
+        for (int i=0;i!=get_T_size();i++)
+        {
+            if (current_data_[i]==target_data_[i])
+                    //  Data is identical, we don't care about updating this
+                delta_[i] = 0;
+            else
+            {
+                    //  Let's increase the importance of updating this
+                // delta_[i] += countbits( target_data_[i] ^ current_data_[i] );
+                delta_[i] = ruler_.distance( target_data_[i], current_data_[i] );
+
+                // auto d0 = distance( target_data_[i], current_data_[i] );
+                // auto d1 = ruler_.distance( target_data_[i], current_data_[i] );
+
+                // if (d0!=d1)
+                // {
+                //     fprintf( stderr, "%0u-%0u %lu vs %f\n", (uint32_t)target_data_[i], (uint32_t)current_data_[i], d0, d1 );
+                // }
+                // assert( d0==d1 );
+               
+                // printf( "DIFF %x %x = %ld\n", target_data_[i], current_data_[i], delta_[i] );
+            }
+
+        }
+            //  Display delta map in correct order
+
+        if (verbose_)
+        {
+            std::clog << "DELTA LIST OF " << get_T_size() << " elements: [\n";
+            for (size_t y=0;y!=H_;y++)
+            {
+                fprintf( stderr, "    " );
+                for (size_t x=0;x!=get_T_width();x++)
+                    fprintf( stderr, "%3ld ", delta_[x*H_+y] );
+                fprintf( stderr, "\n" );
+            }
+        }
+        if (verbose_)
+            std::clog << "]\n";
 
         // dump_histogram( "BEFORE" );
 
-        auto runs = compress( max_size );
+        auto runs = compress( budget, target_data_, delta_ );
 
         for (auto &run:runs)
             if (run.offset>=get_T_size())
@@ -183,6 +295,7 @@ public:
         //     size += run.data.size()*sizeof(T);
         // }
         // std::clog << "APPROX COMPRESSED SIZE " << size << " / MAXSIZE " << max_size << "\n";
+
 
             //  Encode the runs
         std::vector<uint8_t> res;
@@ -256,11 +369,48 @@ public:
         // }
         // std::clog << "\n";
 
+        if (sizeof(T)==4)
+            closer = runs;
+
+        if (verbose_)
+        {
+            std::sort( std::begin(closer), std::end(closer), [](auto &a, auto &b) {return a.offset < b.offset; } );
+
+            std::clog << closer.size() << " runs of " << sizeof(T)*8 << "bytes = ";
+            size_t item_count = 0;
+            size_t bits_changed = 0;
+            
+            for (auto &run:closer)
+            {
+                std::clog << "@" << run.offset*sizeof(T) << ":[ ";
+                for (int i=0;i!=run.data.size();i++)
+                {
+
+                    auto offset = vertical_from_horizontal( run.offset )+i;
+
+                    if (sizeof(T)==2)
+                        fprintf( stderr, "%04x ", run.data[i]^current_data_[offset] );
+                    else
+                    {
+                        fprintf(
+                            stderr,
+                            "%08x ",
+                            run.data[i]^current_data_[offset]
+                            );
+                    }
+
+                    bits_changed += std::popcount( (T)(run.data[i]^current_data_[offset]) );
+                }
+                std::clog << "]  ";
+                item_count += run.data.size();
+            }
+            std::clog << "=> " << item_count << " changed " << bits_changed << " bits\n";
+        }
 
             //  Encode Z32
         if (sizeof(T)==4)
         {
-            for (auto &run:runs)
+            for (auto &run:closer)
             {
                 uint32_t header = ((run.data.size()-1)<<16)+((run.offset+1)*sizeof(T));
 
@@ -336,17 +486,7 @@ public:
 
         // dump_histogram( "AFTER " );
 
-        //  logs current image
-        {
-            static int img = 1;
-            char buffer[1024];
-            sprintf( buffer, "out-%06d.pgm", img );
-            framebuffer fb{current_data_, W_, H_};
-            auto logimg = fb.as_image();
-            write_image( buffer, logimg );
-
-            img++;
-        }
+        current = framebuffer{current_data_, W_, H_};
 
         return res;
     }

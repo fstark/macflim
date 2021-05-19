@@ -4,6 +4,7 @@
 #include <vector>
 #include "image.hpp"
 #include <cstdint>
+#include <bit>
 
 
 template <typename T>
@@ -52,6 +53,7 @@ void copy_from_values_be( std::vector<uint8_t>::iterator destination, IT source,
     }
 }
 
+#include <random>
 
 //  ------------------------------------------------------------------
 //  A framebuffer is a packed black and white screen
@@ -74,6 +76,11 @@ private:
 
     template <typename T>
     size_t get_size() const { return get_width<T>()*H_; }
+
+    void assert_size( const framebuffer &other ) const
+    {
+        assert( W_==other.W_ && H_==other.H_ );
+    }
 
         //  packs means extracting a value from the framebuffer for calculations
         //  this value can generally a uint8_t, a uint16_t or a uint32_t
@@ -153,7 +160,7 @@ private:
 public:
     framebuffer( size_t W, size_t H ) : data_( W*H/8 ), W_{W}, H_{H}
     {
-        std::fill( std::begin(data_), std::end(data_), 0 );
+        std::fill( std::begin(data_), std::end(data_), 0xf0 );
     }
 
     framebuffer( const image &img ) : data_( img.W()*img.H()/8 ), W_{ img.W() }, H_{ img.H() }
@@ -183,6 +190,19 @@ public:
     {
     }
 
+    void fill( uint8_t value )
+    {
+        std::fill( std::begin(data_), std::end(data_), value );
+    }
+
+    void randomize( int seed )
+    {
+        std::default_random_engine generator;
+        std::uniform_int_distribution<int> distribution(0,255);
+        for (auto &v:data_)
+            v = distribution(generator);
+    }
+
     size_t W() const { return W_; }
     size_t H() const { return H_; }
 
@@ -210,7 +230,13 @@ public:
         return res;
     }
 
-    framebuffer operator^(const framebuffer &o)
+    bool operator==(const framebuffer &o) const
+    {
+        return H_==o.H_ && W_==o.W_ && data_==o.data_;
+    }
+
+
+    framebuffer operator^(const framebuffer &o) const
     {
         assert( W_==o.W_ && H_==o.H_ );
         framebuffer result( W_, H_ );
@@ -225,6 +251,52 @@ public:
         for (size_t i=0;i!=data_.size();i++)
             result.push_back( data_[i] );
         return result;
+    }
+
+    size_t pixel_count() const
+    {
+        size_t count = 0;
+        for (auto &v:data_)
+            count += std::popcount( v );
+        return count;
+    }
+
+    size_t count_differences( const framebuffer& other ) const
+    {
+        return (*this ^ other).pixel_count();
+    }
+
+    double proximity( const framebuffer &other ) const
+    {
+        return 1-(count_differences( other )/(double)(W_*H_));
+    }
+
+    void invert()
+    {
+        for (auto &v:data_)
+            v ^= 0xff;
+    }
+
+    framebuffer inverted() const
+    {
+        framebuffer res = *this;
+        res.invert();
+        return res;
+    }
+
+    void copy_lines_from( const framebuffer &other, size_t from, size_t count )
+    {
+        assert_size( other );
+        assert( from<H_ );
+        assert( from+count<=H_ );
+        memcpy( data_.data()+from*get_rowbytes(), other.data_.data()+from*get_rowbytes(), count*get_rowbytes() );
+    }
+
+    template <typename T>
+    void extract( T out, size_t x, size_t y, size_t bytelen ) const
+    {
+        auto p = std::begin( data_ )+x+y*get_rowbytes();
+        std::copy( p, p+bytelen, out );
     }
 };
 

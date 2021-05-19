@@ -355,6 +355,18 @@ public:
 
         return size();
     }
+
+    bool empty_border( size_t n )
+    {
+        if (mask_[n])
+            return false;
+        if (n>0 && mask_[n-1])
+            return true;
+        if (n<N-1 && mask_[n+1])
+            return true;
+
+        return false;
+    }
 };
 
 

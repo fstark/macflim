@@ -396,6 +396,12 @@ void write_image( const char *file, image &img )
 
     FILE *f = fopen( file, "wb" );
 
+    if (!f)
+    {
+        fprintf( stderr, "Cannot open [%s]\n", file );
+        return ;
+    }
+
     fprintf( f, "P5\n%ld %ld\n255\n", img.W(), img.H() );
     for (int y=0;y!=img.H();y++)
         for (int x=0;x!=img.W();x++)
@@ -451,7 +457,7 @@ static int dither[8][8] =
     {63, 31, 55, 23, 61, 29, 53, 21}
 };
 
-void quantize2( image &dest, const image &source, const image &previous, float stability )
+void ordered_dither( image &dest, const image &source, const image &previous )
 {
     for (int y=0;y!=source.H();y++)
         for (int x=0;x!=source.W();x++)

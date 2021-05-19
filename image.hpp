@@ -6,6 +6,7 @@
 #include <vector>
 #include <cassert>
 
+
 //  ------------------------------------------------------------------
 //  An image class and various associated utilities
 //  ------------------------------------------------------------------
@@ -41,11 +42,18 @@ public:
         assert( y<H_ );
         return image_[x+y*W_];
     }
+
+    enum dithering
+    {
+        floyd_steinberg = 0,
+        ordered = 1
+    };
 };
 
 void fill( image &img, float value = 0.5 );
 image round_corners( const image& img );
 image filter( const image &from, const char *filters );
+void ordered_dither( image &dest, const image &source, const image &previous );
 void quantize( image &dest, const image &source, const image &previous, float stability );
 
 bool read_image( image &result, const char *file );

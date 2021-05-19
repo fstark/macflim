@@ -141,22 +141,38 @@ uint8_t sFont[128][8] = {
     { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}    // U+007F
 };
 
-static void putc( image &img, char c, size_t position )
+static void putc( image &img, char c, size_t posx, size_t posy )
 {
     c &= 0x7f;
 
     for (int x=0;x!=8;x++)
-        img.at( 8+position*8+x, 3 ) = 0;
+        img.at( 8+posx*8+x, posy*8+3 ) = 0;
     for (int y=0;y!=8;y++)
         for (int x=0;x!=8;x++)
-            img.at(8+position*8+x,y+4) = (sFont[c][y] & (1<<(x))) ? 1 : 0;
+            img.at(8+posx*8+x,y+posy*8+4) = (sFont[c][y] & (1<<(x))) ? 1 : 0;
 }
 
 void watermark( image &img, const std::string &s )
 {
-    int pos = 0;
+    int x = 0;
+    int y = 0;
     for (auto c:s)
     {
-        putc( img, c, pos++ );
+        if (c>=32)
+        {
+            putc( img, c, x, y );
+            x++;
+            if (x==62)
+            {
+                x = 0;
+                y++;
+            }
+        }
+        else
+            if (c=='\n')
+            {  
+                x = 0;
+                y++;
+            }
     }
 }

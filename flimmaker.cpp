@@ -35,8 +35,6 @@ static int sStream = 0;
 #include "image.hpp"
 
 
-
-
 //  Write a bunch of bytes in a file
 void write_data( const char *file, u_int8_t *data, size_t len )
 {
@@ -68,15 +66,20 @@ int main( int argc, char **argv )
     int to_index = std::numeric_limits<int>::max();
     int cover_from = -1;
     int cover_to = -1;
-    size_t byterate = 6000;
     double fps = 24.0;
-    size_t buffer_size = 300000;
-    double stability = 0.3;
-    bool half_rate = false;
-    bool group = false;
-    std::string filters = "gsc";
     std::string watermark = "";
+    std::string out_pattern = "out-%06d.pgm";
+    std::string diff_pattern = "";
+    std::string change_pattern = "";
+    std::string target_pattern = "";
     bool auto_watermark = false;
+
+    std::vector<flimcompressor::codec_spec> codecs;
+
+    codecs.push_back( {} );
+    codecs.back().signature = 0x00;
+    codecs.back().penality = 1;
+    codecs.back().coder = std::make_shared<null_compressor>();
 
     std::string comment = "FLIM\n";
     
@@ -92,9 +95,11 @@ int main( int argc, char **argv )
     comment += version;
     comment += "\n";
 
-    std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    comment += "date: ";
-    comment += std::ctime(&time);
+    encoding_profile custom_profile = encoding_profile::profile_named( "se30" );
+
+    // std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    // comment += "date: ";
+    // comment += std::ctime(&time);
 
     // packz32_test();
     packz32opt_test();
@@ -104,20 +109,19 @@ int main( int argc, char **argv )
 
     while (argc)
     {
-        // if (!strcmp(*argv,"--compression-target"))
-        // {
-        //     argc--;
-        //     argv++;
-        //     compression_target = atof(*argv)/100.0;
-        //     argc--;
-        //     argv++;
-        // }
-        // else
-        if (!strcmp(*argv,"--byterate"))
+        if (!strcmp(*argv,"--profile"))
         {
             argc--;
             argv++;
-            byterate = atoi(*argv);
+            custom_profile = encoding_profile::profile_named( *argv );
+            argc--;
+            argv++;
+        }
+        else if (!strcmp(*argv,"--byterate"))
+        {
+            argc--;
+            argv++;
+            custom_profile.set_byterate( atoi( *argv ) );
             argc--;
             argv++;
         }
@@ -133,19 +137,23 @@ int main( int argc, char **argv )
         {
             argc--;
             argv++;
-            buffer_size = atoi(*argv);
+            custom_profile.set_buffer_size( atoi( *argv ) );
             argc--;
             argv++;
         }
         else if (!strcmp(*argv,"--half-rate"))
         {
-            half_rate = true;
+            argc--;
+            argv++;
+            custom_profile.set_half_rate( bool_from(*argv) );
             argc--;
             argv++;
         }
         else if (!strcmp(*argv,"--group"))
         {
-            group = true;
+            argc--;
+            argv++;
+            custom_profile.set_group( bool_from(*argv) );
             argc--;
             argv++;
         }
@@ -216,23 +224,47 @@ int main( int argc, char **argv )
         {
             argc--;
             argv++;
-            stability = atof( *argv );
+            custom_profile.set_stability( atof( *argv ) );
             argc--;
             argv++;
         }
-        // else if (!strcmp(*argv,"--max-stability"))
-        // {
-        //     argc--;
-        //     argv++;
-        //     g_max_stability = atof( *argv );
-        //     argc--;
-        //     argv++;
-        // }
         else if (!strcmp(*argv,"--out"))
         {
             argc--;
             argv++;
             out_arg = *argv;
+            argc--;
+            argv++;
+        }
+        else if (!strcmp(*argv,"--out-pattern"))
+        {
+            argc--;
+            argv++;
+            out_pattern = *argv;
+            argc--;
+            argv++;
+        }
+        else if (!strcmp(*argv,"--diff-pattern"))
+        {
+            argc--;
+            argv++;
+            diff_pattern = *argv;
+            argc--;
+            argv++;
+        }
+        else if (!strcmp(*argv,"--change-pattern"))
+        {
+            argc--;
+            argv++;
+            change_pattern = *argv;
+            argc--;
+            argv++;
+        }
+        else if (!strcmp(*argv,"--target-pattern"))
+        {
+            argc--;
+            argv++;
+            target_pattern = *argv;
             argc--;
             argv++;
         }
@@ -258,7 +290,7 @@ int main( int argc, char **argv )
         {
             argc--;
             argv++;
-            filters = *argv;
+            custom_profile.set_filters( *argv );
             argc--;
             argv++;
         }
@@ -266,7 +298,30 @@ int main( int argc, char **argv )
         {
             argc--;
             argv++;
-            auto_watermark = true;
+            auto_watermark = bool_from( *argv );
+            argc--;
+            argv++;
+        }
+        else if (!strcmp(*argv,"--codec"))
+        {
+            argc--;
+            argv++;
+            //  --codec z32 --codec line-copy:count=20
+            // codecs.push_back( flimcompressor::make_codec( "z32", 512, 342, "" ) );
+            // codecs.push_back( flimcompressor::make_codec( "lines", 512, 342, "" ) );
+            // codecs.push_back( flimcompressor::make_codec( "null", 512, 342, "" ) );
+            // codecs.push_back( flimcompressor::make_codec( "invert", 512, 342, "" ) );
+            codecs.push_back( flimcompressor::make_codec( *argv, 512, 342 ) );
+            argc--;
+            argv++;
+        }
+        else if (!strcmp(*argv,"--dither"))
+        {
+            argc--;
+            argv++;
+            custom_profile.set_dither( *argv );
+            argc--;
+            argv++;
         }
         else
         {
@@ -275,27 +330,31 @@ int main( int argc, char **argv )
         }
     }
 
-    if (auto_watermark)
+    if (codecs.size()>1)
     {
-        char buffer[1024];
-        sprintf( buffer, "br:%ld st:%.2f%s%s fi:%s", byterate, stability, half_rate?" half-rate":"", group?" group":"", filters.c_str() );
-        if (watermark.size()>0)
-            watermark += " ";
-        watermark += buffer;
+        custom_profile.set_codecs( codecs );
     }
 
-    auto encoder = flimencoder{ 512, 342, in_arg, audio_arg };
-    encoder.set_byterate( byterate );
+    if (auto_watermark)
+    {
+        if (watermark.size()>0)
+            watermark += " ";
+        watermark += custom_profile.description();
+    }
+
+    std::clog << "------------- ENCODING PROFILE -------------\n" << custom_profile.description() << "--------------------------------------------\n";
+
+    auto encoder = flimencoder{ custom_profile, in_arg, audio_arg };
     encoder.set_fps( fps );
-    encoder.set_buffer_size( buffer_size );
-    encoder.set_stability( stability );
-    encoder.set_half_rate( half_rate );
-    encoder.set_group( group );
-    std::clog << "[" << comment << "]\n";
     encoder.set_comment( comment );
-    encoder.set_filters( filters );
     encoder.set_cover( cover_from, cover_to+1 );
     encoder.set_watermark( watermark );
+    encoder.set_out_pattern( out_pattern );
+    encoder.set_diff_pattern( diff_pattern );
+    encoder.set_change_pattern( change_pattern );
+    encoder.set_target_pattern( target_pattern );
+
+    // encoder.set_input_single_random();
 
     encoder.make_flim( out_arg, from_index, to_index );
 
