@@ -11,6 +11,56 @@ void copy_image( image &dest, const image &source )
     dest = source;
 }
 
+
+void copy_scale( image &destination, const image &source, double scale )
+{
+    int centersw = source.W()/2;
+    int centersh = source.H()/2;
+    int centerdw = destination.W()/2;
+    int centerdh = destination.H()/2;
+
+    for (int y=0;y!=destination.H();y++)
+        for (int x=0;x!=destination.W();x++)
+        {
+            int fromx = centersw-(centerdw-x)*scale;
+            int fromy = centersh-(centerdh-y)*scale;
+
+            if (fromx<0 || source.W()<=fromx || fromy<0 || source.H()<=fromy)
+            {
+                // std::clog << x << " C " ;
+                destination.at( x, y ) = 0;
+            }
+            else
+            {
+                // std::clog << fromx << " D " ;
+                destination.at( x, y ) = source.at( fromx, fromy );
+            }
+        }
+}
+
+//  ------------------------------------------------------------------
+//  Resize an image
+//  ------------------------------------------------------------------
+void copy( image &destination, const image &source, bool black_bars )
+{
+    if (destination.W()==source.W() && destination.H()==source.H())
+    {
+        copy_image( destination, source );
+        return;
+    }
+
+    double scalex = source.W()/(double)destination.W();
+    double scaley = source.H()/(double)destination.H();
+
+    //  This one is also an interesting compromise
+    // copy_scale( destination, source, (scalex + scaley)/2 );
+
+    if (!black_bars)
+        copy_scale( destination, source, std::min( scalex, scaley ) );
+    else
+        copy_scale( destination, source, std::max( scalex, scaley ) );
+}
+
 //  ------------------------------------------------------------------
 //  Fills image with constant color, 50% gray by default
 //  ------------------------------------------------------------------
@@ -125,6 +175,38 @@ image blur5( const image &src )
                     v += src.at(x+x0-2,y+y0-2)*kernel[x0][y0];
                 }
             res.at(x,y) = v;
+        }
+
+    return res;
+}
+
+//  ------------------------------------------------------------------
+//  Horizontal flip the image
+//  ------------------------------------------------------------------
+image flip( const image &src )
+{
+    image res = src;
+
+    for (int x=0;x!=src.W()/2;x++)
+        for (int y=0;y!=src.H();y++)
+        {
+            std::swap( res.at(x,y), res.at(res.W()-1-x,y) );
+        }
+
+    return res;
+}
+
+//  ------------------------------------------------------------------
+//  Inverts the image
+//  ------------------------------------------------------------------
+image invert( const image &src )
+{
+    image res = src;
+
+    for (int x=0;x!=src.W();x++)
+        for (int y=0;y!=src.H();y++)
+        {
+            res.at(x,y) = 1 - res.at(x,y);
         }
 
     return res;
@@ -247,23 +329,28 @@ image quantize( const image &img, int n )
 //  ------------------------------------------------------------------
 typedef enum
 {
-    kBlur3 = 'b',
-    kBlur5 = 'B',
+    kBlur = 'b',
     kSharpen = 's',
     kGamma = 'g',
     kRoundCorners = 'c',
     kZoomOut = 'z',
-    kQuantize16 = 'q'
+    kQuantize16 = 'q',
+    kFlip = 'f',
+    kInvert = 'i'
 }   eFilters;
 
 image filter( const image &from, eFilters filter, double arg=0 )
 {
     switch (filter)
     {
-        case kBlur3:
-            return blur3( from );
-        case kBlur5:
-            return blur5( from );
+        case kBlur:
+        {
+            if (!arg || arg==3)
+                return blur3( from );
+            if (arg==5)
+                return blur5( from );
+            throw "Blur filter can have 3 or 5 as an argument";
+        }
         case kSharpen:
             return sharpen( from );
         case kGamma:
@@ -273,8 +360,11 @@ image filter( const image &from, eFilters filter, double arg=0 )
         case kZoomOut:
             return zoom_out( from );
         case kQuantize16:
-        case 'Q':
             return quantize( from, arg?arg:16 );
+        case kFlip:
+            return flip( from );
+        case kInvert:
+            return invert( from );
     }
     std::cerr << "**** ERROR: filter ['" << (char)filter << "'] (" << (int)filter << ") unknown\n";
     throw "Unknown filter";

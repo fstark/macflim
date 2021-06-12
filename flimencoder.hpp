@@ -5,6 +5,10 @@
 
 #include "flimcompressor.hpp"
 
+#include "reader.hpp"
+#include "writer.hpp"
+
+
 /**
  * A set of encoding parameters
  */
@@ -20,7 +24,8 @@ protected:
     bool half_rate_ = false;
     bool group_ = true;
     std::string filters_ = "c";
-    
+    bool bars_ = true;              //  Do we put black bars around the image?
+
     image::dithering dither_ = image::floyd_steinberg;
 
     std::vector<flimcompressor::codec_spec> codecs_;
@@ -37,6 +42,9 @@ public:
     size_t buffer_size() const { return buffer_size_; }
     void set_buffer_size( size_t buffer_size ) { buffer_size_ = buffer_size; }
 
+        //  Technically, we could put the half-rate mecanism in the reader phase
+        //  to avoid reading unecessary images, but it is more generic to put it here
+        //  as it allows to extend to dynamic half rate
     bool half_rate() const { return half_rate_; }
     void set_half_rate( bool half_rate ) { half_rate_ = half_rate; }
 
@@ -45,6 +53,9 @@ public:
 
     std::string filters() const { return filters_; }
     void set_filters( const std::string filters ) { filters_ = filters; }
+
+    bool bars() const { return bars_; }
+    void set_bars( bool bars ) { bars_ = bars; }
 
     image::dithering dither() const { return dither_; }
     bool set_dither( std::string dither )
@@ -108,6 +119,19 @@ public:
             result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "lines:count=70", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
+        }
+        if (name=="perfect"s)
+        {
+            result.set_byterate( 32000 );
+            result.set_filters( "gsc" );
+            result.set_half_rate( false );
+            result.set_group( true );
+            result.set_dither( "floyd" );
+            result.set_stability( 0.3 );
+            result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "lines:count=342", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
         }
 
@@ -272,7 +296,39 @@ class flimencoder
         }
     }
 
+    int clamp( double v, int a, int b )
+    {
+        int res = v+0.5;
+        if (res<a) res = a;
+        if (res>b) res = b;
+        return res;
+    }
+
+    std::vector<u_int8_t> normalize_sound( std::vector<double> sound_samples, size_t len )
+    {
+        sound_samples.resize(len);
+        std::vector<u_int8_t> res;
+
+        if (sound_samples.size()>0)
+        {
+            auto mi = std::min_element( std::begin(sound_samples), std::end(sound_samples) );
+            auto ma = std::max_element( std::begin(sound_samples), std::end(sound_samples) );
+            double scale = std::max( ::fabs(*mi), ::fabs(*ma) );
+            std::transform( std::begin(sound_samples), std::end(sound_samples), std::back_inserter(res), [&]( double v ) { return clamp( (v/scale)*128+128, 0, 255 ); } );
+            std::clog   << "Normalized  sound : [" << *mi << "," << *ma << "] => ["
+                        << (int)*std::min_element( std::begin(res), std::end(res) ) << ","
+                        << (int)*std::max_element( std::begin(res), std::end(res) ) << "]\n"; 
+        }
+        else
+        {
+            std::clog << "SOUND IS EMPTY\n";
+        }
+
+        return res;
+    }
+
 public:
+//  #### remove in and audio
     flimencoder( const encoding_profile &profile, const std::string &in, const std::string &audio ) : profile_{ profile }, in_{in}, audio_{audio} {}
 
     void set_fps( double fps ) { fps_ = fps; }
@@ -285,31 +341,26 @@ public:
     void set_target_pattern( const std::string pattern ) { target_pattern_ = pattern; }
 
     //  Encode all the blocks
-    void make_flim( const std::string flim_pathname, size_t from, size_t to )
+    void make_flim( const std::string flim_pathname, input_reader *reader, output_writer *writer )
     {  
-        if (profile_.half_rate())
+
+/*
+        read_images( from, to, profile_.half_rate() );
+        read_audio( from, images_.size() );
+*/
+
+        while (auto next = reader->next())
         {
-            fps_ /= 2;
+            images_.push_back( *next );
         }
 
-        read_images( from, to, profile_.half_rate() );
-        // framebuffer r0{ W_, H_ };
-        // framebuffer r1{ W_, H_ };
-        // r0.randomize( 0 );
-        // r1.randomize( 1 );
-        // auto i0 = r0.as_image();
-        // auto i1 = r1.as_image();
-        // images_.push_back( i0 );
-        // for (int i=from+1;i<to+1;i++)
-        //     images_.push_back( i1 );
-
-        read_audio( from, images_.size() );
+        audio_samples_ = normalize_sound( reader->raw_sound(), images_.size()/fps_*60*370 );
 
         fix();
 
         flimcompressor fc{ profile_.width(), profile_.height(), images_, audio_samples_, fps_ };
 
-        fc.compress( profile_.stability(), profile_.byterate(), profile_.group(), profile_.filters(), watermark_, profile_.codecs(), profile_.dither() );
+        fc.compress( profile_.stability(), profile_.byterate(), profile_.group(), profile_.filters(), watermark_, profile_.codecs(), profile_.dither(), profile_.bars() );
 
         if (out_pattern_!="") delete_files_of_pattern( out_pattern_ );
         if (diff_pattern_!="") delete_files_of_pattern( diff_pattern_ );
@@ -399,6 +450,21 @@ public:
 
         fwrite( movie.data(), movie.size(), 1, movie_file );
         fclose( movie_file );
+
+        std::clog << "GENERATING MP4 FILE\n";
+
+        //  Generate the mp4 file
+        for (auto &frame:frames)
+        {
+            std::clog << frame.ticks << std::flush;
+            for (int i=0;i!=frame.ticks;i++)
+            {
+                output_writer::sound_frame_t silence{};
+                writer->write_frame( frame.result.as_image(), silence );
+            }
+        }
+        std::clog << "...DONE\n";
+
 
         //  Generating the cover
         for (size_t i=cover_begin_;i<=cover_end_;i++)

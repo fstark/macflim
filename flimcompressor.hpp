@@ -12,12 +12,11 @@
 #include <algorithm>
 #include <memory>
 
+#include "reader.hpp"
+
 #define VERBOSE
 
 using namespace std::string_literals;
-
-
-inline size_t ticks_from_frame( size_t n, double fps ) { return n/fps*60; }
 
 /**
  * The flimcompressor manages higher aspects of the compression
@@ -30,10 +29,12 @@ public:
     {
         frame( size_t W, size_t H ) : source{ W, H }, result{ W, H } {}
 
+        framebuffer source;
+
         size_t ticks;
         std::vector<uint8_t> audio;
-        std::vector<uint8_t> video;
-        framebuffer source;
+        std::vector<uint8_t> video; //  Encoded flim
+
         framebuffer result;
 
         size_t get_size() { return audio.size()+video.size()*4; }
@@ -148,7 +149,7 @@ public:
         return spec;
     }
 
-    void compress( double stability, size_t byterate, bool group, const std::string &filters, const std::string &watermark, const std::vector<codec_spec> &codecs, image::dithering dither )
+    void compress( double stability, size_t byterate, bool group, const std::string &filters, const std::string &watermark, const std::vector<codec_spec> &codecs, image::dithering dither, bool bars )
     {
         image previous( W_, H_ );
         fill( previous, 0 );
@@ -167,9 +168,12 @@ public:
             //  The audio ptr
         auto audio = std::begin( audio_ );
 
-        for (auto &source_image:images_)
+        for (auto &big_image:images_)
         {
             image dest( W_, H_ );
+
+            image source_image( 512, 342 );
+            copy( source_image, big_image, bars );
 
             image img = filter( source_image, filters.c_str() );
 

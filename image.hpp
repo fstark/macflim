@@ -32,12 +32,16 @@ public:
 
     const float &at( int x, int y ) const
     {
+        assert( x>=0 );
+        assert( y>=0 );
         assert( x<W_ );
         assert( y<H_ );
         return image_[x+y*W_];
     }
     float &at( int x, int y )
     {
+        assert( x>=0 );
+        assert( y>=0 );
         assert( x<W_ );
         assert( y<H_ );
         return image_[x+y*W_];
@@ -48,6 +52,13 @@ public:
         floyd_steinberg = 0,
         ordered = 1
     };
+
+    //  Dealing with ffmpeg data
+    
+    void set_luma( const uint8_t *y )  //  Sets the (monochrome) content from a Y luma buffer of W*H bytes
+    {
+        std::transform( y, y+W_*H_, std::begin(image_), []( auto v ) { return v/255.0; } );
+    }
 };
 
 void fill( image &img, float value = 0.5 );
@@ -62,5 +73,7 @@ void write_image( const char *file, image &img );
 #include <string>
 
 void watermark( image &img, const std::string &s );
+
+void copy( image &destination, const image &source, bool black_bars=true );
 
 #endif
