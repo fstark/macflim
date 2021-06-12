@@ -75,6 +75,21 @@
 # youtube-dl -f 22 https://www.youtube.com/watch?v=vU9q7I0FMJM -o source/Me_Want_You_Play.mp4
 ./encode Me_Want_You_Play source/Me_Want_You_Play.mp4 00:00:00 06:00:00 25 1201
 
+# iPod ad #1
+# youtube-dl -f 18 https://www.youtube.com/watch?v=NlHUz99l-eo -o source/iPodAd1.mp4
+./encode iPodAd1 source/iPodAd1.mp4 00:00:00 06:00:00 30 1201
+# flimmaker --from 1 --to 10000 --fps 30 --buffer-size 300000 --out iPodAd1.flim --profile se30 --filters q5c --dither ordered
+# --filters g0.8q5c
+
+# iPod ad #2 (shuffle)
+# youtube-dl -f 18 https://www.youtube.com/watch?v=TE4EEwQAfxo -o source/iPodAd2.mp4
+./encode iPodAd2 source/iPodAd2.mp4 00:00:00 06:00:00 30 1201
+# flimmaker --from 1 --to 10000 --fps 30 --buffer-size 300000 --out iPodAd2.flim --profile se30 --filters q5c --dither ordered
+
+# iPod ad #3
+# youtube-dl -f 18 https://www.youtube.com/watch?v=4CPab8U5zTU -o source/iPodAd3.mp4
+./encode iPodAd3 source/iPodAd3.mp4 00:00:00 06:00:00 30 1201
+flimmaker --from 1 --to 10000 --fps 30 --buffer-size 300000 --out iPodAd3.flim --profile se30 --filters q5c --dither ordered
 
 
 
@@ -97,6 +112,8 @@
 # youtube-dl -f 18 https://www.youtube.com/watch?v=0-Q3cp3cp88 -o source/Missionary_Man.mp4
 
 # youtube-dl -f 22 https://www.youtube.com/watch?v=pWhB-6MR4qs -o source/The_Neo_Demon.mp4
+
+
 
 # cp -up z-*/*.flim /mnt/data0/WebSites/www.macflim.com/techdemo/
 # cp -up z-*/*.gif /mnt/data0/WebSites/www.macflim.com/techdemo/

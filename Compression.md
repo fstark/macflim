@@ -88,3 +88,48 @@ The byterate can be lowered by:
     => if next frame tick is 3, make current frame 3 ticks.
 * Interleave
     hard to encode image can be removed, and replaced by half-of the scanlines of the previous image and half of the scanlines of the next image. It will effectively disapear, but will be twice smaller
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+4) SIZE
+    4) 'FLIM'
+    2) #frame 20
+    2) filler2
+        2) sound_mode
+        4) fixed
+        370) sound
+        2) vid_size
+        xx) video
+
+
+

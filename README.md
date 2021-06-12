@@ -1,3 +1,5 @@
+Warning : this README is out of date and the content of trunk is not the version 1.0 of MacFlim (f726ee6db6634908346833020204ea0856ba40d2).
+
 # MacFlim Video player source code
 
 Please do not barf on code quality. It was not in releasable state, but people wanted to use it. You may even be one of those people. Hi!
