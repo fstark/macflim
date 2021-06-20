@@ -26,20 +26,9 @@ class sound_frame_t
 
         u_int8_t &at( size_t i ) { return data_[i]; }
 
-        template <typename T, typename U> sound_frame_t( T from, U min, U max )
-        {
-            for (int i=0;i!=size;i++)
-                data_[i] = ((double)(*from++)-min)/(max-min)*255;
-        }
-
-        template <typename T> sound_frame_t( T from )
-        {
-            for (int i=0;i!=size;i++)
-                data_[i] = *from++;
-        }
+        std::array<uint8_t,size>::const_iterator begin() const { return std::cbegin(data_); }
+        std::array<uint8_t,size>::const_iterator end() const { return std::cend(data_); }
 };
-
-
 
 class input_reader
 {
@@ -53,11 +42,8 @@ public:
     virtual std::unique_ptr<image> next() = 0;
     // virtual std::vector<image> images() = 0;
 
-        //  Sample rate of the sound (number of samples in one second)
-    virtual size_t sample_rate() = 0;
-
-        //  Get all the sound samples
-    virtual std::vector<double> raw_sound() = 0;
+        //  Get the next sound sample, mac format
+    virtual std::unique_ptr<sound_frame_t> next_sound() = 0;
 };
 
 
@@ -127,6 +113,7 @@ class filesystem_reader : public input_reader
         return img;
     }
 
+/*
     virtual size_t sample_rate() { return 370*60; };
 
     virtual std::vector<double> raw_sound()
@@ -164,6 +151,9 @@ class filesystem_reader : public input_reader
         
         return res;
     }
+*/
+    virtual std::unique_ptr<sound_frame_t> next_sound() { return nullptr; }         //  #### THIS IS COMPLETELY WRONG
+
 };
 
 std::unique_ptr<input_reader> make_ffmpeg_reader( const std::string &movie_path, double from, double to );

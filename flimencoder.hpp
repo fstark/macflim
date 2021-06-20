@@ -178,7 +178,7 @@ class flimencoder
     std::string target_pattern_ = "target-%06d.pgm"s;
 
     std::vector<image> images_;
-    std::vector<uint8_t> audio_samples_;
+    std::vector<sound_frame_t> audio_samples_;
 
     double fps_ = 24;
 
@@ -246,35 +246,6 @@ class flimencoder
         std::clog << "VIDEO: READ " << images_.size() << " images\n";
     }
 
-    //  Read all audio from disk
-    void read_audio( size_t from, size_t count )
-    {
-        long audio_start = frame_from_image(from)*370;    //  Images are one-based
-        long audio_end = frame_from_image(from+count)*370;      //  Last image is included?
-        long audio_size = audio_end-audio_start;
-
-        FILE *f = fopen( audio_.c_str(), "rb" );
-        if (f)
-        {
-            audio_samples_.resize( audio_size );
-            for (auto &v:audio_samples_)
-                v = 0x80;
-
-            fseek( f, audio_start, SEEK_SET );
-            auto res = fread( audio_samples_.data(), 1, audio_size, f );
-            if (res!=audio_size)
-                std::clog << "AUDIO: added " << audio_size-res << " bytes of silence\n";
-            fclose( f );
-        }
-        else
-            std::cerr << "**** ERROR: CANNOT OPEN AUDIO FILE [" << audio_ << "]\n";
-        std::clog << "AUDIO: READ " << audio_size << " bytes from offset " << audio_start << "\n";
-
-        auto min_sample = *std::min_element( std::begin(audio_samples_), std::end(audio_samples_) );
-        auto max_sample = *std::max_element( std::begin(audio_samples_), std::end(audio_samples_) );
-        std::clog << " SAMPLE MIN:" << (int)min_sample << " SAMPLE MAX:" << (int)max_sample << "\n";
-    }
-
     void fix()
     {
         //  TODO: make sure images and sound size matches
@@ -283,17 +254,6 @@ class flimencoder
 
         std::clog << "**** # of video images  : " << images_.size() << "\n";
         std::clog << "**** # of video frames  : " << frame_from_image(images_.size()+1) << "\n";
-        std::clog << "**** # of audio samples : " << audio_samples_.size() << "\n";
-        std::clog << "**** # of audio frames  : " << audio_samples_.size()/370.0 << "\n";
-
-        // std::clog << images_.size() << "\n";
-        // std::clog << frame_from_image(images_.size()+1) << "\n";
-        // std::clog << audio_samples_.size() << "\n";
-        if (frame_from_image(images_.size()+1)*370 != audio_samples_.size())
-        {
-            std::cerr << "**** ERROR : " << frame_from_image(images_.size()+1)*370 << "!=" << audio_samples_.size() << "\n";
-            // assert( false );
-        }
     }
 
     int clamp( double v, int a, int b )
@@ -354,7 +314,12 @@ public:
             images_.push_back( *next );
         }
 
-        audio_samples_ = normalize_sound( reader->raw_sound(), images_.size()/fps_*60*370 );
+        while (auto next = reader->next_sound())
+        {
+            audio_samples_.push_back( *next );
+        }
+
+        // audio_samples_ = normalize_sound( reader->raw_sound(), images_.size()/fps_*60*370 );
 
         fix();
 

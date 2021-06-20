@@ -42,7 +42,7 @@ public:
 
 private:
     const std::vector<image> &images_;
-    const std::vector<uint8_t> &audio_;
+    const std::vector<sound_frame_t> &audio_;
     const double fps_;
 
     std::vector<frame> frames_;
@@ -51,7 +51,7 @@ private:
     size_t H_;
 
 public:
-    flimcompressor( size_t W, size_t H, const std::vector<image> &images, const std::vector<uint8_t> &audio, double fps ) : W_{W}, H_{H}, images_{images}, audio_{audio}, fps_{fps} {}
+    flimcompressor( size_t W, size_t H, const std::vector<image> &images, const std::vector<sound_frame_t> &audio, double fps ) : W_{W}, H_{H}, images_{images}, audio_{audio}, fps_{fps} {}
 
     const std::vector<frame> &get_frames() const { return frames_; }
 
@@ -210,9 +210,14 @@ public:
 
                 f.ticks = local_ticks;
 
-                std::copy( audio, audio+370*local_ticks, std::back_inserter(f.audio) );
-                audio += 370*local_ticks;
-                assert( audio<=std::end(audio_) );
+                for (int i=0;i!=local_ticks;i++)
+                {
+
+                    sound_frame_t snd;
+                    if (audio<std::end(audio_))
+                        snd = *audio++;
+                    std::copy( snd.begin(), snd.end(), std::back_inserter(f.audio) );
+                }
 
                     //  What is the video budget?
                 size_t video_budget = byterate*local_ticks;

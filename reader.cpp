@@ -46,20 +46,23 @@ public:
     }
 
     //  Extract a 370 bytes frames (1/60th of a second)
-    sound_frame_t extract( size_t frame )
+    std::unique_ptr<sound_frame_t> extract( size_t frame )
     {
         double t = frame / 60.0;        //  Time in seconds
         size_t start = t * sample_rate_;
 
-        sound_frame_t fr;
+        if (start>=data_.size())
+            return nullptr;
 
-        for (int i=0;i!=fr.size;i++)
+        auto fr = std::make_unique<sound_frame_t>();
+
+        for (int i=0;i!=sound_frame_t::size;i++)
         {
             size_t index = start+(i/370.0/60.0)*sample_rate_;
             if (index<data_.size())
-                fr.at(i) = (data_[index]-min_sample_)/(max_sample_-min_sample_)*255;
+                fr->at(i) = (data_[index]-min_sample_)/(max_sample_-min_sample_)*255;
             else
-                fr.at(i) = 128;
+                fr->at(i) = 128;
         }
 
         return fr;
@@ -96,6 +99,7 @@ class ffmpeg_reader : public input_reader
     std::unique_ptr<sound_buffer> sound_;
 
     int image_ix = -1;
+    int sound_ix = -1;
 
     double first_frame_second_;
     size_t frame_to_extract_;
@@ -408,9 +412,14 @@ std::clog << "SAMPLE RATE  :" << audio_codec_context_->sample_rate << "\n";
 
 end:
 
+
         image_ix = 0;
 
         std::clog << "Acquired " << images_.size() << " frames of video for a total of " << images_.size()/av_q2d( video_stream_->r_frame_rate ) << " seconds \n";
+
+
+        sound_->process();
+        sound_ix = 0;
 
         std::clog << "\n";
     }
@@ -437,8 +446,12 @@ end:
         return res;
     }
 
-    virtual size_t sample_rate() { return 60*370; }
-    virtual std::vector<double> raw_sound() { return {}; }
+    virtual std::unique_ptr<sound_frame_t> next_sound()
+    {
+        auto s = std::make_unique<sound_frame_t>();
+
+        return sound_->extract( sound_ix++ );
+    }
 };
 
 std::unique_ptr<input_reader> make_ffmpeg_reader( const std::string &movie_path, double from, double to )
