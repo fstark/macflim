@@ -165,8 +165,8 @@ class ffmpeg_reader : public input_reader
             ret = avcodec_decode_audio4(audio_codec_context_, frame_, got_frame, &pkt);
             if (ret < 0)
             {
-                fprintf(stderr, "Error decoding audio frame (%s)\n", av_err2str(ret));
-                return ret;
+//                auto s = av_err2str(ret);
+                throw "AUDIO FRAME DECODING ERROR";
             }
           /* Some audio decoders decode only part of the packet, and have to be
            * called again with the remainder of the packet data.
