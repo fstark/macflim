@@ -98,7 +98,7 @@ static AVCodec *dump_codecs()
   
     while ((p = av_codec_iterate(&i)))
     {
-        if (p->encode2 ||p->send_frame)
+        if (p->encode2 /* || p->send_frame */)
             std::clog << p->name << " ";
     }
 

@@ -3,7 +3,81 @@
 extern "C"{
 #include <libavformat/avformat.h>
 #include <libavutil/imgutils.h>
+#include <libavutil/samplefmt.h>
+#include <libavutil/timestamp.h>
 }
+
+#include <array>
+
+/// This stores a sound buffer and transform it into a suitable format for flims
+class sound_buffer
+{
+    std::vector<float> data_;
+
+    size_t channel_count_ = 0;      //  # of channels
+    size_t sample_rate_ = 0;        //  # of samples per second
+public:
+    sound_buffer( size_t channel_count, size_t sample_rate ) :
+        channel_count_{channel_count},
+        sample_rate_ {sample_rate}
+    {}
+
+    //  Append sample_count samples over each of the channels
+    void append_samples( float **samples, size_t sample_count )
+    {
+        for (int i=0;i!=sample_count;i++)
+        {
+            float v = 0;
+            for (int j=0;j!=channel_count_;j++)
+                v += samples[j][i];
+
+            data_.push_back( v/channel_count_ );
+        }
+    }
+
+    class sound_frame
+    {
+        static const size_t size = 370;
+        std::array<uint8_t,size> data_;
+
+        public:
+            sound_frame()
+            {
+                for (int i=0;i!=size;i++)
+                    data_[i] = 128;
+            }
+
+            template <typename T, typename U> sound_frame( T from, U min, U max )
+            {
+                for (int i=0;i!=size;i++)
+                    data_[i] = ((double)(*from++)-min)/(max-min)*255;
+            }
+
+            template <typename T> sound_frame( T from )
+            {
+                for (int i=0;i!=size;i++)
+                    data_[i] = *from++;
+            }
+    };
+
+    //  Extract a certain number of 370 bytes frames of 1/60th of a second
+    std::vector<uint8_t> extract( size_t frame_count )
+    {
+        //  WIP
+        //  First, we move the to the "correct" sample rate
+
+        // std::vector<float> resampled;
+
+        // size_t out_sample_rate = 22200; //  370*60
+
+        // double in_duration = sound_buffer.size()/(double)sample_rate_;
+
+        // for (int i=0;sample_count;i++)
+
+        // auto min_sample = *std::min_element( std::begin(data_), std::end(data_) );
+        // auto max_sample = *std::max_element( std::begin(data_), std::end(data_) );
+    }
+};
 
 class ffmpeg_reader : public input_reader
 {
@@ -14,6 +88,7 @@ class ffmpeg_reader : public input_reader
     AVStream *audio_stream_;
 
     AVCodecContext *video_codec_context_;
+    AVCodecContext *audio_codec_context_;
 
     uint8_t *video_dst_data_[4] = {NULL};
     int video_dst_linesize_[4];
@@ -22,6 +97,7 @@ class ffmpeg_reader : public input_reader
     AVFrame *frame_;
 
     int ixv;    //  Video frame index
+    int ixa;    //  Audio frame index
 
     int video_frame_count = 0;
 
@@ -29,6 +105,8 @@ class ffmpeg_reader : public input_reader
     std::unique_ptr<image> default_image_;      //  Size of our output
 
     std::vector<image> images_;
+
+    std::unique_ptr<sound_buffer> sound_;
 
     int image_ix = -1;
 
@@ -40,6 +118,7 @@ class ffmpeg_reader : public input_reader
         int ret = 0;
         int decoded = pkt.size;
         *got_frame = 0;
+
         if (pkt.stream_index == ixv)
         {
             /* decode video frame */
@@ -81,6 +160,56 @@ class ffmpeg_reader : public input_reader
                 // images_[video_frame_count].set_luma( video_dst_data_[0] );
             }
         }
+        else if (pkt.stream_index == ixa)
+        {
+            ret = avcodec_decode_audio4(audio_codec_context_, frame_, got_frame, &pkt);
+            if (ret < 0)
+            {
+                fprintf(stderr, "Error decoding audio frame (%s)\n", av_err2str(ret));
+                return ret;
+            }
+          /* Some audio decoders decode only part of the packet, and have to be
+           * called again with the remainder of the packet data.
+           * Sample: fate-suite/lossless-audio/luckynight-partial.shn
+           * Also, some decoders might over-read the packet. */
+          decoded = FFMIN(ret, pkt.size);
+  
+
+ static int audio_frame_count = 0; 
+
+          if (*got_frame) {
+              size_t unpadded_linesize = frame_->nb_samples * av_get_bytes_per_sample((AVSampleFormat)frame_->format);
+            //   printf("audio_frame%s n:%d nb_samples:%d pts:%s\n",
+            //          cached ? "(cached)" : "",
+            //          audio_frame_count++, frame_->nb_samples,
+            //          av_ts2timestr(frame_->pts, &audio_codec_context_->time_base));
+  
+              /* Write the raw audio data samples of the first plane. This works
+               * fine for packed formats (e.g. AV_SAMPLE_FMT_S16). However,
+               * most audio decoders output planar audio, which uses a separate
+               * plane of audio samples for each channel (e.g. AV_SAMPLE_FMT_S16P).
+               * In other words, this code will write only the first audio channel
+               * in these cases.
+               * You should use libswresample or libavfilter to convert the frame
+               * to packed data. */
+            //   fwrite(frame->extended_data[0], 1, unpadded_linesize, audio_dst_file);
+
+// std::clog << frame_->nb_samples << " (" << unpadded_linesize << " bytes) :";
+
+// for (int i=0;i!=frame_->nb_samples;i++)
+// {
+//     float v = 0;
+//     for (int j=0;j!=audio_codec_context_->channels;j++)
+//         v += ((float *)frame_->extended_data[j])[i];
+
+//     std::clog << v/audio_codec_context_->channels << " ";
+// }
+// std::clog << "\n";
+
+    sound_->append_samples( (float **)frame_->extended_data, frame_->nb_samples );
+
+          }
+          }
 
         extern bool sDebug;
         if (sDebug)
@@ -117,7 +246,7 @@ public:
                         -1,
                         &video_decoder_,
                         0 );
-        auto ixa = av_find_best_stream( format_context_,
+        ixa = av_find_best_stream( format_context_,
                         AVMEDIA_TYPE_AUDIO,
                         -1,
                         -1,
@@ -140,6 +269,9 @@ public:
         {
             throw "NO SUITABLE AUDIO DECODER AVAILABLE\n";
         }
+
+        std::clog << "Video stream index :" << ixv << "\n";
+        std::clog << "Audio stream index :" << ixa << "\n";
 
         double seek_to = std::max(from-5.0,0.0);    //  We seek to 5 seconds earlier, if we can
         if (avformat_seek_file( format_context_, -1, seek_to*AV_TIME_BASE, seek_to*AV_TIME_BASE, seek_to*AV_TIME_BASE, AVSEEK_FLAG_ANY )<0)
@@ -170,11 +302,19 @@ public:
             //  allocate the context
         video_codec_context_ = avcodec_alloc_context3( video_decoder_ );
         if (!video_codec_context_)
-            throw "CANNOT ALLOCATE CONTEXT\n";
+            throw "CANNOT ALLOCATE VIDEO CODEC CONTEXT\n";
 
             //  copy the parameters
         if (avcodec_parameters_to_context( video_codec_context_, video_stream_->codecpar ) < 0)
-            throw "FAILED TO COPY PARAMETERS\n";
+            throw "FAILED TO COPY VIDEO CODEC PARAMETERS\n";
+
+        audio_codec_context_ = avcodec_alloc_context3( audio_decoder_ );
+        // audio_codec_context_ = format_context_->streams[ixa]->codec;
+        if (!audio_codec_context_)
+            throw "CANNOT ALLOCATE AUDIO CODEC CONTEXT\n";
+
+        if (avcodec_parameters_to_context( audio_codec_context_, audio_stream_->codecpar ) < 0)
+            throw "FAILED TO COPY AUDIO CODEC PARAMETERS\n";
 
         AVDictionary *opts = NULL;
 
@@ -182,6 +322,32 @@ public:
 
         if (avcodec_open2( video_codec_context_, video_decoder_, &opts ) < 0)
             throw "CANNOT OPEN VIDEO CODEC\n";
+        if (avcodec_open2( audio_codec_context_, audio_decoder_, nullptr ) < 0)
+            throw "CANNOT OPEN AUDIO CODEC\n";
+
+std::clog << "AUDIO CODEC: " << avcodec_get_name( audio_codec_context_->codec_id ) << "\n";
+
+    AVSampleFormat sfmt = audio_codec_context_->sample_fmt;
+    int n_channels = audio_codec_context_->channels;
+
+std::clog << "SAMPLE FORMAT:" << av_get_sample_fmt_name( sfmt ) << "\n";
+std::clog << "# CHANNELS   :" << n_channels << "\n";
+std::clog << "PLANAR       :" << (av_sample_fmt_is_planar(sfmt)?"YES":"NO") << "\n";
+
+    if (av_sample_fmt_is_planar(sfmt))
+    {
+    //          const char *packed = av_get_sample_fmt_name(sfmt);
+    //          printf("Warning: the sample format the decoder produced is planar "
+    //                 "(%s). This example will output the first channel only.\n",
+    //                 packed ? packed : "?");
+             sfmt = av_get_packed_sample_fmt(sfmt);
+std::clog << "PACKED FORMAT:" << av_get_sample_fmt_name( sfmt ) << "\n";
+
+std::clog << "SAMPLE RATE  :" << audio_codec_context_->sample_rate << "\n";
+
+    //          n_channels = 1;
+    }
+    sound_ = std::make_unique<sound_buffer>( n_channels, audio_codec_context_->sample_rate );
 
         std::clog << "VIDEO CODEC OPENED WITH PIXEL FORMAT " << av_get_pix_fmt_name(video_codec_context_->pix_fmt) << "\n";
 
@@ -216,7 +382,7 @@ public:
         std::clog << (video_dst_linesize_[0] + video_dst_linesize_[1] + video_dst_linesize_[2] + video_dst_linesize_[3])*video_codec_context_->height << "\n";
         std::clog << bufsize << "\n";
 
-        std::clog << video_dst_data_[1]-video_dst_data_[0] << " " << video_dst_data_[2]-video_dst_data_[1] << " " << video_dst_data_[3]-video_dst_data_[2] << "\n";
+        // std::clog << video_dst_data_[1]-video_dst_data_[0] << " " << video_dst_data_[2]-video_dst_data_[1] << " " << video_dst_data_[3]-video_dst_data_[2] << "\n";
 
         frame_ = av_frame_alloc();
 

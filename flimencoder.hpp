@@ -343,7 +343,7 @@ public:
     //  Encode all the blocks
     void make_flim( const std::string flim_pathname, input_reader *reader, output_writer *writer )
     {  
-
+        assert( reader );
 /*
         read_images( from, to, profile_.half_rate() );
         read_audio( from, images_.size() );

@@ -38,7 +38,7 @@ debug: flimmaker.cpp flimutil.c imgcompress.cpp watermark.cpp image.cpp ruler.cp
 	c++ -std=c++2a -c -g -fsanitize=undefined ruler.cpp -o ruler.o
 	c++ -std=c++2a -c -g -fsanitize=undefined reader.cpp -o reader.o
 	c++ -std=c++2a -c -g -fsanitize=undefined writer.cpp -o writer.o
-	c++ -std=c++2a -g -fsanitize=undefined imgcompress.o flimmaker.o watermark.o image.o ruler.o reader.o -lavformat -lavcodec -lavutil -o flimmaker
+	c++ -std=c++2a -g -fsanitize=undefined imgcompress.o flimmaker.o watermark.o image.o ruler.o reader.o writer.o -lavformat -lavcodec -lavutil -o flimmaker
 	cc -g -Wno-unused-result flimutil.c -o flimutil
 #	gdb ./flimmaker
 

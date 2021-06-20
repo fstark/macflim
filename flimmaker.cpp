@@ -433,6 +433,8 @@ std::clog << "FROM " << from_index << "\n\n\n\n";
     else
         r = make_ffmpeg_reader( input_file, from_index, duration );
 
+std::clog << "READER=" << r.get() << "\n";
+
     std::unique_ptr<output_writer> w = make_null_writer();
     if (dump_file!="")
         w = make_ffmpeg_writer( dump_file, 512, 342, fps );
