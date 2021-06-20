@@ -431,13 +431,16 @@ std::clog << "FROM " << from_index << "\n\n\n\n";
     if (input_file=="")
         r = std::make_unique<filesystem_reader>( in_arg, fps, audio_arg, from_index, to_index );
     else
+    {
         r = make_ffmpeg_reader( input_file, from_index, duration );
+        fps = r->frame_rate();
+    }
 
 std::clog << "READER=" << r.get() << "\n";
 
     std::unique_ptr<output_writer> w = make_null_writer();
     if (dump_file!="")
-        w = make_ffmpeg_writer( dump_file, 512, 342, fps );
+        w = make_ffmpeg_writer( dump_file, 512, 342 );
 
     auto encoder = flimencoder{ custom_profile, in_arg, audio_arg };
     encoder.set_fps( fps );

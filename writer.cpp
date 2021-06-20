@@ -19,7 +19,6 @@ int frameCounter = 0;
 AVFormatContext* ofctx = nullptr;
 AVOutputFormat* oformat = nullptr;
 
-
 void pushFrame( const image &img )
 {
     int err;
@@ -56,9 +55,12 @@ void pushFrame( const image &img )
                 else *p++ = 255;
             }
 
+    videoFrame->pts = 1500 * (frameCounter++);  //  #### WHY??? (voice of Bronsky Beat)
 
+    // std::clog << "TB=" << av_q2d(cctx->time_base) << "\n";
 
-    videoFrame->pts = (1.0 / 60.0) * 90000 * (frameCounter++);
+// exit(0);
+
     // std::cout << videoFrame->pts << " " << cctx->time_base.num << " " << 
     //     cctx->time_base.den << " " << frameCounter << std::endl;
     if ((err = avcodec_send_frame(cctx, videoFrame)) < 0) {
@@ -108,7 +110,7 @@ static AVCodec *dump_codecs()
  }
 
 public:
-    ffmpeg_writer( const std::string filename, double fps )
+    ffmpeg_writer( const std::string filename )
     {
     av_register_all();
 
@@ -151,12 +153,14 @@ public:
     stream->codecpar->format = AV_PIX_FMT_YUV420P;
     stream->codecpar->bit_rate = 60 * 6000 * 8;
     avcodec_parameters_to_context(cctx, stream->codecpar);
-    cctx->time_base = (AVRational){ 1, 1 };
+    cctx->time_base = (AVRational){ 1, 30 };
     cctx->max_b_frames = 2;
     cctx->gop_size = 12;
     cctx->framerate = (AVRational){ 60, 1 };
+
     //must remove the following
-    //cctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+    // cctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
     if (stream->codecpar->codec_id == AV_CODEC_ID_H264)
     {
         av_opt_set(cctx, "preset", "ultrafast", 0);
@@ -242,9 +246,9 @@ public:
     }
 };
 
-std::unique_ptr<output_writer> make_ffmpeg_writer( const std::string &movie_path, size_t w, size_t h, double fps )
+std::unique_ptr<output_writer> make_ffmpeg_writer( const std::string &movie_path, size_t w, size_t h )
 {
-    return std::make_unique<ffmpeg_writer>( movie_path, fps );
+    return std::make_unique<ffmpeg_writer>( movie_path );
 }
 
 class null_writer : public output_writer

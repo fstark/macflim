@@ -8,6 +8,39 @@
 
 #include "image.hpp"
 
+/// A macintosh formatted sound frame (370 bytes)
+class sound_frame_t
+{
+    public:
+    static const size_t size = 370;
+
+    protected:
+    std::array<uint8_t,size> data_;
+
+    public:
+        sound_frame_t()
+        {
+            for (int i=0;i!=size;i++)
+                data_[i] = 128;
+        }
+
+        u_int8_t &at( size_t i ) { return data_[i]; }
+
+        template <typename T, typename U> sound_frame_t( T from, U min, U max )
+        {
+            for (int i=0;i!=size;i++)
+                data_[i] = ((double)(*from++)-min)/(max-min)*255;
+        }
+
+        template <typename T> sound_frame_t( T from )
+        {
+            for (int i=0;i!=size;i++)
+                data_[i] = *from++;
+        }
+};
+
+
+
 class input_reader
 {
 public:
@@ -26,11 +59,6 @@ public:
         //  Get all the sound samples
     virtual std::vector<double> raw_sound() = 0;
 };
-
-
-
-
-
 
 
 

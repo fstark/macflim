@@ -16,6 +16,10 @@ class sound_buffer
 
     size_t channel_count_ = 0;      //  # of channels
     size_t sample_rate_ = 0;        //  # of samples per second
+
+    float min_sample_;
+    float max_sample_;
+
 public:
     sound_buffer( size_t channel_count, size_t sample_rate ) :
         channel_count_{channel_count},
@@ -35,47 +39,30 @@ public:
         }
     }
 
-    class sound_frame
+    void process()
     {
-        static const size_t size = 370;
-        std::array<uint8_t,size> data_;
+        min_sample_ = *std::min_element( std::begin(data_), std::end(data_) );
+        max_sample_ = *std::max_element( std::begin(data_), std::end(data_) );
+    }
 
-        public:
-            sound_frame()
-            {
-                for (int i=0;i!=size;i++)
-                    data_[i] = 128;
-            }
-
-            template <typename T, typename U> sound_frame( T from, U min, U max )
-            {
-                for (int i=0;i!=size;i++)
-                    data_[i] = ((double)(*from++)-min)/(max-min)*255;
-            }
-
-            template <typename T> sound_frame( T from )
-            {
-                for (int i=0;i!=size;i++)
-                    data_[i] = *from++;
-            }
-    };
-
-    //  Extract a certain number of 370 bytes frames of 1/60th of a second
-    std::vector<uint8_t> extract( size_t frame_count )
+    //  Extract a 370 bytes frames (1/60th of a second)
+    sound_frame_t extract( size_t frame )
     {
-        //  WIP
-        //  First, we move the to the "correct" sample rate
+        double t = frame / 60.0;        //  Time in seconds
+        size_t start = t * sample_rate_;
 
-        // std::vector<float> resampled;
+        sound_frame_t fr;
 
-        // size_t out_sample_rate = 22200; //  370*60
+        for (int i=0;i!=fr.size;i++)
+        {
+            size_t index = start+(i/370.0/60.0)*sample_rate_;
+            if (index<data_.size())
+                fr.at(i) = (data_[index]-min_sample_)/(max_sample_-min_sample_)*255;
+            else
+                fr.at(i) = 128;
+        }
 
-        // double in_duration = sound_buffer.size()/(double)sample_rate_;
-
-        // for (int i=0;sample_count;i++)
-
-        // auto min_sample = *std::min_element( std::begin(data_), std::end(data_) );
-        // auto max_sample = *std::max_element( std::begin(data_), std::end(data_) );
+        return fr;
     }
 };
 
@@ -422,6 +409,8 @@ std::clog << "SAMPLE RATE  :" << audio_codec_context_->sample_rate << "\n";
 end:
 
         image_ix = 0;
+
+        std::clog << "Acquired " << images_.size() << " frames of video for a total of " << images_.size()/av_q2d( video_stream_->r_frame_rate ) << " seconds \n";
 
         std::clog << "\n";
     }

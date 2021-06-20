@@ -180,7 +180,7 @@ class flimencoder
     std::vector<image> images_;
     std::vector<uint8_t> audio_samples_;
 
-    double fps_ = 24.0;
+    double fps_ = 24;
 
     std::string comment_;
 
