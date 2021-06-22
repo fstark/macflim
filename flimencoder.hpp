@@ -418,14 +418,19 @@ public:
 
         std::clog << "GENERATING MP4 FILE\n";
 
+        auto sound = std::begin(audio_samples_);
+
         //  Generate the mp4 file
         for (auto &frame:frames)
         {
             std::clog << frame.ticks << std::flush;
             for (int i=0;i!=frame.ticks;i++)
             {
-                output_writer::sound_frame_t silence{};
-                writer->write_frame( frame.result.as_image(), silence );
+                sound_frame_t snd;
+                if (sound<std::end(audio_samples_))
+                    snd = *sound++;
+
+                writer->write_frame( frame.result.as_image(), snd );
             }
         }
         std::clog << "...DONE\n";

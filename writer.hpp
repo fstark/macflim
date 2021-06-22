@@ -7,13 +7,13 @@
 #include <memory>
 #include <array>
 
+#include "reader.hpp"
+
 class output_writer
 {
 
 public:
     virtual ~output_writer() {}
-
-    typedef std::array<uint8_t,370> sound_frame_t;
 
     virtual void write_frame( const image& img, const sound_frame_t &snd ) = 0;
 };

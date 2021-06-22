@@ -423,6 +423,9 @@ int main( int argc, char **argv )
         watermark += custom_profile.description();
     }
 
+    try
+    {
+
     std::clog << "------------- ENCODING PROFILE -------------\n" << custom_profile.description() << "--------------------------------------------\n";
 
 std::clog << "FROM " << from_index << "\n\n\n\n";
@@ -454,7 +457,13 @@ std::clog << "READER=" << r.get() << "\n";
 
     // encoder.set_input_single_random();
 
-    encoder.make_flim( out_arg, r.get(), w.get() );
+        encoder.make_flim( out_arg, r.get(), w.get() );
+    }
+    catch (const char *error)
+    {
+        std::cerr << "**** ERROR : [" << error << "]\n";
+        return EXIT_FAILURE;
+    }
 
     return EXIT_SUCCESS;
 }
