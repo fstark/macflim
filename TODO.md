@@ -1,6 +1,7 @@
 * [DONE] Add sound
 * Last sound frames
 * --from doesn't work for sound
+* Unknown profile crashes (--profile se)
 * check issue with default duration parameter
 * Play last bits of flim on the mac
 * codec number in encoding log
