@@ -213,6 +213,23 @@ image invert( const image &src )
 }
 
 //  ------------------------------------------------------------------
+//  Removes all the "almost black pixels"
+//  ------------------------------------------------------------------
+image black( const image &src )
+{
+    image res = src;
+
+    for (int x=0;x!=src.W();x++)
+        for (int y=0;y!=src.H();y++)
+        {
+            if (res.at(x,y)<1.0/256.0*16)
+                res.at(x,y) = 0;
+        }
+
+    return res;
+}
+
+//  ------------------------------------------------------------------
 //  Gamma corrects the image
 //  ------------------------------------------------------------------
 image gamma( const image &src, double gamma )
@@ -246,6 +263,28 @@ image zoom_out( const image &src )
                 res.at(x,y) = src.at(from_x,from_y);
             else
                 res.at(x,y) = 0;
+        }
+    
+    return res;
+}
+
+image zoom_in( const image &src )   //  #### Not wise
+{
+    const double bx = 32;
+    const double a = ((src.W()/2)-bx)/(src.W()/2);
+
+    image res = src;
+    for (int y=0;y!=src.H();y++)
+        for (int x=0;x!=src.W();x++)
+        {
+            int from_x = (x-(int)src.W()/2)*a+src.W()/2;
+            int from_y = (y-(int)src.H()/2)*a+src.H()/2;
+
+// (512-256)*(256-32)/256+256
+
+// std::clog << x << "->" << from_x << " (" << a << ") " << (x-(int)src.W()/2) << " " << std::flush;
+
+            res.at(x,y) = src.at(from_x,from_y);
         }
     
     return res;
@@ -334,9 +373,11 @@ typedef enum
     kGamma = 'g',
     kRoundCorners = 'c',
     kZoomOut = 'z',
+    kZoomIn = 'Z',
     kQuantize16 = 'q',
     kFlip = 'f',
-    kInvert = 'i'
+    kInvert = 'i',
+    kBlack = 'k'            //  More black
 }   eFilters;
 
 image filter( const image &from, eFilters filter, double arg=0 )
@@ -359,12 +400,16 @@ image filter( const image &from, eFilters filter, double arg=0 )
             return round_corners( from );
         case kZoomOut:
             return zoom_out( from );
+        case kZoomIn:
+            return zoom_in( from );
         case kQuantize16:
             return quantize( from, arg?arg:16 );
         case kFlip:
             return flip( from );
         case kInvert:
             return invert( from );
+        case kBlack:
+            return black( from );
     }
     std::cerr << "**** ERROR: filter ['" << (char)filter << "'] (" << (int)filter << ") unknown\n";
     throw "Unknown filter";
