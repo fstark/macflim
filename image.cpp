@@ -213,17 +213,50 @@ image invert( const image &src )
 }
 
 //  ------------------------------------------------------------------
-//  Removes all the "almost black pixels"
+//  Removes all a precentage of black pixels, scales the rest
 //  ------------------------------------------------------------------
-image black( const image &src )
+image black( const image &src, double percent )
 {
     image res = src;
+
+    percent /= 100;
 
     for (int x=0;x!=src.W();x++)
         for (int y=0;y!=src.H();y++)
         {
-            if (res.at(x,y)<1.0/256.0*16)
-                res.at(x,y) = 0;
+            // if (res.at(x,y)<1.0/256.0*16)
+            //     res.at(x,y) = 0;
+            double v = res.at(x,y);
+            // 1/16 -> 0
+            // 1 -> 1
+            v = (v - percent)/(1-percent);
+            if (v<0) v = 0;
+            res.at(x,y) = v;
+        }
+
+    return res;
+}
+
+//  ------------------------------------------------------------------
+//  Removes all a precentage of white pixels, scales the rest
+//  ------------------------------------------------------------------
+image white( const image &src, double percent )
+{
+    image res = src;
+
+    percent /= 100;
+
+    for (int x=0;x!=src.W();x++)
+        for (int y=0;y!=src.H();y++)
+        {
+            // if (res.at(x,y)<1.0/256.0*16)
+            //     res.at(x,y) = 0;
+            double v = res.at(x,y);
+            // 1/16 -> 0
+            // 1 -> 1
+            v = v * (1+percent);
+            if (v>1) v = 1;
+            res.at(x,y) = v;
         }
 
     return res;
@@ -377,7 +410,8 @@ typedef enum
     kQuantize16 = 'q',
     kFlip = 'f',
     kInvert = 'i',
-    kBlack = 'k'            //  More black
+    kBlack = 'k',           //  Remove the darkest x%
+    kWhite = 'w'            //  Remove the whitest x%
 }   eFilters;
 
 image filter( const image &from, eFilters filter, double arg=0 )
@@ -409,7 +443,9 @@ image filter( const image &from, eFilters filter, double arg=0 )
         case kInvert:
             return invert( from );
         case kBlack:
-            return black( from );
+            return black( from, arg?arg:1/16.0 );
+        case kWhite:
+            return white( from, arg?arg:1/16.0 );
     }
     std::cerr << "**** ERROR: filter ['" << (char)filter << "'] (" << (int)filter << ") unknown\n";
     throw "Unknown filter";
