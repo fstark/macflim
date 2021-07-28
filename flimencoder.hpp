@@ -158,7 +158,7 @@ public:
         for (auto &c:codecs_)
         {
             char buffer2[1024];
-            sprintf( buffer2, "%.2g*%s\n", c.penality, c.coder->description().c_str() );
+            sprintf( buffer2, "%d %.2g*%s\n", c.signature, c.penality, c.coder->description().c_str() );
             res += buffer2;
         }
         return res;
