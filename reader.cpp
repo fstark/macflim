@@ -71,7 +71,7 @@ public:
 
 class ffmpeg_reader : public input_reader
 {
-    AVFormatContext *format_context_;
+    AVFormatContext *format_context_ = nullptr;
     AVCodec *video_decoder_;
     AVCodec *audio_decoder_;
     AVStream *video_stream_;
