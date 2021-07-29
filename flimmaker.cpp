@@ -177,7 +177,12 @@ int main( int argc, char **argv )
     comment += version;
     comment += "\n";
 
-    encoding_profile custom_profile = encoding_profile::profile_named( "se30" );
+    encoding_profile custom_profile;
+    if (!encoding_profile::profile_named( "se30", custom_profile ))
+    {
+        std::cerr << "Cannot find default profile 'se30'\n";
+        ::exit( EXIT_FAILURE );
+    }
 
     // std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     // comment += "date: ";
@@ -208,7 +213,11 @@ int main( int argc, char **argv )
         {
             argc--;
             argv++;
-            custom_profile = encoding_profile::profile_named( *argv );
+            if (!encoding_profile::profile_named( *argv, custom_profile ))
+            {
+                std::cerr << "Cannot find encoding profile '" << *argv << "'\n";
+                ::exit( EXIT_FAILURE );
+            }
         }
         else if (!strcmp(*argv,"--byterate"))
         {

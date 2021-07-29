@@ -76,9 +76,8 @@ public:
     const std::vector<flimcompressor::codec_spec> &codecs() const { return codecs_; }
     void set_codecs( const std::vector<flimcompressor::codec_spec> &codecs ) { codecs_ = codecs; }
 
-    static encoding_profile profile_named( const std::string name )
+    static bool profile_named( const std::string name, encoding_profile &result )
     {
-        encoding_profile result;
         result.set_size( 512, 342 );
         result.set_buffer_size( 300000 );
 
@@ -94,8 +93,9 @@ public:
             result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "lines:count=30", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
+            return true;
         }
-        if (name=="macse"s)
+        if (name=="macse"s) 
         {
             result.set_byterate( 2500 );
             result.set_filters( "gbsc" );
@@ -107,6 +107,7 @@ public:
             result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "lines:count=50", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
+            return true;
         }
         if (name=="se30"s)
         {
@@ -120,6 +121,7 @@ public:
             result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "lines:count=70", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
+            return true;
         }
         if (name=="perfect"s)
         {
@@ -133,9 +135,10 @@ public:
             result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "lines:count=342", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
+            return true;
         }
 
-        return result;
+        return false;
     }
 
     std::string dither_string() const
