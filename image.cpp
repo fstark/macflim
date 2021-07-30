@@ -437,7 +437,7 @@ image filter( const image &from, eFilters filter, double arg=0 )
         case kZoomIn:
             return zoom_in( from );
         case kQuantize16:
-            return quantize( from, arg?arg:16 );
+            return quantize( from, arg?arg:17 );
         case kFlip:
             return flip( from );
         case kInvert:
