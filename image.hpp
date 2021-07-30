@@ -68,12 +68,16 @@ void ordered_dither( image &dest, const image &source, const image &previous );
 void quantize( image &dest, const image &source, const image &previous, float stability );
 
 bool read_image( image &result, const char *file );
-void write_image( const char *file, image &img );
+void write_image( const char *file, const image &img );
 
 #include <string>
 
 void watermark( image &img, const std::string &s );
 
 void copy( image &destination, const image &source, bool black_bars=true );
+
+
+//  #### This has nothing to do here
+void delete_files_of_pattern( const std::string &pattern );
 
 #endif

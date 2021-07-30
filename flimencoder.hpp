@@ -196,19 +196,6 @@ class flimencoder
     size_t cover_begin_;        /// Begin index of cover image
     size_t cover_end_;          /// End index of cover image 
 
-    void delete_files_of_pattern( const std::string &pattern )
-    {
-        int i = 0;
-        char filepath[1024];
-        std::clog << "Deleting files of pattern [" << pattern << "] ..." << std::flush;
-        do
-        {
-            i++;
-            sprintf( filepath, pattern.c_str(), i );
-        }   while (!remove(filepath));
-        std::clog << i << " files deleted\n";
-    }
-
     size_t frame_from_image( size_t n ) const
     {
         return ticks_from_frame( n-1, fps_ );
@@ -308,7 +295,7 @@ public:
     void set_target_pattern( const std::string pattern ) { target_pattern_ = pattern; }
 
     //  Encode all the blocks
-    void make_flim( const std::string flim_pathname, input_reader *reader, output_writer *writer )
+    void make_flim( const std::string flim_pathname, input_reader *reader, const std::vector<std::unique_ptr<output_writer>> &writers )
     {  
         assert( reader );
 /*
@@ -428,10 +415,9 @@ public:
         fwrite( movie.data(), movie.size(), 1, movie_file );
         fclose( movie_file );
 
-        if (writer)
+        for (auto &writer:writers)
         {
-            std::clog << "GENERATING MP4 FILE\n";
-
+            std::clog << "GENERATING ADDITIONAL OUTPUT...\n";
             auto sound = std::begin(audio_samples_);
 
             //  Generate the mp4 file

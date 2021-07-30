@@ -561,7 +561,7 @@ bool read_image( image &result, const char *file )
 //  ------------------------------------------------------------------
 //  Generates a PGM image
 //  ------------------------------------------------------------------
-void write_image( const char *file, image &img )
+void write_image( const char *file, const image &img )
 {
     // fprintf( stderr, "Writing [%s]\n", file );
 
@@ -720,4 +720,18 @@ void quantize( image &dest, const image &source, const image &previous, float st
             if (x<source.W()-1 && y<source.H()-1)
                 dest.at(x+1,y+1) = dest.at(x+1,y+1) + e3;
         }
+}
+
+//  #### This has nothing to do here
+void delete_files_of_pattern( const std::string &pattern )
+{
+    int i = 0;
+    char filepath[1024];
+    std::clog << "Deleting files of pattern [" << pattern << "] ..." << std::flush;
+    do
+    {
+        i++;
+        sprintf( filepath, pattern.c_str(), i );
+    }   while (!remove(filepath));
+    std::clog << i << " files deleted\n";
 }

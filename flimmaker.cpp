@@ -138,6 +138,7 @@ int main( int argc, char **argv )
     std::string in_arg = "movie-%06d.pgm";
     std::string input_file = "";
     std::string mp4_file = "";
+    std::string gif_file = "";
     std::string out_arg = "out.flim";
     std::string audio_arg = "audio.raw";
     double from_index = 0;
@@ -208,6 +209,12 @@ int main( int argc, char **argv )
             argc--;
             argv++;
             mp4_file = *argv;
+        }
+        else if (!strcmp(*argv,"--gif"))
+        {
+            argc--;
+            argv++;
+            gif_file = *argv;
         }
         else if (!strcmp(*argv,"--profile"))
         {
@@ -447,9 +454,11 @@ std::clog << "FROM " << from_index << "\n\n\n\n";
 
 std::clog << "READER=" << r.get() << "\n";
 
-    std::unique_ptr<output_writer> w;
+    std::vector<std::unique_ptr<output_writer>> w;
     if (mp4_file!="")
-        w = make_ffmpeg_writer( mp4_file, 512, 342 );
+        w.push_back( std::move(make_ffmpeg_writer( mp4_file, 512, 342 ) ) );
+    if (gif_file!="")
+        w.push_back( std::move(make_gif_writer( gif_file, 512, 342 ) ) );
 
     auto encoder = flimencoder{ custom_profile, in_arg, audio_arg };
     encoder.set_fps( fps );
@@ -463,7 +472,7 @@ std::clog << "READER=" << r.get() << "\n";
 
     // encoder.set_input_single_random();
 
-        encoder.make_flim( out_arg, r.get(), w.get() );
+        encoder.make_flim( out_arg, r.get(), w );
     }
     catch (const char *error)
     {

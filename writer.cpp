@@ -449,9 +449,51 @@ public:
     }
 };
 
+
+class gif_writer : public output_writer
+{
+    size_t count_ = 0;  //  We arbitrary limit gifs to (5 seconds)
+    size_t num_ = 0;
+    std::string filename_;
+
+public:
+    gif_writer( const std::string filename ) : filename_{ filename } {}
+
+    virtual void write_frame( const image& img, const sound_frame_t &snd )
+    {
+        if ((count_%3)==0 && count_<60*5)
+        {
+            char buffer[1024];
+            sprintf( buffer, "/tmp/gif-%06lu.pgm", num_ );
+            write_image( buffer, img );
+            num_++;
+        }
+        count_++;
+    }
+
+    ~gif_writer()
+    {
+        char buffer[1024];
+        sprintf( buffer, "convert -delay 5 -loop 0 /tmp/gif-*.pgm '%s'", filename_.c_str() );
+        std::clog << "GENERATING GIF FILE\n";
+        int res = system( buffer );
+        if (res!=0)
+        {
+            std::cerr << "**** FAILED TO GENERATE GIF FILE (retcode=" << res << ")\n";
+        }
+        std::clog << "DONE\n";
+        delete_files_of_pattern( "/tmp/gif-%06d.pgm" );
+    }
+};
+
 std::unique_ptr<output_writer> make_ffmpeg_writer( const std::string &movie_path, size_t w, size_t h )
 {
     return std::make_unique<ffmpeg_writer>( movie_path );
+}
+
+std::unique_ptr<output_writer> make_gif_writer( const std::string &movie_path, size_t w, size_t h )
+{
+    return std::make_unique<gif_writer>( movie_path );
 }
 
 class null_writer : public output_writer
