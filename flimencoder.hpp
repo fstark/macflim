@@ -81,7 +81,7 @@ public:
         result.set_size( 512, 342 );
         result.set_buffer_size( 300000 );
 
-        if (name=="macplus"s)
+        if (name=="plus"s)
         {
             result.set_byterate( 1500 );
             result.set_filters( "gbbscz" );
@@ -89,13 +89,14 @@ public:
             result.set_group( false );
             result.set_dither( "ordered" );
             result.set_stability( 0.5 );
+            result.codecs_.clear();
             result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "lines:count=30", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
             return true;
         }
-        if (name=="macse"s) 
+        if (name=="se"s) 
         {
             result.set_byterate( 2500 );
             result.set_filters( "gbsc" );
@@ -103,6 +104,7 @@ public:
             result.set_group( false );
             result.set_dither( "floyd" );
             result.set_stability( 0.5 );
+            result.codecs_.clear();
             result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "lines:count=50", result.W_, result.H_ ) );
@@ -117,6 +119,7 @@ public:
             result.set_group( true );
             result.set_dither( "floyd" );
             result.set_stability( 0.3 );
+            result.codecs_.clear();
             result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "lines:count=70", result.W_, result.H_ ) );
@@ -131,6 +134,7 @@ public:
             result.set_group( true );
             result.set_dither( "floyd" );
             result.set_stability( 0.3 );
+            result.codecs_.clear();
             result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "lines:count=342", result.W_, result.H_ ) );
@@ -156,7 +160,7 @@ public:
     std::string description() const
     {
         char buffer[1024];
-        sprintf( buffer, "br:%ld st:%.2f%s%s fi:%s %s\n", byterate_, stability_, half_rate_?" half-rate":"", group_?" group":"", filters_.c_str(), dither_string().c_str() );
+        sprintf( buffer, "br:%ld st:%.2f%s%s%s fi:%s %s\n", byterate_, stability_, half_rate_?" half-rate":" full-rate", group_?" group":" no-group", bars_?" bars":" no-bars", filters_.c_str(), dither_string().c_str() );
         std::string res = buffer;
         for (auto &c:codecs_)
         {
@@ -345,6 +349,8 @@ public:
         framebuffer previous_frame{ profile_.width(), profile_.height() };
         previous_frame.fill( 0xff );
 
+        std::clog << "GENERATING ENCODED MOVIE AND PGM FILES\n";
+
         auto current_frame = block_first_frame;
         while(current_frame!=std::end(frames))
         {
@@ -403,6 +409,9 @@ public:
             write( out_movie, block_content );
             block_first_frame = current_frame;
         }
+
+        std::clog << "WRITING FLIM FILE\n";
+
         FILE *movie_file = fopen( flim_pathname.c_str(), "wb" );
 
         char buffer[1024];
@@ -419,25 +428,27 @@ public:
         fwrite( movie.data(), movie.size(), 1, movie_file );
         fclose( movie_file );
 
-        std::clog << "GENERATING MP4 FILE\n";
-
-        auto sound = std::begin(audio_samples_);
-
-        //  Generate the mp4 file
-        for (auto &frame:frames)
+        if (writer)
         {
-            std::clog << frame.ticks << std::flush;
-            for (int i=0;i!=frame.ticks;i++)
+            std::clog << "GENERATING MP4 FILE\n";
+
+            auto sound = std::begin(audio_samples_);
+
+            //  Generate the mp4 file
+            for (auto &frame:frames)
             {
-                sound_frame_t snd;
-                if (sound<std::end(audio_samples_))
-                    snd = *sound++;
+                std::clog << frame.ticks << std::flush;
+                for (int i=0;i!=frame.ticks;i++)
+                {
+                    sound_frame_t snd;
+                    if (sound<std::end(audio_samples_))
+                        snd = *sound++;
 
-                writer->write_frame( frame.result.as_image(), snd );
+                    writer->write_frame( frame.result.as_image(), snd );
+                }
             }
+            std::clog << "...DONE\n";
         }
-        std::clog << "...DONE\n";
-
 
         //  Generating the cover
         for (size_t i=cover_begin_;i<=cover_end_;i++)

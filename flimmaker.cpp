@@ -137,17 +137,17 @@ int main( int argc, char **argv )
 {
     std::string in_arg = "movie-%06d.pgm";
     std::string input_file = "";
-    std::string dump_file = "";
+    std::string mp4_file = "";
     std::string out_arg = "out.flim";
     std::string audio_arg = "audio.raw";
-    double from_index = 1;
+    double from_index = 0;
     double to_index = std::numeric_limits<int>::max();
-    double duration = 30;   //  30 seconds sample by default
+    double duration = 300;   //  5 minutes by default
     int cover_from = -1;
     int cover_to = -1;
     double fps = 24.0;
     std::string watermark = "";
-    std::string out_pattern = "out-%06d.pgm";
+    std::string out_pattern = ""; // "out-%06d.pgm";
     std::string diff_pattern = "";
     std::string change_pattern = "";
     std::string target_pattern = "";
@@ -197,17 +197,17 @@ int main( int argc, char **argv )
 
     while (argc)
     {
-        if (!strcmp(*argv,"--input"))
+        // if (!strcmp(*argv,"--input"))
+        //  Don't start with '--', this is the input file/url
+        if (strncmp(*argv,"--",2))
         {
-            argc--;
-            argv++;
             input_file = *argv;
         }
-        else if (!strcmp(*argv,"--dump"))
+        else if (!strcmp(*argv,"--mp4"))
         {
             argc--;
             argv++;
-            dump_file = *argv;
+            mp4_file = *argv;
         }
         else if (!strcmp(*argv,"--profile"))
         {
@@ -352,7 +352,10 @@ int main( int argc, char **argv )
         {
             argc--;
             argv++;
-            watermark = *argv;
+            if (!strcmp(*argv,"auto"))
+                auto_watermark = true;
+            else
+                watermark = *argv;
         }
         else if (!strcmp(*argv,"--filters"))
         {
@@ -365,12 +368,6 @@ int main( int argc, char **argv )
             argc--;
             argv++;
             custom_profile.set_bars( bool_from(*argv) );
-        }
-        else if (!strcmp(*argv,"--auto-watermark"))
-        {
-            argc--;
-            argv++;
-            auto_watermark = bool_from( *argv );
         }
         else if (!strcmp(*argv,"--codec"))
         {
@@ -450,9 +447,9 @@ std::clog << "FROM " << from_index << "\n\n\n\n";
 
 std::clog << "READER=" << r.get() << "\n";
 
-    std::unique_ptr<output_writer> w = make_null_writer();
-    if (dump_file!="")
-        w = make_ffmpeg_writer( dump_file, 512, 342 );
+    std::unique_ptr<output_writer> w;
+    if (mp4_file!="")
+        w = make_ffmpeg_writer( mp4_file, 512, 342 );
 
     auto encoder = flimencoder{ custom_profile, in_arg, audio_arg };
     encoder.set_fps( fps );
