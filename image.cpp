@@ -213,6 +213,33 @@ image invert( const image &src )
 }
 
 //  ------------------------------------------------------------------
+//  Adds a debug border aroudn the image
+//  ------------------------------------------------------------------
+
+image debug_filter( const image &src )
+{
+    image res = src;
+
+    for (int x=0;x!=src.W();x++)
+    {
+        res.at(x,0) = 1;
+        res.at(x,1) = 0;
+        res.at(x,src.H()-1) = 1;
+        res.at(x,src.H()-2) = 0;
+    }
+
+    for (int y=1;y!=src.H()-1;y++)
+    {
+        res.at(0,y) = 1;
+        res.at(1,y) = 0;
+        res.at(src.W()-1,y) = 1;
+        res.at(src.W()-2,y) = 0;
+    }
+
+    return res;
+}
+
+//  ------------------------------------------------------------------
 //  Removes all a precentage of black pixels, scales the rest
 //  ------------------------------------------------------------------
 image black( const image &src, double percent )
@@ -411,7 +438,8 @@ typedef enum
     kFlip = 'f',
     kInvert = 'i',
     kBlack = 'k',           //  Remove the darkest x%
-    kWhite = 'w'            //  Remove the whitest x%
+    kWhite = 'w',           //  Remove the whitest x%
+    kDebug = '@'
 }   eFilters;
 
 image filter( const image &from, eFilters filter, double arg=0 )
@@ -446,6 +474,8 @@ image filter( const image &from, eFilters filter, double arg=0 )
             return black( from, arg?arg:1/16.0 );
         case kWhite:
             return white( from, arg?arg:1/16.0 );
+        case kDebug:
+            return debug_filter( from );
     }
     std::cerr << "**** ERROR: filter ['" << (char)filter << "'] (" << (int)filter << ") unknown\n";
     throw "Unknown filter";

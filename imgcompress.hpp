@@ -267,7 +267,7 @@ inline std::vector<uint32_t> packz32opt( std::vector<uint32_t>::const_iterator d
 #include <array>
 
 //  Computing the size
-//  Each run have a fixed overrhead of 4 bytes
+//  Each run have a fixed overhead of 4 bytes
 class packzmap
 {
 private:
@@ -278,6 +278,30 @@ private:
 
     size_t header_cost_;
     size_t elem_cost_;
+
+    size_t dbg_calc_size() const
+    {
+        size_t res = header_cost_;
+        bool state = false;
+        for (auto b:mask_)
+        {
+            if (b && state==false)
+            {
+                res += header_cost_;
+                state = true;
+            }
+
+            if (b)
+                res += elem_cost_;
+
+            if (!b)
+            {
+                state = false;
+            }
+        }
+
+        return res;
+    }
 
         //  Fills hole if free or better
     void auto_fill( size_t n )
@@ -307,21 +331,32 @@ public:
 
     size_t size() const
     {
-        assert( byte_size_<=header_cost_+N*elem_cost_ );
+        if (byte_size_>header_cost_+N*elem_cost_)
+        {
+            std::cerr << "Byte size  : " << byte_size_ << "\n";
+            std::cerr << "Header Cost: " << header_cost_ << "\n";
+            std::cerr << "Elem Cost  : " << elem_cost_ << "\n";
+            std::cerr << "N          : " << N << "\n";
+        }
+        assert( byte_size_<=header_cost_*2+N*elem_cost_ );
         return byte_size_;
     }
 
     size_t set( size_t n )
     {
+// std::clog << n << ":" << byte_size_ << "/" << dbg_calc_size() << " ";
+
         assert( n<N );
 
         if (mask_[n])
             return size();
         mask_[n] = true;
         byte_size_ += header_cost_ + elem_cost_;
+
             //  Collapses with previous
         if (n>0 && mask_[n-1])
             byte_size_-= header_cost_;
+
             //  Collapses with next
         if (n<N-1 && mask_[n+1])
             byte_size_-= header_cost_;
@@ -341,13 +376,21 @@ public:
 
         if (!mask_[n])
             return size();
+
+// if (n==0 && mask_[1])
+//     std::clog << "WEIRD CLEAR @0\n";
+// if (n==N-1 && mask_[N-2])
+//     std::clog << "WEIRD CLEAR @N-1\n";
+
         mask_[n] = false;
             //  by default, removes one data, but adds a header
         byte_size_ += header_cost_;
         byte_size_ -= elem_cost_;
+
             //  Collapses with next if previous empty (don't add header)
         if (n>1 && !mask_[n-1])
             byte_size_ -= header_cost_;
+
             //  Collapses with previous if next empty (don't add header)
         if (n<N-1 && !mask_[n+1])
             byte_size_ -= header_cost_;

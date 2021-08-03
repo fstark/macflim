@@ -53,6 +53,12 @@ static int sStream = 0;
 #include "reader.hpp"
 #include "writer.hpp"
 
+inline bool ends_with(std::string const & value, std::string const & ending)
+{
+    if (ending.size() > value.size()) return false;
+    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
+
 int num_from_string( const char **s )
 {
     int n = 0;
@@ -135,7 +141,7 @@ const char *version = "2.0.0";
 //  flimmaker [-g] --in <%d.pgm> --from <index> --to <index> --cover <index> --audio <audio.waw> --out <file>
 int main( int argc, char **argv )
 {
-    std::string in_arg = "movie-%06d.pgm";
+    // std::string in_arg = "movie-%06d.pgm";
     std::string input_file = "";
     std::string mp4_file = "";
     std::string gif_file = "";
@@ -148,7 +154,7 @@ int main( int argc, char **argv )
     int cover_to = -1;
     double fps = 24.0;
     std::string watermark = "";
-    std::string out_pattern = ""; // "out-%06d.pgm";
+    std::string pgm_pattern = ""; // "out-%06d.pgm";
     std::string diff_pattern = "";
     std::string change_pattern = "";
     std::string target_pattern = "";
@@ -202,6 +208,11 @@ int main( int argc, char **argv )
         //  Don't start with '--', this is the input file/url
         if (strncmp(*argv,"--",2))
         {
+            if (input_file!="")
+            {
+                std::cerr << "Input file specified twice: '" << input_file << "' and '" << *argv << "'\n";
+                ::exit( EXIT_FAILURE );
+            }
             input_file = *argv;
         }
         else if (!strcmp(*argv,"--mp4"))
@@ -262,12 +273,6 @@ int main( int argc, char **argv )
             argv++;
             sDebug = bool_from( *argv );
         }
-        else if (!strcmp(*argv,"--in"))
-        {
-            argc--;
-            argv++;
-            in_arg = *argv;
-        }
         else if (!strcmp(*argv,"--from"))
         {
             argc--;
@@ -323,11 +328,11 @@ int main( int argc, char **argv )
             argv++;
             out_arg = *argv;
         }
-        else if (!strcmp(*argv,"--out-pattern"))
+        else if (!strcmp(*argv,"--out-pattern") || !strcmp(*argv,"--pgm-pattern") || !strcmp(*argv,"--pgm"))
         {
             argc--;
             argv++;
-            out_pattern = *argv;
+            pgm_pattern = *argv;
         }
         else if (!strcmp(*argv,"--diff-pattern"))
         {
@@ -444,8 +449,12 @@ int main( int argc, char **argv )
 std::clog << "FROM " << from_index << "\n\n\n\n";
 
     std::unique_ptr<input_reader> r;
-    if (input_file=="")
-        r = std::make_unique<filesystem_reader>( in_arg, fps, audio_arg, from_index, to_index );
+    if (ends_with( input_file, ".pgm" ))
+    {
+        std::clog << "Reading pgm from '" << input_file << "' pattern, at " << fps << " frames per second, using '" << audio_arg << "' audio file\n";
+        std::clog << "( use --fps and --audio to change fps and audio )\n";
+        r = std::make_unique<filesystem_reader>( input_file, fps, audio_arg, from_index, to_index );
+    }
     else
     {
         r = make_ffmpeg_reader( input_file, from_index, duration );
@@ -460,12 +469,12 @@ std::clog << "READER=" << r.get() << "\n";
     if (gif_file!="")
         w.push_back( std::move(make_gif_writer( gif_file, 512, 342 ) ) );
 
-    auto encoder = flimencoder{ custom_profile, in_arg, audio_arg };
+    auto encoder = flimencoder{ custom_profile };
     encoder.set_fps( fps );
     encoder.set_comment( comment );
     encoder.set_cover( cover_from, cover_to+1 );
     encoder.set_watermark( watermark );
-    encoder.set_out_pattern( out_pattern );
+    encoder.set_out_pattern( pgm_pattern );
     encoder.set_diff_pattern( diff_pattern );
     encoder.set_change_pattern( change_pattern );
     encoder.set_target_pattern( target_pattern );

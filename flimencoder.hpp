@@ -176,9 +176,6 @@ class flimencoder
 {
     const encoding_profile &profile_;
 
-    const std::string in_;
-    const std::string audio_;
-
     std::string out_pattern_ = "out-%06d.pgm"s;
     std::string change_pattern_ = "change-%06d.pgm"s;
     std::string diff_pattern_ = "diff-%06d.pgm"s;
@@ -201,6 +198,7 @@ class flimencoder
         return ticks_from_frame( n-1, fps_ );
     }
 
+#if 0
     //  Read all images from disk
     void read_images( size_t from, size_t to, bool half_rate=false )
     {
@@ -239,6 +237,7 @@ class flimencoder
         std::clog << "\n";
         std::clog << "VIDEO: READ " << images_.size() << " images\n";
     }
+#endif
 
     void fix()
     {
@@ -283,7 +282,7 @@ class flimencoder
 
 public:
 //  #### remove in and audio
-    flimencoder( const encoding_profile &profile, const std::string &in, const std::string &audio ) : profile_{ profile }, in_{in}, audio_{audio} {}
+    flimencoder( const encoding_profile &profile ) : profile_{ profile } {}
 
     void set_fps( double fps ) { fps_ = fps; }
     void set_comment( const std::string comment ) { comment_ = comment; }

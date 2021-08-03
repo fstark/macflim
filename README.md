@@ -1,289 +1,251 @@
-Warning : this README is out of date and the content of trunk is not the version 1.0 of MacFlim (f726ee6db6634908346833020204ea0856ba40d2).
+# MacFlim, the true Mac video player
 
-# MacFlim Video player source code
+Welcome to MacFlim, the video encoder and player for your previously obsolete Macintosh
 
-Please do not barf on code quality. It was not in releasable state, but people wanted to use it. You may even be one of those people. Hi!
+MacFlim aims at bringing movie playing abilities to vintage Macs, namely:
 
-## Content
+* Mac plus
+* Mac SE
+* Mac SE/30
 
-``flimmaker`` : A C++ binary that can generate flim files for Macintosh playback
+on their beautiful internal back and white 512x342 display.
 
-``flimutil`` : A C utility that can manipulate flim files
+Some other macs may work, but probably won't.
 
-``MacFlim Source Code.dsk`` :  A dsk file with the source code of the client application and the full development environment.
+## What is in the repository?
 
-# How to compile the tools to generate flims on linux?
+* The source code of flimmaker, the command line encoder. It runs on Mac and Linux (and probably on windows).
 
-Just use ``make``
+* The source code and binaries for "MacFlim II", the new standalone video player for the vintage mac.
 
-```
-$ make
-c++ -O3 flimmaker.cpp -o flimmaker
-cc -O3 -Wno-unused-result  flimutil.c -o flimutil
-$ 
-```
+With this code, you should be able to encode and play a video sequence on your mac.
 
-# And on other platforms?
+## I have no mac and I must stream!
 
-Use ``make``, or make adjustment and do a pull request. I don't want dependencies, so be as simple as possible.
+If you have no access to a vintage mac, or if you want to look at results without having to transfer cumbesome files from your desktop to your mac, you can generate pixel exact movies that will let you know how the playback will look on the targetted hardware. See the ``--mp4`` option.
 
-# What is ``flimmaker``? How do I use it?
+## What is new since MacFlim 1.0?
 
-``flimmaker`` is the C++ tool that generates flim files. It performs the dithering on grayscale images and generate the "proprietary" files for playback. ``flimmaker`` runs on a set of 512x342, 8 bits grayscale pgm files. See further on how to generate such files using ``ffmpeg``.
+Well, the main change is that flims now have sound. This necessitated a complete rewrite of both the player and the encoder. All your old flims are now obsolete, sorry.
 
-Syntax is:
+A negative change is that the new player app is currently vastly less powerful than MacFlim 1.0. It only lets you play a flim. But with sound.
 
-``flimmaker`` [-g] --in \<%d.pgm> [--from \<index>] [--to \<index>] [--cover \<index>] --out \<file>
+Encoding input is greatly simplified: You don't have to resize the input to 512x342 any more. You don't need to have it in grayscale. You don't have to have it in pgm format. You can directly feed mp4 movies, or even youtube or vimeo urls to the encoder.
 
--g : enable debug information (mostly info on progress)
+Output is different too: flims are encoded realitive to a target "profile", and the flim will only play correctly on hardare that would support this profile.
 
---in \<pattern> : filename pattern for the pgm files that contains a * '%d' that will be replaced by an incrementing index. Yes, if you put '%s', you'll crash.
+To ease with testing, you can also ask for an mp4 of the flim to be generated. This will let you iterate and tweak the encoding parameters without the need to transfer to your vintage hardware.
 
---from \<index> : the index we take the first image from. Default to 1
+## Ok, how do I make this happen?
 
---to \<index> : the last index of the frame to be included (the number of frames is to-from+1). flimmaker will stop if it cannot read a file, so you can safely pass a large number here. Default to basically infinity.
+The pre-requisites are ffmpeg, youtube-dl (optional) and ImageMagick (optional)
 
---cover \<index> : the frame index of the cover. If specified, flimmaker will generate a set of 24 pgm images, named cover-000000.pgm to cover-000023.pgm in the current directory. Those images can be used to generate an animated gif of the movie. Default to 1/3rd of "to" and "from". If outside of the movie, there will be no cover generated.
+* ``ffmpeg`` libraries are required for compilation. 
+* ``youtube-dl`` is used if you want to directly encode movies from youtube or vimeo (or others).
+* ``ImageMagick`` is used if you want to generate ``gif`` files.
 
--- out \<file> : the name of the flim file to generate
+On a Mac:
 
-The input is supposed to be 24 frames per second (ie: every frame represent 1/24th of a second)
+    brew install ffmpeg
+    brew install youtube-dl
+    brew install ImageMagick
 
-The generated flim will always contain the 4 standard streams:
+On a linux:
 
-* 256x171x12 fps (only half of the input images are used)
-* 256x171x24 fps
-* 512x342x12 fps (only half of the input images are used)
-* 512x342x24 fps
+    apt-get install libffmpeg-dev # ????
+    apt-get install youtube-dl
+    apt-get install ImageMagick
 
-# What is ``flimutil``? How do I use it?
+(or your regional equivalent)
 
-``flimutil`` is a C tool that reads a flim and check/display the content. It is a separate tool for now, as I am still evaluating if I want to bloat ``flimmaker`` or not with additional features (like cutting flims, concatenating flims, extracting streams, upgrading to new formats, etc).
+Compiling is as simple as opening a terminal and typing ``make``. There are some warnings of obsolete functions use with ffmpeg, but it is already a miracle that it works. If anyone has a pull request to fix this, let me know.
 
-# Can you walk me in the process of creating my own flim?
+After compilation, you can generate a sample flim using:
 
-Sure. To follow this tutorial, you will need the following packages:
+    ./flimmaker https://www.youtube.com/watch?v=dQw4w9WgXcQ --mp4 out.mp4
 
-* youtube-dl => (optional) retreive youtube sample movie
+This will download the video and encode it for se30 playback, as 'out.flim'. You can immediatley play the ``out.mp4`` file, which is identical to the se30 playback. Enjoy!
 
-* mediainfo => (optional) find source material frame rate
+## General flim creation options
 
-* ffmpeg => generate pgm images for ``flimmaker``
+There are quite a few options that control the flim generation.
 
-* ImageMagick => (optional) generate gifs of you flim
+The general format is:
 
-## Create a directory to store all the temporary files
-``mkdir sample && cd sample``
+    flimmaker [input-file-name] [--option-name value]
 
-## Get the source media (youtube example)
+``input-file-name`` can be either:
 
-Remember that you can use ``youtube-dl -F`` to list formats. ``-f 22`` is not always the right one.
+* A local mp4 file. It will be opened using the installed ffmpeg library, and the "best" video and audio channels will be read and converted.
 
-```youtube-dl -f 22 https://youtu.be/MiRtNavqfpg -o sample.mp4```
+* An url supported by ``youtube-dl``. If the ``input-file-name`` starts with ``https://``, flimmaker will try to use ``youtube-dl`` to download the specified file and encode it.
 
-## Check the framerate of the media (useful later)
+* A set of local 512x342 8 bits pgm files. If the ``input-file-name`` ends with ``.pgm``, it will be considered as a ``printf`` pattern and used to read local images (starting at index 1? #### CHECK ME). For instance, ``movie-%06d.pgm`` will read all files named ``movie-000001.pgm``, ``movie-000002.pgm``, etc... Yes, if one uses '%s', the app will crash. See the ``--fps`` and ``--audio`` option to specify the audio of pgm files.
 
-```mediainfo sample.mp4```
+All other arguments to ``flimmaker`` go in pairs.
 
-```
-...
-Video
-...
-Frame rate mode                          : Constant
-Frame rate                               : 30.000 FPS
-...
+### --out **flimname**
 
+Specifies the name of the generated flim file. If there is no ``--out`` option specified, ``flimmaker`` uses *out.flim*.
 
-Audio
-...
-Sampling rate                            : 44.1 kHz
-Frame rate                               : 43.066 FPS (1024 SPF)
-...
-```
+### --mp4 **file**
 
-In this example, the source contains 30 image per second. You will need to decide if you want to play it slower, but with all the images, or if you prefer skipping images.
+Creates a 512x342 60fps mp4 file that renders exactly the flim, with its associated sound. This can be used to view the flim without having to load the ``.flim`` file to a vintage Macintosh, or uploaded to the web. While the sound channel is 44KHz 16 bits, it really contains the 22KHz 8 bits Macintosh sound. This is by far the easiest way to iterate with the encoder.
 
-## Extract the part you want to encode
+### --pgm **pattern**
 
-As files are just huge for now, you probably want to select a minute or so that you are intersted in.
+Write every generated frame as a pgm file. This is useful to embed a specific frame ina web site, or to look at the detail of the generation of different set of parameters. The pattern should contain a single '%d', which will be replaced by the frame number. Existing files with this pattern will be removed. Again, if one uses '%s', the app will crash. Example: ``--pgm out-%06d.pgm``. Numbering starts a 0, which is inconsistent with input handling (#### check me).
 
-``ffmpeg -v warning -stats -y -ss 00:00:02.100 -t 00:00:30 -i sample.mp4 extract.mp4``
+### --gif **file**
 
-## Rescale it to 512x342
+Creates an animated gif file with the first 5 seconds of the flim. The animated gif is at 20 frame per second. using a gif makes it easier to embed in a web page.
 
-The command is a testament to the extreme user friendliness of ``ffmpeg``.
+### --profile **plus**|**se**|**se30**|**perfect**
 
-``ffmpeg -v warning -stats -y -i extract.mp4 -vf "scale=(iw*sar)*max(512.1/(iw*sar)\,342.1/ih):ih*max(512.1/(iw*sar)\,342.1/ih), crop=512:342" 512x342.mp4``
+Specifies the encoding/playback profile you want to use. There are 4 profiles:
 
-## Extract all the grayscale images
+* plus : The plus profile aims at playing the resulting file on a Macitosh Plus, limiting the decoding processing power as much as possible by keeping the data small. For this, it skips half of the frames, uses ordered dithering, blurs the image and adds a small border to the generated flim. It allows for a lot of "leakage" from a frame to the next. The compression parameters are also very lossy. The result will only be "good" if the input movie is very static.
 
-The 30 below is the original framerate. Why do we have to pass it is something I cannot understand while sober. We then ask ffmpeg to extract 24 images every second. Note: the first image is 1, not 0.
+* se : As the Macintosh SE has slightly more processing power than the Macintosh Plus, it can manage files will less compression. It still skips half of the frames, but uses the nicer floyd dithering.
 
-``ffmpeg -v warning -stats -y -r 30 -i 512x342.mp4 -r 24 source-%06d.pgm``
+* se30 : Targets the SE/30 the most powerful comnpact Macintosh. Encoding can use 4 times more space, doesn't skip frames, and limits leakage from a frame to the next. se30 movies are in general correct, in the sense that mostly anything can be faithfully encoded, with a few artifacts.
 
-## Execute flimmaker on the images, to generate the flim
+* perfect : this profile aims at a "perfect" playback. The resulting files can be played on an upgraded computer. For instance, playing from a se30 with a ram disk allows those "perfect" flims to be played.
 
-The output of ``flimmaker`` is pretty terse for now, and the -g option doesn't do much more yet.
+Examples:
 
-``../flimmaker --in "source-%06d.pgm" --out sample.flim --cover 116``
+    # Sweet dreams is a good flim for a plus, as there is almost no camera movement, and very slow scenes changes
+    ./flimmaker 'https://www.youtube.com/watch?v=qeMFqkcPYcg' --profile plus --out sweet-dreams-plus.flim --mp4 sweet-dreams-plus.mp4
 
-```
-Stopped read at [source-000735.pgm]
-Added 13 frames
-Stopped read at [source-000735.pgm]
-Added 6 frames
-Stopped read at [source-000735.pgm]
-Added 13 frames
-Stopped read at [source-000735.pgm]
-Added 6 frames
-```
+    # Gangnam style has quite a lot scene changes and movements, but works correctly on the se30
+    ./flimmaker 'https://www.youtube.com/watch?v=9bZkp7q19f0' --profile se30 --out gangnam-style-se30.flim --mp4 gangnam-style-se30.mp4
 
-The "stopped read" message indicates that ``flimmaker`` didn't find the image 735 and assumed (correctly) that the flim should ends at 734. You can also use ``--from`` and ``--to`` to control which part you want the flim to be created from (in which case you would extract a larger part of the source media and manually search for the first and last images you want you flim to include)
+### --from **time**
 
-``flimmaker`` generates everything in batches of 20, for internal reasons that are linked to playback. For 24fps streams, if the source material is not a multiple of 20 frames, it will duplicate the last frames to generate an integral number of 20 frames blocks. For 12fps streams, it will duplicate the last frames if the total source if not a multiple of 40.
- 
-The "added nn frames" message indicates that it added frames at the end. You can tweak the extract duration if you want to be "perfect" (the '-t 00:00:30' of the extract part)
+Starts encoding at that specific time. Time format is ``[[<hours>:]<minutes>:]<seconds>``, so ``--from 30`` means *30 seconds* from start, ``--from 120`` means *120 seconds* from start, ``--from 1:`` means *1 minute* from start, and ``--from 1:13:12`` means *1 hour, 13 minutes and 12 seconds* from start.
 
-## Check that the flim is correct
+### --duration **time**
 
-``../flimutil sample.flim``
+Specify the duration of the flim. See ``--from`` for time format. The default duration is 5 minutes. Due to incompetent coding, encoding movies that last for longer than 10-15m is in general a bad idea.  
 
-should display:
+### --bars **boolean**
 
-```
-STREAM COUNT: 4
-  #0 (0/0) 256x171 12.000 fps
-           380 frames, starting at 108, length 2079360
-  #1 (0/0) 256x171 24.000 fps
-           740 frames, starting at 2079468, length 4049280
-  #2 (0/0) 512x342 12.000 fps
-           380 frames, starting at 6128748, length 8317440
-  #3 (0/0) 512x342 24.000 fps
-           740 frames, starting at 14446188, length 16197120
-```
+The Mac screen ratio is 3/2, but move movies out there are 4/3, 16/9 or something else. By default, flimmaker adds black borders around the border of the flim (because it keeps more of the original image and the black bars are less data to encode). Using ``--bars false`` instead crops the image. Note that, when there are already black bars in in the input video, using the 'Z' filter (Zoom) described later can help.
 
-## Generating a static cover gif
+### --watermark **string**
 
-This uses ImageMagick to create a simple gif, suitable for insertion in web pages.
+Adds the parameter string to the top of every frame of the video. This is useful if you generate several similar videos with different parameters and want to keep track of those. Use ``auto`` as the string to have the encoding parameters placed in the video. Please do not use the watermark option when releasing your video to the world!
 
-``convert cover-000000.pgm sample-poster.gif``
+There are two additional seldom used options, for dealing with pgm input:
 
-Note: if you plan to get this image on your vintage mac, I suggest you generate a ``tga`` file and open it with Photoshop 1.0.7. For web display, you can also choose to generate ``png`` images. Note that you absolutely want to avoid lossy compression, as black and white dithered images are a worst case for lossy compression.
+### --fps **frame-rate**
 
-## Generating the animated cover gif (the one I use on macflim.com)
+When specifying a set of pgm files as input, one can use the ``--fps`` to specify the timing of the resulting video. The daults is 24 fps.
 
-``convert -delay 5 -loop 0 "cover-*.pgm" sample.gif``
+### --audio **raw-audio-filename**
 
-## Generating an mp4 identical to the flim
+When specifiying a set of pgm files as input, the audio has to be provided using a raw ``wav`` file of 22200Hz, unsigned 8 bits samples. Such file can be created using audacity, or the ffmpeg and sox unix command lines (use ``apt-get install sox`` or ``brew install sox`` to install the sox tool):
 
-All the 512x342 images have been generated by ``flimmaker`` in the current directory, so you can use ``ffmpeg`` to create a mac-like movie.
+    ffmpeg -i movie.mp4 audio.wav
+    sox -V2 audio.wav -r 22200 -e unsigned-integer -b 8 audio.raw remix 1 norm
 
-``ffmpeg -y -framerate 24 -pattern_type sequence -start_number 1 -framerate 24 -i "out-%06d.pgm" -s 512x342 sample.flim.mp4``
 
-## Generating an mp4 flim suitable for youtube upload
+## Moar options!
 
-If you want to update a flim to youtube with maximal quality (without filming the flim), you can use this command to generate something high quality that youtube will not distort, and get a result similar to https://youtu.be/xUCUK2k_hjk (choose HD in youtube, or the compression kills everything)
+Digging into the dirty details, here are the options that control the encoding itself (ie: the options driven by the profile).
 
-``ffmpeg -y -framerate 24 -pattern_type sequence -start_number 1 -framerate 24 -i "out-%06d.pgm" -filter:v pad="in_w:in_h+90:0:-45" -s 1280x1080 sample-hq.flim.mp4``
+You can specify ``--profile`` to set up basic options, the more specific ones will override the ones form the profile.
 
-## Cleanup
+You need to specify those options *after* the ``--profile``
 
-```
-$ rm *.pgm extract.mp4 512x342.mp4
-$ ls -l
-total 240860
--rw-rw-r-- 1 fred fred  30643308 avril  3 14:00 sample.flim
--rw-rw-r-- 1 fred fred  18182043 avril  3 13:39 sample.flim.mp4
--rw-rw-r-- 1 fred fred    516493 avril  3 13:36 sample.gif
--rw-rw-r-- 1 fred fred  52392940 avril  3 13:47 sample-hq.flim.mp4
--rw-rw-r-- 1 fred fred 144868275 avril  1 16:19 sample.mp4
--rw-rw-r-- 1 fred fred     21573 avril  3 13:36 sample-poster.gif
-$
-```
+This is an advanced section, it's ok if you don't understand everything.
 
-sample.flim : the flim you can play on the real hardware
+### --byterate byterate
 
-sample.flim.mp4 : exactly the same thing, but that you can play locally to check. No suitable for video platform, because of the Mac aspect-ratio and the low quality settings.
+The byterate is the number of bytes per ticks (a tick is 1/60th of a second) that are available to encode the video stream. 370 additional bytes are used for the sound, plus a handful of bytes overhead. You can play with this parameter if your mac has a faster/slower drive. If the byterate is too high, you will suffer sound and video skips at playback.
 
-sample.gif : a short animated poster of you flim
+The Mac Plus is able to read and decode around 1500 bytes per tick, the Mac SE around 2500 and the Mac SE/30 6000.
 
-sample-hq.flim.mp4 : the flim in high quality and good aspect ratio for sharing
+### --half-rate **boolean**
 
-sample.mp4 : the original source material
+Using ``--half-rate true`` will effectively halve the framerate of the input, resulting in a worse looking, but smaller flim. If Mac Flim II has troubles displaying your flim, using ``--half-rate true`` can vastly improve the visual result.
 
-sample-poster.gif : a simple black and white poster
+The Mac Plus and the Mac SE profiles are half-rate by default, while the SE/30 displays all the frames.
 
-# Do I really need to type all that?
+### --group **boolean**
 
-No, if you already have a 512x342 24fps grayscale mp4 that you want to flimize,
-you just need to execute the _"Extract all the grayscale images"_ and _"Execute flimmaker on the images, to generate the flim"_ commands, which, at their simplest expressions are:
+Using ``--group false`` will have the player display partially constructed frames every 60th of a second. Due to limitations in the hardware/the way Mac Flim II works, the Mac Plus and the Mac SE cannot group the frames, and you can see the construction on screen. The SE/30 doesn't have to display partial results, which results more stable display. However, one can use ``--group true`` for the SE/30 to get some interesting low-fidelity effects.
 
-``ffmpeg -r 24 -i 512x342.mp4 -r 24 movie-%06d.pgm``
+The Mac Plus and the Mac SE profiles are not grouped, while the SE/30 is.
 
-(change the first 24 to your source framerate)
+### --dither **ordered**|**floyd**
 
-and
+The conversion of the image to black and white can be done using either the ``ordered`` dithering or the ``floyd`` one. In general, the ``floyd`` ordering will give the typical *MacFlim* look. However, images from one frame to another have more differences, so it uses more bandwidth for encoding. Also, if the flim is composed of only large flat regular zones, ``ordered`` encoding may give nicer results than ``floyd``.
 
-``flimmaker --out myflim.flim``
+The Mac Plus uses ``ordered`` encoding by default while the Mac SE and SE/30 use the ``floyd`` encoding.
 
-(because 'movie-%06d.pgm' is the default for the '--in' option)
+### --stability **double**
 
-Just remember to execute them in a temporary directory...
+When using the ``floyd`` dithering, a small change in some part of consecutive frames can lead to very different dithering patterns. This is visually distracting and also consumes bandwidth.
 
-# Where are the code comments?
+The stability parameter makes the dithered pattern match the preceding frame more closely. A small stability will make images change a lot between frames, and a high stability will cause artifacts.
 
-Release or comments. Had to choose.
+While the Mac Plus does not use ``floyd`` dithering, its default ``stability`` is 0.5. The Mac SE also uses a ``stability`` of 0.5. The mac SE/30 uses a ``stability`` of 0.3.
 
-# Why templates?
+### --filters **giberrish**
 
-It sounded like a good idea in the beginning, and I was tired.
+After converting the input image to 512x342 grayscale, Mac Flim II applies a series of filters, before dithering the image to pure black and white.
 
-# Why so many hard-coded behaviors?
+Each filter is a single letter, with an optional numeric parameter. A filter can be specified twice, in which case it will be applied twice. There are no spaces. As an example, ``--filters g1.8b5scz`` means gamma 1.8, blur 5x5, sharpen, add corners to the frame and reduce it slightly.
 
-See above.
+Specifying a ``--filters`` argument completely replaces the default filters from the current profile.
 
-# Oh, I see that there is also the Mac application source code, can you tell me more about it?
+Filter list:
 
-Sure. First, it is **absolutely not fit for release**, but again, people manifested interest, so here it is, in all its ugly glory.
+* Blur 'b' (size) : blurs the image by averaging the neighbourd pixels. The argument is the size of the filter, a 3x3 grid (default) or a 5x5 grid. No other sizes are supported. As the spatial resolution of the image is used to encode the dithering, bluring the image often doesn't lead to a visible loss of quality and generally enables a better encoding by smoothing out details.
 
-## Why a .dsk file?
+* Sharpen 's' : sharpens the image. It is a good idea to sharpen the image after blurring. This helps to have more defined zones, which, again, helps the encoding.
 
-Well, having the files on the host machine would make things difficult for the Think C project and the resource file, which cannot be represented easily on a non-Mac file system. I opted for a completely vintage approach, and the content of the dsk is what you could find on a development environment of the late 80s.
+* Gamma 'g' (value) : applies a gamma transformation to the image. The higher the gamma, the darker the resulting image. Default gamma is 1.6.
 
-I also wanted to have something turnkey, you don't have to know anything about those things to start playing with the source code.
+* Round Corners 'c' : the round corners filter removes the corners, and produce a lovely period-accurate, rounded-cornered image.
 
-## Can you explain me what I will find on the dsk file?
+* Zoom smaller 'z' : The image is zoomed out so that there are 32 black pixels on each side (64 pixels in total horizontally). As a result, the encoding is slightly more efficient. Use several 'z' to get an even smaller image.
 
-Yep:
+* Zoom larger 'Z' : The 32 leftmosts and rightmost pixels of the images are dropped, and the resulting image is zoomed in. You can use several 'Z' to zoom even deeper in the image. One can use 'Zz' (or better, 'Zcz') to punch a 32 pixels wide black frame around the video.
 
-A universal system 6.0.8. This makes the dsk file bootable on a real mac, or on minivmac (which I use for development).
+* Invert 'i' : inverts the image; the black become white and the white becomes black. 'Zizi' adds a white border to the image, much to the hilarity of the most immature members of the French-speaking crowd.
 
-A 'src' directory, containing the THINK C project, the source code, including the resource file, release README documents, and a sample flim for development purposes.
+* Flip 'f' : Horizontally flips the image. This can be useful when creating flims that can appear in the background of youtube videos, as it creates less spurious copyright strikes from the IA.
 
-THINK Reference, a very handy tool containing all the reference you need to toolbox routines.
+* Quantize 'q' (steps) : Quantize the colors so there are only 17 of them. This can help when encoding images of flat colors to avoid spurious gradient. It is particularly useful when using the ordered dithering, as there are only 17 different dithering patterns. Using a lower number can create interesting effects: for instance, q5 will generate images with only black, dark gray, pure gray, light gray and white colors. q2 will posterize the image into black and white, rendering dithering inoperand (useful for pure 2 colors black and white sources)
 
-Super ResEdit 2.1.3, the resource editor, for hacking the resource file.
+* Black 'k' (percent) : Remove the darkest part of the image. Often movies have black background that are not completely black. The dithering algorithm represents this by having a few white pixels in large black areas, which is visually distracting (and eats encoding bandwidth). The black filters collapses the darkest pixels into pure black. The rest of the image color is scaled to the remaining color range. By default the black filters removes the 6.25% darkest pixels.
 
-3 support applications, included for testing purposes (testing the export and copy-paste functions): MacPaint 1.5, AdobePhotoshop and MacWrite 4.6
+* White 'w' (percent) : Same as the Black filter, but for white pixels. This is a slightly less frequent issue, as large pure white areas are rarer in movies.
 
-TeachText, to edit and distribute the README documents.
 
-ImportF1 and ExportF1, to enable easy copy in and out minivmac
+### --codec **codec-definition**
 
-THINK C, the complete C development environment
+The encoding is performed by a serie of codecs. Each frame is encoded by all the codecs with the existing byterate, and the one which produces the "best" image is choosen. As soon as the ``--codec`` command-line argument is specified, the codecs list is reset, and all codecs needs to be added manually. A codec is specified using its name, followed by an optional argument list, in the following format: ``--codec name:arg1=value1,arg2=value2``. The use of the ``--codec`` argument is mostly useful during development.
 
-## You mean I can build the app myself?
+Each codec is defined by a name and an optional list of parameters. Here is the list of codecs and their parameters.
 
-Yep. Boot the .dsk drive, go in the 'src' folder, double-click on the MacFlim project, choose "Project/Build Application...", select an output directory, and here you go.
+* null (0x00) : The ``null`` codec just doesn't encode anything. It is useful when an image doesn't change from a frame to the next.
 
-## Anything else?
+* z16 (0x01) : The ``z16`` codec compresses the image in 16 pixels vertical bands. It is almost always inferior to the z32 codec.
 
-Please don't change and distribute it too widely, it is going to be difficult to collaborate on a vintage Mac app (to be honest, I still have trouble understanding how to do it in a productive way). I'd rather centralize the version, and make sure that there aren't too many different and confusing versions around.
+* z32 (0x02) : The ``z32`` codec compresses the image in 32 pixels vertical bands. It is generally the most efficient codec.
 
-I also plan major rewrites and features, so consider this a preview, not a release.
+* invert (0x03) : The ``invert`` codec (currently) bluntly inverts the whole image. This is useful in encoding movies that have sudden complete reversal of colors, which is a worst case for th ``z32`` codec, but can be trivialy encoded by ``invert``.
 
-# Any other things?
+* lines (0x04) : The ``lines`` codec encodes a fixed amount of consecutive horizontal lines. It is usefull when there is a large change in the image, as it has less overhead than the z32 codec. The number of lines than can be encoded in a single frame is given in the ``count`` argument, as the number of lines than can be encoded is dependent on the power of the resulting hardware. The ``plus`` can encode 30 lines, the ``se`` 50, the ``se30`` 70. The ``perfect`` profile can encode up to a full 342 screen.
 
-If you do something, or publish stuff, I'd love to be aware, so send me a pointer either to fstark on m68kmla (https://68kmla.org/forums/profile/20641-fstark/), or on my youtube channel (https://www.youtube.com/channel/UCotU6vnCI9H4YUEopzwDjRQ) or my reddit account (https://www.reddit.com/user/frederic_stark/).
+The 0x00, 0x01, 0x02, 0x03 and 0x04 are the *signature* of the codecs, which can also be seen with the ``--watermark auto`` option.
 
-Or better, @fredericstark on twitter (https://twitter.com/fredericstark).
+One can see the exact behavior of each codec by specifying those one by one:
+
+./flimmaker gangnam-style.mp4 --mp4 out.mp4 --duration 20 --codec z16
+
+
+[to be continued]
