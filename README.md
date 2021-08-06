@@ -2,6 +2,8 @@
 
 Welcome to MacFlim, the video encoder and player for your previously obsolete Macintosh
 
+![MacFlim](./assets/macflim.gif)
+
 MacFlim aims at bringing movie playing abilities to vintage Macs, namely:
 
 * Mac plus
@@ -10,7 +12,7 @@ MacFlim aims at bringing movie playing abilities to vintage Macs, namely:
 
 on their beautiful internal back and white 512x342 display.
 
-Some other macs may work, but probably won't.
+Some other macs may work in the future, but for now probably won't.
 
 ## What is in the repository?
 

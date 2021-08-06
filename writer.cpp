@@ -482,6 +482,7 @@ public:
             std::cerr << "**** FAILED TO GENERATE GIF FILE (retcode=" << res << ")\n";
         }
         std::clog << "DONE\n";
+        //  #### This is missing the file '0'
         delete_files_of_pattern( "/tmp/gif-%06d.pgm" );
     }
 };

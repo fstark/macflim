@@ -14,7 +14,9 @@
 * add --pgm for dumping pgms
 * command-line help
 
+BUGS TO INVESTIGATE:
 
+* rm 0.gif
 
 ---------------
 
@@ -85,3 +87,10 @@ make && ./flimmaker sweet-dreams.mp4 --profile plus --out sweet-dreams-plus.flim
 # Example with a lot of transitions
 
 make && ./flimmaker sweet-dreams.mp4 --profile plus --bars none --from 1:27 --duration 5 --gif sweet-dreams.gif --filters Zk10w20g1bbsqc --dither floyd
+
+
+
+# Generate asset
+
+# macflim.gif
+make && ./flimmaker ipodad1.mp4 --gif assets/macflim.gif --from 9.8 --duration 2 --profile perfect --filters g0.8q5c --dither ordered
