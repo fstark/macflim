@@ -12,13 +12,13 @@ MacFlim aims at bringing movie playing abilities to vintage Macs, namely:
 
 on their beautiful internal back and white 512x342 display.
 
-Some other macs may work in the future, but for now probably won't.
+Some other macs may work in the future, but for now probably don't.
 
 ## What is in the repository?
 
-* The source code of flimmaker, the command line encoder. It runs on Mac and Linux (and probably on windows).
+* The source code of flimmaker, the command line encoder. It runs on Mac and Linux (and could probably compiled on windows with a C++20 compiler).
 
-* The source code and binaries for "MacFlim II", the new standalone video player for the vintage mac.
+* The source code and binaries for "MacFlim Player", the new standalone video player for the vintage mac.
 
 With this code, you should be able to encode and play a video sequence on your mac.
 
@@ -241,7 +241,7 @@ Each codec is defined by a name and an optional list of parameters. Here is the 
 
 * invert (0x03) : The ``invert`` codec (currently) bluntly inverts the whole image. This is useful in encoding movies that have sudden complete reversal of colors, which is a worst case for th ``z32`` codec, but can be trivialy encoded by ``invert``.
 
-* lines (0x04) : The ``lines`` codec encodes a fixed amount of consecutive horizontal lines. It is usefull when there is a large change in the image, as it has less overhead than the z32 codec. The number of lines than can be encoded in a single frame is given in the ``count`` argument, as the number of lines than can be encoded is dependent on the power of the resulting hardware. The ``plus`` can encode 30 lines, the ``se`` 50, the ``se30`` 70. The ``perfect`` profile can encode up to a full 342 screen.
+* lines (0x04) : The ``lines`` codec encodes a fixed amount of consecutive horizontal lines. It is usefull when there is a large change in the image, as it has less overhead than the z32 codec. The number of lines than can be encoded in a single frame is based on an average of 50 bytes per lines (which is wrong, but right)
 
 The 0x00, 0x01, 0x02, 0x03 and 0x04 are the *signature* of the codecs, which can also be seen with the ``--watermark auto`` option.
 

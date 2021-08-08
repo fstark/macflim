@@ -77,18 +77,9 @@ class copy_line_compressor : public compressor
 {
     virtual std::string name() const { return "lines"; };
 
-    size_t count_ = 35;
-
     virtual bool set_parameter( const std::string parameter, const std::string value )
     {
-        if (parameter=="count")
-            count_ = size_t_from(value);
         return compressor::set_parameter( parameter, value );
-    }
-
-    virtual std::string description() const
-    {
-        return compressor::description()+":count="+std::to_string(count_);
     }
 
     virtual std::vector<uint8_t> compress( framebuffer &current, const framebuffer &target, /* weigths, */ size_t budget ) const
@@ -100,10 +91,14 @@ class copy_line_compressor : public compressor
         size_t line_start = 0;
         size_t line_count = 0;
 
-        for (size_t i=0;i<342;i+=count_)
+        size_t target_count = budget / 50;  //  est. 50 bytes per line
+
+// std::clog << "Lines: " << budget << " bytes " << target_count << " lines \n";
+
+        for (size_t i=0;i<342;i+=target_count)
         {
             framebuffer fb = current;
-            size_t lc = std::min( count_, 342-i );
+            size_t lc = std::min( target_count, 342-i );
             fb.copy_lines_from( target, i, lc );
             auto res = fb.count_differences( current );
             if (res>q)
