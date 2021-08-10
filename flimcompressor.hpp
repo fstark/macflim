@@ -189,6 +189,12 @@ public:
             
             round_corners( dest );
             ::watermark( dest, watermark );
+            //  DEBUG frame count
+            // {
+            //     char buffer[1024];
+            //     sprintf( buffer, "%zu", current_tick );
+            //     ::watermark( dest, buffer );
+            // }
             framebuffer fb{ dest };
 
                 //  Let's see how many ticks we have to display this image
