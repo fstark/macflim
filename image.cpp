@@ -84,11 +84,6 @@ image sharpen( const image &src )
 
     auto res = src;
 
-    for (int x=0;x!=src.W();x++)
-        res.at(x,0) = res.at(x,src.H()-1) = 0;
-    for (int y=0;y!=src.H();y++)
-        res.at(0,y) = res.at(src.W()-1,y) = 0;
-
     for (int x=1;x!=src.W()-1;x++)
         for (int y=1;y!=src.H()-1;y++)
         {
@@ -116,11 +111,6 @@ image blur3( const image &src )
     };
 
     auto res = src;
-
-    // for (int x=0;x!=W;x++)
-    //     res[x][0] = res[x][H-1] = 0;
-    // for (int y=0;y!=H;y++)
-    //     res[0][y] = res[W-1][y] = 0;
 
     for (int x=1;x!=src.W()-1;x++)
         for (int y=1;y!=src.H()-1;y++)
@@ -153,13 +143,6 @@ image blur5( const image &src )
     };
 
     auto res = src;
-
-    for (int x=0;x!=src.W();x++)
-        res.at(x,0) = res.at(x,src.H()-1) = res.at(x,1) = res.at(x,src.H()-2) = 0;
-    for (int y=0;y!=src.H();y++)
-        res.at(0,y) = res.at(src.W()-1,y) = res.at(1,y) = res.at(src.W()-2,y) = 0;
-
-//    fill( res, 0 );
 
     for (int x=2;x!=src.W()-2;x++)
         for (int y=2;y!=src.H()-2;y++)
