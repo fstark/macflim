@@ -9,6 +9,8 @@ extern "C"{
 
 #include <array>
 
+extern bool sDebug;
+
 /// This stores a sound buffer and transform it into a suitable format for flims
 class sound_buffer
 {
@@ -132,7 +134,7 @@ class ffmpeg_reader : public input_reader
                     //     cached ? "(cached)" : "",
                     //     video_frame_count, frame_->coded_picture_number, frame_->pts, frame_->pts*av_q2d(video_stream_->time_base) );
                     video_frame_count++;
-                    std::clog << "*" << std::flush;
+                    std::clog << "Read " << video_frame_count << " frames\r" << std::flush;
 
                     av_image_copy(
                         video_dst_data_, video_dst_linesize_,
@@ -145,8 +147,8 @@ class ffmpeg_reader : public input_reader
                     images_.push_back( *default_image_ );
                     copy( images_.back(), *video_image_ );
                 }
-                else
-                    std::clog << "." << std::flush;
+                // else
+                //     std::clog << "." << std::flush;  //  We are skipping frames
 
                 // images_[video_frame_count].set_luma( video_dst_data_[0] );
             }
@@ -214,13 +216,12 @@ public:
 
     ffmpeg_reader( const std::string &movie_path, double from, double duration )
     {
-        std::clog << "avformat_open_input\n";
+
+        av_log_set_level( AV_LOG_WARNING );
 
         //open video file
         if (avformat_open_input(&format_context_, movie_path.c_str(), NULL, NULL) != 0)
             throw "Cannot open input file";
-
-        std::clog << "avformat_find_stream_info\n";
 
         //get stream info
         if (avformat_find_stream_info(format_context_, NULL) < 0)
@@ -229,7 +230,8 @@ public:
         // dump the whole thing like ffprobe does
         //av_dump_format(pFormatCtx, 0, argv[1], 0);
 
-        std::clog << "Searching for audio and video in " << format_context_->nb_streams << " streams\n";
+        if (sDebug)
+            std::clog << "Searching for audio and video in " << format_context_->nb_streams << " streams\n";
 
         ixv = av_find_best_stream( format_context_,
                         AVMEDIA_TYPE_VIDEO,
@@ -261,8 +263,11 @@ public:
             throw "NO SUITABLE AUDIO DECODER AVAILABLE\n";
         }
 
-        std::clog << "Video stream index :" << ixv << "\n";
-        std::clog << "Audio stream index :" << ixa << "\n";
+        if (sDebug)
+        {
+            std::clog << "Video stream index :" << ixv << "\n";
+            std::clog << "Audio stream index :" << ixa << "\n";
+        }
 
         double seek_to = std::max(from-5.0,0.0);    //  We seek to 5 seconds earlier, if we can
         if (avformat_seek_file( format_context_, -1, seek_to*AV_TIME_BASE, seek_to*AV_TIME_BASE, seek_to*AV_TIME_BASE, AVSEEK_FLAG_ANY )<0)
@@ -273,16 +278,19 @@ public:
 
         // get the frame rate of each stream
 
-        std::clog   << "Video : "
-                    << " " << video_stream_->codecpar->width << "x" << video_stream_->codecpar->height
-                    << "@" << av_q2d( video_stream_->r_frame_rate )
-                    << " fps" 
-                    << " timebase:" 
-                    << av_q2d(video_stream_->time_base)
-                    << "\n";
-        std::clog   << "Audio : "
-                    << " " << audio_stream_->codecpar->sample_rate
-                    << "Hz \n";
+        if (sDebug)
+        {
+            std::clog   << "Video : "
+                        << " " << video_stream_->codecpar->width << "x" << video_stream_->codecpar->height
+                        << "@" << av_q2d( video_stream_->r_frame_rate )
+                        << " fps" 
+                        << " timebase:" 
+                        << av_q2d(video_stream_->time_base)
+                        << "\n";
+            std::clog   << "Audio : "
+                        << " " << audio_stream_->codecpar->sample_rate
+                        << "Hz \n";
+        }
 
         first_frame_second_ = from;
         frame_to_extract_ = duration*av_q2d( video_stream_->r_frame_rate );
@@ -316,14 +324,18 @@ public:
         if (avcodec_open2( audio_codec_context_, audio_decoder_, nullptr ) < 0)
             throw "CANNOT OPEN AUDIO CODEC\n";
 
-std::clog << "AUDIO CODEC: " << avcodec_get_name( audio_codec_context_->codec_id ) << "\n";
+        if (sDebug)
+            std::clog << "AUDIO CODEC: " << avcodec_get_name( audio_codec_context_->codec_id ) << "\n";
 
     AVSampleFormat sfmt = audio_codec_context_->sample_fmt;
     int n_channels = audio_codec_context_->channels;
 
-std::clog << "SAMPLE FORMAT:" << av_get_sample_fmt_name( sfmt ) << "\n";
-std::clog << "# CHANNELS   :" << n_channels << "\n";
-std::clog << "PLANAR       :" << (av_sample_fmt_is_planar(sfmt)?"YES":"NO") << "\n";
+        if (sDebug)
+        {
+            std::clog << "SAMPLE FORMAT:" << av_get_sample_fmt_name( sfmt ) << "\n";
+            std::clog << "# CHANNELS   :" << n_channels << "\n";
+            std::clog << "PLANAR       :" << (av_sample_fmt_is_planar(sfmt)?"YES":"NO") << "\n";
+        }
 
     if (av_sample_fmt_is_planar(sfmt))
     {
@@ -332,15 +344,18 @@ std::clog << "PLANAR       :" << (av_sample_fmt_is_planar(sfmt)?"YES":"NO") << "
     //                 "(%s). This example will output the first channel only.\n",
     //                 packed ? packed : "?");
              sfmt = av_get_packed_sample_fmt(sfmt);
-std::clog << "PACKED FORMAT:" << av_get_sample_fmt_name( sfmt ) << "\n";
 
-std::clog << "SAMPLE RATE  :" << audio_codec_context_->sample_rate << "\n";
-
+        if (sDebug)
+        {
+            std::clog << "PACKED FORMAT:" << av_get_sample_fmt_name( sfmt ) << "\n";
+            std::clog << "SAMPLE RATE  :" << audio_codec_context_->sample_rate << "\n";
+        }
     //          n_channels = 1;
     }
     sound_ = std::make_unique<sound_buffer>( n_channels, audio_codec_context_->sample_rate );
 
-        std::clog << "VIDEO CODEC OPENED WITH PIXEL FORMAT " << av_get_pix_fmt_name(video_codec_context_->pix_fmt) << "\n";
+        if (sDebug)
+            std::clog << "VIDEO CODEC OPENED WITH PIXEL FORMAT " << av_get_pix_fmt_name(video_codec_context_->pix_fmt) << "\n";
 
         if (video_codec_context_->pix_fmt!=AV_PIX_FMT_YUV420P)
             throw "WAS EXPECTING A YUV240P PIXEL FORMAT";
@@ -368,10 +383,13 @@ std::clog << "SAMPLE RATE  :" << audio_codec_context_->sample_rate << "\n";
             default_image_ = std::make_unique<image>( 512, 512/aspect );
         }
 
-        std::clog << "Image structure:\n";
-        std::clog << video_dst_linesize_[0] << " " << video_dst_linesize_[1] << " " << video_dst_linesize_[2] << " " << video_dst_linesize_[3] << "\n";
-        std::clog << (video_dst_linesize_[0] + video_dst_linesize_[1] + video_dst_linesize_[2] + video_dst_linesize_[3])*video_codec_context_->height << "\n";
-        std::clog << bufsize << "\n";
+        if (sDebug)
+        {
+            std::clog << "Image structure:\n";
+            std::clog << video_dst_linesize_[0] << " " << video_dst_linesize_[1] << " " << video_dst_linesize_[2] << " " << video_dst_linesize_[3] << "\n";
+            std::clog << (video_dst_linesize_[0] + video_dst_linesize_[1] + video_dst_linesize_[2] + video_dst_linesize_[3])*video_codec_context_->height << "\n";
+            std::clog << bufsize << "\n";
+        }
 
         // std::clog << video_dst_data_[1]-video_dst_data_[0] << " " << video_dst_data_[2]-video_dst_data_[1] << " " << video_dst_data_[3]-video_dst_data_[2] << "\n";
 
@@ -412,22 +430,25 @@ std::clog << "SAMPLE RATE  :" << audio_codec_context_->sample_rate << "\n";
 
 end:
 
+        std::clog << "\n";
 
         image_ix = 0;
 
-        std::clog << "Acquired " << images_.size() << " frames of video for a total of " << images_.size()/av_q2d( video_stream_->r_frame_rate ) << " seconds \n";
-
+        if (sDebug)
+            std::clog << "\nAcquired " << images_.size() << " frames of video for a total of " << images_.size()/av_q2d( video_stream_->r_frame_rate ) << " seconds \n";
 
         sound_->process();
         sound_ix = 0;
 
-        std::clog << "\n";
+        if (sDebug)
+            std::clog << "\n";
     }
 
     ~ffmpeg_reader()
     {
         avformat_close_input( &format_context_);
-        std::clog << "Closed media file\n";
+        if (sDebug)
+            std::clog << "Closed media file\n";
     }
 
     virtual double frame_rate()

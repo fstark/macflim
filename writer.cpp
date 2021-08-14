@@ -10,6 +10,8 @@ extern "C"{
     #include <libavutil/opt.h>
 }
 
+extern bool sDebug;
+
 class ffmpeg_writer : public output_writer
 {
 
@@ -19,7 +21,8 @@ static int check_sample_fmt(const AVCodec *codec, enum AVSampleFormat sample_fmt
 {
     const enum AVSampleFormat *p = codec->sample_fmts;
     while (*p != AV_SAMPLE_FMT_NONE) {
-        std::clog << "[ " << av_get_sample_fmt_name(*p) << "] ";
+        if (sDebug)
+            std::clog << "[ " << av_get_sample_fmt_name(*p) << "] ";
         if (*p == sample_fmt)
             return 1;
         p++;
@@ -57,9 +60,9 @@ void pushFrame( const image &img, const sound_frame_t &snd )
         }
         av_frame_make_writable(videoFrame);
 
-        std::cout << videoFrame->linesize[0] << " ";
-        std::cout << videoFrame->linesize[1] << " ";
-        std::cout << videoFrame->linesize[2] << "\n";
+        // std::cout << videoFrame->linesize[0] << " ";
+        // std::cout << videoFrame->linesize[1] << " ";
+        // std::cout << videoFrame->linesize[2] << "\n";
 
         // for (int i=0;i!=342;i++)
         //     memset( videoFrame->data[0]+512*i, i, 512 );
@@ -317,9 +320,11 @@ public:
         throw "Error allocating an audio buffer";
     }
 
-    std::clog << "Line size = " << audio_frame->linesize[0] << "\n";
-    std::clog << "Frame size = " << audio_context->frame_size << "\n";
-     
+    if (sDebug)
+    {
+        std::clog << "Line size = " << audio_frame->linesize[0] << "\n";
+        std::clog << "Frame size = " << audio_context->frame_size << "\n";
+    } 
 
 // exit(0);
 
@@ -392,7 +397,8 @@ public:
     ~ffmpeg_writer()
     {
 
-    std::clog << "~ffmpeg_writer()\n";
+    if (sDebug)
+        std::clog << "~ffmpeg_writer()\n";
 
     //DELAYED FRAMES
     AVPacket pkt;
@@ -410,6 +416,24 @@ public:
             break;
         }
     }
+
+/// Test to flush the 2 last audio frames, does not work
+/// "Application provided invalid, non monotonically increasing dts to muxer in stream 0: 354000 >= 175104"
+    // for (;;) {
+    //     avcodec_send_frame(audio_context, NULL);
+    //     if (avcodec_receive_packet(audio_context, &pkt) == 0) {
+    //         av_interleaved_write_frame(ofctx, &pkt);
+    //         av_packet_unref(&pkt);
+    //     }
+    //     else {
+    //         break;
+    //     }
+    // }
+
+
+
+
+
 
     av_write_trailer(ofctx);
     if (!(oformat->flags & AVFMT_NOFILE))
@@ -441,7 +465,8 @@ public:
         avformat_free_context(ofctx);
     }
 
-    std::clog << "#### End of video stream\n";
+    if (sDebug)
+        std::clog << "#### End of video stream\n";
 }
     virtual void write_frame( const image& img, const sound_frame_t &snd )
     {

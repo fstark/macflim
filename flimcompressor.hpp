@@ -160,8 +160,9 @@ public:
 
         size_t current_tick = 0;
 
-        size_t fail1=0;
-        size_t fail2=0;
+        const size_t BucketsCount = 1000;
+        std::vector<size_t> fail;
+        fail.resize( BucketsCount+1, 0 );
 
         double total_q = 0;
 
@@ -182,7 +183,7 @@ public:
             else if (dither==image::ordered)
                 ordered_dither( dest, img, previous );
             else
-                throw "Unknonw dithering option";
+                throw "Unknown dithering option";
 
             previous = dest;
             //  dest = filter( dest, "gsc" );
@@ -296,7 +297,7 @@ public:
                     fprintf( stderr, "\n" );
                 }
 
-                std::clog << best_ix;
+                // std::clog << best_ix;        //  encoder ised
 
                 f.video = encoded_datas[best_ix];
                 f.video.insert( std::begin(f.video), codecs[best_ix].signature );
@@ -310,6 +311,7 @@ public:
                 f.result = current_fb;
 
                 frames_.push_back( f );
+                std::clog << "Encoded " << frames_.size() << " output frames\r" << std::flush;
             }
 
             auto q = frames_.back().result.proximity( fb );
@@ -321,15 +323,46 @@ public:
                 fprintf( stderr, "# %4d (%5.3fs) \u001b[%sm%05.3f%%\u001b[0m\n", in_fr, current_tick/60.0, q<.9?"91":"0", q*100 );
             }
 */
-            if (q<0.9)
-                fail2++;
-            if (q<1)
-                fail1++;
+            fail[q*BucketsCount]++;
 
             current_tick = next_tick;
         }
 
-        fprintf( stderr, "\n\nTotal input frames: %d. Rendered at 80%%: %ld. Rendered at 90%%: %ld. Average rendering %7.5f%%.\n", in_fr, fail2, fail1, total_q/in_fr*100 );
+        std::clog << "\n";
+
+        bool dump_stats = false;    //  #### Move to argument
+
+        if (dump_stats)
+        {
+            std::clog << "+----------+--------+----------+----------+\n";
+            std::clog << "|     Q    | Frames |   Perc.  |  Cumul.  |\n";
+            std::clog << "|----------|--------|----------|----------|\n";
+        }
+        size_t cumulative = 0;
+        double var99 = 0;
+        double var98 = 0;
+        double var95 = 0;
+        for (size_t i=0;i!=BucketsCount+1;i++)
+        {
+            cumulative += fail[i];
+            auto percent = (cumulative*1.0/in_fr);
+            if (percent>0.01 && var99==0)
+                var99 = i*1.0/BucketsCount;
+            if (percent>0.02 && var98==0)
+                var98 = i*1.0/BucketsCount;
+            if (percent>0.05 && var95==0)
+                var95 = i*1.0/BucketsCount;
+            if (dump_stats)
+                if (fail[i])
+                    fprintf( stderr, "| %7.3f%% | %6zu | %7.3f%% | %7.3f%% |\n", i*1.0/BucketsCount*100, fail[i], (fail[i]*1.0/in_fr)*100, percent*100 );
+        }
+        if (dump_stats)
+            std::clog << "+----------+--------+----------+----------+\n";
+        std::clog << var99*100 << "% of frames are within 1% of the target pixels\n";
+        std::clog << var98*100 << "% of frames are within 2% of the target pixels\n";
+        std::clog << var95*100 << "% of frames are within 5% of the target pixels\n";
+
+        // fprintf( stderr, "\n\nFrames rendered at less than 00-90%%: %ld. Rendered at 90-99%%: %ld. Average rendering %7.5f%%.\n", fail2, fail1, total_q/in_fr*100 );
     }
 };
 

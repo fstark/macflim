@@ -7,7 +7,9 @@
 
 #include "reader.hpp"
 #include "writer.hpp"
+#include <sstream>
 
+extern bool sDebug;
 
 /**
  * A set of encoding parameters
@@ -160,15 +162,21 @@ public:
     std::string description() const
     {
         char buffer[1024];
-        sprintf( buffer, "br:%ld st:%.2f%s%s%s fi:%s %s\n", byterate_, stability_, half_rate_?" half-rate":" full-rate", group_?" group":" no-group", bars_?" bars":" no-bars", filters_.c_str(), dither_string().c_str() );
-        std::string res = buffer;
+
+        std::ostringstream cmd;
+
+        cmd << "--byterate " << byterate_;
+        cmd << " --stability " << stability_;
+        cmd << " --half-rate " << (half_rate_?"true":"false");
+        cmd << " --group " << (group_?"true":"false");
+        cmd << " --bars " << (bars_?"true":"false");
+        cmd << " --dither " << dither_string();
+        cmd << " --filters " << filters_;
+
         for (auto &c:codecs_)
-        {
-            char buffer2[1024];
-            sprintf( buffer2, "%d %.2g*%s\n", c.signature, c.penality, c.coder->description().c_str() );
-            res += buffer2;
-        }
-        return res;
+            cmd << " --codec " << c.coder->description();
+
+        return cmd.str();
     }
 };
 
@@ -244,9 +252,8 @@ class flimencoder
         //  TODO: make sure images and sound size matches
 
         std::clog << "**** fps                : " << fps_ << "\n";
-
-        std::clog << "**** # of video images  : " << images_.size() << "\n";
-        std::clog << "**** # of video frames  : " << frame_from_image(images_.size()+1) << "\n";
+        std::clog << "**** # of input  images : " << images_.size() << "\n";
+        std::clog << "**** # of output frames : " << frame_from_image(images_.size()+1) << "\n";
     }
 
     int clamp( double v, int a, int b )
@@ -335,7 +342,8 @@ public:
         framebuffer previous_frame{ profile_.width(), profile_.height() };
         previous_frame.fill( 0xff );
 
-        std::clog << "GENERATING ENCODED MOVIE AND PGM FILES\n";
+        if (sDebug)
+            std::clog << "GENERATING ENCODED MOVIE AND PGM FILES\n";
 
         auto current_frame = block_first_frame;
         while(current_frame!=std::end(frames))
@@ -396,7 +404,8 @@ public:
             block_first_frame = current_frame;
         }
 
-        std::clog << "WRITING FLIM FILE\n";
+        if (sDebug)
+            std::clog << "WRITING FLIM FILE\n";
 
         FILE *movie_file = fopen( flim_pathname.c_str(), "wb" );
 
@@ -414,25 +423,33 @@ public:
         fwrite( movie.data(), movie.size(), 1, movie_file );
         fclose( movie_file );
 
-        for (auto &writer:writers)
+
+        if (writers.size())
         {
-            std::clog << "GENERATING ADDITIONAL OUTPUT...\n";
-            auto sound = std::begin(audio_samples_);
 
-            //  Generate the mp4 file
-            for (auto &frame:frames)
+            size_t index = 0;
+
+            for (auto &writer:writers)
             {
-                std::clog << frame.ticks << std::flush;
-                for (int i=0;i!=frame.ticks;i++)
-                {
-                    sound_frame_t snd;
-                    if (sound<std::end(audio_samples_))
-                        snd = *sound++;
+                auto sound = std::begin(audio_samples_);
 
-                    writer->write_frame( frame.result.as_image(), snd );
+                //  Generate the mp4 file
+                for (auto &frame:frames)
+                {
+                    // std::clog << frame.ticks << std::flush;
+                    for (int i=0;i!=frame.ticks;i++)
+                    {
+                        index++;
+                        std::clog << "Wrote " << index << " frames\r" << std::flush;
+                        sound_frame_t snd;
+                        if (sound<std::end(audio_samples_))
+                            snd = *sound++;
+
+                        writer->write_frame( frame.result.as_image(), snd );
+                    }
                 }
+                std::clog << "\n";
             }
-            std::clog << "...DONE\n";
         }
 
         //  Generating the cover

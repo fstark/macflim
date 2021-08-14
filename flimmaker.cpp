@@ -428,7 +428,6 @@ int main( int argc, char **argv )
         }
     }
 
-
     if (codecs.size()>1)
     {
         custom_profile.set_codecs( codecs );
@@ -444,9 +443,7 @@ int main( int argc, char **argv )
     try
     {
 
-    std::clog << "------------- ENCODING PROFILE -------------\n" << custom_profile.description() << "--------------------------------------------\n";
-
-std::clog << "FROM " << from_index << "\n\n\n\n";
+    std::clog << "Encoding arguments :\n" << custom_profile.description() << "\n";
 
     std::unique_ptr<input_reader> r;
     if (ends_with( input_file, ".pgm" ))
@@ -460,8 +457,6 @@ std::clog << "FROM " << from_index << "\n\n\n\n";
         r = make_ffmpeg_reader( input_file, from_index, duration );
         fps = r->frame_rate();
     }
-
-std::clog << "READER=" << r.get() << "\n";
 
     std::vector<std::unique_ptr<output_writer>> w;
     if (mp4_file!="")
