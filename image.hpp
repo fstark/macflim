@@ -6,6 +6,7 @@
 #include <vector>
 #include <cassert>
 
+#include <functional>
 
 //  ------------------------------------------------------------------
 //  An image class and various associated utilities
