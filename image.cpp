@@ -307,9 +307,9 @@ image zoom_out( const image &src )
     return res;
 }
 
-image zoom_in( const image &src )   //  #### Not wise
+image zoom_in( const image &src, size_t pixels )   //  #### Not wise
 {
-    const double bx = 32;
+    const double bx = pixels;
     const double a = ((src.W()/2)-bx)/(src.W()/2);
 
     image res = src;
@@ -442,7 +442,7 @@ image filter( const image &from, eFilters filter, double arg=0 )
         case kZoomOut:
             return zoom_out( from );
         case kZoomIn:
-            return zoom_in( from );
+            return zoom_in( from, arg?arg:32 );
         case kQuantize16:
             return quantize( from, arg?arg:17 );
         case kFlip:

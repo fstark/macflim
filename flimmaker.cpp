@@ -137,6 +137,76 @@ const char *version = "2.0.0";
 #include <chrono>
 #include <ctime>    
 
+void usage( const std::string name )
+{
+    std::cerr << "Usage\n";
+
+    std::cerr << name << " INPUT [OPTIONS ...]\n";
+
+    std::cerr << "  INPUT can be either a mp4 file name, a movie URL or a 'pgm' pattern.'\n";
+
+    std::cerr << "\n  Input options:\n";
+
+    std::cerr << "    --from TIME                 : time offset to start extracting from\n";
+    std::cerr << "    --duration TIME             : time duration of the extraced clip\n";
+    std::cerr << "    --fps FPS                   : for 'pgm' pattern, specifies the framerate to be used\n";
+    std::cerr << "    --audio FILE                : for 'pgm', specifices a separate u8 22200 Hz wav file with audio\n";
+
+    std::cerr << "\n  Output options:\n";
+
+    std::cerr << "    --out FILE                  : name of the flim file to create (by default 'out.flim')\n";
+    std::cerr << "    --mp4 FILE                  : outputs a 60fps mp4 file with the result\n";
+    std::cerr << "    --gif FILE                  : outputs a 20fps gif file with the result, limited to 5 seconds\n";
+    std::cerr << "    --pgm PATTERN               : output every generated image in a pgm file\n";
+
+    std::cerr << "\n  Encoding options:\n";
+
+    std::cerr << "    --profile PROFILE           : presents the specific encoding profile, which sets a suitable default for all encoding options\n";
+    std::cerr << "      valid profiles are 'plus', 'se', 'se30' (default), 'perfect'\n";
+
+    std::cerr << "    --byterate BYTERATE         : bytes per ticks available for video compression\n";
+    std::cerr << "    --half-rate BOOLEAN         : if true, half of the images from the source will be dropped.\n";
+    std::cerr << "    --group BOOLEAN             : if true, packs ticks together to present screen updates at the same rate as the input media. Only works on a se30.\n";
+
+    std::cerr << "    --bars BOOLEAN              : if false, image is zoomed in so there are no black bars.\n";
+
+    std::cerr << "    --dither DITHER             : specifies the type of dithering to be used.\n";
+    std::cerr << "      'ordered' will use a 4x4 ordered dither matrix.\n";
+    std::cerr << "      'error' will use an error diffusion algorithm.\n";
+
+    std::cerr << "    --error-algorithm ALGORITHM : error diffusion algorithm to be used\n";
+    error_diffusion_algorithms( []( const std::string name, const std::string description )
+    {
+        fprintf( stderr, "               %16s : %s\n", name.c_str(), description.c_str() );
+    } );
+
+
+    std::cerr << "    --error-stability FLOAT     : amount of error to be accumulated before changing a screen pixel\n";
+    std::cerr << "    --error-bidi BOOLEAN        : if true, error diffusion is applied in different direction for even and odd scanlines.\n";
+    std::cerr << "    --error-bleed PERCENT       : how much error is moved from a pixel to the neighbours.\n";
+
+    std::cerr << "    --filters FILTERS           : specifies a set of filters to be applied on image afgter resizing, but before dithering\n";
+    std::cerr << "    --codec CODEC               : adds a specific codec to the encoding. The first --codec parameter clears the profile codec list\n";
+
+    std::cerr << "\n  Misc options:\n";
+
+    std::cerr << "    --watermark STRING          : adds the string to the upper left corner of the generated flim for identification purposes.\n";
+    std::cerr << "      use 'auto' to use the encoding parameters as watermark\n";
+
+    std::cerr << "    --buffer-size SIZE          : buffer playback size\n";
+    std::cerr << "    --debug BOOLEAN             : enables various debug options\n";
+    
+        // else if (!strcmp(*argv,"--cover-from"))
+        // else if (!strcmp(*argv,"--cover-to"))
+        // else if (!strcmp(*argv,"--cover"))
+        // else if (!strcmp(*argv,"--diff-pattern"))
+        // else if (!strcmp(*argv,"--change-pattern"))
+        // else if (!strcmp(*argv,"--target-pattern"))
+        // else if (!strcmp(*argv,"--comment"))
+
+    std::cerr << "use '" << name << " --help' for displaying this help page.\n";
+}
+
 //  The main function, does all the work
 //  flimmaker [-g] --in <%d.pgm> --from <index> --to <index> --cover <index> --audio <audio.waw> --out <file>
 int main( int argc, char **argv )
@@ -162,6 +232,7 @@ try
     std::string target_pattern = "";
     bool auto_watermark = false;
 
+    const std::string cmd_name{ argv[0] };
 
     // test_ffmpeg( argv[1] );
 
@@ -208,11 +279,7 @@ try
     {
         if (!strcmp(*argv,"--help"))
         {
-            std::cerr << "List of error diffusion algorithms:\n";
-            error_diffusion_algorithms( []( const std::string name, const std::string description )
-            {
-                fprintf( stderr, "%16s : %s\n", name.c_str(), description.c_str() );
-            } );
+            usage( cmd_name );
             ::exit( EXIT_SUCCESS );
         }
 
@@ -436,6 +503,12 @@ try
 
         argc--;
         argv++;
+    }
+
+    if (input_file=="")
+    {
+        usage( cmd_name );
+        exit( EXIT_FAILURE );
     }
 
     //  If input-file is an url, use youtube-dl to retreive content
