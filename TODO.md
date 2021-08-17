@@ -26,14 +26,32 @@ note:
 
 make && ./flimmaker --input badapple.mp4 --from 0 --duration 3600 --dump badapple-se30.mp4 --bars false --filters k20w20c && open badapple-se30.mp4
 
-./flimmaker --input ipodad1.mp4 --from 0 --dump ipodad1-se30.mp4
-
 
 
 
 # SWEET DREAMS PLUS
 
-make && ./flimmaker sweet-dreams.mp4 --profile plus --out sweet-dreams-plus.flim --mp4 sweet-dreams-plus.mp4 --bars none --filters Zzk10w20g1bbsc
+# ordered
+./flimmaker sweet-dreams.mp4 --profile plus --out sweet-dreams-plus-2.flim --mp4 sweet-dreams-plus-2.mp4 --bars none --filters Zzk10w20g1bbsc
+
+./flimmaker sweet-dreams.mp4 --profile plus --bars false --filters Z24k8w8gbbsc --mp4 output3.mp4 &
+
+
+# floyd
+./flimmaker sweet-dreams.mp4 --profile plus --dither error --error-algorithm floyd --error-bleed 0.88 --error-bidi true --filters k10w10gbbsc --bars false --filters k1gbbsc --mp4 sweet-dreams-plus.mp4 --out sweet-dreams-plus.flim
+
+
+
+
+./flimmaker sweet-dreams.mp4 --profile se --out sweet-dreams-se.flim --mp4 sweet-dreams-se.mp4 --bars none --filters Zzk10w20g1bbsc
+
+./flimmaker gangnam-style.mp4 --profile se --out gangnam-style-se.flim --mp4 gangnam-style-se.mp4 --bars false --filters w10k10gsc
+
+./flimmaker everybreath.mp4 --profile se --out everybreath-se.flim --mp4 everybreath-se.mp4 --bars false --filters w3k10gsc
+
+
+
+
 
 ./flimmaker sweet-dreams.mp4 --profile plus --from 55 --duration 5 --gif sweet-dreams-1.gif 
 ./flimmaker sweet-dreams.mp4 --profile plus --bars none --filters Zk10w20g1bbsc --from 55 --duration 5 --gif sweet-dreams-2.gif 
@@ -86,7 +104,12 @@ make && ./flimmaker sweet-dreams.mp4 --profile plus --out sweet-dreams-plus.flim
 
 # Example with a lot of transitions
 
-make && ./flimmaker sweet-dreams.mp4 --profile plus --bars none --from 1:27 --duration 5 --gif sweet-dreams.gif --filters Zk10w20g1bbsqc --dither floyd
+make && ./flimmaker sweet-dreams.mp4 --profile plus --bars false --from 1:27 --duration 5 --gif sweet-dreams.gif --filters Zk10w20g1bbsqc --dither floyd
+
+
+
+make && ./flimmaker ipodad1.mp4 --out ipodad1.flim --dither ordered --filters w10k10bsq5c --mp4 out.mp4 --bars false 
+
 
 
 
@@ -94,3 +117,14 @@ make && ./flimmaker sweet-dreams.mp4 --profile plus --bars none --from 1:27 --du
 
 # macflim.gif
 make && ./flimmaker ipodad1.mp4 --gif assets/macflim.gif --from 9.8 --duration 2 --profile perfect --filters g0.8q5c --dither ordered
+
+
+
+
+
+make && ./flimmaker ipodad1.mp4 --profile plus --out ipodad1.flim --dither ordered --filters w10k10bsq5c --bars true
+
+
+
+# Billie Jean plus
+make && ./flimmaker billiejean.mp4 --profile plus --out billiejean-plus.flim --byterate 1500 --stability 0.5 --half-rate true --group false --bars true --dither floyd --filters w10k10g2bszzq --codec null --codec z32 --mp4 out.mp4
