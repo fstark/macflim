@@ -28,7 +28,10 @@ protected:
     std::string filters_ = "c";
     bool bars_ = true;              //  Do we put black bars around the image?
 
-    image::dithering dither_ = image::floyd_steinberg;
+    image::dithering dither_ = image::error_diffusion;
+    std::string error_algorithm_ = "floyd";
+    float error_bleed_ = 1;
+    bool error_bidi_ = false;
 
     std::vector<flimcompressor::codec_spec> codecs_;
 
@@ -64,13 +67,22 @@ public:
     {
         if (dither=="ordered")
             dither_ = image::ordered;
-        else if (dither=="floyd")
-            dither_ = image::floyd_steinberg;
+        else if (dither=="error")
+            dither_ = image::error_diffusion;
         else
-            return false;
+            throw "Wrong dither option : only 'ordered' and 'error' are supported";
         return true;
     }
     void set_dither( image::dithering dither ) { dither_ = dither; }
+
+    std::string error_algorithm() const { return error_algorithm_; }
+    void set_error_algorithm( const std::string algo ) { error_algorithm_ = algo; }
+
+    float error_bleed() const { return error_bleed_; }
+    void set_error_bleed( float bleed ) { error_bleed_ = bleed; }
+
+    bool error_bidi() const { return error_bidi_; }
+    void set_error_bidi( bool error_bidi ) { error_bidi_ = error_bidi; }
 
     double stability() const { return stability_; }
     void set_stability( double stability ) { stability_ = stability; }
@@ -104,7 +116,7 @@ public:
             result.set_filters( "gbsc" );
             result.set_half_rate( true );
             result.set_group( false );
-            result.set_dither( "floyd" );
+            result.set_dither( "error" );
             result.set_stability( 0.5 );
             result.codecs_.clear();
             result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
@@ -119,7 +131,7 @@ public:
             result.set_filters( "gsc" );
             result.set_half_rate( false );
             result.set_group( true );
-            result.set_dither( "floyd" );
+            result.set_dither( "error" );
             result.set_stability( 0.3 );
             result.codecs_.clear();
             result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
@@ -134,7 +146,7 @@ public:
             result.set_filters( "gsc" );
             result.set_half_rate( false );
             result.set_group( true );
-            result.set_dither( "floyd" );
+            result.set_dither( "error" );
             result.set_stability( 0.3 );
             result.codecs_.clear();
             result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
@@ -151,8 +163,8 @@ public:
     {
         switch (dither_)
         {
-            case image::floyd_steinberg:
-                return "floyd";
+            case image::error_diffusion:
+                return "error";
             case image::ordered:
                 return "ordered";
         }
@@ -166,11 +178,17 @@ public:
         std::ostringstream cmd;
 
         cmd << "--byterate " << byterate_;
-        cmd << " --stability " << stability_;
         cmd << " --half-rate " << (half_rate_?"true":"false");
         cmd << " --group " << (group_?"true":"false");
         cmd << " --bars " << (bars_?"true":"false");
         cmd << " --dither " << dither_string();
+        if (dither_==image::error_diffusion)
+        {
+            cmd << " --error-stability " << stability_;
+            cmd << " --error-algorithm " << error_algorithm_;
+            cmd << " --error-bidi " << error_bidi_;
+            cmd << " --error-bleed " << error_bleed_;
+        }
         cmd << " --filters " << filters_;
 
         for (auto &c:codecs_)
@@ -325,7 +343,7 @@ public:
 
         flimcompressor fc{ profile_.width(), profile_.height(), images_, audio_samples_, fps_ };
 
-        fc.compress( profile_.stability(), profile_.byterate(), profile_.group(), profile_.filters(), watermark_, profile_.codecs(), profile_.dither(), profile_.bars() );
+        fc.compress( profile_.stability(), profile_.byterate(), profile_.group(), profile_.filters(), watermark_, profile_.codecs(), profile_.dither(), profile_.bars(), profile_.error_algorithm(), profile_.error_bleed(), profile_.error_bidi() );
 
         if (out_pattern_!="") delete_files_of_pattern( out_pattern_ );
         if (diff_pattern_!="") delete_files_of_pattern( diff_pattern_ );

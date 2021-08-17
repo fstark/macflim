@@ -141,6 +141,8 @@ const char *version = "2.0.0";
 //  flimmaker [-g] --in <%d.pgm> --from <index> --to <index> --cover <index> --audio <audio.waw> --out <file>
 int main( int argc, char **argv )
 {
+try
+{
     // std::string in_arg = "movie-%06d.pgm";
     std::string input_file = "";
     std::string mp4_file = "";
@@ -204,6 +206,16 @@ int main( int argc, char **argv )
 
     while (argc)
     {
+        if (!strcmp(*argv,"--help"))
+        {
+            std::cerr << "List of error diffusion algorithms:\n";
+            error_diffusion_algorithms( []( const std::string name, const std::string description )
+            {
+                fprintf( stderr, "%16s : %s\n", name.c_str(), description.c_str() );
+            } );
+            ::exit( EXIT_SUCCESS );
+        }
+
         // if (!strcmp(*argv,"--input"))
         //  Don't start with '--', this is the input file/url
         if (strncmp(*argv,"--",2))
@@ -316,12 +328,6 @@ int main( int argc, char **argv )
             argv++;
             audio_arg = *argv;
         }
-        else if (!strcmp(*argv,"--stability"))
-        {
-            argc--;
-            argv++;
-            custom_profile.set_stability( atof( *argv ) );
-        }
         else if (!strcmp(*argv,"--out"))
         {
             argc--;
@@ -398,6 +404,30 @@ int main( int argc, char **argv )
             argv++;
             custom_profile.set_dither( *argv );
         }
+        else if (!strcmp(*argv,"--error-stability"))
+        {
+            argc--;
+            argv++;
+            custom_profile.set_stability( atof( *argv ) );
+        }
+        else if (!strcmp(*argv,"--error-algorithm"))
+        {
+            argc--;
+            argv++;
+            custom_profile.set_error_algorithm( *argv );
+        }
+        else if (!strcmp(*argv,"--error-bleed"))
+        {
+            argc--;
+            argv++;
+            custom_profile.set_error_bleed( atof(*argv) );
+        }
+        else if (!strcmp(*argv,"--error-bidi"))
+        {
+            argc--;
+            argv++;
+            custom_profile.set_error_bidi( bool_from(*argv) );
+        }
         else
         {
             std::cerr << "Unknown argument " << *argv << "\n";
@@ -439,9 +469,6 @@ int main( int argc, char **argv )
             watermark += " ";
         watermark += custom_profile.description();
     }
-
-    try
-    {
 
     std::clog << "Encoding arguments :\n" << custom_profile.description() << "\n";
 

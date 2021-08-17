@@ -149,7 +149,7 @@ public:
         return spec;
     }
 
-    void compress( double stability, size_t byterate, bool group, const std::string &filters, const std::string &watermark, const std::vector<codec_spec> &codecs, image::dithering dither, bool bars )
+    void compress( double stability, size_t byterate, bool group, const std::string &filters, const std::string &watermark, const std::vector<codec_spec> &codecs, image::dithering dither, bool bars, const std::string error_algorithm, float error_bleed, bool error_bidi )
     {
         image previous( W_, H_ );
         fill( previous, 0 );
@@ -178,8 +178,8 @@ public:
 
             image img = filter( source_image, filters.c_str() );
 
-            if (dither==image::floyd_steinberg)
-                quantize( dest, img, previous, stability );
+            if (dither==image::error_diffusion)
+                error_diffusion( dest, img, previous, stability, *get_error_diffusion_by_name( error_algorithm ), error_bleed, error_bidi );
             else if (dither==image::ordered)
                 ordered_dither( dest, img, previous );
             else

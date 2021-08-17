@@ -659,13 +659,160 @@ void ordered_dither( image &dest, const image &source, const image &previous )
         }
 }
 
+struct dither_target
+{
+    float amount;   //  The amount of error to spread
+    int dx;         //  The position where we spread the error
+    int dy;         //  (in x and y, with dx<0 => dy>0 and dy==0 => dx>0)
+};
+
+struct dither_algorithm
+{
+    std::string name;
+    std::string description;
+    std::vector<dither_target> targets;
+};
+
+dither_algorithm algos[] =
+{
+    {   "floyd",
+        "Original Floyd-Steinberg algorithm",
+        {
+            { 7 / 16.0,  1, 0 },
+            { 3 / 16.0, -1, 1 },
+            { 5 / 16.0,  0, 1 },
+            { 1 / 16.0,  1, 1 },
+        }
+    },
+    {   "false-floyd",
+        "Simplified Floyd-Steinberg algorithm, no advantage over original",
+        {
+            { 3 / 8.0,  1, 0 },
+            { 3 / 8.0,  0, 1 },
+            { 2 / 8.0,  1, 1 },
+        }
+    },
+    {   "jarvis",
+        "Jarvis, Judice, and Ninke algorithm, conceptually similar to the original Floyd-Steinberg, but diffuse the error over a larger surface, getting a nicer result",
+        {
+            { 7 / 48.0,  1, 0 },
+            { 5 / 48.0,  2, 0 },
+            { 3 / 48.0, -2, 1 },
+            { 5 / 48.0, -1, 1 },
+            { 7 / 48.0,  0, 1 },
+            { 5 / 48.0,  1, 1 },
+            { 3 / 48.0,  2, 1 },
+            { 1 / 48.0, -2, 2 },
+            { 3 / 48.0, -1, 2 },
+            { 5 / 48.0,  0, 2 },
+            { 3 / 48.0,  1, 2 },
+            { 1 / 48.0,  2, 2 }
+        }
+    },
+    {   "stucki",
+        "Stucki is in practice indiscernable from Jarvis, Judice, and Ninke",
+        {
+    		{ 8 / 42.0,  1, 0 },
+    		{ 4 / 42.0,  2, 0 },
+    		{ 2 / 42.0, -2, 1 },
+    		{ 4 / 42.0, -1, 1 },
+    		{ 8 / 42.0,  0, 1 },
+    		{ 4 / 42.0,  1, 1 },
+    		{ 2 / 42.0,  2, 1 },
+    		{ 1 / 42.0, -2, 2 },
+    		{ 2 / 42.0, -1, 2 },
+    		{ 4 / 42.0,  0, 2 },
+    		{ 2 / 42.0,  1, 2 },
+    		{ 1 / 42.0,  2, 2 }
+        }
+    },
+	{   "burkes",
+        "Burkes algorithm is a slightly faster but worse version of Stucki",
+        {
+            { 8 / 32.0,  1, 0 },
+            { 4 / 32.0,  2, 0 },
+            { 2 / 32.0, -2, 1 },
+            { 4 / 32.0, -1, 1 },
+            { 8 / 32.0,  0, 1 },
+            { 4 / 32.0,  1, 1 },
+            { 2 / 32.0,  2, 1 }
+        }
+    },
+    {   "atkinson",
+        "Atkinson (original Quickdraw, MacPaint and HyperCard creator) algorithm includes a 0.75 bleed reduction that washes the image out, but helps compression",
+        {
+    		{ 1 / 8.0,  1, 0 },
+    		{ 1 / 8.0,  2, 0 },
+    		{ 1 / 8.0, -1, 1 },
+    		{ 1 / 8.0,  0, 1 },
+    		{ 1 / 8.0,  1, 1 },
+    		{ 1 / 8.0,  0, 2 }
+        }
+    },
+	{
+        "sierra",
+        "Similar to Jarvis, slightly faster",
+        {
+			{ 5 / 32.0,  1, 0 },
+			{ 3 / 32.0,  2, 0 },
+			{ 2 / 32.0, -2, 1 },
+			{ 4 / 32.0, -1, 1 },
+			{ 5 / 32.0,  0, 1 },
+			{ 4 / 32.0,  1, 1 },
+			{ 2 / 32.0,  2, 1 },
+			{ 2 / 32.0, -1, 2 },
+			{ 3 / 32.0,  0, 2 },
+			{ 2 / 32.0,  1, 2 }
+        }
+    },
+	{
+        "twosierra",
+        "A faster, slightly worse version of Sierra",
+        {
+			{ 4 / 16.0,  1, 0 },
+			{ 3 / 16.0,  2, 0 },
+			{ 1 / 16.0, -2, 1 },
+			{ 2 / 16.0, -1, 1 },
+			{ 3 / 16.0,  0, 1 },
+			{ 2 / 16.0,  1, 1 },
+			{ 1 / 16.0,  2, 1 }
+        }
+    },
+	{
+        "sierra-lite",
+        "A quicker but coarse dithering algorithm",
+        {
+			{ 2 / 4.0,  1, 0 },
+			{ 1 / 4.0, -1, 1 },
+			{ 1 / 4.0,  0, 1 }
+        },
+    }
+};
+
+const dither_algorithm *get_error_diffusion_by_name( const std::string &name )
+{
+    for (const auto &a:algos)
+        if (a.name==name)
+            return &a;
+    
+    return nullptr;
+}
+
+void error_diffusion_algorithms( std::function<void(const std::string name, const std::string desciption)> f )
+{
+    for (const auto &a:algos)
+        f( a.name, a.description );
+}
+
+
+#if 1
 //  ------------------------------------------------------------------
 //  Motion floyd-steinberg
 //  This will create a black/white 'dest' image from a grayscale 'source'
 //  while trying to respect the placement of pixels
 //  from the black/white 'previous' image
 //  ------------------------------------------------------------------
-void quantize( image &dest, const image &source, const image &previous, float stability )
+void old_quantize( image &dest, const image &source, const image &previous, float stability )
 {
     dest = source;
 
@@ -729,6 +876,77 @@ void quantize( image &dest, const image &source, const image &previous, float st
             if (x<source.W()-1 && y<source.H()-1)
                 dest.at(x+1,y+1) = dest.at(x+1,y+1) + e3;
         }
+}
+#endif
+
+//  ------------------------------------------------------------------
+//  Error diffusion quantization, with bleed and motion stability
+//  This will create a black/white 'dest' image from a grayscale 'source'
+//  while trying to respect the placement of pixels
+//  from the black/white 'previous' image
+//  ------------------------------------------------------------------
+void error_diffusion( image &dest, const image &source, const image &previous, float stability, const dither_algorithm &algo, float bleed, bool two_ways )
+{
+    // old_quantize( dest, source, previous, stability );
+
+    // return;
+
+    dest = source;
+
+    int dir = 1;
+    
+    for (int y=0;y!=source.H();y++)
+    {
+        int beginx = 0;
+        int endx = source.W();
+
+        if (dir==-1)
+        {
+            beginx =source.W()-1;
+            endx = -1;
+        }
+
+        for (int x=beginx;x!=endx;x+=dir)
+        {
+            //  The color we'd like this pixel to be
+            float source_color = dest.at(x,y);
+
+            //  Increasing the stability value will makes the image choose previous frame's pixel more often
+            //  Images will be "stable", but there will be some "ghosting artifacts"
+            double stability2 = stability;
+
+            //  We chose either back or white for this pixel
+            //  Starting with the current color, including error propagated form previous pixels,
+            //  we decide that:
+            //  If previous frame pixel was black, we stay back if color<0.5+stability/2
+            //  If previous frame pixel was white, we stay white if color>0.5-stability/2
+            float color = source_color<=0.5-(previous.at(x,y)-0.5)*stability2?0:1;
+            dest.at(x,y) = color;
+
+            //  By doing this, we made an error (too much white or too much black)
+            //  that we need to keep track of
+            float error = source_color - color;
+
+            //  We reduce bleed (can also be encoded in the quantization matrix)
+            error *= bleed;
+
+            //  We now distribute the error between the next values, according to the selected algorith
+            //  (if they exist). The values may over or underflow
+            //  but it is fine as pixels can be <0 or >1
+
+            for (auto &t:algo.targets)
+            {
+                float e = error * t.amount;
+                int tx = x+t.dx*dir;
+                int ty = y+t.dy;
+                if (tx>=0 && tx<source.W() && ty>=0 && ty<source.H())
+                    dest.at(tx,ty) = dest.at(tx,ty) + e;
+            }
+        }
+
+        if (two_ways)
+            dir = -dir;
+    }
 }
 
 //  #### This has nothing to do here

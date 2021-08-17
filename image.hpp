@@ -49,7 +49,7 @@ public:
 
     enum dithering
     {
-        floyd_steinberg = 0,
+        error_diffusion = 0,
         ordered = 1
     };
 
@@ -65,7 +65,12 @@ void fill( image &img, float value = 0.5 );
 image round_corners( const image& img );
 image filter( const image &from, const char *filters );
 void ordered_dither( image &dest, const image &source, const image &previous );
-void quantize( image &dest, const image &source, const image &previous, float stability );
+
+struct dither_algorithm;
+
+const dither_algorithm *get_error_diffusion_by_name( const std::string &name );
+void error_diffusion_algorithms( std::function<void(const std::string name, const std::string desciption)> f );
+void error_diffusion( image &dest, const image &source, const image &previous, float stability, const dither_algorithm &algo, float bleed=1, bool two_ways=false );
 
 bool read_image( image &result, const char *file );
 void write_image( const char *file, const image &img );
