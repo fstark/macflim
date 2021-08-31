@@ -91,7 +91,7 @@ class copy_line_compressor : public compressor
         size_t line_start = 0;
         size_t line_count = 0;
 
-        size_t target_count = budget / 50;  //  est. 50 bytes per line
+        size_t target_count = budget / 64;  //  est. 64 bytes per line
 
 // std::clog << "Lines: " << budget << " bytes " << target_count << " lines \n";
 
