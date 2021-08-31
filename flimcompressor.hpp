@@ -202,6 +202,7 @@ public:
             in_fr++;
             size_t next_tick = ticks_from_frame( in_fr, fps_ );
             size_t ticks = next_tick-current_tick;
+// std::clog << "current_tick:" << current_tick << " in_fr:" << in_fr << " next_tick:" << next_tick << " fps:" << fps_ << "\n";
             assert( ticks>0 );
 
             size_t local_ticks = 1;
