@@ -8,11 +8,13 @@
 * [DONE] rename --dump into --mp4
 * better options for .pgm image generation
 
-* Last sound frames
+* [DONE] Last sound frames
 * --from doesn't work for sound
-* Play last bits of flim on the mac
-* add --pgm for dumping pgms
-* command-line help
+* [DONE] Play last bits of flim on the mac
+* [DONE] add --pgm for dumping pgms
+* [DONE] command-line help
+
+* Add caching option for youtube
 
 BUGS TO INVESTIGATE:
 
