@@ -162,7 +162,7 @@ void usage( const std::string name )
     std::cerr << "\n  Encoding options:\n";
 
     std::cerr << "    --profile PROFILE           : presents the specific encoding profile, which sets a suitable default for all encoding options\n";
-    std::cerr << "      valid profiles are 'plus', 'se', 'se30' (default), 'perfect'\n";
+    std::cerr << "      Defdaul is 'se30'. See below for description of profiles.\n";
 
     std::cerr << "    --byterate BYTERATE         : bytes per ticks available for video compression\n";
     std::cerr << "    --half-rate BOOLEAN         : if true, half of the images from the source will be dropped.\n";
@@ -173,13 +173,8 @@ void usage( const std::string name )
     std::cerr << "    --dither DITHER             : specifies the type of dithering to be used.\n";
     std::cerr << "      'ordered' will use a 4x4 ordered dither matrix.\n";
     std::cerr << "      'error' will use an error diffusion algorithm.\n";
-
     std::cerr << "    --error-algorithm ALGORITHM : error diffusion algorithm to be used\n";
-    error_diffusion_algorithms( []( const std::string name, const std::string description )
-    {
-        fprintf( stderr, "               %16s : %s\n", name.c_str(), description.c_str() );
-    } );
-
+    std::cerr << "      Default 'floyd'. See below for the list of valid error dithering algorithms.\n";
 
     std::cerr << "    --error-stability FLOAT     : amount of error to be accumulated before changing a screen pixel\n";
     std::cerr << "    --error-bidi BOOLEAN        : if true, error diffusion is applied in different direction for even and odd scanlines.\n";
@@ -203,6 +198,22 @@ void usage( const std::string name )
         // else if (!strcmp(*argv,"--change-pattern"))
         // else if (!strcmp(*argv,"--target-pattern"))
         // else if (!strcmp(*argv,"--comment"))
+
+    std::cerr << "\nList of profiles names for the --profile option (default 'se30'):\n";
+    for (auto n:{ "plus", "se", "se30", "perfect" })
+    {
+        encoding_profile p;
+        encoding_profile::profile_named( n, p );
+        std::cerr << "        " << n << " : " << p.description() << "\n";
+    }
+
+    std::cerr << "\nList of error diffusion algorithms for the --error_diffusion option (default 'floyd'):\n";
+
+    error_diffusion_algorithms( []( const std::string name, const std::string description )
+    {
+        fprintf( stderr, "               %16s : %s\n", name.c_str(), description.c_str() );
+    } );
+
 
     std::cerr << "use '" << name << " --help' for displaying this help page.\n";
 }

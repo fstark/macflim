@@ -98,11 +98,15 @@ public:
         if (name=="plus"s)
         {
             result.set_byterate( 1500 );
-            result.set_filters( "gbbscz" );
+            result.set_filters( "g1.6bbscz" );
             result.set_half_rate( true );
             result.set_group( false );
-            result.set_dither( "ordered" );
             result.set_stability( 0.5 );
+            result.set_bars( true );
+            result.set_dither( "ordered" );
+            result.set_error_algorithm( "floyd" );
+            result.set_error_bidi( true );
+            result.set_error_bleed( 0.95 );
             result.codecs_.clear();
             result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
@@ -110,14 +114,18 @@ public:
             result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
             return true;
         }
-        if (name=="se"s) 
+        if (name=="se"s)
         {
             result.set_byterate( 2500 );
-            result.set_filters( "gbsc" );
+            result.set_filters( "g1.6bsc" );
             result.set_half_rate( true );
             result.set_group( false );
-            result.set_dither( "error" );
             result.set_stability( 0.5 );
+            result.set_bars( true );
+            result.set_dither( "error" );
+            result.set_error_algorithm( "floyd" );
+            result.set_error_bidi( true );
+            result.set_error_bleed( 0.98 );
             result.codecs_.clear();
             result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
@@ -128,11 +136,15 @@ public:
         if (name=="se30"s)
         {
             result.set_byterate( 6000 );
-            result.set_filters( "gsc" );
+            result.set_filters( "g1.6sc" );
             result.set_half_rate( false );
             result.set_group( true );
-            result.set_dither( "error" );
             result.set_stability( 0.3 );
+            result.set_bars( false );
+            result.set_dither( "error" );
+            result.set_error_algorithm( "floyd" );
+            result.set_error_bidi( true );
+            result.set_error_bleed( 0.99 );
             result.codecs_.clear();
             result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
@@ -143,11 +155,15 @@ public:
         if (name=="perfect"s)
         {
             result.set_byterate( 32000 );
-            result.set_filters( "gsc" );
+            result.set_filters( "g1.6sc" );
             result.set_half_rate( false );
             result.set_group( true );
-            result.set_dither( "error" );
             result.set_stability( 0.3 );
+            result.set_bars( false );
+            result.set_dither( "error" );
+            result.set_error_algorithm( "floyd" );
+            result.set_error_bidi( true );
+            result.set_error_bleed( 1 );
             result.codecs_.clear();
             result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
@@ -269,9 +285,9 @@ class flimencoder
     {
         //  TODO: make sure images and sound size matches
 
-        std::clog << "**** fps                : " << fps_ << "\n";
-        std::clog << "**** # of input  images : " << images_.size() << "\n";
-        std::clog << "**** # of output frames : " << frame_from_image(images_.size()+1) << "\n";
+        std::clog << "**** fps               : " << fps_ << "\n";
+        std::clog << "**** # of input images : " << images_.size() << "\n";
+        std::clog << "**** # of movie ticks  : " << frame_from_image(images_.size()+1) << "\n";
     }
 
     int clamp( double v, int a, int b )
@@ -427,16 +443,30 @@ public:
 
         FILE *movie_file = fopen( flim_pathname.c_str(), "wb" );
 
-        char buffer[1024];
-        std::fill( std::begin(buffer), std::end(buffer), 0 );
-        strcpy( buffer, comment_.c_str() );
-        fwrite( buffer, 1024, 1, movie_file );
-
             //  Adds end mark
         movie.push_back( 0x00 );
         movie.push_back( 0x00 );
         movie.push_back( 0x00 );
         movie.push_back( 0x00 );
+
+        char buffer[1024];
+        std::fill( std::begin(buffer), std::end(buffer), 0 );
+        strcpy( buffer, comment_.c_str() );
+        fwrite( buffer, 1022, 1, movie_file );
+
+            //  Computes checksum
+        long fletcher = 0;
+        if ((movie.size()%2)==1)
+            movie.push_back( 0x00 );
+        for (int i=0;i!=movie.size();i+=2)
+        {
+            fletcher += ((int)(movie[i]))*256+movie[i+1];
+            fletcher %= 65535;
+        }
+        uint8_t b = fletcher/256;
+        fwrite( &b, 1, 1, movie_file );
+        b = fletcher%256;
+        fwrite( &b, 1, 1, movie_file );
 
         fwrite( movie.data(), movie.size(), 1, movie_file );
         fclose( movie_file );
