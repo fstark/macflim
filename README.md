@@ -4,6 +4,9 @@ Welcome to MacFlim, the video encoder and player for your previously obsolete Ma
 
 ![MacFlim](./assets/macflim.gif)
 
+_The iPod introduction should have waited for MacFlim to be available_
+
+
 MacFlim aims at bringing movie playing abilities to vintage Macs, namely:
 
 * Mac plus
@@ -26,17 +29,23 @@ With this code, you should be able to encode and play a video sequence on your m
 
 If you have no access to a vintage mac, or if you want to look at results without having to transfer cumbesome files from your desktop to your mac, you can generate pixel exact movies that will let you know how the playback will look on the targetted hardware. See the ``--mp4`` option.
 
+![MacFlim](./assets/macflim.gif)
+
 ## What is new since MacFlim 1.0?
 
 Well, the main change is that flims now have sound. This necessitated a complete rewrite of both the player and the encoder. All your old flims are now obsolete, sorry.
 
-A negative change is that the new player app is currently vastly less powerful than MacFlim 1.0. It only lets you play a flim. But with sound.
+A negative change is that the new player app is currently vastly less powerful than MacFlim 1.0. It only lets you play a flim. But with glorious 8 bits 22KHz mono sound.
 
-Encoding input is greatly simplified: You don't have to resize the input to 512x342 any more. You don't need to have it in grayscale. You don't have to have it in pgm format. You can directly feed mp4 movies, or even youtube or vimeo urls to the encoder.
+Encoding input is greatly simplified: you don't have to resize the input to 512x342 any more. You don't need to have it in grayscale. You don't have to have it in pgm format. You can directly feed mp4 movies, or even youtube or vimeo urls to the encoder.
 
-Output is different too: flims are encoded realitive to a target "profile", and the flim will only play correctly on hardare that would support this profile.
+Output is different too: flims are encoded relative to a target "profile", and the flim will only play correctly on hardware that would support this profile.
 
 To ease with testing, you can also ask for an mp4 of the flim to be generated. This will let you iterate and tweak the encoding parameters without the need to transfer to your vintage hardware.
+
+## How do I play flims on my Mac?
+
+Download the following '.dsk' file. It is a disk image, containing a working System 6.0.8 and the MacFlim 2 player. Head to http://www.
 
 ## Ok, how do I make this happen?
 
@@ -66,7 +75,7 @@ After compilation, you can generate a sample flim using:
 
     ./flimmaker https://www.youtube.com/watch?v=dQw4w9WgXcQ --mp4 out.mp4
 
-This will download the video and encode it for se30 playback, as 'out.flim'. You can immediatley play the ``out.mp4`` file, which is identical to the se30 playback. Enjoy!
+This will download the video and encode it for se30 playback, as 'out.flim'. You can immediatley play the ``out.mp4`` file, which is identical to the se30 playback, including a mono output (unfortunately on the left channel ####checkme). Enjoy!
 
 ## General flim creation options
 
