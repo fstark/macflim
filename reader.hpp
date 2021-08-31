@@ -52,7 +52,7 @@ public:
 
 
 
-inline size_t ticks_from_frame( size_t n, double fps ) { return n/fps*60; }
+inline size_t ticks_from_frame( size_t n, double fps ) { return n/fps*60+.5; }
 /*
  * A filesystem reader can read 512x342 8 bits pgm files numbered from 1. Audio has to be raw 8 bits unsigned.
  */

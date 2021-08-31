@@ -99,7 +99,7 @@ flimmaker --from 1 --to 10000 --fps 30 --buffer-size 300000 --out iPodAd3.flim -
 #youtube-dl -f 18 https://www.youtube.com/watch?v=dQw4w9WgXcQ -o source/Never_Gonna_Give_You_Up.mp4
 # ./encode Never_Gonna_Give_You_Up source/Never_Gonna_Give_You_Up.mp4 00:00:00 00:04:00 25 918 &
 
-# JMJ Ethicolor
+# JMJ Ethnicolor
 #youtube-dl -f 18 https://www.youtube.com/watch?v=dOriOnABbAM -o source/Ethnicolor.mp4
 # ./encode Ethnicolor source/Ethnicolor.mp4 00:06:25 00:01:00 30 918
 
