@@ -135,7 +135,7 @@ const char *version = "2.0.0";
 
 #include <iostream>
 #include <chrono>
-#include <ctime>    
+#include <ctime>
 
 void usage( const std::string name )
 {
@@ -156,7 +156,7 @@ void usage( const std::string name )
 
     std::cerr << "    --flim FILE                 : name of the flim file to create (by default 'out.flim')\n";
     std::cerr << "    --mp4 FILE                  : outputs a 60fps mp4 file with the result\n";
-    std::cerr << "    --gif FILE                  : outputs a 20fps gif file with the result, limited to 5 seconds\n";
+    std::cerr << "    --gif FILE                  : outputs a 20fps gif file with the result\n";
     std::cerr << "    --pgm PATTERN               : output every generated image in a pgm file\n";
 
     std::cerr << "\n  Encoding options:\n";

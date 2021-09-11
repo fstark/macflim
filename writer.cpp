@@ -477,7 +477,7 @@ public:
 
 class gif_writer : public output_writer
 {
-    size_t count_ = 0;  //  We arbitrary limit gifs to (5 seconds)
+    size_t count_ = 0;
     size_t num_ = 0;
     std::string filename_;
 
@@ -486,7 +486,7 @@ public:
 
     virtual void write_frame( const image& img, const sound_frame_t &snd )
     {
-        if ((count_%3)==0 && count_<60*5)
+        if ((count_%3)==0)
         {
             char buffer[1024];
             sprintf( buffer, "/tmp/gif-%06lu.pgm", num_ );

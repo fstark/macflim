@@ -285,9 +285,8 @@ image gamma( const image &src, double gamma )
 }
 
 //  ------------------------------------------------------------------
-image zoom_out( const image &src )
+image zoom_out( const image &src, double bx )
 {
-    const double bx = 32;
     const double a = ((src.W()/2)-bx)/(src.W()/2);
     const double by = src.H()/2-a*(src.H()/2);
 
@@ -440,7 +439,7 @@ image filter( const image &from, eFilters filter, double arg=0 )
         case kRoundCorners:
             return round_corners( from );
         case kZoomOut:
-            return zoom_out( from );
+            return zoom_out( from, arg?arg:32 );
         case kZoomIn:
             return zoom_in( from, arg?arg:32 );
         case kQuantize16:
