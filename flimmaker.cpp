@@ -154,7 +154,7 @@ void usage( const std::string name )
 
     std::cerr << "\n  Output options:\n";
 
-    std::cerr << "    --out FILE                  : name of the flim file to create (by default 'out.flim')\n";
+    std::cerr << "    --flim FILE                 : name of the flim file to create (by default 'out.flim')\n";
     std::cerr << "    --mp4 FILE                  : outputs a 60fps mp4 file with the result\n";
     std::cerr << "    --gif FILE                  : outputs a 20fps gif file with the result, limited to 5 seconds\n";
     std::cerr << "    --pgm PATTERN               : output every generated image in a pgm file\n";
@@ -219,7 +219,7 @@ void usage( const std::string name )
 }
 
 //  The main function, does all the work
-//  flimmaker [-g] --in <%d.pgm> --from <index> --to <index> --cover <index> --audio <audio.waw> --out <file>
+//  flimmaker [-g] --in <%d.pgm> --from <index> --to <index> --cover <index> --audio <audio.waw> --flim <file>
 int main( int argc, char **argv )
 {
 try
@@ -295,7 +295,7 @@ try
         }
 
         // if (!strcmp(*argv,"--input"))
-        //  Don't start with '--', this is the input file/url
+        //  Doesn't start with '--', this is the input file/url
         if (strncmp(*argv,"--",2))
         {
             if (input_file!="")
@@ -406,7 +406,7 @@ try
             argv++;
             audio_arg = *argv;
         }
-        else if (!strcmp(*argv,"--out"))
+        else if (!strcmp(*argv,"--flim"))
         {
             argc--;
             argv++;
