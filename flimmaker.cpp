@@ -230,7 +230,7 @@ try
     std::string gif_file = "";
     std::string out_arg = "out.flim";
     std::string audio_arg = "audio.raw";
-    double from_index = 0;
+    double from_index = 1;
     double to_index = std::numeric_limits<int>::max();
     double duration = 300;   //  5 minutes by default
     int cover_from = -1;
