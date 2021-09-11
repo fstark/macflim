@@ -1,13 +1,13 @@
 # MacFlim, the true Mac video player
 
-Welcome to MacFlim, the video encoder and player for your previously obsolete Macintosh
+MacFlim is a video encoder and player for black and white vintage Macintoshes.
 
 ![MacFlim](./assets/macflim.gif)
 
 _The iPod introduction should have waited for MacFlim to be available_
 
 
-MacFlim aims at bringing movie playing abilities to vintage Macs, namely:
+MacFlim brings movie playing abilities to:
 
 * Mac plus
 * Mac SE
@@ -19,17 +19,17 @@ Some other macs may work in the future, but for now probably don't.
 
 ## What is in the repository?
 
-* The source code of flimmaker, the command line encoder. It runs on Mac and Linux (and could probably compiled on windows with a C++20 compiler).
-
 * The source code and binaries for "MacFlim Player", the new standalone video player for the vintage mac.
+
+* The source code of flimmaker, the command line encoder. It runs on Mac and Linux (and could probably compiled on windows with a C++20 compiler).
 
 With this code, you should be able to encode and play a video sequence on your mac.
 
 ## I have no mac and I must stream!
 
-If you have no access to a vintage mac, or if you want to look at results without having to transfer cumbesome files from your desktop to your mac, you can generate pixel exact movies that will let you know how the playback will look on the targetted hardware. See the ``--mp4`` option.
+Fear not, if you have no access to a vintage mac, or if you want to look at results without having to transfer cumbersome files from your desktop to your mac, you can generate pixel exact movies that will let you know how the playback will look on the targeted hardware. See the ``--mp4`` option.
 
-![MacFlim](./assets/macflim.gif)
+![Create flims in seconds](./assets/bullet-demo.gif)
 
 ## What is new since MacFlim 1.0?
 
