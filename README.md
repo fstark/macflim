@@ -29,7 +29,9 @@ With this code, you should be able to encode and play a video sequence on your m
 
 Fear not, if you have no access to a vintage mac, or if you want to look at results without having to transfer cumbersome files from your desktop to your mac, you can generate pixel exact movies that will let you know how the playback will look on the targeted hardware. See the ``--mp4`` option.
 
-![Create flims in seconds](./assets/bullet-demo.gif)
+![Bullet demo creation](./assets/bullet-demo.gif)
+
+_Create flims and immediately admire them (note: reduced framerate for the gif, reality is twice as smooth)_
 
 ## What is new since MacFlim 1.0?
 
@@ -95,9 +97,9 @@ The general format is:
 
 All other arguments to ``flimmaker`` go in pairs.
 
-### --out **flimname**
+### --flim **flimname**
 
-Specifies the name of the generated flim file. If there is no ``--out`` option specified, ``flimmaker`` uses *out.flim*.
+Specifies the name of the generated flim file. If there is no ``--flim`` option specified, ``flimmaker`` uses *out.flim*.
 
 ### --mp4 **file**
 
@@ -126,10 +128,10 @@ Specifies the encoding/playback profile you want to use. There are 4 profiles:
 Examples:
 
     # Sweet dreams is a good flim for a plus, as there is almost no camera movement, and very slow scenes changes
-    ./flimmaker 'https://www.youtube.com/watch?v=qeMFqkcPYcg' --profile plus --out sweet-dreams-plus.flim --mp4 sweet-dreams-plus.mp4
+    ./flimmaker 'https://www.youtube.com/watch?v=qeMFqkcPYcg' --profile plus --flim sweet-dreams-plus.flim --mp4 sweet-dreams-plus.mp4
 
     # Gangnam style has quite a lot scene changes and movements, but works correctly on the se30
-    ./flimmaker 'https://www.youtube.com/watch?v=9bZkp7q19f0' --profile se30 --out gangnam-style-se30.flim --mp4 gangnam-style-se30.mp4
+    ./flimmaker 'https://www.youtube.com/watch?v=9bZkp7q19f0' --profile se30 --flim gangnam-style-se30.flim --mp4 gangnam-style-se30.mp4
 
 ### --from **time**
 
