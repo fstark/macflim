@@ -120,6 +120,12 @@ class ffmpeg_reader : public input_reader
                 // fprintf(stderr, "Error decoding video frame (%s)\n", av_err2str(ret));
                 throw "VIDEO FRAME DECODING ERROR";
             }
+#define noVERBOSE
+
+#ifdef VERBOSE
+    std::clog << "*" << std::flush;
+#endif
+
             if (*got_frame)
             {
                 // if (frame->width != width || frame->height != height ||
@@ -127,12 +133,17 @@ class ffmpeg_reader : public input_reader
                 //         throw "VIDEO FRAME DEFINITION CHANGED";     //  We could handle that by changing the image
                 /* copy decoded frame to destination buffer:
                 * this is required since rawvideo expects non aligned data */
+#ifdef VERBOSE
+    std::clog << "VIDEO FRAME TS = " << frame_->pts*av_q2d(video_stream_->time_base) << "\n";
+#endif
 
                 if (frame_->pts*av_q2d(video_stream_->time_base)>=first_frame_second_ && images_.size()<=video_frame_count)
                 {
-                    // printf("video_frame%s n:%d coded_n:%d presentation_ts:%ld / %f\n",
-                    //     cached ? "(cached)" : "",
-                    //     video_frame_count, frame_->coded_picture_number, frame_->pts, frame_->pts*av_q2d(video_stream_->time_base) );
+#ifdef VERBOSE
+                    printf("video_frame%s n:%d coded_n:%d presentation_ts:%ld / %f\n",
+                        cached ? "(cached)" : "",
+                        video_frame_count, frame_->coded_picture_number, frame_->pts, frame_->pts*av_q2d(video_stream_->time_base) );
+#endif
                     video_frame_count++;
                     std::clog << "Read " << video_frame_count << " frames\r" << std::flush;
 
@@ -146,9 +157,13 @@ class ffmpeg_reader : public input_reader
 
                     images_.push_back( *default_image_ );
                     copy( images_.back(), *video_image_ );
+
+                    write_image( "/tmp/dump.pgm", *video_image_ );
                 }
-                // else
-                //     std::clog << "." << std::flush;  //  We are skipping frames
+#ifdef VERBOSE
+                else
+                    std::clog << "." << std::flush;  //  We are skipping frames
+#endif
 
                 // images_[video_frame_count].set_luma( video_dst_data_[0] );
             }
@@ -170,7 +185,13 @@ class ffmpeg_reader : public input_reader
 
  static int audio_frame_count = 0; 
 
-          if (*got_frame) {
+          if (*got_frame)
+          {
+
+            //   std::clog << frame_->pts*av_q2d(audio_stream_->time_base) << "\n";
+            if (frame_->pts*av_q2d(audio_stream_->time_base)>=first_frame_second_)
+            {
+
               size_t unpadded_linesize = frame_->nb_samples * av_get_bytes_per_sample((AVSampleFormat)frame_->format);
             //   printf("audio_frame%s n:%d nb_samples:%d pts:%s\n",
             //          cached ? "(cached)" : "",
@@ -199,10 +220,12 @@ class ffmpeg_reader : public input_reader
 // }
 // std::clog << "\n";
 
-    sound_->append_samples( (float **)frame_->extended_data, frame_->nb_samples );
-
+            sound_->append_samples( (float **)frame_->extended_data, frame_->nb_samples );
           }
+        //   else
+        //     std::clog << "." << std::flush;
           }
+        }
 
         extern bool sDebug;
         if (sDebug)
@@ -269,7 +292,7 @@ public:
             std::clog << "Audio stream index :" << ixa << "\n";
         }
 
-        double seek_to = std::max(from-5.0,0.0);    //  We seek to 5 seconds earlier, if we can
+        double seek_to = std::max(from-10.0,0.0);    //  We seek to 5 seconds earlier, if we can
         if (avformat_seek_file( format_context_, -1, seek_to*AV_TIME_BASE, seek_to*AV_TIME_BASE, seek_to*AV_TIME_BASE, AVSEEK_FLAG_ANY )<0)
             throw "CANNOT SEEK IN FILE\n";
 
