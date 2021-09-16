@@ -72,5 +72,6 @@ cd -
 # encode 1984.mkv 1984 se30 0 360 0:20.15 2.2 "--filters k10g1.2sc"
 # encode BlackOrWhite.mp4 BlackOrWhite se30 00:05:29 00:00:47 00:06:08 8 "--filters g1.6sc --error-bleed 0.8"
 # encode Bad_Apple.mp4 BadApple se30 0 3:37 1:15 11 "--filters k20w20g1sc"
+# encode iPodAd1.mp4 iPodIntroduction se30 0 1000 1 3 "--filters w10k10bsq5c --dither ordered"
 
-encode iPodAd1.mp4 iPodIntroduction se30 0 1000 1 3 "--filters w10k10bsq5c --dither ordered"
+encode Matrix.mp4 Matrix se30 01:46:15 00:00:43.280 01:46:30.200 10
