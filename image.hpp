@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include <vector>
+#include <string>
 #include <cassert>
 
 #include <functional>
