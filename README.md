@@ -66,7 +66,7 @@ On a Mac:
 
 On a linux:
 
-    apt-get install libffmpeg-dev # ????
+    apt-get install libavformat-dev libavcodec-dev libavutil-dev
     apt-get install youtube-dl
     apt-get install ImageMagick
 
