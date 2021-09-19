@@ -28,6 +28,16 @@ public:
         sample_rate_ {sample_rate}
     {}
 
+    //  Append silence
+    void append_silence( float duration )
+    {
+        size_t sample_count = sample_rate_ * duration;
+        for (int i=0;i!=sample_count;i++)
+        {
+            data_.push_back( 0 );
+        }
+    }
+
     //  Append sample_count samples over each of the channels
     void append_samples( float **samples, size_t sample_count )
     {
@@ -106,6 +116,8 @@ class ffmpeg_reader : public input_reader
     double first_frame_second_;
     size_t frame_to_extract_;
 
+    bool found_sound_ = false;                   //  To track if sounds starts with an offset
+
     int decode_packet(int *got_frame, int cached, AVPacket &pkt)
     {
         int ret = 0;
@@ -158,7 +170,7 @@ class ffmpeg_reader : public input_reader
                     images_.push_back( *default_image_ );
                     copy( images_.back(), *video_image_ );
 
-                    write_image( "/tmp/dump.pgm", *video_image_ );
+                    // write_image( "/tmp/dump.pgm", *video_image_ );
                 }
 #ifdef VERBOSE
                 else
@@ -170,12 +182,30 @@ class ffmpeg_reader : public input_reader
         }
         else if (pkt.stream_index == ixa)
         {
+#if 0
+std::clog << "avcodec_receive_frame => ";
+        ret = avcodec_receive_frame(audio_codec_context_,frame_);
+std::clog << ret << "\n";
+        if (ret == 0)
+            *got_frame = true;
+        if (ret == AVERROR(EAGAIN))
+            return 0;
+        if (ret == 0)
+        {
+            std::clog << "avcodec_send_packet => ";
+            ret = avcodec_send_packet(audio_codec_context_, &pkt);
+            std::clog << ret << "\n";
+        }
+        if (ret == AVERROR(EAGAIN))
+            return 0;
+#else
             ret = avcodec_decode_audio4(audio_codec_context_, frame_, got_frame, &pkt);
             if (ret < 0)
             {
 //                auto s = av_err2str(ret);
                 throw "AUDIO FRAME DECODING ERROR";
             }
+#endif
           /* Some audio decoders decode only part of the packet, and have to be
            * called again with the remainder of the packet data.
            * Sample: fate-suite/lossless-audio/luckynight-partial.shn
@@ -187,12 +217,27 @@ class ffmpeg_reader : public input_reader
 
           if (*got_frame)
           {
-
-            //   std::clog << frame_->pts*av_q2d(audio_stream_->time_base) << "\n";
+#ifdef VERBOSE
+            std::clog << "AUDIO: " << frame_->pts*av_q2d(audio_stream_->time_base) << " sample count " << frame_->nb_samples << "\n";
+#endif
             if (frame_->pts*av_q2d(audio_stream_->time_base)>=first_frame_second_)
             {
+#ifdef VERBOSE
+            std::clog << "USING AUDIO FRAME\n";
+#endif
 
-              size_t unpadded_linesize = frame_->nb_samples * av_get_bytes_per_sample((AVSampleFormat)frame_->format);
+            if (!found_sound_)
+            {
+                found_sound_ = true;
+                auto skip = frame_->pts*av_q2d(audio_stream_->time_base)-first_frame_second_;
+                if (skip>0)
+                {
+                    std::clog << "Inserting " << skip << " seconds of silence\n";
+                    sound_->append_silence( skip );
+                }
+            }
+
+            //   size_t unpadded_linesize = frame_->nb_samples * av_get_bytes_per_sample((AVSampleFormat)frame_->format);
             //   printf("audio_frame%s n:%d nb_samples:%d pts:%s\n",
             //          cached ? "(cached)" : "",
             //          audio_frame_count++, frame_->nb_samples,
@@ -292,9 +337,11 @@ public:
             std::clog << "Audio stream index :" << ixa << "\n";
         }
 
-        double seek_to = std::max(from-10.0,0.0);    //  We seek to 5 seconds earlier, if we can
+        double seek_to = std::max(from-10.0,0.0);    //  We seek to 10 seconds earlier, if we can
         if (avformat_seek_file( format_context_, -1, seek_to*AV_TIME_BASE, seek_to*AV_TIME_BASE, seek_to*AV_TIME_BASE, AVSEEK_FLAG_ANY )<0)
             throw "CANNOT SEEK IN FILE\n";
+        // if (avformat_seek_file( format_context_, ixv, 0, 0, 0, AVSEEK_FLAG_FRAME )<0)
+        //     throw "CANNOT SEEK IN FILE\n";
 
         video_stream_ = format_context_->streams[ixv];
         audio_stream_ = format_context_->streams[ixa];
