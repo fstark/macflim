@@ -1,13 +1,13 @@
-# MacFlim Player, the true Mac video player
+# MacFlim, the true Mac video player
 
-MacFlim is a video encoder and player for black and white vintage Macintoshes.
+MacFlim is a video encoder and player for black and white vintage Macintoshes, now in its second incarnation.
 
 ![MacFlim](./assets/macflim.gif)
 
 _The iPod introduction should have waited for MacFlim to be available_
 
 
-MacFlim brings movie playing abilities to:
+MacFlim2 brings movie playing abilities to:
 
 * Mac SE/30
 * Mac SE
@@ -64,11 +64,22 @@ On a Mac:
     brew install youtube-dl
     brew install ImageMagick
 
-On a linux:
+On a linux (ubuntu):
 
-    apt-get install libavformat-dev libavcodec-dev libavutil-dev
-    apt-get install youtube-dl
-    apt-get install ImageMagick
+    # Make sure you have a recent c++ compiler
+    sudo apt-get update
+    sudo apt-get install git
+    sudo apt-get install build-essential
+    sudo apt-get install g++-11
+
+    # Make sure you get the dependecies
+    sudo apt-get install libavformat-dev libavcodec-dev libavutil-dev
+    sudo apt-get install youtube-dl
+    sudo apt-get install imagemagick
+
+    # Note, youtube-dl is not easy to keep up to date from apts. See https://github.com/ytdl-org/youtube-dl#installation for a better way to install it.
+
+    git clone https://github.com/fstark/macflim.git
 
 (or your regional equivalent)
 
@@ -178,23 +189,23 @@ This is an advanced section for fine-tuning the encodings. You are not expected 
 
 ### --byterate byterate
 
-The byterate is the number of bytes per ticks (a tick is 1/60th of a second) that are available to encode the video stream. 370 additional bytes are used for the sound, plus a handful of bytes overhead. When encoding the transition of a frame to another, flimmaker will use up to byterate bytes (not strictly true, but a good enough approximation of the process), and let the previous frame leak into the next one.
+The byterate is the number of bytes per ticks (a tick is 1/60th of a second) that are available to encode the video stream. 370 additional bytes are used for the sound, plus a handful of bytes overhead. When encoding the changes between two frames, flimmaker will use up to byterate bytes (not strictly true, but a good enough approximation of the process), and, if there are not enough bandwidth, will let part the previous frame leak into the next one.
 
-Fundamentally the byterate is what makes a flim playable on a specific machines. The rest of the options are here to control how much information to throw away to meet this byterate with an acceptable immage.
+Fundamentally the byterate is what makes a flim playable on a specific machines. The rest of the options are here to control what information to throw away to meet this byterate with an acceptable immage.
 
 The Mac Plus is able to read and decode around 1500 bytes per tick, the Mac SE around 2500 and the Mac SE/30 6000.
 
-You can play with this parameter if your mac has a faster/slower drive. If the byterate is too high, you will suffer sound and video skips at playback, as your Mac will not able to both fetch and decode the data.
+You can play with this parameter if your mac has a faster/slower drive (example: SE/30 from ram disk). If the byterate is too high, you will suffer sound and video skips at playback, as your Mac will not able to fetch and decompress the data fast enough.
 
 ### --half-rate **boolean**
 
-``--half-rate true`` will effectively halve the framerate of the input, resulting in a worse looking, but smaller flim. If Mac Flim Player has troubles displaying your flim, using ``--half-rate true`` can vastly improve the visual result.
+``--half-rate true`` will effectively halve the framerate of the input, resulting in a worse looking, but smaller flim. If Mac Flim has troubles displaying your flim, using ``--half-rate true`` can vastly improve the visual result.
 
 The Mac Plus and the Mac SE profiles are half-rate by default, while the SE/30 displays all the frames.
 
 ### --group **boolean**
 
-Using ``--group false`` will have the player display partially constructed frames every 60th of a second. Due to limitations in the hardware/the way Mac Flim II works, the Mac Plus and the Mac SE cannot group the frames, and you can see the construction on screen. The SE/30 doesn't have to display partial results, which results more stable display. However, one can use ``--group true`` for the SE/30 to get some interesting low-fidelity effects.
+Using ``--group false`` will have the player display partially constructed frames every 60th of a second. Due to limitations in the hardware/the way MacFlim works, the Mac Plus and the Mac SE cannot group the frames, and you can see the construction on screen. The SE/30 doesn't have to display partial results, which results more stable display. However, one can use ``--group true`` for the SE/30 to get some interesting low-fidelity effects.
 
 The Mac Plus and the Mac SE profiles are not grouped, while the SE/30 is.
 
