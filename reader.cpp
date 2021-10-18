@@ -324,7 +324,7 @@ public:
         }
         if (ixa==AVERROR_STREAM_NOT_FOUND)
         {
-            throw "NO AUDIO IN FILE\n";
+            std::cerr << "NO SOUND -- INSERTING SILENCE";
         }
         if (ixa==AVERROR_DECODER_NOT_FOUND)
         {
@@ -344,7 +344,7 @@ public:
         //     throw "CANNOT SEEK IN FILE\n";
 
         video_stream_ = format_context_->streams[ixv];
-        audio_stream_ = format_context_->streams[ixa];
+        audio_stream_ = ixa!=AVERROR_STREAM_NOT_FOUND?format_context_->streams[ixa]:nullptr;
 
         // get the frame rate of each stream
 
@@ -377,13 +377,16 @@ public:
         if (avcodec_parameters_to_context( video_codec_context_, video_stream_->codecpar ) < 0)
             throw "FAILED TO COPY VIDEO CODEC PARAMETERS\n";
 
-        audio_codec_context_ = avcodec_alloc_context3( audio_decoder_ );
-        // audio_codec_context_ = format_context_->streams[ixa]->codec;
-        if (!audio_codec_context_)
-            throw "CANNOT ALLOCATE AUDIO CODEC CONTEXT\n";
+        if (ixa!=AVERROR_STREAM_NOT_FOUND)
+        {
+            audio_codec_context_ = avcodec_alloc_context3( audio_decoder_ );
+            // audio_codec_context_ = format_context_->streams[ixa]->codec;
+            if (!audio_codec_context_)
+                throw "CANNOT ALLOCATE AUDIO CODEC CONTEXT\n";
 
-        if (avcodec_parameters_to_context( audio_codec_context_, audio_stream_->codecpar ) < 0)
-            throw "FAILED TO COPY AUDIO CODEC PARAMETERS\n";
+            if (avcodec_parameters_to_context( audio_codec_context_, audio_stream_->codecpar ) < 0)
+                throw "FAILED TO COPY AUDIO CODEC PARAMETERS\n";
+        }
 
         AVDictionary *opts = NULL;
 
@@ -391,38 +394,44 @@ public:
 
         if (avcodec_open2( video_codec_context_, video_decoder_, &opts ) < 0)
             throw "CANNOT OPEN VIDEO CODEC\n";
-        if (avcodec_open2( audio_codec_context_, audio_decoder_, nullptr ) < 0)
-            throw "CANNOT OPEN AUDIO CODEC\n";
-
-        if (sDebug)
-            std::clog << "AUDIO CODEC: " << avcodec_get_name( audio_codec_context_->codec_id ) << "\n";
-
-    AVSampleFormat sfmt = audio_codec_context_->sample_fmt;
-    int n_channels = audio_codec_context_->channels;
-
-        if (sDebug)
+        if (ixa!=AVERROR_STREAM_NOT_FOUND)
         {
-            std::clog << "SAMPLE FORMAT:" << av_get_sample_fmt_name( sfmt ) << "\n";
-            std::clog << "# CHANNELS   :" << n_channels << "\n";
-            std::clog << "PLANAR       :" << (av_sample_fmt_is_planar(sfmt)?"YES":"NO") << "\n";
-        }
+            if (avcodec_open2( audio_codec_context_, audio_decoder_, nullptr ) < 0)
+                throw "CANNOT OPEN AUDIO CODEC\n";
+            if (sDebug)
+                std::clog << "AUDIO CODEC: " << avcodec_get_name( audio_codec_context_->codec_id ) << "\n";
 
-    if (av_sample_fmt_is_planar(sfmt))
-    {
-    //          const char *packed = av_get_sample_fmt_name(sfmt);
-    //          printf("Warning: the sample format the decoder produced is planar "
-    //                 "(%s). This example will output the first channel only.\n",
-    //                 packed ? packed : "?");
-             sfmt = av_get_packed_sample_fmt(sfmt);
+            AVSampleFormat sfmt = audio_codec_context_->sample_fmt;
+            int n_channels = audio_codec_context_->channels;
 
-        if (sDebug)
-        {
-            std::clog << "PACKED FORMAT:" << av_get_sample_fmt_name( sfmt ) << "\n";
-            std::clog << "SAMPLE RATE  :" << audio_codec_context_->sample_rate << "\n";
+                if (sDebug)
+                {
+                    std::clog << "SAMPLE FORMAT:" << av_get_sample_fmt_name( sfmt ) << "\n";
+                    std::clog << "# CHANNELS   :" << n_channels << "\n";
+                    std::clog << "PLANAR       :" << (av_sample_fmt_is_planar(sfmt)?"YES":"NO") << "\n";
+                }
+
+            if (av_sample_fmt_is_planar(sfmt))
+            {
+            //          const char *packed = av_get_sample_fmt_name(sfmt);
+            //          printf("Warning: the sample format the decoder produced is planar "
+            //                 "(%s). This example will output the first channel only.\n",
+            //                 packed ? packed : "?");
+                    sfmt = av_get_packed_sample_fmt(sfmt);
+
+                if (sDebug)
+                {
+                    std::clog << "PACKED FORMAT:" << av_get_sample_fmt_name( sfmt ) << "\n";
+                    std::clog << "SAMPLE RATE  :" << audio_codec_context_->sample_rate << "\n";
+                }
+            //          n_channels = 1;
+            }
+            sound_ = std::make_unique<sound_buffer>( n_channels, audio_codec_context_->sample_rate );
+
         }
-    //          n_channels = 1;
-    }
-    sound_ = std::make_unique<sound_buffer>( n_channels, audio_codec_context_->sample_rate );
+        else
+            sound_ = nullptr;
+
 
         if (sDebug)
             std::clog << "VIDEO CODEC OPENED WITH PIXEL FORMAT " << av_get_pix_fmt_name(video_codec_context_->pix_fmt) << "\n";
@@ -507,8 +516,11 @@ end:
         if (sDebug)
             std::clog << "\nAcquired " << images_.size() << " frames of video for a total of " << images_.size()/av_q2d( video_stream_->r_frame_rate ) << " seconds \n";
 
-        sound_->process();
-        sound_ix = 0;
+        if (ixa!=AVERROR_STREAM_NOT_FOUND)
+        {
+            sound_->process();
+            sound_ix = 0;
+        }
 
         if (sDebug)
             std::clog << "\n";
@@ -539,9 +551,12 @@ end:
 
     virtual std::unique_ptr<sound_frame_t> next_sound()
     {
-        auto s = std::make_unique<sound_frame_t>();
-
-        return sound_->extract( sound_ix++ );
+        if (ixa!=AVERROR_STREAM_NOT_FOUND)
+        {
+            auto s = std::make_unique<sound_frame_t>();
+            return sound_->extract( sound_ix++ );
+        }
+        return nullptr;
     }
 };
 
