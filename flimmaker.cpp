@@ -34,6 +34,7 @@
 #include "lzg.h"
 #endif
 #include "flimencoder.hpp"
+#include <filesystem>
 
 using namespace std::string_literals;
 
@@ -242,6 +243,9 @@ try
     std::string change_pattern = "";
     std::string target_pattern = "";
     bool auto_watermark = false;
+    std::string cache_file = std::tmpnam( nullptr );
+    bool generated_cache = true;
+    bool downloaded_file = false;
 
     const std::string cmd_name{ argv[0] };
 
@@ -304,6 +308,13 @@ try
                 ::exit( EXIT_FAILURE );
             }
             input_file = *argv;
+        }
+        else if (!strcmp(*argv,"--cache"))
+        {
+            argc--;
+            argv++;
+            cache_file = *argv;
+            generated_cache = false;
         }
         else if (!strcmp(*argv,"--mp4"))
         {
@@ -525,20 +536,30 @@ try
     //  If input-file is an url, use youtube-dl to retreive content
     if (input_file.rfind( "https://", 0 )==0)
     {
-        char buffer[1024];
-        // sprintf( buffer, "youtube-dl '%s' --recode mkv --output '/tmp/out'", input_file.c_str() );
-        sprintf( buffer, "youtube-dl '%s' -f mp4 --output '/tmp/out.mp4'", input_file.c_str() );
-        // https://www.dailymotion.com/video/x1au0r --dither ordered --filters g1.5q5c
-
-            //  Switch input file
-        input_file = "/tmp/out.mp4"s;
-        unlink( input_file.c_str() );
-
-        int res = system( buffer );
-        if (res!=0)
+        if (std::filesystem::exists(cache_file))
         {
-            std::clog << "youtube-dl failed with error " << res << "\n";
-            exit( EXIT_FAILURE );
+            input_file = cache_file;
+            std::clog << "Using cached file: '" << cache_file << "'\n";
+        }
+        else
+        {
+            char buffer[1024];
+            auto input_url = input_file;
+
+            // sprintf( buffer, "youtube-dl '%s' --recode mkv --output '/tmp/out'", input_file.c_str() );
+            sprintf( buffer, "youtube-dl '%s' -f mp4 --output '%s'", input_file.c_str(), cache_file.c_str() );
+            // https://www.dailymotion.com/video/x1au0r --dither ordered --filters g1.5q5c
+
+            int res = system( buffer );
+            if (res!=0)
+            {
+                std::clog << "youtube-dl failed with error " << res << "\n";
+                exit( EXIT_FAILURE );
+            }
+
+                //  Switch input file
+            input_file = cache_file;
+            downloaded_file = true;
         }
     }
 
@@ -588,6 +609,12 @@ try
     // encoder.set_input_single_random();
 
         encoder.make_flim( out_arg, r.get(), w );
+
+        if (downloaded_file && generated_cache)
+        {
+            std::clog << "Removing '" << cache_file << "'\n";
+            unlink( cache_file.c_str() );
+        }
     }
     catch (const char *error)
     {

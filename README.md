@@ -15,7 +15,7 @@ MacFlim2 brings movie playing abilities to:
 
 on their beautiful internal back and white 512x342 display.
 
-Some other macs may work in the future, but for now probably don't.
+Other black and white macs work (Macintosh Portable tested), but using much slower display routines.
 
 ## What is in the repository?
 
@@ -23,11 +23,11 @@ Some other macs may work in the future, but for now probably don't.
 
 * The source code of flimmaker, the command line encoder. It runs on Mac and Linux (and could probably compiled on windows with a C++20 compiler).
 
-With this code, you should be able to encode and play a video sequence on your mac.
+With this code, you should be able to encode and play a video sequence on your vintage mac.
 
 ## I have no mac and I must stream!
 
-Fear not, if you have no access to a vintage mac, or if you want to look at results without having to transfer cumbersome files from your desktop to your mac, you can generate pixel exact movies that will let you know how the playback will look on the targeted hardware. See the ``--mp4`` option.
+Fear not, if you have no access to a vintage mac, or if you want to look at results without having to transfer cumbersome files from your desktop to your mac, you can generate pixel exact movies that will let you know how the playback would look on the targeted hardware. See the ``--mp4`` option.
 
 ![Bullet demo creation](./assets/bullet-demo.gif)
 
@@ -35,9 +35,9 @@ _Create flims and immediately admire them. Note the gif has reduced frame rate, 
 
 ## What is new since MacFlim 1.0?
 
-Well, the main change is that flims now have sound. This necessitated a complete rewrite of both the player and the encoder. All your old flims are now obsolete, sorry.
+Well, the main change is that flims now have sound. This needed a complete rewrite of both the player and the encoder. All your old flims are now obsolete, sorry.
 
-A negative change is that the new player app is currently less powerful than MacFlim 1.0. It only lets you play full screen flims. But with glorious 8 bits 22KHz mono sound.
+Note that the new player app is currently less fancy than MacFlim 1.0. It only lets you play full screen flims. But with glorious 8 bits 22KHz mono sound. Old features of the player may be added back.
 
 Encoding input is greatly simplified: you don't have to resize the input to 512x342 any more. You don't need to have it in grayscale. You don't have to have it in pgm format. You can directly feed mp4 movies, or even youtube or vimeo urls to the encoder.
 
@@ -48,7 +48,7 @@ To ease with testing, an optional mp4 of the flim can be generated. This will le
 ## How do I play flims on my Mac?
 
 Head to http://www.macflim.com/macflim2 to download the standalone player.
-Alternatively, if you want to have the source code, the 'MacFlim Source Code.dsk' file is a disk image, containing a working System 6.0.8 and the MacFlim 2 player source code and binary, and a THINK 5 development environment.
+Alternatively, if you want to have the latest version and the source code, the 'MacFlim Source Code.dsk' file is a disk image, containing a working System 6.0.8, the MacFlim source code and binaries, and a THINK 5 development environment.
 
 ## Ok, how do I compile the encoder?
 
@@ -89,7 +89,7 @@ After compilation, you can generate a sample flim using:
 
     ./flimmaker https://www.youtube.com/watch?v=dQw4w9WgXcQ --mp4 out.mp4
 
-This will download the video and encode it for se30 playback (the default), as 'out.flim'. It will take a couple of minutes. You can then immediatley play the ``out.mp4`` file, which is identical to the se30 playback, including a mono output (unfortunately on the left channel ####checkme). Enjoy!
+This will download the video and encode it for se30 playback (the default), as 'out.flim'. It will take a couple of minutes. You can then immediately play the ``out.mp4`` file, which is identical to the se30 playback, including a mono output. Enjoy!
 
 ## General flim creation options
 
@@ -103,7 +103,7 @@ The general format is:
 
 * A local mp4 file. It will be opened using the installed ffmpeg library, and the "best" video and audio channels will be read and converted.
 
-* An url supported by ``youtube-dl``. If the ``input-file-name`` starts with ``https://``, flimmaker will try to use ``youtube-dl`` to download the specified file and encode it.
+* An url supported by ``youtube-dl``. If the ``input-file-name`` starts with ``https://``, flimmaker will try to use ``youtube-dl`` to download the specified file and encode it. See the ``--cache`` option to avoid downloading multiple times the same source.
 
 * A set of local 512x342 8 bits pgm files. If the ``input-file-name`` ends with ``.pgm``, it will be considered as a ``printf`` pattern and used to read local images (starting at index 1? #### CHECK ME). For instance, ``movie-%06d.pgm`` will read all files named ``movie-000001.pgm``, ``movie-000002.pgm``, etc... [Yes, if one uses '%s', the app will crash](https://github.com/fstark/macflim/issues/4). See the ``--fps`` and ``--audio`` option to specify the audio of pgm files.
 
@@ -115,15 +115,19 @@ Specifies the name of the generated flim file. If there is no ``--flim`` option 
 
 ### --mp4 **file**
 
-Creates a 512x342 60fps mp4 file that renders exactly the flim, with its associated sound. This can be used to view the flim without having to load the ``.flim`` file to a vintage Macintosh, or uploaded to the web. While the sound channel is 44KHz 16 bits, it really contains the 22KHz 8 bits Macintosh sound. This is by far the easiest way to iterate with the encoder parameters.
+Creates a 512x342 60fps mp4 file that renders exactly the flim, with its associated sound. This can be used to view the flim without having to load the ``.flim`` file to a vintage Macintosh, or uploaded to the web. While the sound channel is 44KHz 16 bits, it really contains the 22KHz 8 bits Macintosh sound. This is by far the easiest way to iterate with the encoder parameters. Note that mp4 is no designed to encode such movies, and the result are *huge*.
 
 ### --pgm **pattern**
 
-Write every generated frame as a pgm file. This is useful to embed a specific frame in a web site, or to look at the detail of the generation of different set of parameters. The pattern should contain a single '%d', which will be replaced by the frame number. Existing files with this pattern will be removed. Again, if one uses '%s', the app will crash. Example: ``--pgm out-%06d.pgm``.
+Write every generated frame as a pgm file. This is useful to embed a specific frame in a web site, or to look at the detail of the generation of different set of parameters. The pattern should contain a single '%d', which will be replaced by the frame number. Existing files with this pattern will be removed. Again, if one uses '%s', the app will crash. Example: ``--pgm out-%06d.pgm``. Beware, it is an extremely efficient way to generate ten of thousands of files.
 
 ### --gif **file**
 
 Creates an animated gif file version of the flim. The animated gif is at 20 frame per second. using a gif makes it easier to embed in a web page. Be careful, gif files can get very large, so limit the duration of the output.
+
+### --cache **flimname**
+
+To avoid downloading the same file multiple times, the ``--cache`` argument can be used to specify a destination to download the file to if it doesn't already exist. ``flimmaker`` will use this file if it exists, or download it there otherwise. This is only used with URL specifiers.
 
 ### --profile **plus**|**se**|**se30**|**perfect**
 
