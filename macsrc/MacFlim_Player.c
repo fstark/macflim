@@ -460,11 +460,7 @@ void UnpackZ16_ref( char *dest, char *source, int rowbytes )
 	}
 }
 
-//	-------------------------------------------------------------------
-//	Codec 0x01 : z16
-//	-------------------------------------------------------------------
-
-void UnpackZ16( char *dest, char *source, int rowbytes )
+void UnpackZ16_64( char *dest, char *source, int rowbytes )
 {
 
 	asm
@@ -581,6 +577,40 @@ void UnpackZ32_ref( char *dest, char *source, int rowbytes )
 	}
 }
 
+void UnpackZ32_64( char *dest, char *source, int rowbytes )
+{
+	asm
+	{
+			;	Save registers
+		movem.l D5-D7/A2-A4,-(A7)
+
+			;	Get parameters
+		movea.l dest,a4				;	a4 == screenBase
+		subq.l #4,a4				;	minus4, as all offets are +4
+		movea.l source,a3			;	a3 == source data
+
+@loop:
+		move.l	(a3)+,d7			;	header
+		beq.s	@exit				;	0x00000000 => end of frame
+
+		movea.l	a4,a2				;	Screen base
+		add.w	d7,a2				;	Low end of d7 is offset
+
+		swap	d7
+
+@loop2:
+        move.l	(a3)+,(a2)			;	Transfer data
+        add 	#64,a2				;	Take stride into account
+		dbra.w	d7,@loop2
+
+        bra.s     @loop
+
+			;	Done
+@exit:
+        movem.l   (A7)+,D5-D7/A2-A4
+	}
+}
+
 void UnpackZ32_80( char *dest, char *source, int rowbytes )
 {
 	asm
@@ -629,11 +659,7 @@ void UnpackZ32_80( char *dest, char *source, int rowbytes )
 	}
 }
 
-//	-------------------------------------------------------------------
-//	Codec 0x02 : z32
-//	-------------------------------------------------------------------
-
-void UnpackZ32( char *dest, char *source, int rowbytes )
+void UnpackZ32_asm( char *dest, char *source, int rowbytes )
 {
 	asm
 	{
@@ -642,21 +668,30 @@ void UnpackZ32( char *dest, char *source, int rowbytes )
 
 			;	Get parameters
 		movea.l dest,a4				;	a4 == screenBase
-		subq.l #4,a4				;	minus4, as all offets are +4
 		movea.l source,a3			;	a3 == source data
+		move.w rowbytes,d1			;	d1 == rowbytes
 
 @loop:
 		move.l	(a3)+,d7			;	header
 		beq.s	@exit				;	0x00000000 => end of frame
 
 		movea.l	a4,a2				;	Screen base
-		add.w	d7,a2				;	Low end of d7 is offset
+		subq.w #4,d7				;	offsets are +4
+		move.w d7,d0
+		and.w #0x3f,d0
+		add.w d0,a2
+		lsr.w #6,d7
+
+				;	d0 = d7*rowbytes
+		move.w d7,d0
+		mulu d1,d0
+		add.l d0,a2					;	.l so we can add offsets > 32767
 
 		swap	d7
 
 @loop2:
         move.l	(a3)+,(a2)			;	Transfer data
-        add 	#64,a2				;	Take stride into account
+        add 	d1,a2				;	Take stride into account
 		dbra.w	d7,@loop2
 
         bra.s     @loop
@@ -687,11 +722,7 @@ void Invert_ref( char *dest, char *source, int rowbytes )
 	}
 }
 
-//	-------------------------------------------------------------------
-//	Codec 0x03 : invert
-//	-------------------------------------------------------------------
-
-void Invert( char *dest, char *source, int rowbytes )
+void Invert_64( char *dest, char *source, int rowbytes )
 {
 	register long *p = (long *)dest;
 
@@ -706,12 +737,16 @@ void Invert( char *dest, char *source, int rowbytes )
 
 //	-------------------------------------------------------------------
 //	Codec 0x04 : copy lines (reference implementation)
+//	Copies a serie of horizontal lines
+//	2 bytes     : count of bytes to copy
+//	2 bytes     : offset to copy to
+//	count bytes : data to copy
 //	-------------------------------------------------------------------
 
 void CopyLines_ref( char *dest, char *source, int rowbytes )
 {
-	short len = ((short*)source)[0];
-	short offset = ((short*)source)[1];
+	unsigned short len = ((unsigned short*)source)[0];
+	unsigned short offset = ((unsigned short*)source)[1];
 
 	if (offset<0 || offset>=21888)
 		ExitToShell();
@@ -723,34 +758,26 @@ void CopyLines_ref( char *dest, char *source, int rowbytes )
 		ExitToShell();
 
 	source += 4;
+
+	offset = (offset/16)*(rowbytes/4)+(offset%16);
+
 	dest += offset;
 	while (len)
 	{
 		BlockMove( source, dest, 64 );
-		source += rowbytes;
-		dest += 64;
+		source += 64;
+		dest += rowbytes;
 		len -= 64;
 	}
 }
 
-//	-------------------------------------------------------------------
-//	Codec 0x04 : copy lines
-//	Copies a serie of horizontal lines
-//	2 bytes     : count of bytes to copy
-//	2 bytes     : offset to copy to
-//	count bytes : data to copy
-//	-------------------------------------------------------------------
-
-void CopyLines( char *dest, char *source, int rowbytes )
+void CopyLines_64( char *dest, char *source, int rowbytes )
 {
 	short len = ((short*)source)[0];
 	short offset = ((short*)source)[1];
 
 	BlockMove( source+4, dest+offset, len );
 }
-
-
-
 
 //	-------------------------------------------------------------------
 //	SCREEN HANDLING FUNCTION
@@ -816,12 +843,14 @@ ScreenPtr ScreenInit( ScreenPtr scrn )
 	scrn->procs[4] = CopyLines_ref;
 
 #ifndef REFERENCE
+	scrn->procs[2] = UnpackZ32_asm;
+
 	if (scrn->rowBytes==64)				//	Vintage macs
 	{
-		scrn->procs[1] = UnpackZ16;
-		scrn->procs[2] = UnpackZ32;
-		scrn->procs[3] = Invert;
-		scrn->procs[4] = CopyLines;
+		scrn->procs[1] = UnpackZ16_64;
+		scrn->procs[2] = UnpackZ32_64;
+		scrn->procs[3] = Invert_64;
+		scrn->procs[4] = CopyLines_64;
 	}
 
 	if (scrn->rowBytes==80)				//	Macintosh Portable
