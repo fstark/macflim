@@ -166,7 +166,7 @@ void usage( const std::string name )
     std::cerr << "      Defdaul is 'se30'. See below for description of profiles.\n";
 
     std::cerr << "    --byterate BYTERATE         : bytes per ticks available for video compression\n";
-    std::cerr << "    --half-rate BOOLEAN         : if true, half of the images from the source will be dropped.\n";
+    std::cerr << "    --fps-ratio BOOLEAN         : ratio of images from the source to drop.\n";
     std::cerr << "    --group BOOLEAN             : if true, packs ticks together to present screen updates at the same rate as the input media. Only works on a se30.\n";
 
     std::cerr << "    --bars BOOLEAN              : if false, image is zoomed in so there are no black bars.\n";
@@ -356,11 +356,11 @@ try
             argv++;
             custom_profile.set_buffer_size( atoi( *argv ) );
         }
-        else if (!strcmp(*argv,"--half-rate"))
+        else if (!strcmp(*argv,"--fps-ratio"))
         {
             argc--;
             argv++;
-            custom_profile.set_half_rate( bool_from(*argv) );
+            custom_profile.set_fps_ratio( atoi(*argv) );
         }
         else if (!strcmp(*argv,"--group"))
         {

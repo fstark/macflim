@@ -23,7 +23,7 @@ protected:
     size_t byterate_ = 2000;
     size_t buffer_size_ = 300000;
     double stability_ = 0.3;
-    bool half_rate_ = false;
+    int fps_ratio_ = 1;
     bool group_ = true;
     std::string filters_ = "c";
     bool bars_ = true;              //  Do we put black bars around the image?
@@ -47,11 +47,11 @@ public:
     size_t buffer_size() const { return buffer_size_; }
     void set_buffer_size( size_t buffer_size ) { buffer_size_ = buffer_size; }
 
-        //  Technically, we could put the half-rate mecanism in the reader phase
+        //  Technically, we could put the half-rate/fps_ratio mecanism in the reader phase
         //  to avoid reading unecessary images, but it is more generic to put it here
-        //  as it allows to extend to dynamic half rate
-    bool half_rate() const { return half_rate_; }
-    void set_half_rate( bool half_rate ) { half_rate_ = half_rate; }
+        //  as it could allows to extend to dynamic half rate [yagni]
+    int fps_ratio() const { return fps_ratio_; }
+    void set_fps_ratio( int fps_ratio ) { fps_ratio_ = fps_ratio; }
 
     bool group() const { return group_; }
     void set_group( bool group ) { group_ = group; }
@@ -99,7 +99,7 @@ public:
         {
             result.set_byterate( 1500 );
             result.set_filters( "g1.6bbscz" );
-            result.set_half_rate( true );
+            result.set_fps_ratio( 2 );
             result.set_group( false );
             result.set_stability( 0.5 );
             result.set_bars( true );
@@ -118,7 +118,7 @@ public:
         {
             result.set_byterate( 2500 );
             result.set_filters( "g1.6bsc" );
-            result.set_half_rate( true );
+            result.set_fps_ratio( 2 );
             result.set_group( false );
             result.set_stability( 0.5 );
             result.set_bars( true );
@@ -137,7 +137,7 @@ public:
         {
             result.set_byterate( 6000 );
             result.set_filters( "g1.6sc" );
-            result.set_half_rate( false );
+            result.set_fps_ratio( 1 );
             result.set_group( true );
             result.set_stability( 0.3 );
             result.set_bars( false );
@@ -156,7 +156,7 @@ public:
         {
             result.set_byterate( 32000 );
             result.set_filters( "g1.6sc" );
-            result.set_half_rate( false );
+            result.set_fps_ratio( 1 );
             result.set_group( true );
             result.set_stability( 0.3 );
             result.set_bars( false );
@@ -194,7 +194,7 @@ public:
         std::ostringstream cmd;
 
         cmd << "--byterate " << byterate_;
-        cmd << " --half-rate " << (half_rate_?"true":"false");
+        cmd << " --fps-ratio " << fps_ratio_;
         cmd << " --group " << (group_?"true":"false");
         cmd << " --bars " << (bars_?"true":"false");
         cmd << " --dither " << dither_string();
@@ -237,7 +237,7 @@ class flimencoder
 
     size_t frame_from_image( size_t n ) const
     {
-        return ticks_from_frame( n-1, fps_ );
+        return ticks_from_frame( n-1, fps_/profile_.fps_ratio() );
     }
 
 #if 0
@@ -285,7 +285,7 @@ class flimencoder
     {
         //  TODO: make sure images and sound size matches
 
-        std::clog << "**** fps               : " << fps_ << "\n";
+        std::clog << "**** fps               : " << fps_ << "/" << profile_.fps_ratio() << "=" << fps_/profile_.fps_ratio() << "\n";
         std::clog << "**** # of input images : " << images_.size() << "\n";
         std::clog << "**** # of movie ticks  : " << frame_from_image(images_.size()+1) << "\n";
     }
@@ -343,9 +343,12 @@ public:
         read_audio( from, images_.size() );
 */
 
+        int i = 0;
         while (auto next = reader->next())
         {
-            images_.push_back( *next );
+            if ((i%profile_.fps_ratio())==0)
+                images_.push_back( *next );
+            i++;
         }
 
         while (auto next = reader->next_sound())
@@ -357,7 +360,7 @@ public:
 
         fix();
 
-        flimcompressor fc{ profile_.width(), profile_.height(), images_, audio_samples_, fps_ };
+        flimcompressor fc{ profile_.width(), profile_.height(), images_, audio_samples_, fps_ / profile_.fps_ratio() };
 
         fc.compress( profile_.stability(), profile_.byterate(), profile_.group(), profile_.filters(), watermark_, profile_.codecs(), profile_.dither(), profile_.bars(), profile_.error_algorithm(), profile_.error_bleed(), profile_.error_bidi() );
 

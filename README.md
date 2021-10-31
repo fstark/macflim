@@ -12,10 +12,11 @@ MacFlim2 brings movie playing abilities to:
 * Mac SE/30
 * Mac SE
 * Mac Plus
+* Macintosh Portable (use Mac SE files)
 
-on their beautiful internal back and white 512x342 display.
+on their beautiful internal back and white 512x342 display (or in a part of it for the Portable).
 
-Other black and white macs work (Macintosh Portable tested), but using much slower display routines.
+Other black and white macs should work, but using much slower display routines.
 
 ## What is in the repository?
 
@@ -201,11 +202,11 @@ The Mac Plus is able to read and decode around 1500 bytes per tick, the Mac SE a
 
 You can play with this parameter if your mac has a faster/slower drive (example: SE/30 from ram disk). If the byterate is too high, you will suffer sound and video skips at playback, as your Mac will not able to fetch and decompress the data fast enough.
 
-### --half-rate **boolean**
+### --fps-ratio **integer**
 
-``--half-rate true`` will effectively halve the framerate of the input, resulting in a worse looking, but smaller flim. If Mac Flim has troubles displaying your flim, using ``--half-rate true`` can vastly improve the visual result.
+``--fps-ratio 2`` will effectively halve the framerate of the input, resulting in a worse looking, but smaller flim. If Mac Flim has troubles displaying your flim, using ``--fps-ratio 2`` or higher can vastly improve the visual result.
 
-The Mac Plus and the Mac SE profiles are half-rate by default, while the SE/30 displays all the frames.
+The Mac Plus and the Mac SE profiles are ``--fps-ratio 2`` by default, while the SE/30 displays all the frames.
 
 ### --group **boolean**
 
