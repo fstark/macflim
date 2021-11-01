@@ -56,7 +56,7 @@ Alternatively, if you want to have the latest version and the source code, the '
 The pre-requisites are ffmpeg, youtube-dl (optional) and ImageMagick (optional)
 
 * ``ffmpeg`` libraries are required for compilation. 
-* ``youtube-dl`` is used if you want to directly encode movies from youtube or vimeo (or others).
+* ``yt-dlp`` or ``youtube-dl`` is used if you want to directly encode movies from youtube or vimeo (or others).
 * ``ImageMagick`` is used if you want to generate ``gif`` files.
 
 On a Mac:
@@ -78,7 +78,7 @@ On a linux (ubuntu):
     sudo apt-get install youtube-dl
     sudo apt-get install imagemagick
 
-    # Note, youtube-dl is not easy to keep up to date from apts. See https://github.com/ytdl-org/youtube-dl#installation for a better way to install it.
+Note, ``youtube-dl`` is not easy to keep up to date from apts. See https://github.com/ytdl-org/youtube-dl#installation for a better way to install it. Also, as ``youtube-dl`` is currently quite slow ``yt-dlp`` will be used instead if installed.
 
     git clone https://github.com/fstark/macflim.git
 
