@@ -543,14 +543,20 @@ try
         }
         else
         {
+            // https://www.dailymotion.com/video/x1au0r --dither ordered --filters g1.5q5c
+
             char buffer[1024];
             auto input_url = input_file;
 
-            // sprintf( buffer, "youtube-dl '%s' --recode mkv --output '/tmp/out'", input_file.c_str() );
-            sprintf( buffer, "youtube-dl '%s' -f mp4 --output '%s'", input_file.c_str(), cache_file.c_str() );
-            // https://www.dailymotion.com/video/x1au0r --dither ordered --filters g1.5q5c
-
+            sprintf( buffer, "yt-dlp '%s' -f mp4 --output '%s'", input_file.c_str(), cache_file.c_str() );
             int res = system( buffer );
+            if (res!=0)
+            {
+                std::clog << "yt-dlp not installed or failing, falling back to youtube-dl (code " << res << ")\n";
+            }
+
+            sprintf( buffer, "youtube-dl '%s' -f mp4 --output '%s'", input_file.c_str(), cache_file.c_str() );
+            res = system( buffer );
             if (res!=0)
             {
                 std::clog << "youtube-dl failed with error " << res << "\n";
