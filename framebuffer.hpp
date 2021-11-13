@@ -257,7 +257,7 @@ public:
     {
         size_t count = 0;
         for (auto &v:data_)
-            count += std::popcount( v );
+            count += mypopcount( v );
         return count;
     }
 

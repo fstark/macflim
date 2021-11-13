@@ -394,7 +394,7 @@ size_t vertical_from_horizontal( size_t h ) const
                             );
                     }
 
-                    bits_changed += std::popcount( (T)(run.data[i]^current_data_[offset]) );
+                    bits_changed += mypopcount( (T)(run.data[i]^current_data_[offset]) );
                 }
                 std::clog << "]  ";
                 item_count += run.data.size();

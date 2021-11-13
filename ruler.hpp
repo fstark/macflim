@@ -9,6 +9,8 @@
 #include <limits>
 #include <cassert>
 
+#include "image.hpp"    //  Only for mypopcount
+
 template <typename T>
 class ruler
 {
@@ -162,7 +164,7 @@ class bit_ruler : public ruler<T>
 public:
     virtual size_t distance( T v0, T v1 ) const
     {
-        size_t v = std::popcount( (T)(v0^v1) );         //  beware uint16_t ^ uint16_t is an int
+        size_t v = mypopcount( (T)(v0^v1) );         //  beware uint16_t ^ uint16_t is an int
         for (size_t i=1;i!=get_T_bitcount();i*=2)
             v += distance( v0, v1, i*2 );
         return v;
