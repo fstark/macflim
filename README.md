@@ -7,7 +7,7 @@ MacFlim is a video encoder and player for black and white vintage Macintoshes, n
 _The iPod introduction should have waited for MacFlim to be available_
 
 
-MacFlim2 brings movie playing abilities to:
+MacFlim brings movie playing abilities to:
 
 * Mac SE/30
 * Mac SE
@@ -65,9 +65,13 @@ On a Mac:
     brew install youtube-dl
     brew install ImageMagick
 
+Optionally, yt-dlp should be installable with:
+
+    brew install yt-dlp/taps/yt-dlp
+
 On a linux (ubuntu):
 
-    # Make sure you have a recent c++ compiler
+    # Note: make sure you have a recent c++20 compiler
     sudo apt-get update
     sudo apt-get install git
     sudo apt-get install build-essential
@@ -78,7 +82,9 @@ On a linux (ubuntu):
     sudo apt-get install youtube-dl
     sudo apt-get install imagemagick
 
-Note, ``youtube-dl`` is not easy to keep up to date from apts. See https://github.com/ytdl-org/youtube-dl#installation for a better way to install it. Also, as ``youtube-dl`` is currently quite slow ``yt-dlp`` will be used instead if installed.
+Note, ``youtube-dl`` is not easy to keep up to date from apt. See https://github.com/ytdl-org/youtube-dl#installation for a better way to install it. Also, as ``youtube-dl`` is currently quite slow ``yt-dlp`` will be used instead if installed (``yt-dlp`` cannot be installed via apt for now, see https://github.com/yt-dlp/yt-dlp for instructions)
+
+You can the get the source code using:
 
     git clone https://github.com/fstark/macflim.git
 
@@ -104,7 +110,7 @@ The general format is:
 
 * A local mp4 file. It will be opened using the installed ffmpeg library, and the "best" video and audio channels will be read and converted.
 
-* An url supported by ``youtube-dl``. If the ``input-file-name`` starts with ``https://``, flimmaker will try to use ``youtube-dl`` to download the specified file and encode it. See the ``--cache`` option to avoid downloading multiple times the same source.
+* An url supported by ``youtube-dl`` (or ``yy-dlp``). If the ``input-file-name`` starts with ``https://``, flimmaker will try to use ``youtube-dl`` to download the specified file and encode it. See the ``--cache`` option to avoid downloading multiple times the same source.
 
 * A set of local 512x342 8 bits pgm files. If the ``input-file-name`` ends with ``.pgm``, it will be considered as a ``printf`` pattern and used to read local images (starting at index 1? #### CHECK ME). For instance, ``movie-%06d.pgm`` will read all files named ``movie-000001.pgm``, ``movie-000002.pgm``, etc... [Yes, if one uses '%s', the app will crash](https://github.com/fstark/macflim/issues/4). See the ``--fps`` and ``--audio`` option to specify the audio of pgm files.
 
@@ -158,25 +164,25 @@ Starts encoding at that specific time. Time format is ``[[<hours>:]<minutes>:]<s
 
 ### --duration **time**
 
-Specify the duration of the flim. See ``--from`` for time format. The default duration is 5 minutes. [Due to incompetent coding](https://github.com/fstark/macflim/issues/5), encoding movies that last for longer than 10-15m is in general a bad idea.  
+Specify the duration of the flim. See ``--from`` for time format. The default duration is 5 minutes. [Due to incompetent coding](https://github.com/fstark/macflim/issues/5), encoding movies that last longer than 10-15m is in general a bad idea.  
 
 ### --bars **boolean**
 
-The Mac screen ratio is 3/2, but move movies out there are 4/3, 16/9 or something else. By default, flimmaker adds black borders around the border of the flim (because it keeps more of the original image and the black bars are less data to encode). Using ``--bars false`` instead crops the image. Note that, when there are already black bars in in the input video, using the 'Z' filter (Zoom) described later can help.
+The Mac screen ratio is 3/2, but move movies out there are 4/3, 16/9 or something else. By default, flimmaker adds black borders around the border of the flim (because it keeps more of the original image and the black bars are less data to encode). Using ``--bars false`` instead crops the image for a nicer "fullscreen" effect. Note that, if there are already black bars in the input video, using the 'Z' filter (Zoom) described later can help.
 
 ### --watermark **string**
 
-Adds the parameter string to the top of every frame of the video. This is useful if you generate several similar videos with different parameters and want to keep track of those. Use ``auto`` as the string to have the encoding parameters placed in the video. Please do not use the watermark option when releasing your video or you flim to the world!
+Adds the argument string to the top of every frame of the video. This is useful if you generate several similar videos with different parameters and want to keep track of those. Use ``auto`` as the string to have the encoding parameters placed in the video. Please do not use the watermark option when releasing your video or you flim to the world!
 
 There are two additional options, specifically used for dealing with pgm input:
 
 ### --fps **frame-rate**
 
-When specifying a set of pgm files as input, one can use the ``--fps`` to specify the timing of the source video. The daults is 24 fps.
+When specifying a set of pgm files as input, one can use the ``--fps`` to specify the timing of the source video. The default is 24 fps.
 
 ### --audio **raw-audio-filename**
 
-When specifiying a set of pgm files as input, the audio must be provided using a raw ``wav`` file of 22200Hz, unsigned 8 bits samples. Such file can be created using audacity, or the ffmpeg and sox unix command lines (use ``apt-get install sox`` or ``brew install sox`` to install the sox tool):
+When specifiying a set of pgm files as input, the audio must be provided using a raw ``wav`` file of 22200Hz, unsigned 8 bits samples. Such file can be created using audacity, or the ``ffmpeg`` and ``sox`` unix command lines (use ``apt-get install sox`` or ``brew install sox`` to install the sox tool):
 
     ffmpeg -i movie.mp4 audio.wav
     sox -V2 audio.wav -r 22200 -e unsigned-integer -b 8 audio.raw remix 1 norm
@@ -236,30 +242,29 @@ When using the ``error`` dithering, there are a small set of error dithering alg
 
 ### --error-bleed **percent** (from 0 to 1)
 
-The error propagation of the ``error`` diffusion algorithm can be toned down by the bleed, which specifies how much of the error should be propagated to neighbouting pixels. Lower values of bleed make changes more local, but impacts image quality. Bleed is 0.98 for the plus, 0.99 for the se, and 1 (full bleed, the original MacFlim look)
+The error propagation of the ``error`` diffusion algorithm can be toned down by the bleed, which specifies how much of the error should be propagated to neighbouting pixels. Lower values of bleed make changes more local, but impacts image quality. Bleed is 0.98 for the plus, 0.99 for the se and se/30. You can use 1 for full bleed, the original MacFlim look (see ``--error-bidi`` too)
 
 ### --error-bidi **boolean**
 
-If --error-bidi is true, than all the ``error`` dithering algoritms will diffuse the error in alternate direction for each scanline, greatly reducing the impression of having "crawling pixels from the bottom right". ``--error-bidi`` is true by default, but is kept to be able to recover the original MacFlim 1.0 look.
-
+If ``--error-bidi`` is true, than all the ``error`` dithering algoritms will diffuse the error in alternate direction for each scanline, greatly reducing the impression of having "crawling pixels from the bottom right". ``--error-bidi`` is true by default, but is kept to be able to recover the original pixel crawling MacFlim 1.0 look.
 
 ### --filters **giberrish**
 
-After converting the input image to 512x342 grayscale, Mac Flim applies a series of filters, before dithering the image to pure black and white.
+After converting the input image to 512x342 grayscale, the encoder applies a series of filters, before dithering the image to pure black and white.
 
-Each filter is a single letter, with an optional numeric parameter. A filter can be specified twice, in which case it will be applied twice. There are no spaces. As an example, ``--filters g1.8b5scz`` means gamma 1.8, blur 5x5, sharpen, add corners to the frame and reduce it slightly.
+Each filter is a single letter, with an optional numeric parameter. A filter can be specified twice, in which case it will be applied twice. There are no spaces. As an example, ``--filters g1.8b5scz`` means gamma 1.8, blur 5x5, sharpen, add corners to the frame and reduce it slightly (ie: adding a black border aroun).
 
 Specifying a ``--filters`` argument completely replaces the default filters from the current profile, so run ``flimmaker`` without arguments to know what the defaults are, or look at the first lines of the log of ``flimmaker``.
 
 Filter list:
 
-* Blur 'b' (size) : blurs the image by averaging the neighbour pixels. The argument is the size of the filter, a 3x3 grid (default) or a 5x5 grid. No other sizes are supported. As the spatial resolution of the image is used to encode the dithering, bluring the image often doesn't lead to a visible loss of quality and generally enables a better encoding by smoothing out details.
+* Blur 'b' (size) : blurs the image by averaging the neighbour pixels. The argument is the size of the filter, '3' for a 3x3 grid (default) or '5' for a 5x5 grid. No other sizes are supported. As the spatial resolution of the image is used to encode the dithering, bluring the image often doesn't lead to a visible loss of quality and generally enables a better encoding by smoothing out details.
 
 * Sharpen 's' : sharpens the image. It is a good idea to sharpen the image after blurring. This helps to have more defined zones, which, again, helps the encoding.
 
 * Gamma 'g' (value) : applies a gamma transformation to the image. The higher the gamma, the darker the resulting image. Default gamma is 1.6.
 
-* Round Corners 'c' : the round corners filter removes the corners, and produce a lovely period-accurate, rounded-cornered image.
+* Round Corners 'c' : the round corners filter removes the corners, and produce a lovely period-accurate, rounded-cornered image. Please add it at the end of your filters, so we respect the screen corners!
 
 * Zoom smaller 'z' (size) : The image is zoomed out so that there are 'size' black pixels on each side (2*'size' pixels in total horizontally). As a result, the encoding is slightly more efficient. Use several 'z' to get an even smaller image. Default 'size' is 32.
 
@@ -271,6 +276,6 @@ Filter list:
 
 * Quantize 'q' (steps) : Quantize the colors so there are only 17 of them. This can help when encoding images of flat colors to avoid spurious gradient. It is particularly useful when using the ordered dithering, as there are only 17 different dithering patterns. Using a lower number can create interesting effects: for instance, q5 will generate images with only black, dark gray, pure gray, light gray and white colors. q2 will posterize the image into black and white, rendering dithering inoperand (useful for pure 2 colors black and white sources)
 
-* Black 'k' (percent) : Remove the darkest part of the image. Often movies have black background that are not completely black. The dithering algorithm represents this by having a few white pixels in large black areas, which is visually distracting (and eats encoding bandwidth). The black filters collapses the darkest pixels into pure black. The rest of the image color is scaled to the remaining color range. 'percent' should be between 0 and 1. By default the black filter removes the 6.25% darkest pixels.
+* Black 'k' (percent) : Remove the darkest part of the image. Often movies have black background that are not completely black. The dithering algorithm represents this by having a few white pixels in large black areas, which is visually distracting (and eats encoding bandwidth). The black filters collapses the darkest pixels into pure black. The rest of the image color is scaled to the remaining color range. 'percent' should be between 0 and 100. By default the black filter removes the 6.25% darkest pixels.
 
-* White 'w' (percent) : Same as the Black filter, but for white pixels. This is a slightly less frequent issue, as large pure white areas are rarer in movies. 'percent' should be between 0 and 1. By default the white filters removes the 6.25% lightest pixels.
+* White 'w' (percent) : Same as the Black filter, but for white pixels. This is a slightly less frequent issue, as large pure white areas are rarer in movies. 'percent' should be between 0 and 100. By default the white filters removes the 6.25% lightest pixels.
