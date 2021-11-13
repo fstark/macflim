@@ -88,7 +88,7 @@ Compiling is as simple as opening a terminal and typing ``make``. There are some
 
 After compilation, you can generate a sample flim using:
 
-    ./flimmaker https://www.youtube.com/watch?v=dQw4w9WgXcQ --mp4 out.mp4
+    ./flimmaker 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' --mp4 out.mp4
 
 This will download the video and encode it for se30 playback (the default), as 'out.flim'. It will take a couple of minutes. You can then immediately play the ``out.mp4`` file, which is identical to the se30 playback, including a mono output. Enjoy!
 
