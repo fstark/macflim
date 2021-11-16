@@ -163,7 +163,9 @@ void usage( const std::string name )
     std::cerr << "\n  Encoding options:\n";
 
     std::cerr << "    --profile PROFILE           : presents the specific encoding profile, which sets a suitable default for all encoding options\n";
-    std::cerr << "      Defdaul is 'se30'. See below for description of profiles.\n";
+    std::cerr << "      Default is 'se30'. See below for description of profiles.\n";
+
+    std::cerr << "    --silent BOOLEAN            : set to true for silent flims\n";
 
     std::cerr << "    --byterate BYTERATE         : bytes per ticks available for video compression\n";
     std::cerr << "    --fps-ratio BOOLEAN         : ratio of images from the source to drop.\n";
@@ -246,6 +248,7 @@ try
     std::string cache_file = std::tmpnam( nullptr );
     bool generated_cache = true;
     bool downloaded_file = false;
+    bool silent_arg = false;
 
     const std::string cmd_name{ argv[0] };
 
@@ -417,6 +420,12 @@ try
             argv++;
             audio_arg = *argv;
         }
+        else if (!strcmp(*argv,"--silent"))
+        {
+            argc--;
+            argv++;
+            silent_arg = bool_from(*argv);
+        }
         else if (!strcmp(*argv,"--flim"))
         {
             argc--;
@@ -517,6 +526,12 @@ try
             argv++;
             custom_profile.set_error_bidi( bool_from(*argv) );
         }
+        else if (!strcmp(*argv,"--buffer-size"))
+        {
+            argc--;
+            argv++;
+            custom_profile.set_buffer_size( atoi(*argv) );
+        }
         else
         {
             std::cerr << "Unknown argument " << *argv << "\n";
@@ -611,6 +626,7 @@ try
     encoder.set_diff_pattern( diff_pattern );
     encoder.set_change_pattern( change_pattern );
     encoder.set_target_pattern( target_pattern );
+    encoder.set_silent( silent_arg );
 
     // encoder.set_input_single_random();
 

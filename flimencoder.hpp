@@ -194,6 +194,7 @@ public:
         std::ostringstream cmd;
 
         cmd << "--byterate " << byterate_;
+        cmd << " --buffer-size " << buffer_size_;
         cmd << " --fps-ratio " << fps_ratio_;
         cmd << " --group " << (group_?"true":"false");
         cmd << " --bars " << (bars_?"true":"false");
@@ -234,6 +235,8 @@ class flimencoder
 
     size_t cover_begin_;        /// Begin index of cover image
     size_t cover_end_;          /// End index of cover image 
+
+    bool silent_ = false;       /// If true, film has no sound (maybe should be handled at the reader level)
 
     size_t frame_from_image( size_t n ) const
     {
@@ -333,15 +336,12 @@ public:
     void set_diff_pattern( const std::string pattern ) { diff_pattern_ = pattern; }
     void set_change_pattern( const std::string pattern ) { change_pattern_ = pattern; }
     void set_target_pattern( const std::string pattern ) { target_pattern_ = pattern; }
+    void set_silent( bool silent ) { silent_ = silent; }
 
     //  Encode all the blocks
     void make_flim( const std::string flim_pathname, input_reader *reader, const std::vector<std::unique_ptr<output_writer>> &writers )
     {  
         assert( reader );
-/*
-        read_images( from, to, profile_.half_rate() );
-        read_audio( from, images_.size() );
-*/
 
         int i = 0;
         while (auto next = reader->next())
@@ -351,10 +351,11 @@ public:
             i++;
         }
 
-        while (auto next = reader->next_sound())
-        {
-            audio_samples_.push_back( *next );
-        }
+        if (!silent_)
+            while (auto next = reader->next_sound())
+            {
+                audio_samples_.push_back( *next );
+            }
 
         // audio_samples_ = normalize_sound( reader->raw_sound(), images_.size()/fps_*60*370 );
 
@@ -387,9 +388,9 @@ public:
         {
             std::vector<u_int8_t> block_content;
             auto block_ptr = std::back_inserter( block_content );
-            size_t current_block_size = 0;
+//            size_t current_block_size = 0;
 
-            while (current_frame!=std::end(frames) && current_block_size+current_frame->get_size()<profile_.buffer_size())
+            while (current_frame!=std::end(frames) && block_content.size()+current_frame->get_size( silent_ )<profile_.buffer_size())
             {
                 //  logs current image
                 {
@@ -423,16 +424,23 @@ public:
                     img++;
                 }
 
-                write2( block_ptr, current_frame->ticks*370+8 );           //  size of sound + header + size itself
-                write2( block_ptr, 0 );                       //  ffMode
-                write4( block_ptr, 65536 );                   //  rate
-                write( block_ptr, current_frame->audio );
+                if (!silent_)
+                {
+                    write2( block_ptr, current_frame->ticks*370+8 );           //  size of sound + header + size itself
+                    write2( block_ptr, 0 );                       //  ffMode
+                    write4( block_ptr, 65536 );                   //  rate
+                    write( block_ptr, current_frame->audio );
+                }
+                else
+                {
+                    write2( block_ptr, 2 );           //  No sound
+                }
                 write2( block_ptr, current_frame->video.size()+2 );
                 write( block_ptr, current_frame->video );
 
-                current_block_size += current_frame->get_size();
                 current_frame++;
             }
+
             write4( out_movie, block_content.size()+4 /* size */+4 /* 'FLIM' */+2/* frames */ );
             write4( out_movie, 0x464C494D );
             write2( out_movie, current_frame-block_first_frame );
@@ -493,8 +501,10 @@ public:
                         index++;
                         std::clog << "Wrote " << index << " frames\r" << std::flush;
                         sound_frame_t snd;
-                        if (sound<std::end(audio_samples_))
-                            snd = *sound++;
+
+                        if (!silent_)
+                            if (sound<std::end(audio_samples_))
+                                snd = *sound++;
 
                         writer->write_frame( frame.result.as_image(), snd );
                     }
