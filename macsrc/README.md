@@ -1,1 +1,1 @@
-This contains a copy of the source code present in the top-level .dsk for ease of online browsing-diffing
+This contains a copy of the source code present in the top-level .dsk for ease of online browsing-diffing. Does not contain the THINK C project, nor the resource file.

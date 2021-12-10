@@ -21,7 +21,6 @@ protected:
     size_t H_ = 342;
 
     size_t byterate_ = 2000;
-    size_t buffer_size_ = 300000;
     double stability_ = 0.3;
     int fps_ratio_ = 1;
     bool group_ = true;
@@ -33,6 +32,8 @@ protected:
     float error_bleed_ = 1;
     bool error_bidi_ = false;
 
+    bool silent_ = false;
+
     std::vector<flimcompressor::codec_spec> codecs_;
 
 public:
@@ -43,9 +44,6 @@ public:
 
     size_t byterate() const { return byterate_; }
     void set_byterate( size_t byterate ) { byterate_ = byterate; }
-
-    size_t buffer_size() const { return buffer_size_; }
-    void set_buffer_size( size_t buffer_size ) { buffer_size_ = buffer_size; }
 
         //  Technically, we could put the half-rate/fps_ratio mecanism in the reader phase
         //  to avoid reading unecessary images, but it is more generic to put it here
@@ -90,11 +88,53 @@ public:
     const std::vector<flimcompressor::codec_spec> &codecs() const { return codecs_; }
     void set_codecs( const std::vector<flimcompressor::codec_spec> &codecs ) { codecs_ = codecs; }
 
+    bool silent() const { return silent_; }
+    void set_silent( bool silent ) { silent_ = silent; }
+
     static bool profile_named( const std::string name, encoding_profile &result )
     {
         result.set_size( 512, 342 );
-        result.set_buffer_size( 300000 );
 
+        if (name=="xl"s)
+        {
+            result.set_byterate( 580 );
+            result.set_filters( "g1.6bbscz" );
+            result.set_fps_ratio( 4 );
+            result.set_group( true );
+            result.set_stability( 0.5 );
+            result.set_bars( true );
+            result.set_dither( "ordered" );
+            result.set_error_algorithm( "floyd" );
+            result.set_error_bidi( true );
+            result.set_error_bleed( 0.95 );
+            result.codecs_.clear();
+            result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "lines:count=10", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
+            result.set_silent( true );
+            return true;
+        }
+        if (name=="512"s)
+        {
+            result.set_byterate( 480 );
+            result.set_filters( "g1.6bbscz" );
+            result.set_fps_ratio( 4 );
+            result.set_group( false );
+            result.set_stability( 0.5 );
+            result.set_bars( true );
+            result.set_dither( "ordered" );
+            result.set_error_algorithm( "floyd" );
+            result.set_error_bidi( true );
+            result.set_error_bleed( 0.95 );
+            result.codecs_.clear();
+            result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "lines:count=10", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
+            result.set_silent( true );
+            return true;
+        }
         if (name=="plus"s)
         {
             result.set_byterate( 1500 );
@@ -112,6 +152,7 @@ public:
             result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "lines:count=30", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
+            result.set_silent( false );
             return true;
         }
         if (name=="se"s)
@@ -131,6 +172,7 @@ public:
             result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "lines:count=50", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
+            result.set_silent( false );
             return true;
         }
         if (name=="se30"s)
@@ -150,6 +192,7 @@ public:
             result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "lines:count=70", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
+            result.set_silent( false );
             return true;
         }
         if (name=="perfect"s)
@@ -169,6 +212,7 @@ public:
             result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "lines:count=342", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
+            result.set_silent( false );
             return true;
         }
 
@@ -194,7 +238,6 @@ public:
         std::ostringstream cmd;
 
         cmd << "--byterate " << byterate_;
-        cmd << " --buffer-size " << buffer_size_;
         cmd << " --fps-ratio " << fps_ratio_;
         cmd << " --group " << (group_?"true":"false");
         cmd << " --bars " << (bars_?"true":"false");
@@ -210,6 +253,8 @@ public:
 
         for (auto &c:codecs_)
             cmd << " --codec " << c.coder->description();
+
+        cmd << " --silent " << (silent_?"true":"false");
 
         return cmd.str();
     }
@@ -235,8 +280,6 @@ class flimencoder
 
     size_t cover_begin_;        /// Begin index of cover image
     size_t cover_end_;          /// End index of cover image 
-
-    bool silent_ = false;       /// If true, film has no sound (maybe should be handled at the reader level)
 
     size_t frame_from_image( size_t n ) const
     {
@@ -336,9 +379,8 @@ public:
     void set_diff_pattern( const std::string pattern ) { diff_pattern_ = pattern; }
     void set_change_pattern( const std::string pattern ) { change_pattern_ = pattern; }
     void set_target_pattern( const std::string pattern ) { target_pattern_ = pattern; }
-    void set_silent( bool silent ) { silent_ = silent; }
 
-    //  Encode all the blocks
+    //  Encode all the frames
     void make_flim( const std::string flim_pathname, input_reader *reader, const std::vector<std::unique_ptr<output_writer>> &writers )
     {  
         assert( reader );
@@ -351,7 +393,7 @@ public:
             i++;
         }
 
-        if (!silent_)
+        if (!profile_.silent())
             while (auto next = reader->next_sound())
             {
                 audio_samples_.push_back( *next );
@@ -372,10 +414,8 @@ public:
 
         auto frames = fc.get_frames();
 
-        std::vector<uint8_t> movie;
+        std::vector<uint8_t> movie; //  #### Should be 'frames'
         auto out_movie = std::back_inserter( movie );
-
-        auto block_first_frame = std::begin(frames);
 
         framebuffer previous_frame{ profile_.width(), profile_.height() };
         previous_frame.fill( 0xff );
@@ -383,82 +423,89 @@ public:
         if (sDebug)
             std::clog << "GENERATING ENCODED MOVIE AND PGM FILES\n";
 
-        auto current_frame = block_first_frame;
-        while(current_frame!=std::end(frames))
+        std::vector<uint8_t> toc;
+        auto out_toc = std::back_inserter( toc );
+
+        auto current_frame = std::begin(frames);
+        while (current_frame!=std::end(frames))
         {
-            std::vector<u_int8_t> block_content;
-            auto block_ptr = std::back_inserter( block_content );
-//            size_t current_block_size = 0;
-
-            while (current_frame!=std::end(frames) && block_content.size()+current_frame->get_size( silent_ )<profile_.buffer_size())
+            //  logs current image
             {
-                //  logs current image
+                static int img = 1;
+                char buffer[1024];
+                if (out_pattern_!="")
                 {
-                    static int img = 1;
-                    char buffer[1024];
-                    if (out_pattern_!="")
-                    {
-                        sprintf( buffer, out_pattern_.c_str(), img );
-                        auto logimg = current_frame->result.as_image();
-                        write_image( buffer, logimg );
-                    }
-                    if (diff_pattern_!="")
-                    {
-                        sprintf( buffer, diff_pattern_.c_str(), img );
-                        auto logimg = (current_frame->result^current_frame->source).inverted().as_image();
-                        write_image( buffer, logimg );
-                    }
-                    if (change_pattern_!="")
-                    {
-                        sprintf( buffer, change_pattern_.c_str(), img );
-                        auto logimg = (current_frame->result^previous_frame).inverted().as_image();
-                        write_image( buffer, logimg );
-                        previous_frame = current_frame->result;
-                    }
-                    if (target_pattern_!="")
-                    {
-                        sprintf( buffer, target_pattern_.c_str(), img );
-                        auto logimg = current_frame->source.as_image();
-                        write_image( buffer, logimg );
-                    }
-                    img++;
+                    sprintf( buffer, out_pattern_.c_str(), img );
+                    auto logimg = current_frame->result.as_image();
+                    write_image( buffer, logimg );
                 }
-
-                if (!silent_)
+                if (diff_pattern_!="")
                 {
-                    write2( block_ptr, current_frame->ticks*370+8 );           //  size of sound + header + size itself
-                    write2( block_ptr, 0 );                       //  ffMode
-                    write4( block_ptr, 65536 );                   //  rate
-                    write( block_ptr, current_frame->audio );
+                    sprintf( buffer, diff_pattern_.c_str(), img );
+                    auto logimg = (current_frame->result^current_frame->source).inverted().as_image();
+                    write_image( buffer, logimg );
                 }
-                else
+                if (change_pattern_!="")
                 {
-                    write2( block_ptr, 2 );           //  No sound
+                    sprintf( buffer, change_pattern_.c_str(), img );
+                    auto logimg = (current_frame->result^previous_frame).inverted().as_image();
+                    write_image( buffer, logimg );
+                    previous_frame = current_frame->result;
                 }
-                write2( block_ptr, current_frame->video.size()+2 );
-                write( block_ptr, current_frame->video );
-
-                current_frame++;
+                if (target_pattern_!="")
+                {
+                    sprintf( buffer, target_pattern_.c_str(), img );
+                    auto logimg = current_frame->source.as_image();
+                    write_image( buffer, logimg );
+                }
+                img++;
             }
 
-            write4( out_movie, block_content.size()+4 /* size */+4 /* 'FLIM' */+2/* frames */ );
-            write4( out_movie, 0x464C494D );
-            write2( out_movie, current_frame-block_first_frame );
+            size_t frame_start = movie.size();
 
-            write( out_movie, block_content );
-            block_first_frame = current_frame;
+            write2( out_movie, current_frame->ticks );
+
+            if (!profile_.silent())
+            {
+                write2( out_movie, current_frame->ticks*370+8 );           //  size of sound + header + size itself
+                write2( out_movie, 0 );                       //  ffMode
+                write4( out_movie, 65536 );                   //  rate
+                write( out_movie, current_frame->audio );
+            }
+            else
+            {
+                write2( out_movie, 2 );           //  No sound
+            }
+            write2( out_movie, current_frame->video.size()+2 );
+            write( out_movie, current_frame->video );
+
+            //  TOC entry for current frame
+            write2( out_toc, movie.size()-frame_start );
+
+            current_frame++;
         }
+
+        std::vector<uint8_t> header;
+        auto out_header = std::back_inserter( header );
+
+        const int HEADER_SIZE = 64;
+
+        write2( out_header, 0x1 );                       //  Version
+        write4( out_header, movie.size()+HEADER_SIZE );  //  TOC offset
+        write4( out_header, frames.size() );             //  Frame count
+
+        write2( out_header, 512/8 );                     //  rowbytes
+        write2( out_header, 342 );                       //  vlines
+
+        for (int i=14;i!=HEADER_SIZE;i++)
+            write1( out_header, 0x00 );
+
+        assert( header.size()==HEADER_SIZE );
 
         if (sDebug)
             std::clog << "WRITING FLIM FILE\n";
 
         FILE *movie_file = fopen( flim_pathname.c_str(), "wb" );
-
-            //  Adds end mark
-        movie.push_back( 0x00 );
-        movie.push_back( 0x00 );
-        movie.push_back( 0x00 );
-        movie.push_back( 0x00 );
 
         char buffer[1024];
         std::fill( std::begin(buffer), std::end(buffer), 0 );
@@ -469,9 +516,19 @@ public:
         long fletcher = 0;
         if ((movie.size()%2)==1)
             movie.push_back( 0x00 );
+        for (int i=0;i!=header.size();i+=2)
+        {
+            fletcher += ((int)(header[i]))*256+header[i+1];
+            fletcher %= 65535;
+        }
         for (int i=0;i!=movie.size();i+=2)
         {
             fletcher += ((int)(movie[i]))*256+movie[i+1];
+            fletcher %= 65535;
+        }
+        for (int i=0;i!=toc.size();i+=2)
+        {
+            fletcher += ((int)(toc[i]))*256+toc[i+1];
             fletcher %= 65535;
         }
         uint8_t b = fletcher/256;
@@ -479,7 +536,10 @@ public:
         b = fletcher%256;
         fwrite( &b, 1, 1, movie_file );
 
+        fwrite( header.data(), header.size(), 1, movie_file );
         fwrite( movie.data(), movie.size(), 1, movie_file );
+        fwrite( toc.data(), toc.size(), 1, movie_file );
+
         fclose( movie_file );
 
 
@@ -502,7 +562,7 @@ public:
                         std::clog << "Wrote " << index << " frames\r" << std::flush;
                         sound_frame_t snd;
 
-                        if (!silent_)
+                        if (!profile_.silent())
                             if (sound<std::end(audio_samples_))
                                 snd = *sound++;
 

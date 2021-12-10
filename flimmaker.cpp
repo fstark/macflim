@@ -191,7 +191,6 @@ void usage( const std::string name )
     std::cerr << "    --watermark STRING          : adds the string to the upper left corner of the generated flim for identification purposes.\n";
     std::cerr << "      use 'auto' to use the encoding parameters as watermark\n";
 
-    std::cerr << "    --buffer-size SIZE          : buffer playback size\n";
     std::cerr << "    --debug BOOLEAN             : enables various debug options\n";
     
         // else if (!strcmp(*argv,"--cover-from"))
@@ -203,7 +202,7 @@ void usage( const std::string name )
         // else if (!strcmp(*argv,"--comment"))
 
     std::cerr << "\nList of profiles names for the --profile option (default 'se30'):\n";
-    for (auto n:{ "plus", "se", "se30", "perfect" })
+    for (auto n:{ "xl", "512", "plus", "se", "se30", "perfect" })
     {
         encoding_profile p;
         encoding_profile::profile_named( n, p );
@@ -248,7 +247,6 @@ try
     std::string cache_file = std::tmpnam( nullptr );
     bool generated_cache = true;
     bool downloaded_file = false;
-    bool silent_arg = false;
 
     const std::string cmd_name{ argv[0] };
 
@@ -353,12 +351,6 @@ try
             argv++;
             fps = atof(*argv);
         }
-        else if (!strcmp(*argv,"--buffer-size"))
-        {
-            argc--;
-            argv++;
-            custom_profile.set_buffer_size( atoi( *argv ) );
-        }
         else if (!strcmp(*argv,"--fps-ratio"))
         {
             argc--;
@@ -419,12 +411,6 @@ try
             argc--;
             argv++;
             audio_arg = *argv;
-        }
-        else if (!strcmp(*argv,"--silent"))
-        {
-            argc--;
-            argv++;
-            silent_arg = bool_from(*argv);
         }
         else if (!strcmp(*argv,"--flim"))
         {
@@ -526,11 +512,11 @@ try
             argv++;
             custom_profile.set_error_bidi( bool_from(*argv) );
         }
-        else if (!strcmp(*argv,"--buffer-size"))
+        else if (!strcmp(*argv,"--silent"))
         {
             argc--;
             argv++;
-            custom_profile.set_buffer_size( atoi(*argv) );
+            custom_profile.set_silent( bool_from(*argv) );
         }
         else
         {
@@ -626,7 +612,6 @@ try
     encoder.set_diff_pattern( diff_pattern );
     encoder.set_change_pattern( change_pattern );
     encoder.set_target_pattern( target_pattern );
-    encoder.set_silent( silent_arg );
 
     // encoder.set_input_single_random();
 
