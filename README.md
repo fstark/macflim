@@ -7,16 +7,18 @@ MacFlim is a video encoder and player for black and white vintage Macintoshes, n
 _The iPod introduction should have waited for MacFlim to be available_
 
 
-MacFlim brings movie playing abilities to:
+MacFlim brings movie playing abilities to most of the Macinsoth famility, namely:
 
-* Mac SE/30
-* Mac SE
+* Macintosh XL
+* Macintosh 512K
 * Mac Plus
+* Mac SE
+* Mac SE/30
 * Macintosh Portable (use Mac SE files)
 
 on their beautiful internal back and white 512x342 display (or in a part of it for the Portable).
 
-Other black and white macs should work, but using much slower display routines.
+Note: the Macintosh 128K is not yet supported.
 
 ## What is in the repository?
 
@@ -188,6 +190,10 @@ When specifiying a set of pgm files as input, the audio must be provided using a
     sox -V2 audio.wav -r 22200 -e unsigned-integer -b 8 audio.raw remix 1 norm
 
 
+### --silent **boolean**
+
+If true, the generated flim will not contain any audio, and will be smaller by 22KB/s. This is useful for encoding silent movies, or if you don't need sound and want to get the best image possible for a background display.
+
 ## Moar options!
 
 Digging into the dirty details, here are the options that control the encoding itself (ie: the options driven by the profile).
@@ -198,7 +204,7 @@ You need to specify those options *after* the ``--profile``
 
 This is an advanced section for fine-tuning the encodings. You are not expected to understand it, and the details may change without warning.
 
-### --byterate byterate
+### --byterate **byterate**
 
 The byterate is the number of bytes per ticks (a tick is 1/60th of a second) that are available to encode the video stream. 370 additional bytes are used for the sound, plus a handful of bytes overhead. When encoding the changes between two frames, flimmaker will use up to byterate bytes (not strictly true, but a good enough approximation of the process), and, if there are not enough bandwidth, will let part the previous frame leak into the next one.
 
@@ -207,6 +213,8 @@ Fundamentally the byterate is what makes a flim playable on a specific machines.
 The Mac Plus is able to read and decode around 1500 bytes per tick, the Mac SE around 2500 and the Mac SE/30 6000.
 
 You can play with this parameter if your mac has a faster/slower drive (example: SE/30 from ram disk). If the byterate is too high, you will suffer sound and video skips at playback, as your Mac will not able to fetch and decompress the data fast enough.
+
+NOTE: as of today, the byterate is only the *video* byterate. 376 extra bytes are added for audio. This WILL PROBABLY change in the future.
 
 ### --fps-ratio **integer**
 

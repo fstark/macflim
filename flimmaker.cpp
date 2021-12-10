@@ -163,7 +163,9 @@ void usage( const std::string name )
     std::cerr << "\n  Encoding options:\n";
 
     std::cerr << "    --profile PROFILE           : presents the specific encoding profile, which sets a suitable default for all encoding options\n";
-    std::cerr << "      Defdaul is 'se30'. See below for description of profiles.\n";
+    std::cerr << "      Default is 'se30'. See below for description of profiles.\n";
+
+    std::cerr << "    --silent BOOLEAN            : set to true for silent flims\n";
 
     std::cerr << "    --byterate BYTERATE         : bytes per ticks available for video compression\n";
     std::cerr << "    --fps-ratio BOOLEAN         : ratio of images from the source to drop.\n";
@@ -189,7 +191,6 @@ void usage( const std::string name )
     std::cerr << "    --watermark STRING          : adds the string to the upper left corner of the generated flim for identification purposes.\n";
     std::cerr << "      use 'auto' to use the encoding parameters as watermark\n";
 
-    std::cerr << "    --buffer-size SIZE          : buffer playback size\n";
     std::cerr << "    --debug BOOLEAN             : enables various debug options\n";
     
         // else if (!strcmp(*argv,"--cover-from"))
@@ -201,7 +202,7 @@ void usage( const std::string name )
         // else if (!strcmp(*argv,"--comment"))
 
     std::cerr << "\nList of profiles names for the --profile option (default 'se30'):\n";
-    for (auto n:{ "plus", "se", "se30", "perfect" })
+    for (auto n:{ "xl", "512", "plus", "se", "se30", "perfect" })
     {
         encoding_profile p;
         encoding_profile::profile_named( n, p );
@@ -349,12 +350,6 @@ try
             argc--;
             argv++;
             fps = atof(*argv);
-        }
-        else if (!strcmp(*argv,"--buffer-size"))
-        {
-            argc--;
-            argv++;
-            custom_profile.set_buffer_size( atoi( *argv ) );
         }
         else if (!strcmp(*argv,"--fps-ratio"))
         {
@@ -516,6 +511,12 @@ try
             argc--;
             argv++;
             custom_profile.set_error_bidi( bool_from(*argv) );
+        }
+        else if (!strcmp(*argv,"--silent"))
+        {
+            argc--;
+            argv++;
+            custom_profile.set_silent( bool_from(*argv) );
         }
         else
         {

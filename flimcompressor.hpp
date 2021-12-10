@@ -37,7 +37,8 @@ public:
 
         framebuffer result;
 
-        size_t get_size() { return audio.size()+video.size()*4; }
+        //  #### passing silent is inelegant: we should not generate audio data when silenced
+        size_t get_size( bool silent ) { return video.size()+silent*audio.size(); }
     };
 
 private:
@@ -54,6 +55,8 @@ public:
     flimcompressor( size_t W, size_t H, const std::vector<image> &images, const std::vector<sound_frame_t> &audio, double fps ) : W_{W}, H_{H}, images_{images}, audio_{audio}, fps_{fps} {}
 
     const std::vector<frame> &get_frames() const { return frames_; }
+
+    bool progress_ = true;
 
     struct codec_spec
     {
@@ -312,7 +315,8 @@ public:
                 f.result = current_fb;
 
                 frames_.push_back( f );
-                std::clog << "Encoded " << frames_.size() << " output frames\r" << std::flush;
+                if (progress_)
+                    std::clog << "Encoded " << frames_.size() << " output frames\r" << std::flush;
             }
 
             auto q = frames_.back().result.proximity( fb );
