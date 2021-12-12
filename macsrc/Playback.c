@@ -9,6 +9,8 @@
 #include "Preferences.h"
 #include "Movie.h"
 
+struct Playback gPlayback;
+
 //	-------------------------------------------------------------------
 //	BLOCK READING FUNCTIONS
 //	-------------------------------------------------------------------
@@ -269,18 +271,23 @@ begin:
 
 		//	Open flim (MFS fashion)
 //	err = FSOpen( fName, vRefNum, &fRefNum );
-#if 1	//	FReD #### LISA, you are tearing me apart...
+//	FReD #### LISA, you are tearing me apart...
 	{
 		ParamBlockRec pb;
 		pb.ioParam.ioCompletion = NULL;
 		pb.ioParam.ioNamePtr = fName;
 		pb.ioParam.ioVRefNum = vRefNum;
+		pb.ioParam.ioVersNum = 0;
 		pb.ioParam.ioPermssn = fsRdPerm;
 		pb.ioParam.ioMisc = NULL;
 		err = PBOpen( &pb, FALSE );
 		fRefNum = pb.ioParam.ioRefNum;
 	}
+
+#ifdef VERBOSE
+	printf( "%#s in %d\n", fName, vRefNum );
 #endif
+	CheckErr( err, "Open" );
 
 	if (err!=noErr)
 	{
@@ -327,16 +334,18 @@ begin:
 	exec_log();
 
 
-	if (IsPlaybackVBL())
+	if (PreferenceGetIsPlaybackVBL())
 	{
-		gPlaybackBlock->status = blockPlaying;
-		gState = playingState;
-		InstallPlaybackHandler();
+		PlaybackVBLInit( &gPlayback );
 	}
 	else
 	{
-		FlimSoundStart();
+		PlaybackSoundInit( &gPlayback );
 	}
+
+	gPlayback.init();
+	gPlaybackBlock->status = blockPlaying;
+	gState = playingState;
 
 	tick = TickCount();
 
@@ -384,13 +393,15 @@ end:
 
 	gState = stopRequestedState;
 
-	while (gState==stopRequestedState)
+		//	Wait for the VBL or Sound Interrupt to acknowledge the end
+	while (gState!=stoppedState)
 		;
 
-	if (IsPlaybackVBL())
-		RemovePlaybackHandler();
-	else
-		FlimSoundStop();
+#ifdef VERBOSE
+	printf( "Is VLB %s\n", PreferenceGetIsPlaybackVBL()?"YES":"NO" );
+#endif
+
+	gPlayback.dispos();
 
 	tick = TickCount()-tick;
 
@@ -398,10 +409,6 @@ end:
 	MovieDisposBlock( gBlock2 );
 
 #ifdef DISPLAY_STATS
-	while (!Button())
-		;
-	while (Button())
-		;
 
 	printf( "Stats:\n" );
 	printf( "# of re-entries  (code was in callback when callback completed) : %ld\n", gReentryCount );
@@ -418,7 +425,8 @@ end:
 #endif
 
 close:
-	FSClose( fRefNum );
+	err = FSClose( fRefNum );
+	CheckErr( err, "FSClose" );
 
 	if (theResult==kRestart)
 		goto begin;

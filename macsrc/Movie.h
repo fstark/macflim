@@ -36,14 +36,14 @@
 struct MovieRec;
 typedef struct MovieRec* MoviePtr;
 
-MoviePtr MovieOpen( short fRefNum, long maxBlockSize );
+MoviePtr MovieOpen( short fRefNum, Size maxBlockSize );
 void MovieDispos( MoviePtr movie );
 void MovieSeekStart( MoviePtr movie );
-int MovieGetBlockCount( MoviePtr movie );
-int MovieGetMaxBlockSize( MoviePtr movie );
+Size MovieGetBlockCount( MoviePtr movie );
+Size MovieGetMaxBlockSize( MoviePtr movie );
 int MovieGetFrameCountOfBlock( MoviePtr movie, int index );
 int MovieGetBlockFrameCount( MoviePtr movie, int index );
-int MovieGetBlockSize( MoviePtr movie, int index );
+Size MovieGetBlockSize( MoviePtr movie, int index );
 int MovieGetFileRefNum( MoviePtr movie );
 
 #endif

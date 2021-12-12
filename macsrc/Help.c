@@ -9,6 +9,7 @@
 #include "Playback.h"
 #include "Screen.h"
 #include "Keyboard.h"
+#include "Preferences.h"
 
 void DisplayPreferences( void );
 
@@ -25,20 +26,18 @@ void DisplayHelp( void )
 	DialogPtr theDialog1;
 	DialogPtr theDialog2;
 
-	gState = pausedState;
+	gState = pauseRequestedState;
 
-	ticks = Ticks;
-
+		//	Load the dialogs during the last bits of on-screen display
 	theDialog1 = GetNewDialog( 128, NULL, (WindowPtr)-1 );
 	theDialog2 = GetNewDialog( 134, NULL, (WindowPtr)-1 );
 
+		//	We wait until display stabilize
+	while (gState!=pauseRequestedState)
+		;
+
 	if (!theDialog1 || !theDialog2)
 		goto done ;
-
-		//	We wait until display stabilize
-		//	(#### we should have an "acknowledge pause" status from interrupt callback
-	while (Ticks<ticks+5)
-		;
 
 	SaveScreen( &savePtr );
 
@@ -55,7 +54,7 @@ void DisplayHelp( void )
 	{
 		CheckKeys();
 		if (sPreferences)
-			DisplayPreferences();
+			PreferenceDialog();
 		if (sHelp || sEscape)
 			break;
 		if (ticks<Ticks)
@@ -86,16 +85,3 @@ done:
 	gState = state;
 }
 
-//	-------------------------------------------------------------------
-
-void DisplayPreferences( void )
-{
-	DialogPtr preferences = GetNewDialog( 135, NULL, (WindowPtr)-1 );
-	short itemHit;
-
-	ShowWindow( preferences );
-	DrawDialog( preferences );
-	ShowCursor();
-	ModalDialog( NULL, &itemHit );
-	HideCursor();
-}

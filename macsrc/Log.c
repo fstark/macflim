@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "Util.h"
+
 //	-------------------------------------------------------------------
 //	Generic assertion => break into debugger
 //	-------------------------------------------------------------------
@@ -11,9 +13,10 @@ void assert( int v, const char *msg )
 {
 	if (!v)
 	{
-		char buffer[1024];
-		strcpy( buffer+1, msg );
+		Str255 buffer;
+		strcpy( (char *)(buffer+1), msg );
 		buffer[0] = strlen( msg );
+		Abort( buffer );
 		DebugStr( buffer );
 	}
 }

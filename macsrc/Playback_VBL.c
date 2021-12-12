@@ -38,11 +38,6 @@ static pascal void DoFrameSilent()
         move.l A5,-(SP)
         move.l -4(A0),A5
     }
-    
-		//	We want to be called next frame
-		//	But don't know when yet
-	taskElem.gTask.vblCount = 1;
-
 
 	if (gState==stopRequestedState)
 	{
@@ -51,6 +46,19 @@ static pascal void DoFrameSilent()
 		gState = stoppedState;
 		goto end;
 	}
+
+    
+		//	We want to be called next frame
+		//	But don't know when yet
+	taskElem.gTask.vblCount = 1;
+
+	if (gState==pauseRequestedState)
+	{
+		gState = pausedState;
+	}
+
+	if (gState==pausedState)
+		goto end;
 
 #ifdef DEBUG_VBL
 	ScreenLogHome( gScreen );
@@ -147,7 +155,7 @@ end:
 //	Installs VBL Handler
 //	-------------------------------------------------------------------
 
-void InstallPlaybackHandler( void )
+static void Init( void )
 {
     OSErr theError;
     taskElem.gTask.qType = vType;
@@ -155,6 +163,8 @@ void InstallPlaybackHandler( void )
     taskElem.gTask.vblCount = 1;
     taskElem.gTask.vblPhase = 0;
     taskElem.myA5 = (long)CurrentA5;
+
+	gState = pausedState;
 
     theError = VInstall( (QElemPtr)&taskElem.gTask );
     assert( theError==noErr, "Failed to install VBL task" );
@@ -164,9 +174,20 @@ void InstallPlaybackHandler( void )
 //	Removes VBL Handler
 //	-------------------------------------------------------------------
 
-void RemovePlaybackHandler( void )
+static void None( void )
 {
+	//	The task was removed by the gStoppedState (keeping vblCount to 0)
+	//	The remove VBL should be used if the task is still pending
+/*
     OSErr theError;
     theError = VRemove( (QElemPtr)&taskElem.gTask );
     assert( theError==noErr, "Failed to remove VBL task" );
+*/
+}
+
+void PlaybackVBLInit( struct Playback *playback )
+{
+	playback->init = Init;
+	playback->restart = Init;
+	playback->dispos = None;
 }

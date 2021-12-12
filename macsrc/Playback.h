@@ -92,6 +92,7 @@ enum State
 	playingState = 0,
 	stopRequestedState,
 	stoppedState,
+	pauseRequestedState,
 	pausedState
 };
 
@@ -103,13 +104,13 @@ extern long gSpinCount;
 
 
 //	#### playbackvbl (should not be visible)
-void InstallPlaybackHandler( void );
-void RemovePlaybackHandler( void );
+//void InstallPlaybackHandler( void );
+//void RemovePlaybackHandler( void );
 
 ePlayResult PlayFlimFile( Str255 fName, short vRefNum );
 
-void FlimSoundStop( void );
-void FlimSoundStart( void );
+//void FlimSoundStop( void );
+//void FlimSoundStart( void );
 
 void FlimSyncPlay( short fRefNum );
 
@@ -117,3 +118,25 @@ BlockPtr MovieAllocateBlock( MoviePtr movie );
 void MovieDisposBlock( BlockPtr blk );
 void MovieDispos( MoviePtr movie );
 void MovieReadBlock( MoviePtr movie, int index, BlockPtr blk );
+
+typedef void (*PlaybackControlFunc)( void );
+
+struct Playback
+{
+	//	Install the interrupt functions and start playback in paused state
+	PlaybackControlFunc init;
+
+	//	Restarts playback in paused state
+	PlaybackControlFunc restart;
+
+	//	Clean up a stopped playback
+	PlaybackControlFunc dispos;
+};
+
+void PlaybackVBLInit( struct Playback *playback );
+void PlaybackSoundInit( struct Playback *playback );
+
+extern struct Playback gPlayback;
+
+
+	

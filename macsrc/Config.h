@@ -9,8 +9,6 @@
 #define noDISPLAY_STATS		//	Displays playback stats at the end
 #define noFORCE_MINIMAL		//	Forces the machine to be the minimal version for testing
 
-#define PREHFS				//	If true, uses pre-HFS system calls
-
 #define MOVIE_BUFFER_SIZE			30000
 
 //	-------------------------------------------------------------------

@@ -2,6 +2,7 @@
 
 #include "Util.h"
 #include "Log.h"
+#include <stdio.h>
 
 
 //	-------------------------------------------------------------------
@@ -23,7 +24,7 @@
 struct AccessItem
 {
 	short frameCount;	//	Number of frames in this block
-	long blockSize;		//	Exact size of the block in bytes
+	Size blockSize;		//	Exact size of the block in bytes
 };
 
 //	-------------------------------------------------------------------
@@ -33,12 +34,12 @@ struct AccessItem
 struct MovieRec
 {
 	short fRefNum;
-	long maxBlockSize;
+	Size maxBlockSize;
 
 	short fletcher16;
 
 	short version;
-	long tocOffset;
+	Size tocOffset;
 	long frameCount;
 	char dummy[64-2-4-4];	//	64 bytes are reserved for header/future use
 
@@ -49,13 +50,13 @@ struct MovieRec
 
 //	-------------------------------------------------------------------
 
-#define MAX_ACCESS_ENTRIES	512	//	Internal limit that should be lifted
+#define MAX_ACCESS_ENTRIES	8192L	//	Internal limit that should be lifted
 
 //	-------------------------------------------------------------------
 
-MoviePtr MovieOpen( short fRefNum, long maxBlockSize )
+MoviePtr MovieOpen( short fRefNum, Size maxBlockSize )
 {
-	long read_size;
+	Size read_size;
 	MoviePtr movie = (MoviePtr)NewPtrNoFail( sizeof( struct MovieRec ) );
 
 	movie->fRefNum = fRefNum;
@@ -78,8 +79,8 @@ MoviePtr MovieOpen( short fRefNum, long maxBlockSize )
 	{
 		short *toc;
 		int index;
-		long maxBlockSize = 0;
-		long currentSize;
+		Size maxBlockSize = 0;
+		Size currentSize;
 		long frameCount;
 		short blockIndex = 0;
 
@@ -100,9 +101,13 @@ MoviePtr MovieOpen( short fRefNum, long maxBlockSize )
 			currentSize += toc[index];
 
 			if (maxBlockSize<currentSize)
+			{
 				maxBlockSize = currentSize;
+#ifdef VERBOSE
+				printf( "MAX BLOCK SIZE %ld\n", maxBlockSize );
+#endif
+			}
 
-			assert( blockIndex<=MAX_ACCESS_ENTRIES, "Toc too large, or buffer too small" );
 			movie->accessTable[blockIndex].frameCount = frameCount;
 			movie->accessTable[blockIndex].blockSize = currentSize;
 			movie->blockCount = blockIndex+1;
@@ -112,6 +117,8 @@ MoviePtr MovieOpen( short fRefNum, long maxBlockSize )
 				frameCount = 0;
 				currentSize = 0;
 				blockIndex++;
+				if (blockIndex==MAX_ACCESS_ENTRIES)
+					Abort( "\pNot enough access entries to load TOC" );
 			}
 		}
 		
@@ -119,6 +126,9 @@ MoviePtr MovieOpen( short fRefNum, long maxBlockSize )
 
 		DisposPtr( (Ptr)toc );
 	}
+
+	//	Give back the extra memory
+	SetPtrSize( movie->accessTable, movie->blockCount*sizeof(struct AccessItem) );
 
 	MovieSeekStart( movie );
 
@@ -143,14 +153,14 @@ void MovieSeekStart( MoviePtr movie )
 
 //	-------------------------------------------------------------------
 
-int MovieGetBlockCount( MoviePtr movie )
+Size MovieGetBlockCount( MoviePtr movie )
 {
 	return movie->blockCount;
 }
 
 //	-------------------------------------------------------------------
 
-int MovieGetMaxBlockSize( MoviePtr movie )
+Size MovieGetMaxBlockSize( MoviePtr movie )
 {
 	return movie->maxBlockSize;
 }
@@ -164,7 +174,7 @@ int MovieGetBlockFrameCount( MoviePtr movie, int index )
 
 //	-------------------------------------------------------------------
 
-int MovieGetBlockSize( MoviePtr movie, int index )
+Size MovieGetBlockSize( MoviePtr movie, int index )
 {
 	return movie->accessTable[index].blockSize;
 }

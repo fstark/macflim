@@ -51,7 +51,8 @@ long gSpinCount = 0;
 //	Callback to play a frame of sound and display a frame of video
 //	-------------------------------------------------------------------
 
-static pascal void DoFrame()
+pascal void DoFrame( void );
+pascal void DoFrame()
 {
 	OSErr err;
 
@@ -67,6 +68,11 @@ static pascal void DoFrame()
 	dlog_int( gPlaybackBlock->frames_left );
 	dlog_str( " " );
 #endif
+
+	if (gState==pauseRequestedState)
+	{
+		gState=pausedState;
+	}
 
 	if (gState==pausedState)
 	{
@@ -179,7 +185,7 @@ end:
 //	Starts sound
 //	-------------------------------------------------------------------
 
-void FlimSoundStart( void )
+static void Init( void )
 {
 	long i;
 	int n = 0;
@@ -193,9 +199,9 @@ void FlimSoundStart( void )
 	for (i=0;i!=370*12;i++)
 		silence->waveBytes[i] = 128;
 
-	gPlaybackBlock->status = blockPlaying;
+//	gPlaybackBlock->status = blockPlaying;	//	unsure
 
-	gState = playingState;
+	gState = pausedState;
 
 	DoFrame();
 }
@@ -204,13 +210,37 @@ void FlimSoundStart( void )
 //	Stops the flim
 //	-------------------------------------------------------------------
 
-void FlimSoundStop( void )
+static void Restart( void )
+{
+	gState = pausedState;
+	DoFrame();
+}
+
+//	-------------------------------------------------------------------
+//	Stops the flim
+//	-------------------------------------------------------------------
+
+static void Dispos( void )
 {
 //	Does not work. Unsure why
 //	KillIO(-4);  /* stops all pending StartSounds, see Sound Manager in IM2 */
 
-	assert( silence!=NULL, "Silence unallocated" );
+	assert( silence!=NULL, "Silence unallocated1" );
 	DisposPtr( (Ptr)silence );
 	silence = NULL;
 }
 
+
+/*void PlaybackStop()
+{
+	gState = stopRequestedState;
+	while (gState!=stoppedState)
+		;
+}*/
+
+void PlaybackSoundInit( struct Playback *playback )
+{
+	playback->init = Init;
+	playback->restart = Restart;
+	playback->dispos = Dispos;
+}
