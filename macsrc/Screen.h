@@ -4,17 +4,15 @@ void SaveScreen( Ptr *ptr );
 void RestoreScreen( Ptr *ptr );
 
 
+#include "Render.h"
 
-
-
-typedef void (*DisplayProc)( char *dest, char *source, int rowBytes );	//	#### int => size_t
 
 
 //	-------------------------------------------------------------------
 //	A "Screen" suitable for playback
 //	-------------------------------------------------------------------
 
-#define kCodecCount 6	//	Maximum of 6 codecs
+#define kCodecCount 5	//	Null, z16, z32, invert, copy
 
 struct ScreenRecord
 {

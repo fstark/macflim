@@ -35,6 +35,7 @@
 #include "Log.h"
 #include "Util.h"
 #include "Preferences.h"
+#include "Render.h"
 
 
 //	-------------------------------------------------------------------
@@ -523,6 +524,7 @@ int main()
 	InitUtilities();
 	CheckMachine();
 	InitPreference();
+	CodecBuildRegistry();
 
 #ifndef PREHFS
 	MaxApplZone();
