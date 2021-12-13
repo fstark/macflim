@@ -496,8 +496,9 @@ public:
 
         write2( out_header, 512/8 );                     //  rowbytes
         write2( out_header, 342 );                       //  vlines
+        write1( out_header, profile_.silent() );         //  1 = silent
 
-        for (int i=14;i!=HEADER_SIZE;i++)
+        for (int i=15;i!=HEADER_SIZE;i++)
             write1( out_header, 0x00 );
 
         assert( header.size()==HEADER_SIZE );

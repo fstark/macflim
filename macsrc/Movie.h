@@ -45,5 +45,6 @@ int MovieGetFrameCountOfBlock( MoviePtr movie, int index );
 int MovieGetBlockFrameCount( MoviePtr movie, int index );
 Size MovieGetBlockSize( MoviePtr movie, int index );
 int MovieGetFileRefNum( MoviePtr movie );
+Boolean MovieGetSilent( MoviePtr movie );
 
 #endif

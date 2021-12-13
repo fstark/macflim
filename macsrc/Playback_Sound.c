@@ -69,6 +69,9 @@ pascal void DoFrame()
 	dlog_str( " " );
 #endif
 
+	ScreenLogHome( gScreen );
+	ScreenLog( gScreen, "SND" );
+
 	if (gState==pauseRequestedState)
 	{
 		gState=pausedState;

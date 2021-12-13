@@ -41,7 +41,10 @@ struct MovieRec
 	short version;
 	Size tocOffset;
 	long frameCount;
-	char dummy[64-2-4-4];	//	64 bytes are reserved for header/future use
+	short rowBytes;	//	unused
+	short vLines;	//	unused
+	Boolean silent;
+	char dummy[64-2-4-4-2-2-1];	//	64 bytes are reserved for header/future use
 
 	short blockCount;
 	struct AccessItem *accessTable;
@@ -185,5 +188,14 @@ int MovieGetFileRefNum( MoviePtr movie )
 {
 	return movie->fRefNum;
 }
+
+//	-------------------------------------------------------------------
+
+Boolean MovieGetSilent( MoviePtr movie )
+{
+	return movie->silent;
+}
+
+
 
 	

@@ -43,6 +43,8 @@ void FlimSyncPlay( short fRefNum )
 		
 		while (blk->frames_left>0)
 		{
+			ScreenLogHome( gScreen );
+			ScreenLog( gScreen, "DBG" );
 			ScreenUncompressFrame( gScreen, (char *)blk->video->data );
 			blk->sound = NextDataPtrS( blk->video );
 			blk->video = NextDataPtrV( blk->sound );

@@ -39,6 +39,9 @@ static pascal void DoFrameSilent()
         move.l -4(A0),A5
     }
 
+	ScreenLogHome( gScreen );
+	ScreenLog( gScreen, "VBL" );
+
 	if (gState==stopRequestedState)
 	{
 //	ScreenLogHome( gScreen );

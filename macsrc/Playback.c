@@ -334,7 +334,7 @@ begin:
 	exec_log();
 
 
-	if (PreferenceGetIsPlaybackVBL())
+	if (PreferenceGetIsPlaybackVBL() || MovieGetSilent( movie ))
 	{
 		PlaybackVBLInit( &gPlayback );
 	}
