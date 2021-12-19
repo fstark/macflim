@@ -1,37 +1,26 @@
-#ifndef RENDER_INCLUDED__
-#define RENDER_INCLUDED__
+#ifndef MACHINE_INCLUDED__
+#define MACHINE_INCLUDED__
 
 //	-------------------------------------------------------------------
-//	RENDERING FUNCTIONS
+//	Call once to perform checks about the kind of enviroment
+//	we are running in
 //	-------------------------------------------------------------------
+void MachineInit( void );
 
 //	-------------------------------------------------------------------
-//	List of codecs.
-//	See source code for info on data layout of encodings
+//	If TRUE, we are running on a very old machine, and should avoid 
+//	*everything* fancy
 //	-------------------------------------------------------------------
-
-typedef enum
-{
-	kNull = 0x00,
-	kZ16,
-	kZ32,
-	kInvert,
-	kCopy,
-
-	kCodecCount
-}	eCodec;
+Boolean MachineIsMinimal( void );
 
 //	-------------------------------------------------------------------
-//	Initialize list of codecs
+//	Returns the amount of memory that was available at startup
 //	-------------------------------------------------------------------
-
-void CodecInit( void );
+Size MachineGetMemory( void );
 
 //	-------------------------------------------------------------------
-//	Return function to display specific codec's data
+//	Returns a default block size for the current machine
 //	-------------------------------------------------------------------
-
-typedef void (*DisplayProc)( char *dest, char *source, int rowBytes );
-DisplayProc CodecGetProc( int codec, int inputWidth, int outputWidth, int type );
+//ßSize MachineGetDefaultBlock( void );
 
 #endif

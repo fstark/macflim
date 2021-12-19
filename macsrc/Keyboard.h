@@ -6,6 +6,7 @@ extern Boolean sPause;
 extern Boolean sMuted;
 extern Boolean sHelp;
 extern Boolean sPreferences;
+extern Boolean sDebug;
 
 Boolean TestKey( unsigned char *keys, char k );
 void CheckKeys( void );

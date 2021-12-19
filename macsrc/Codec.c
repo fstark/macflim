@@ -387,7 +387,7 @@ static void Invert_64( char *dest, char *source, int rowbytes )
 static void CopyLines_ref( char *dest, char *source, int rowbytes )
 {
 	unsigned short len = ((unsigned short*)source)[0];
-	unsigned short offset = ((unsigned short*)source)[1];
+	unsigned long offset = ((unsigned short*)source)[1];	//	Long in case where the fb size is > 65536
 
 	if (offset<0 || offset>=21888)
 		ExitToShell();

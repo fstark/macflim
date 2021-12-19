@@ -9,6 +9,9 @@
 #include "Log.h"
 #include "Keyboard.h"
 #include "Screen.h"
+#include "Config.h"
+#include "Machine.h"
+#include "Buffer.h"
 
 //	Silence
 FFSynthPtr silence;
@@ -69,8 +72,18 @@ pascal void DoFrame()
 	dlog_str( " " );
 #endif
 
+if (sDebug)
+{
 	ScreenLogHome( gScreen );
-	ScreenLog( gScreen, "SND" );
+	ScreenLog( gScreen, "%c SND %ld/%ld BUF=%ld", (MachineIsMinimal()?'M':' '), FreeMem(), MachineGetMemory(), BufferGetSize() );
+}
+
+		//	If request to stop, do not play sound, no more callbacks, and notify new state
+	if (gState==stopRequestedState)
+	{
+		gState = stoppedState;
+		goto end;	//	So? Sue me.
+	}
 
 	if (gState==pauseRequestedState)
 	{
@@ -90,17 +103,19 @@ pascal void DoFrame()
 		goto end;
 	}
 
-		//	If request to stop, do not play sound, no more callbacks, and notify new state
-	if (gState==stopRequestedState)
-	{
-		gState = stoppedState;
-		goto end;	//	So? Sue me.
-	}
-
 		//	We have displayed all the frames from this block
 		//	We can now release the block
 	if (gPlaybackBlock->frames_left==0)
 	{
+			//	Last block done
+		if (GetOtherBlock( gPlaybackBlock )->status==blockClosed)
+		{
+			gPlaybackBlock->status = blockPlayed;
+		    DoSilence( (ProcPtr)DoFrame );			//	We still want to be called
+		    										//	So the main loop can move us in the stopped state
+			goto end;
+		}
+
 			//	We want to switch to the other block
 		if (GetOtherBlock( gPlaybackBlock )->status==blockReady)
 		{

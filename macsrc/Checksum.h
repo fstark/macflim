@@ -1,5 +1,15 @@
+#ifndef CHECKSUM_INCLUDED__
+#define CHECKSUM_INCLUDED__
+
 //	-------------------------------------------------------------------
-//	Flim checksum functions
+//	FLIM CHECKSUM
 //	-------------------------------------------------------------------
 
-Boolean CheckFlimIntegrityIfNeeded( Str255 fName, short vRefNum );
+//	-------------------------------------------------------------------
+//	If file contains a checksum, brings the dialog asking the user
+//	if he wants to check, and performs the check.
+//	return FALSE if checksum test fails, TRUE otherwise
+//	-------------------------------------------------------------------
+Boolean ChecksumFlimIfNeeded( Str255 fName, short vRefNum );
+
+#endif

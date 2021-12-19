@@ -430,6 +430,11 @@ void ScreenUncompressFrame( ScreenPtr scrn, char *source )
 	char codec = source[3];
 	if (codec<0 || codec>=kCodecCount)
 		ExitToShell();
+
+#ifdef NODISPLAY
+	return ;
+#endif
+
 //	printf( "[%d/%lx/%d]", (int)codec, (long)scrn->baseAddr, (int)scrn->rowBytes );
 	(scrn->procs[codec])( scrn->baseAddr, source+4, scrn->rowBytes );
 }

@@ -1,24 +1,18 @@
+#ifndef CONFIG_INCLUDED__
+#define CONFIG_INCLUDED__
+
 //	-------------------------------------------------------------------
-//	Those #defines help debugging the player
+//	Those #defines configures the player binary
 //	-------------------------------------------------------------------
 
 #define noVERBOSE			//	Enables verbose logs
 #define noSYNCPLAY			//	Just execute the display code in synchronous mode for decoding debugging
 #define CODEC_TYPE 1		//	0 => Forces use of reference codec implementation
-#define noREFERENCE_ASSERTS	//	Adds debug asserts in reference codecs
+#define REFERENCE_ASSERTS	//	Adds debug asserts in reference codecs
 #define noDISPLAY_STATS		//	Displays playback stats at the end
 #define noFORCE_MINIMAL		//	Forces the machine to be the minimal version for testing
 
-#define MOVIE_BUFFER_SIZE			30000
+#define HUD
+#define noNODISPLAY			//	Doesn't actually execute the flim display code
 
-//	-------------------------------------------------------------------
-//	Call once to perform checks about the kind of enviroment
-//	we are running in
-//	-------------------------------------------------------------------
-void CheckMachine( void );
-
-//	-------------------------------------------------------------------
-//	If TRUE, we are running on a very old machine, and should avoid 
-//	*everything* fancy
-//	-------------------------------------------------------------------
-Boolean MinimalVersion( void );
+#endif

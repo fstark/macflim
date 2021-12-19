@@ -41,3 +41,5 @@ void CheckErr( short err, const char *msg );
 //	-------------------------------------------------------------------
 void StrCatPC( Str255 p, const char *q );
 
+//	####
+void UtilPlaceWindow( WindowPtr window );

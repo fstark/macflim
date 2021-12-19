@@ -3,11 +3,10 @@
 #include "Util.h"
 
 //	-------------------------------------------------------------------
-//	Returns TRUE is flim file contains a checksum
+//	Returns checksum from flim file
 //	-------------------------------------------------------------------
 
-unsigned short FlimChecksum( Str255 fName, short vRefNum );
-unsigned short FlimChecksum( Str255 fName, short vRefNum )
+static unsigned short ChecksumFlimGet( Str255 fName, short vRefNum )
 {
 	unsigned fletcher = 0xffff;
 	OSErr err;
@@ -49,8 +48,7 @@ unsigned short FlimChecksum( Str255 fName, short vRefNum )
 //	Adds all words, modulo 65535
 //	-------------------------------------------------------------------
 
-unsigned short fletcher16_ref( register unsigned short fletcher, register unsigned short *buffer, long count );
-unsigned short fletcher16_ref( register unsigned short fletcher, register unsigned short *buffer, long count )
+static unsigned short ChecksumFletcher16Ref( register unsigned short fletcher, register unsigned short *buffer, long count )
 {
 	register long i;
 	register long f = fletcher;
@@ -66,12 +64,11 @@ unsigned short fletcher16_ref( register unsigned short fletcher, register unsign
 }
 
 //	-------------------------------------------------------------------
-//	Assembly implemetation of fletcher16
+//	Assembly implementation of fletcher16
 //	Works on buffer of 1 to 65536 words (pass 0 for count)
 //	-------------------------------------------------------------------
 
-unsigned short fletcher16_short( unsigned short fletcher, unsigned short *buffer, unsigned short count );
-unsigned short fletcher16_short( unsigned short fletcher, unsigned short *buffer, unsigned short count )
+static unsigned short ChecksumFletcher16Asm( unsigned short fletcher, unsigned short *buffer, unsigned short count )
 {
 	asm{
 	
@@ -97,24 +94,22 @@ unsigned short fletcher16_short( unsigned short fletcher, unsigned short *buffer
 //	Wrapper around assembly version of fletcher
 //	-------------------------------------------------------------------
 
-unsigned short fletcher16( unsigned short fletcher, unsigned short *buffer, long count );
-unsigned short fletcher16( unsigned short fletcher, unsigned short *buffer, long count )
+static unsigned short ChecksumFletcher16x( unsigned short fletcher, unsigned short *buffer, long count )
 {
 	while (count>65536	)
 	{
-		fletcher = fletcher16_short( fletcher, buffer, 65536 );	//	Note: 65536 is passed as 0
+		fletcher = ChecksumFletcher16Asm( fletcher, buffer, 65536 );	//	Note: 65536 is passed as 0
 		count -= 65536;
 		buffer += 65536;
 	}
-	return fletcher16_short( fletcher, buffer, count );
+	return ChecksumFletcher16Asm( fletcher, buffer, count );
 }
 
 //	-------------------------------------------------------------------
 //	Performs the integrity check, with skippable dialog
 //	-------------------------------------------------------------------
 
-Boolean CheckFlimIntegrity( Str255 fName, short vRefNum, unsigned short fletcher_ref );
-Boolean CheckFlimIntegrity( Str255 fName, short vRefNum, unsigned short fletcher_ref )
+static Boolean ChecksumFlimPerformDialog( Str255 fName, short vRefNum, unsigned short fletcher_ref )
 {
 	OSErr err;
 	short fRefNum;
@@ -201,7 +196,7 @@ Boolean CheckFlimIntegrity( Str255 fName, short vRefNum, unsigned short fletcher
 			SetIText( thePercentText, theBuffer );
 		}
 
-		fletcher = fletcher16( fletcher, theBuffer, read_size/2 );
+		fletcher = ChecksumFletcher16x( fletcher, theBuffer, read_size/2 );
 
 		if (err==eofErr)
 			break;
@@ -247,9 +242,9 @@ done:
 //	Checks flim integrity if possible and accepted by user
 //	-------------------------------------------------------------------
 
-Boolean CheckFlimIntegrityIfNeeded( Str255 fName, short vRefNum )
+Boolean ChecksumFlimIfNeeded( Str255 fName, short vRefNum )
 {
-	unsigned short checksum = FlimChecksum( fName, vRefNum );
+	unsigned short checksum = ChecksumFlimGet( fName, vRefNum );
 	if (checksum!=0xffff)
 	{
 		DialogPtr theCheckDialog = NULL;
@@ -261,7 +256,7 @@ Boolean CheckFlimIntegrityIfNeeded( Str255 fName, short vRefNum )
 		DisposDialog( theCheckDialog );
 		if (itemHit==2)
 		{
-			if (!CheckFlimIntegrity( fName, vRefNum, checksum ))
+			if (!ChecksumFlimPerformDialog( fName, vRefNum, checksum ))
 				return FALSE;
 		}
 	}

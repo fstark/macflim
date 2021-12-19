@@ -37,6 +37,8 @@
 #include "Preferences.h"
 #include "Codec.h"
 #include "Checksum.h"
+#include "Machine.h"
+#include "Buffer.h"
 
 
 
@@ -212,7 +214,7 @@ Boolean SetFlimTypeCreatorIfNeeded( Str255 fName, short vRefNum )
 		unsigned char theKeys[16];
 		GetKeys( theKeys );
 		if (TestKey( theKeys, 0x3a ))	//	Option
-			return CheckFlimIntegrityIfNeeded( fName, vRefNum );
+			return ChecksumFlimIfNeeded( fName, vRefNum );
 		
 		return TRUE;
 	}
@@ -223,7 +225,7 @@ Boolean SetFlimTypeCreatorIfNeeded( Str255 fName, short vRefNum )
 	DisposDialog( theSetTypeDialog );	
 	if (itemHit==1)
 	{
-		if (CheckFlimIntegrityIfNeeded( fName, vRefNum ))
+		if (ChecksumFlimIfNeeded( fName, vRefNum ))
 			SetFlimTypeCreator( fName, vRefNum );
 		else
 			return FALSE;
@@ -244,20 +246,43 @@ int main()
 	Point where;
 
 		//	Mac toolbox init
+
+//	Debugger();
+
+//	There is a whole mess around MaxApplZone()
+//	It is part of the "Pascal Toolbox interface" (OSIntf)
+//		(TODO: find old mac dev env. compile MaxApplZone. disass)
+//	It doesn't look to be in 64K ROM
+//	It is in the 128K ROM
+//	Its trap# is A063
+//	However, A063 is something else in old trap lists (_InitUtil in MDS1.1)
+
 	InitGraf( &thePort );
+	MachineInit();
+
+	if (!MachineIsMinimal())
+		MaxApplZone();
+
+	BufferInit( 600000L, 30000L );
+
 	InitFonts();
 	FlushEvents( everyEvent, 0 );
 	InitWindows();
 	InitMenus();
 	TEInit();
 	InitDialogs( NULL );
+	InitUtilities();
 	InitCursor();
 
-//	MaxApplZone();	//	#### Checkme
+	{
+		//	As sprintf may be used in interruption for HUD
+		//	libc has to be initialised once from the main code
+		//	or it will crash 'cause it allocates memory at the first call
+		char buffer[16];
+		sprintf( buffer, "%d", 42 );
+	}
 
-	InitUtilities();
 
-	CheckMachine();
 	PreferenceInit();
 
 	CodecInit();
@@ -268,7 +293,7 @@ int main()
 
 	HideCursor();
 
-	if (MinimalVersion())
+	if (MachineIsMinimal())
 	{
 		//	In the minimal version, we don't open files from Finder
 		//	we don't set the type/creator either
@@ -316,6 +341,8 @@ int main()
 	}
 
 	ShowCursor();
+
+	BufferDispos();
 
 	FlushEvents( everyEvent, 0 );
 

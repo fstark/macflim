@@ -1,8 +1,10 @@
 #include "Preferences.h"
 
+#include "Config.h"
+#include "Machine.h"
 #include "Log.h"
 #include "Util.h"
-#include "Config.h"
+#include "Screen.h"
 
 //	-------------------------------------------------------------------
 //	The preference data structure
@@ -36,7 +38,7 @@ static void PreferenceDefault()
 {
 	assert( gPreferences!=NULL, "No preferences" );
 	gPreferences->version = kPrefVersion;
-	gPreferences->playbackVBL = MinimalVersion()?TRUE:FALSE;
+	gPreferences->playbackVBL = MachineIsMinimal()?TRUE:FALSE;
 }
 
 //	-------------------------------------------------------------------
@@ -71,50 +73,54 @@ void PreferenceInit( void )
 {
 	OSErr theError;
 
-	if (MinimalVersion())
+	if (MachineIsMinimal())
 	{
 		PreferenceDefaultInMemory();
 		return ;
 	}
+
+#define PREF_FILE "\pMacFlim Player Preferences"
 	
-	sRefNum = OpenResFile( "\pMacFlim Player Preferences" );
+	sRefNum = OpenResFile( PREF_FILE );
 
 	if (sRefNum==-1)
 	{
-		Create( "\pMacFlim Preferences", 0, 'FLIM', 'PREF' );
-		CreateResFile( "\pMacFlim Preferences" );
-		sRefNum = OpenResFile( "\pMacFlim Preferences" );
+			//	Creates initial preference file
+		Create( PREF_FILE, 0, 'FLIM', 'PREF' );
+		CreateResFile( PREF_FILE );
+		sRefNum = OpenResFile( PREF_FILE );
 		if (sRefNum!=-1)
 		{
 			PreferenceDefaultInMemory();
-
 			AddResource( sPrefHdl, 'PREF', 0, "\pPreferences" );
-			if (ResError()!=noErr)
-			{
-				sRefNum = -1;	//	With some leaks
-			}
 			PreferenceSave();
 		}
 	}
 
+	//	We don't have a working pre
+	//	Cannot be open/created (maybe ROM disk? Locked drive?). Will be kept in memory, not saved
 	if (sRefNum==-1)
 	{
-		//	Pref will be in memory, not saved (maybe ROM disk? Locked drive?)
 		PreferenceDefaultInMemory();
 	}
-	else
+
+	//	We have a file, we read it
+	if (sRefNum!=-1)
 	{
 		sPrefHdl = Get1Resource( 'PREF', 0 );
+		//	File does not contain the right resource, we'll do everything from memory
 		if (!sPrefHdl)
 		{
 			PreferenceDefaultInMemory();
 			return ;
 		}
+		
 		HLock( sPrefHdl );
+		gPreferences = *((PreferencePtr*)sPrefHdl);
 
+		//	Mmmm. Need to update the preferences.
 		if (gPreferences->version!=kPrefVersion)
 		{
-			gPreferences = *((PreferencePtr*)sPrefHdl);
 			HUnlock( sPrefHdl );
 			SetHandleSize( sPrefHdl, sizeof( PreferenceRecord ) );
 			HLock( sPrefHdl );
@@ -157,7 +163,7 @@ Boolean PreferenceGetIsPlaybackVBL( void )
 	assert( gPreferences!=NULL, "IsPlaybackVBL" );
 
 		//	On XL we have no other solution
-	if (MinimalVersion())
+	if (MachineIsMinimal())
 		return TRUE;
 
 	return gPreferences->playbackVBL;
@@ -167,7 +173,7 @@ void PreferenceSetIsPlaybackVBL( Boolean b )
 {
 	assert( gPreferences!=NULL, "PreferenceSetIsPlaybackVBL" );
 
-	if (MinimalVersion())
+	if (MachineIsMinimal())
 		b = TRUE;
 
 	gPreferences->playbackVBL = b;
@@ -178,23 +184,59 @@ void PreferenceSetIsPlaybackVBL( Boolean b )
 pascal void DoFrame( void );
 
 #include "Playback.h"
+#include "Keyboard.h"
+
+#include "Resources.h"
 
 void PreferenceDialog( void )
 {
-	DialogPtr preferences = GetNewDialog( 135, NULL, (WindowPtr)-1 );
+	enum State state = gState;
+	DialogPtr preferences;
 	short itemHit;
+	Handle iCheckVBL;
+	short iType;
+	short iRect;
+	Ptr savePtr = NULL;
 
 	gState = stopRequestedState;
 	while (gState!=stoppedState)
 		;
 
+	SaveScreen( &savePtr );
+
+	preferences = GetNewDialog( kPreferenceDialogID, NULL, (WindowPtr)-1 );
+	GetDItem( preferences, kPreferenceCheckVBL, &iType, &iCheckVBL, &iRect );
+	SetCtlValue( iCheckVBL, PreferenceGetIsPlaybackVBL() );
+
+	if (MachineIsMinimal())
+		HiliteControl( iCheckVBL, 255 );
+
+	UtilPlaceWindow( preferences );
 	ShowWindow( preferences );
 	DrawDialog( preferences );
 	ShowCursor();
-	ModalDialog( NULL, &itemHit );
+	do
+	{
+		ModalDialog( NULL, &itemHit );
+		if (itemHit==kPreferenceCheckVBL)
+		{
+			PreferenceSetIsPlaybackVBL( !PreferenceGetIsPlaybackVBL() );
+			SetCtlValue( iCheckVBL, PreferenceGetIsPlaybackVBL() );
+		}
+	}	while (itemHit!=kPreferenceButtonOk);
+
+	CheckKeys();	//	This reads the keyboard and don't act on it
+					//	so if the user closed the dialog with ENTER
+					//	it won't be catch by the main loop, as there will be
+					//	no transitions.
 	HideCursor();
-	
+
+	PreferenceSave();
 	DisposDialog( preferences );
 
+	RestoreScreen( &savePtr );
+
 	gPlayback.restart();
+
+	gState = state;
 }

@@ -2,6 +2,8 @@
 
 #include "Util.h"
 #include "Log.h"
+#include "Config.h"
+#include "Machine.h"
 #include <stdio.h>
 
 
@@ -34,7 +36,7 @@ struct AccessItem
 struct MovieRec
 {
 	short fRefNum;
-	Size maxBlockSize;
+	Size blockSize;
 
 	short fletcher16;
 
@@ -50,20 +52,22 @@ struct MovieRec
 	struct AccessItem *accessTable;
 };
 
-
-//	-------------------------------------------------------------------
-
-#define MAX_ACCESS_ENTRIES	8192L	//	Internal limit that should be lifted
-
 //	-------------------------------------------------------------------
 
 MoviePtr MovieOpen( short fRefNum, Size maxBlockSize )
 {
 	Size read_size;
 	MoviePtr movie = (MoviePtr)NewPtrNoFail( sizeof( struct MovieRec ) );
+	Size maxAccessEntries;
+
+		//	Note: this could be made completely dynamic with a bit of work
+	if (MachineIsMinimal())
+		maxAccessEntries = 512L;
+	else
+		maxAccessEntries = 4096L;
 
 	movie->fRefNum = fRefNum;
-	movie->maxBlockSize = maxBlockSize;
+	movie->blockSize = maxBlockSize;
 	
 	SetFPos( movie->fRefNum, fsFromStart, 1022 );
 	read_size = 2;
@@ -82,7 +86,6 @@ MoviePtr MovieOpen( short fRefNum, Size maxBlockSize )
 	{
 		short *toc;
 		int index;
-		Size maxBlockSize = 0;
 		Size currentSize;
 		long frameCount;
 		short blockIndex = 0;
@@ -93,16 +96,30 @@ MoviePtr MovieOpen( short fRefNum, Size maxBlockSize )
 		if (read_size!=movie->frameCount*sizeof(short))
 			Abort( "\pCannot read FLIM table of content" );
 
-		movie->accessTable = (struct AccessItem *)NewPtrNoFail( sizeof(struct AccessItem)*MAX_ACCESS_ENTRIES );
+		movie->accessTable = (struct AccessItem *)NewPtrNoFail( sizeof(struct AccessItem)*maxAccessEntries );
 
 		frameCount = 0;
 		currentSize = 0;
 		movie->blockCount = 0;
 		for (index=0;index!=movie->frameCount;index++)
 		{
-			frameCount++;
-			currentSize += toc[index];
+			//	If we need to go to the next block, so be it
+			if (currentSize+toc[index]>=movie->blockSize)
+			{
+				frameCount = 0;
+				currentSize = 0;
+				blockIndex++;
+				if (blockIndex==maxAccessEntries)
+				{
+					SetPtrSize( movie->accessTable, sizeof(struct AccessItem)*(maxAccessEntries+1024) );
+					if (MemError())
+						Abort( "\pNot enough access entries to load TOC" );
+					maxAccessEntries += 1024;
+				}
+			}
 
+
+/*
 			if (maxBlockSize<currentSize)
 			{
 				maxBlockSize = currentSize;
@@ -110,22 +127,17 @@ MoviePtr MovieOpen( short fRefNum, Size maxBlockSize )
 				printf( "MAX BLOCK SIZE %ld\n", maxBlockSize );
 #endif
 			}
+*/
 
+			frameCount++;
 			movie->accessTable[blockIndex].frameCount = frameCount;
+			currentSize += toc[index];
 			movie->accessTable[blockIndex].blockSize = currentSize;
-			movie->blockCount = blockIndex+1;
 
-			if (currentSize+toc[index]>=movie->maxBlockSize)
-			{
-				frameCount = 0;
-				currentSize = 0;
-				blockIndex++;
-				if (blockIndex==MAX_ACCESS_ENTRIES)
-					Abort( "\pNot enough access entries to load TOC" );
-			}
+			movie->blockCount = blockIndex+1;
 		}
 		
-		movie->maxBlockSize = maxBlockSize;
+//		movie->maxBlockSize = maxBlockSize;
 
 		DisposPtr( (Ptr)toc );
 	}
@@ -142,8 +154,11 @@ MoviePtr MovieOpen( short fRefNum, Size maxBlockSize )
 
 void MovieDispos( MoviePtr movie )
 {
+	Size growBytes;
+	
 	DisposPtr( (Ptr)(movie->accessTable) );
 	DisposPtr( (Ptr)movie );
+	MaxMem( &growBytes );
 }
 
 //	-------------------------------------------------------------------
@@ -159,13 +174,6 @@ void MovieSeekStart( MoviePtr movie )
 Size MovieGetBlockCount( MoviePtr movie )
 {
 	return movie->blockCount;
-}
-
-//	-------------------------------------------------------------------
-
-Size MovieGetMaxBlockSize( MoviePtr movie )
-{
-	return movie->maxBlockSize;
 }
 
 //	-------------------------------------------------------------------

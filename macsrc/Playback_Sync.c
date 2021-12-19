@@ -5,8 +5,11 @@
 #include "Playback.h"
 
 #include "Config.h"
+#include "Machine.h"
 #include "Movie.h"
 #include "Screen.h"
+#include "Buffer.h"
+#include "Keyboard.h"
 
 //	-------------------------------------------------------------------
 //	Plays movie synchronously, with no sound
@@ -14,7 +17,7 @@
 //	Usefull to debug display code or measure raw performance
 //	-------------------------------------------------------------------
 
-void FlimSyncPlay( short fRefNum )
+ePlayResult FlimSyncPlay( short fRefNum )
 {
 	unsigned char *data;
 	long tick;
@@ -23,9 +26,9 @@ void FlimSyncPlay( short fRefNum )
 	OSErr err;
 	BlockPtr blk;
 	MoviePtr movie;
-
-	movie = MovieOpen( fRefNum, MOVIE_BUFFER_SIZE );
-	blk = MovieAllocateBlock( movie );
+	ePlayResult theResult = kDone;
+	movie = MovieOpen( fRefNum, BufferGetSize()-sizeof( struct BlockRecord ) );
+	blk = MovieInitBlock( movie, BufferGet( 0 ) );
 
 	gScreen = ScreenInit( gScreen, 64 );
 //	ScreenClear( gScreen );
@@ -38,13 +41,27 @@ void FlimSyncPlay( short fRefNum )
 	
 		MovieReadBlock( movie, index, blk );
 
-		if (Button())
-			goto end;
-		
-		while (blk->frames_left>0)
+		while (theResult==kDone && blk->frames_left>0)
 		{
-			ScreenLogHome( gScreen );
-			ScreenLog( gScreen, "DBG" );
+			CheckKeys();
+
+			if (sEscape)
+			{
+				theResult = kAbort;
+			}
+			if (sSkip)
+				theResult = kSkip;
+			if (sPrevious)
+				theResult=  kPrevious;
+			if (sRestart)
+				theResult = kRestart;
+
+			if (sDebug)
+			{
+				ScreenLogHome( gScreen );
+				ScreenLog( gScreen, "%c DBG %ld/%ld BUF=%ld", (MachineIsMinimal()?'M':' '), FreeMem(), MachineGetMemory(), BufferGetSize() );
+			}
+
 			ScreenUncompressFrame( gScreen, (char *)blk->video->data );
 			blk->sound = NextDataPtrS( blk->video );
 			blk->video = NextDataPtrV( blk->sound );
@@ -55,21 +72,22 @@ void FlimSyncPlay( short fRefNum )
 	
 end:
 
-	MovieDisposBlock( blk );
 	MovieDispos( movie );
 
 	tick = TickCount()-tick;
 
-	while (!Button())
-		;
-	while (Button())
-		;
-	
-	printf( "Ticks = %ld\n", tick );
+//	while (!Button())
+//		;
+//	while (Button())
+//		;
+//	
+//	printf( "Ticks = %ld\n", tick );
+//
+//
+//	while (!Button())
+//		;
 
-
-	while (!Button())
-		;
+	return theResult;
 }
 
 

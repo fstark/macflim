@@ -3,6 +3,10 @@
 #include <Retrace.h>
 #include "Screen.h"
 #include "Log.h"
+#include "Config.h"
+#include "Machine.h"
+#include "Keyboard.h"
+#include "Buffer.h"
 
 //	-------------------------------------------------------------------
 //	The VBL task for silent playback, driven by vertical retrace
@@ -39,8 +43,11 @@ static pascal void DoFrameSilent()
         move.l -4(A0),A5
     }
 
+if (sDebug)
+{
 	ScreenLogHome( gScreen );
-	ScreenLog( gScreen, "VBL" );
+	ScreenLog( gScreen, "%c VBL %ld/%ld BUF=%ld", (MachineIsMinimal()?'M':' '), FreeMem(), MachineGetMemory(), BufferGetSize() );
+}
 
 	if (gState==stopRequestedState)
 	{

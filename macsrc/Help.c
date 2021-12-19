@@ -9,9 +9,6 @@
 #include "Playback.h"
 #include "Screen.h"
 #include "Keyboard.h"
-#include "Preferences.h"
-
-void DisplayPreferences( void );
 
 //	-------------------------------------------------------------------
 //	
@@ -53,8 +50,6 @@ void DisplayHelp( void )
 	while (!Button())
 	{
 		CheckKeys();
-		if (sPreferences)
-			PreferenceDialog();
 		if (sHelp || sEscape)
 			break;
 		if (ticks<Ticks)

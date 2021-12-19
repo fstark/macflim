@@ -3,6 +3,8 @@
 //	-------------------------------------------------------------------
 
 #include "Keyboard.h"
+#include "Config.h"
+#include "Machine.h"
 
 //	-------------------------------------------------------------------
 //	Helper to test a key
@@ -111,6 +113,23 @@ static Boolean CheckPreferences( unsigned char *keys )
 }
 
 //	-------------------------------------------------------------------
+//	Checks for debug
+//	-------------------------------------------------------------------
+
+static Boolean CheckDebug( unsigned char *keys )
+{
+	static Boolean debugged = TRUE; //	See comment for ESCAPE
+	Boolean old_state = debugged;
+
+	debugged = TestKey( keys, 0x2 );		//	'd'
+
+	if (!old_state && debugged)
+		return TRUE;	//	TRANSITION
+	
+	return FALSE;
+}
+
+//	-------------------------------------------------------------------
 //	Checks for SPACE
 //	-------------------------------------------------------------------
 
@@ -148,7 +167,7 @@ Boolean CheckMute( unsigned char *keys )
 
 //	-------------------------------------------------------------------
 //	Check keys status
-//	Sets the sEscape, sSkip, sPause and sMuted variable
+//	Sets the sEscape, sSkip, sPause, sMuted and other variables
 //	-------------------------------------------------------------------
 
 Boolean sEscape;
@@ -159,6 +178,7 @@ Boolean sPause;
 Boolean sMuted = FALSE;
 Boolean sHelp;
 Boolean sPreferences;
+Boolean sDebug;
 
 void CheckKeys( void )
 {
@@ -183,9 +203,19 @@ void CheckKeys( void )
 		sSkip = sPrevious = FALSE;
 	sRestart = CheckRestart( theKeys );
 	sPause = CheckPause( theKeys );
-	sHelp = CheckHelp( theKeys );
+
+		//	We don't do any UI in the minimal version
+		//	and we don't support sound
+	if (!MachineIsMinimal())
+	{
+		sHelp = CheckHelp( theKeys );
+		if (CheckMute( theKeys ))
+			sMuted = !sMuted;
+	}
+	
 	sPreferences = CheckPreferences( theKeys );
-	if (CheckMute( theKeys ))
-		sMuted = !sMuted;
+	
+	if (CheckDebug( theKeys ))
+		 sDebug = !sDebug;
 }
 

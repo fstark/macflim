@@ -1,6 +1,7 @@
 #include "Playback.h"
 
 #include "Config.h"
+#include "Machine.h"
 #include "Log.h"
 #include "Keyboard.h"
 #include "Screen.h"
@@ -8,6 +9,7 @@
 #include "Util.h"
 #include "Preferences.h"
 #include "Movie.h"
+#include "Buffer.h"
 
 struct Playback gPlayback;
 
@@ -63,9 +65,9 @@ FrameDataPtr NextDataPtrV( FrameDataPtr ptr )
 //	Creates an in-memory block
 //	-------------------------------------------------------------------
 
-BlockPtr MovieAllocateBlock( MoviePtr movie )
+BlockPtr MovieInitBlock( MoviePtr movie, Ptr block )
 {
-	BlockPtr blk = (BlockPtr)NewPtrNoFail( sizeof(struct BlockRecord)-1+MovieGetMaxBlockSize(movie) );
+	BlockPtr blk = (BlockPtr)block;
 	blk->status = blockUnused;
 	blk->index = -1;
 	blk->ticks = 0;
@@ -75,6 +77,7 @@ BlockPtr MovieAllocateBlock( MoviePtr movie )
 	return blk;
 }
 
+/*
 //	-------------------------------------------------------------------
 //	Block deallocate
 //	-------------------------------------------------------------------
@@ -83,6 +86,7 @@ void MovieDisposBlock( BlockPtr blk )
 {
 	DisposPtr( blk );
 }
+*/
 
 void CheckBlock( MoviePtr movie, BlockPtr blk )
 {
@@ -100,6 +104,10 @@ void MovieReadBlock( MoviePtr movie, int index, BlockPtr blk )
 	OSErr err;
 	long readSize;
 
+#ifdef VERBOSE
+	printf( "MovieReadBlock(%d)\n", index);
+#endif
+
 	assert( index>=0 && index<MovieGetBlockCount(movie), "BlockRead" );
 	
 	blk->index = index;
@@ -109,7 +117,6 @@ void MovieReadBlock( MoviePtr movie, int index, BlockPtr blk )
 	blk->status = blockReading;
 
 	readSize = MovieGetBlockSize( movie, index );
-	assert( readSize<=MovieGetMaxBlockSize( movie ), "Block Size" );
 	err = FSRead( MovieGetFileRefNum( movie ), &readSize, blk->buffer );
 	assert( err==noErr, "FSRead" );
 	assert( readSize==MovieGetBlockSize( movie, index ), "Short read" );
@@ -163,6 +170,11 @@ BlockPtr gPlaybackBlock;
 ePlayResult BlockWaitPlayed( BlockPtr blk )
 {
 	short status;
+
+#ifdef VERBOSE
+	printf( "BlockWaitPlayed(%d)\n", blk->index);
+#endif
+
 	do
 	{
 		status = blk->status;
@@ -183,6 +195,8 @@ ePlayResult BlockWaitPlayed( BlockPtr blk )
 			return kRestart;
 		if (sHelp)
 			DisplayHelp();
+		if (sPreferences)
+			PreferenceDialog();
 
 		if (sPause)
 		{
@@ -201,7 +215,7 @@ ePlayResult BlockWaitPlayed( BlockPtr blk )
 					return kPrevious;
 				if (sRestart)
 					return kRestart;
-				if (sHelp || sPreferences)
+				if (sHelp)
 					DisplayHelp();
 			}
 			while (!sPause);
@@ -301,7 +315,7 @@ begin:
 	SetFPos( fRefNum, fsFromStart, 1024 );
 
 #ifdef SYNCPLAY
-	FlimSyncPlay( fRefNum );
+	theResult = FlimSyncPlay( fRefNum );
 	goto close;
 #endif
 
@@ -310,11 +324,11 @@ begin:
 	ScreenClear( gScreen );
 
 		//	Open flim
-	movie = MovieOpen( fRefNum, MOVIE_BUFFER_SIZE );
+	movie = MovieOpen( fRefNum, BufferGetSize()-sizeof( struct BlockRecord ) );
 
 		//	Allocate block2
-	gBlock1 = MovieAllocateBlock( movie );
-	gBlock2 = MovieAllocateBlock( movie );
+	gBlock1 = MovieInitBlock( movie, BufferGet(0) );
+	gBlock2 = MovieInitBlock( movie, BufferGet(1) );
 
 		//	We read the first one from disk
 	gReadBlock = GetFirstBlock();
@@ -326,6 +340,7 @@ begin:
 		//	We read the second block from disk
 	gReadBlock = GetOtherBlock( gReadBlock );
 	MovieReadBlock( movie, 1, gReadBlock );
+
 
 		//	This is the block we would love to read from
 	gReadBlock = GetOtherBlock( gReadBlock );
@@ -375,7 +390,7 @@ begin:
 		exec_log();
 	}
 
-		//	Wait for first block to be played
+		//	Wait for the penultimate block to be played
 	while (gReadBlock->status!=blockPlayed)
 		;
 
@@ -405,9 +420,6 @@ end:
 
 	tick = TickCount()-tick;
 
-	MovieDisposBlock( gBlock1 );
-	MovieDisposBlock( gBlock2 );
-
 #ifdef DISPLAY_STATS
 
 	printf( "Stats:\n" );
@@ -427,10 +439,10 @@ end:
 close:
 	err = FSClose( fRefNum );
 	CheckErr( err, "FSClose" );
+	MovieDispos( movie );
 
 	if (theResult==kRestart)
 		goto begin;
 
 	return theResult;
 }
-

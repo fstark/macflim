@@ -112,10 +112,10 @@ ePlayResult PlayFlimFile( Str255 fName, short vRefNum );
 //void FlimSoundStop( void );
 //void FlimSoundStart( void );
 
-void FlimSyncPlay( short fRefNum );
+ePlayResult FlimSyncPlay( short fRefNum );
 
-BlockPtr MovieAllocateBlock( MoviePtr movie );
-void MovieDisposBlock( BlockPtr blk );
+BlockPtr MovieInitBlock( MoviePtr movie, Ptr block );
+//void MovieDisposBlock( BlockPtr blk );
 void MovieDispos( MoviePtr movie );
 void MovieReadBlock( MoviePtr movie, int index, BlockPtr blk );
 
@@ -139,4 +139,3 @@ void PlaybackSoundInit( struct Playback *playback );
 extern struct Playback gPlayback;
 
 
-	
