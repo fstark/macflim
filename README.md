@@ -7,18 +7,17 @@ MacFlim is a video encoder and player for black and white vintage Macintoshes, n
 _The iPod introduction should have waited for MacFlim to be available_
 
 
-MacFlim brings movie playing abilities to most of the Macinsoth famility, namely:
+MacFlim brings movie playing abilities to most of the Macintosth familiy, namely:
 
 * Macintosh XL
+* Macintosh 128K
 * Macintosh 512K
 * Mac Plus
 * Mac SE
 * Mac SE/30
 * Macintosh Portable (use Mac SE files)
 
-on their beautiful internal back and white 512x342 display (or in a part of it for the Portable).
-
-Note: the Macintosh 128K is not yet supported.
+on their beautiful internal back and white 512x342 display (or in a part of it for the Mac XL and the Portable).
 
 ## What is in the repository?
 
@@ -138,9 +137,9 @@ Creates an animated gif file version of the flim. The animated gif is at 20 fram
 
 To avoid downloading the same file multiple times, the ``--cache`` argument can be used to specify a destination to download the file to if it doesn't already exist. ``flimmaker`` will use this file if it exists, or download it there otherwise. This is only used with URL specifiers.
 
-### --profile **plus**|**se**|**se30**|**perfect**
+### --profile **plus**|**se**|**se30**|**perfect**|**xl**|**512**
 
-Specifies the encoding/playback profile you want to use. There are 4 profiles:
+Specifies the encoding/playback profile you want to use.
 
 * plus : The plus profile aims at playing the resulting file on a Macitosh Plus, limiting the decoding processing power as much as possible by keeping the data small. For this, it skips half of the frames, uses ordered dithering, blurs the image and adds a small border to the generated flim. It allows for a lot of "leakage" from a frame to the next. The compression parameters are also very lossy. The result will only be "good" if the input movie is very static.
 
@@ -149,6 +148,12 @@ Specifies the encoding/playback profile you want to use. There are 4 profiles:
 * se30 : Targets the SE/30 the most powerful comnpact Macintosh. Encoding can use 4 times more space, doesn't skip frames, and limits leakage from a frame to the next. se30 movies are in general correct, in the sense that mostly anything can be faithfully encoded, with a few artifacts.
 
 * perfect : this profile aims at a "perfect" playback. The resulting files can be played on an upgraded computer. For instance, playing from a se30 with a ram disk allows those "perfect" flims to be played.
+
+* xl : The xl profile generates flim that can be played on a 5MHz Lisa 2/10, running Mac Works XL 3.0, from the internal widget. Flims have no sound, and are encoded at a very low framerate (divided by 4) and low byterate (580 bytes per ticks)
+
+* 512 : This profile generates a flim that can be played on a Macintosh 512, from the slow floppy-based HD20 hard drive. The framerate is divided by 4, the byterate is 480 bytes per ticks, and there is no sound.
+
+[todo: 128k profile]
 
 Examples:
 
