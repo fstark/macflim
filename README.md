@@ -1,5 +1,7 @@
 # MacFlim, the true Mac video player
 
+(This is a work in progress. See http://www.macflim.com for the previous version)
+
 MacFlim is a video encoder and player for black and white vintage Macintoshes, now in its second incarnation.
 
 ![MacFlim](./assets/macflim.gif)
@@ -7,7 +9,7 @@ MacFlim is a video encoder and player for black and white vintage Macintoshes, n
 _The iPod introduction should have waited for MacFlim to be available_
 
 
-MacFlim brings movie playing abilities to most of the Macintosth familiy, namely:
+MacFlim brings movie playing abilities to most of the Macintosh familiy, namely:
 
 * Macintosh XL
 * Macintosh 128K
@@ -15,7 +17,7 @@ MacFlim brings movie playing abilities to most of the Macintosth familiy, namely
 * Mac Plus
 * Mac SE
 * Mac SE/30
-* Macintosh Portable (use Mac SE files)
+* Macintosh Portable
 
 on their beautiful internal back and white 512x342 display (or in a part of it for the Mac XL and the Portable).
 
