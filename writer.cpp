@@ -236,10 +236,16 @@ public:
     if (stream->codecpar->codec_id == AV_CODEC_ID_H264)
     {
         av_opt_set(video_context, "preset", "ultrafast", 0);
+//  The next line has no effect on the compression (???)
+//         av_opt_set(video_context, "preset", "veryslow", 0);
+// std::cout << "CODEC PRESET H264 SLOW\n";
     }
     else if (stream->codecpar->codec_id == AV_CODEC_ID_H265)
     {
         av_opt_set(video_context, "preset", "ultrafast", 0);
+//  The next line has no effect on the compression (???)
+//         av_opt_set(video_context, "preset", "slow", 0);
+// std::cout << "CODEC PRESET H265 SLOW\n";
     }
 
     avcodec_parameters_from_context( stream->codecpar, video_context );
