@@ -273,6 +273,7 @@ class flimencoder
     std::vector<sound_frame_t> audio_samples_;
 
     double fps_ = 24;
+    double poster_ts_ = 0;
 
     std::string comment_;
 
@@ -379,6 +380,7 @@ public:
     void set_diff_pattern( const std::string pattern ) { diff_pattern_ = pattern; }
     void set_change_pattern( const std::string pattern ) { change_pattern_ = pattern; }
     void set_target_pattern( const std::string pattern ) { target_pattern_ = pattern; }
+    void set_poster_ts( double poster_ts ) { poster_ts_ = poster_ts; }
 
     //  Encode all the frames
     void make_flim( const std::string flim_pathname, input_reader *reader, const std::vector<std::unique_ptr<output_writer>> &writers )
@@ -392,6 +394,29 @@ public:
                 images_.push_back( *next );
             i++;
         }
+
+        assert( images_.size()>0 );
+
+        //  Poster extraction
+        image poster_image = images_[0];
+        int poster_index = poster_ts_*fps_/profile_.fps_ratio();
+
+        if (poster_index>=0 && poster_index<images_.size())
+            poster_image = images_[poster_index];
+
+std::cout << "POSTER INDEX: " << poster_index << "\n";
+
+        image poster_small( 128, 86 );
+        copy( poster_small, poster_image, false );
+
+        auto prev = poster_small;
+        auto poster_small_bw = poster_small;
+        auto error_diff = get_error_diffusion_by_name( "floyd" );
+
+        error_diffusion( poster_small_bw, poster_small, prev, 0, *error_diff, 0.99, true );
+        write_image( "/tmp/poster1.pgm", poster_image );
+        write_image( "/tmp/poster2.pgm", poster_small );
+        write_image( "/tmp/poster3.pgm", poster_small_bw );
 
         if (!profile_.silent())
             while (auto next = reader->next_sound())
@@ -426,6 +451,26 @@ public:
         std::vector<uint8_t> toc;
         auto out_toc = std::back_inserter( toc );
 
+        if (out_pattern_!="")   //  generate posters samples
+        {
+            for (auto &poster_source:images_)
+            {
+                static int img = 1;
+                char buffer[1024];
+
+                sprintf( buffer, out_pattern_.c_str(), img++ );
+                image poster_small( 128, 86 );
+                copy( poster_small, poster_source, false );
+
+                auto prev = poster_small;
+                auto poster_small_bw = poster_small;
+                auto error_diff = get_error_diffusion_by_name( "floyd" );
+
+                error_diffusion( poster_small_bw, poster_small, prev, 0, *error_diff, 0.99, true );
+                write_image( buffer, poster_small_bw );
+            }
+        }
+
         auto current_frame = std::begin(frames);
         while (current_frame!=std::end(frames))
         {
@@ -436,8 +481,18 @@ public:
                 if (out_pattern_!="")
                 {
                     sprintf( buffer, out_pattern_.c_str(), img );
-                    auto logimg = current_frame->result.as_image();
-                    write_image( buffer, logimg );
+                    // auto logimg = current_frame->result.as_image();
+                    // write_image( buffer, logimg );
+        // image poster_small( 128, 86 );
+        // copy( poster_small, images_[img-1], false );
+
+        // auto prev = poster_small;
+        // auto poster_small_bw = poster_small;
+        // auto error_diff = get_error_diffusion_by_name( "floyd" );
+
+        // error_diffusion( poster_small_bw, poster_small, prev, 0, *error_diff, 0.99, true );
+        // write_image( buffer, poster_small_bw );
+
                 }
                 if (diff_pattern_!="")
                 {
@@ -485,23 +540,45 @@ public:
             current_frame++;
         }
 
+        std::vector<u_int8_t> global;
+        auto out_global = std::back_inserter( global );
+
+        write2( out_global, 512 );                      //  width
+        write2( out_global, 342 );                      //  height
+        write2( out_global, profile_.silent() );        //  1 = silent
+        write4( out_global, frames.size() );            //  Framecount
+        size_t total_ticks = std::accumulate( std::begin(frames), std::end(frames), 0, []( size_t a, flimcompressor::frame &f ){ return a+f.ticks; } );
+        write4( out_global, total_ticks );              //  Tick count
+
+std::cout << "PROFILE BYTERATE " << profile_.byterate() << "\n";
+        write2( out_global, profile_.byterate() );      //  Byterate
+
+        framebuffer poster_fb{ poster_small_bw };
+        std::vector<u_int8_t> poster = poster_fb.raw_values_natural<u_int8_t>();
+
         std::vector<uint8_t> header;
         auto out_header = std::back_inserter( header );
 
         const int HEADER_SIZE = 64;
 
-        write2( out_header, 0x1 );                       //  Version
-        write4( out_header, movie.size()+HEADER_SIZE );  //  TOC offset
-        write4( out_header, frames.size() );             //  Frame count
+        write2( out_header, 0x1 );                      //  Version
+        write2( out_header, 4 );                        //  Entry count
 
-        write2( out_header, 512/8 );                     //  rowbytes
-        write2( out_header, 342 );                       //  vlines
-        write1( out_header, profile_.silent() );         //  1 = silent
+        write2( out_header, 0x00 ); //  Info
+        write4( out_header, 0 );  //  TOC offset
+        write4( out_header, global.size() );            //  Frame count
 
-        for (int i=15;i!=HEADER_SIZE;i++)
-            write1( out_header, 0x00 );
+        write2( out_header, 0x01 ); //  MOVIE
+        write4( out_header, global.size() );
+        write4( out_header, movie.size() );          
 
-        assert( header.size()==HEADER_SIZE );
+        write2( out_header, 0x02 ); //  TOC
+        write4( out_header, global.size()+movie.size() ); 
+        write4( out_header, toc.size() );            
+
+        write2( out_header, 0x03 ); //  POSTER
+        write4( out_header, global.size()+movie.size()+toc.size() );
+        write4( out_header, poster.size() );             
 
         if (sDebug)
             std::clog << "WRITING FLIM FILE\n";
@@ -522,6 +599,11 @@ public:
             fletcher += ((int)(header[i]))*256+header[i+1];
             fletcher %= 65535;
         }
+        for (int i=0;i!=global.size();i+=2)
+        {
+            fletcher += ((int)(global[i]))*256+global[i+1];
+            fletcher %= 65535;
+        }
         for (int i=0;i!=movie.size();i+=2)
         {
             fletcher += ((int)(movie[i]))*256+movie[i+1];
@@ -532,17 +614,23 @@ public:
             fletcher += ((int)(toc[i]))*256+toc[i+1];
             fletcher %= 65535;
         }
+        for (int i=0;i!=poster.size();i+=2)
+        {
+            fletcher += ((int)(poster[i]))*256+poster[i+1];
+            fletcher %= 65535;
+        }
         uint8_t b = fletcher/256;
         fwrite( &b, 1, 1, movie_file );
         b = fletcher%256;
         fwrite( &b, 1, 1, movie_file );
 
         fwrite( header.data(), header.size(), 1, movie_file );
+        fwrite( global.data(), global.size(), 1, movie_file );
         fwrite( movie.data(), movie.size(), 1, movie_file );
         fwrite( toc.data(), toc.size(), 1, movie_file );
+        fwrite( poster.data(), poster.size(), 1, movie_file );
 
         fclose( movie_file );
-
 
         if (writers.size())
         {

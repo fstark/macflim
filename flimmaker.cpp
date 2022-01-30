@@ -235,6 +235,7 @@ try
     double from_index = 0;
     double to_index = std::numeric_limits<int>::max();
     double duration = 300;   //  5 minutes by default
+    double poster_ts = -1;
     int cover_from = -1;
     int cover_to = -1;
     double fps = 24.0;
@@ -399,12 +400,18 @@ try
             argv++;
             cover_to = atoi(*argv);
         }
-        else if (!strcmp(*argv,"--cover"))
+        else if (!strcmp(*argv,"--cover"))  //  #### KILL ME
         {
             argc--;
             argv++;
             cover_from = atoi(*argv);
             cover_to = cover_from+23;
+        }
+        else if (!strcmp(*argv,"--poster"))
+        {
+            argc--;
+            argv++;
+            poster_ts = seconds_from_string(*argv);
         }
         else if (!strcmp(*argv,"--audio"))
         {
@@ -570,6 +577,9 @@ try
         }
     }
 
+    if (poster_ts==-1)
+        poster_ts = duration/3;
+
     if (codecs.size()>1)
     {
         custom_profile.set_codecs( codecs );
@@ -612,6 +622,8 @@ try
     encoder.set_diff_pattern( diff_pattern );
     encoder.set_change_pattern( change_pattern );
     encoder.set_target_pattern( target_pattern );
+
+    encoder.set_poster_ts( poster_ts );
 
     // encoder.set_input_single_random();
 

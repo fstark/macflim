@@ -221,6 +221,15 @@ public:
         return raw_vertical<T>();
     }
 
+    template <typename T>
+    std::vector<T> raw_values_natural() const
+    {
+        std::vector<T> res;
+        pack_horizontal_be<T,decltype(std::back_inserter(res))>( std::back_inserter(res) );
+
+        return res;
+    }
+
     image as_image() const
     {
         image res( W_, H_ );
