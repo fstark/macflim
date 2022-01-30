@@ -226,6 +226,8 @@ size_t vertical_from_horizontal( size_t h ) const
     virtual std::vector<uint8_t> compress( framebuffer &current, const framebuffer &target, /* weigths, */ size_t budget ) const
     {
 
+// std::cerr << "BUDGET:" << budget << "\n";
+
             //  transient
         auto current_data_ = current.raw_values<T>();    //  The data present on screen (for optimisation purposes) (vertical)
         auto target_data_ = target.raw_values<T>();      //  The data we are trying to converge to
