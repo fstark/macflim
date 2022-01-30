@@ -2,6 +2,12 @@
 #define CONFIG_INCLUDED__
 
 //	-------------------------------------------------------------------
+//	VERSION OF THE PLAYER
+//	-------------------------------------------------------------------
+
+#define VERSION_STRING	"\p2.0a"
+
+//	-------------------------------------------------------------------
 //	Those #defines configures the player binary
 //	-------------------------------------------------------------------
 
@@ -14,5 +20,7 @@
 
 #define HUD
 #define noNODISPLAY			//	Doesn't actually execute the flim display code
+
+#define ZOOM_FRAMES	20		//	How many frames for the play zoom animation
 
 #endif

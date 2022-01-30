@@ -1,330 +1,115 @@
-/*
-
-	{
-			;	Save registers
-		movem.l D5-D7/A2-A4,-(A7)
-
-			;	Get parameters
-		movea.l dest,a4				;	a4 == screen address
-		movea.l source,a3			;	a3 == source data
-
-@loop:
-		move.w	(a3)+,d7			;	header
-		tst.w	d7					;	0x0000 => end of frame
-		beq.s	@exit
-									;	Low end of d7 is offset
-;		move.w	d7,d6
-;		and.w	#0x00ff,d6
-;		add		d6,a4				;	new screen address
-;		add		d6,a4				;	new screen address
-;		movea.l	a4,a2				
-						
-		lsr.w	#8,d7
-		tst.w d7
-		bra.s @loop
-
-@local:
-		add #1,a3
-		tst.w d7
-		dbeq d7,@local
-
-		beq @loop
-
-@loop2:
-;        move.w	(a3)+,(a2)
- 		adda	#1,a3
-        
-;        add 	#64,a2		;	Take stride into account
-@in:
-		tst.w	d7
-		dbeq.w	d7,@loop2
-	
-        bra.s     @loop
-
-			;	Done
-@exit:
-        movem.l   (A7)+,D5-D7/A2-A4
-	}
-
-
-long BlockRead( BlockPtr blk, short fRefNum, long read_size )
-
-GetOtherBlock
-
-	blockUnused = 0,		//	Nothing to be done
-	blockReading = 1,		//	A PBRead is active on the block
-	blockReady = 2,			//	The block have data in read from the disk
-	blockPlaying = 3,		//	Content of the block is currently used by the sound driver
-	blockPlayed = 4,		//	The content of the block have been played
-	blockClosed = 5			//	We don't use this block anymore, buffer deallocated
-
-BlockWaitPlayed
-
- */
+//	Can contain various notes
 
 #if 0
 
-void UnpackZ8( char *dest, unsigned char *source )
-{
-	asm
-	{
-			;	Save registers
-		movem.l D7/A3/A4,-(A7)
-
-			;	Get parameters
-		movea.l dest,a4
-		movea.l source,a3
-
-@loop:
-			;	Get opcode
-			;	0 => exit
-			;	>0 => copy data
-			;	<0 => skip data
-        move.b 	(a3)+,d7
-        tst.b	d7
-		beq	 	@exit
-        blt	  	@skip
-
-@copy:
-			;	Copy d7 bytes from a3 to a4
-		move.b 	(a3)+,(a4)+
-        subq.b 	#1,d7
-        bne  	@copy
-
-        bra  	@loop
-
-@skip:
-			;	Skip d7 bytes in a4
-		ext		d7
-		suba	d7,a4
-        bra  	@loop
-
-@exit:
-			;	Done
-        movem.l   (A7)+,D7/A3/A4
-	}
-}
-
-/*
---top
-  source		a6+c
-  dest			a6+8
-  return adrs	a6+4
-  [a6]			a6
-  n				a6-1
---bottom
-*/
-
-void UnpackZ8_orig( char *dest, unsigned char *source )
-{
-	char *d = dest;
-	unsigned char *s = source;
-
-	while (1)
-	{
-		register char n = *s++;
-		if (n==0)
-			break;
-		if (n>0)
-		{
-			while (n--)
-				*d++ = *s++;
-		}
-		else
-			d += -n;
-	}
-}
-#endif
-
-
-
-#if 0
-
-//	main display code
-
-	while (!Button())
-	{
-		if (video_frame!=current_frame)
-		{
-			if (video_frame==0)
-				ClearScreen();
-			else
-				UnpackXor( screenBits.baseAddr, (Ptr)fs[0].frame[video_frame].video_data );
-	
-			video_frame++;
-			if (video_frame==20)
-				video_frame = 0;
-		}
-	}
+TODO:
+	Loop single flim [DONE]
+	Create autoplay
+	Magically set type
+	Handle 'SELF' flim
+	PREF for SELF?
+	VERSION for SELF?
 
 
 
 
 
-//	-------------------------------------------------------------------
-//	VBL Task, called 60 times a second
-//	-------------------------------------------------------------------
+A974 : Button
 
-//	We insert that in the VBL task list
-//	We have saved the value of A5 in it, so we can access our globals
-//	from the VBL code
-typedef struct MyTaskElem
-{
-    long myA5;
-    VBLTask gTask;
-};
+* Add back the Help
+* Play commands (restart/prev/next/etc) in ApplyPlay
+* Manage play commands (at least) abort (Button) from VBL
+* Mouse selection is a bit off (click on right border of polaroid)
+* Check all resource IDs in Resources.h
+* Don't add duplicate
+* Sort flims
+* Drag/drop reorder
+* When selected, play should indicates the number of selected flims
+* When a single one, play indicates the name
+* Add a "Restore Default" in preference dialog.
+* Changing flim types should not remove auto play
+* Select all (and other menus) should not work when Library window not front
+* "Cannot open flim" : dialog uncentererd + no mouse
 
-//	The VBL task
-struct MyTaskElem taskElem;
+* [DONE] Incomprehensible crash if buffers too small
+* [DONE] Flim 'A' makes MacFlim crash
+* [DONE] Escape deselects all.
+* [DONE] When no selection, play should be "Play All Library".
+* [DONE] Key scrolling keeps margins around polaroids
+* [DONE] Progress when adding flims
+* [DONE] Fixed Abort() when multiple windows
+* [DONE] Manage non-BW screens (how to detect?)
+* [DONE] Slow scroll redraw
+* [DONE] Arrow key redraw performance
+* [DONE] Redo menus
+* [DONE] Play flims from finder
+* [DONE] Make window front when clicking in content
+* [DONE] Add tip menu (show/hide)
+* [DONE] Make Tips window front
+* [DONE] Tips window close
+* [DONE] Restore tips
+* [DONE] Implement Loop
+* [DONE] Implement Force Silent
+* [DONE] "This flim is of the wrong type/creator" => add name
+* [DONE] Check flim integrity
+* [DONE] Play multiple flims
+* [DONE] Manage selection issue (clip)
+* [DONE] Mouse selection when scrolled
+* [DONE] Imperfect mouse selection (missing bottom of clip)
+* [DONE] Scrolling performance
+* [DONE] Update of scrollbar with delete
+* [DONE] Arrow keys selection
+* [DONE] Implement multi-selection (shift)
+* [DONE] Polaroid badge position
+* [DONE] Better library place window
+* [DONE] Add directory
+* [DONE] Change open file to add "check all files"
+* [DONE] About panel
+* [DONE] Preferences
+* [DONE] Restore Mini Player
+* [DONE] Delete flim
+* [DONE] Autosize flim window
+* [DONE] Scroll flim window
+* [DONE] Resize flim window
+* [DONE] Crash setting flim type
+* [BUG] Click on bottom of polaroid deselects
+* [DONE] Space pauses the flim at startup
+* [DONE] Use enter to play flims
+* [DONE] Add a "Library/Play" menu item
+* [DONE] Add a "Library/Make Autoplay" menu item
+* [DONE] Implement "Edit/Select All" menu item
+* [DONE] "Zoom in/out" effect when playing.
+* [FAILED] Add 'self play' badge
+* [DONE] Create autostart from library
+* [DONE] Clicking arrows deselects
+* [DONE] Arrow key scroll
+* [DONE] Arrows don't work on Mac Plus
 
-int video_frame = 0;
+* naming variables : "from"/"to" (not "from"/"dest")
 
-pascal void vbl_task()
-{
-		//	Recover the value of A5 for access to global
-		//	from the 4 bytes before the VBL entry
-    asm
-    {
-        move.l A5,-(SP)
-        move.l -4(A0),A5
-    }
-
-		//	We want to be called next frame
-		//	Unless we decide otherwise
-	taskElem.gTask.vblCount = 1;
-
-		//	If there is a player object
-		//	we blast the movie
-
-	if (video_frame!=current_frame)
-	{
-		if (video_frame==0)
-			ClearScreen();
-		else
-			UnpackXor( screenBits.baseAddr, (Ptr)fs[0].frame[video_frame].video_data );
-
-		video_frame++;
-		if (video_frame==20)
-			video_frame = 0;
-	}
-
-		//	Restore A5 to the value it had before entry
-    asm
-    {
-       move.l (SP)+,A5
-    }
-}
-
-//	-------------------------------------------------------------------
-//	Installs VBL Handler
-//	-------------------------------------------------------------------
-
-static void InstallHandler()
-{
-    OSErr theError;
-    taskElem.gTask.qType = vType;
-    taskElem.gTask.vblAddr = vbl_task;
-    taskElem.gTask.vblCount = 1;
-    taskElem.gTask.vblPhase = 0;
-    taskElem.myA5 = (long)CurrentA5;
-
-    theError = VInstall( (QElemPtr)&taskElem.gTask );
-//    assert( theError==noErr );
-}
-
-//	-------------------------------------------------------------------
-//	Removes VBL Handler
-//	-------------------------------------------------------------------
-
-static void RemoveHandler()
-{
-    OSErr theError;
-    theError = VRemove( (QElemPtr)&taskElem.gTask );
-//    assert( theError==noErr );
-}
-
-
-
-#if 0
-
-	current = 1-current;
-	FSRead( fRefNum, &read_size, data[current] );
-
-		//	We are back to block 0
-	current = 1-current;
+* Have an achievement system?
+*   Rookie : Played a flim
+*   Addict : Played 100 flims
+* 	Early Adopter: Playing a flim on a Mac128K on Jan 24th (how to store that?)
+*	Gotta Catch Them All: Played a flim on Mac XL, Mac 128, Mac 512, Mac 512Ke, Mac Plus, Mac SE, Mac Portable, Mac SE/30
+*   You're Tearing Me Apart : Played a flim on a Lisa
+*	dQw4w9WgXcQ : You didn't let me down.
+*   Man of Taste : Played a flim on Jan 1st, 00:00
+*   The Read Deal : played a flim on real hardware (how to check that?)
 
 
-		//	Prepare async read
-	pb.ioCompletion = NULL;
-	pb.ioRefNum = fRefNum;
-	pb.ioPosMode = fsAtMark;
-	pb.ioPosOffset = 0;
-	pb.ioResult = 0;
+MFS = vRefNum (volume reference number) + name
+
+SFGetFile used to return a vRefNum + a name
+
+To support HFS on old code, SFGetFile returns a "wdRefNum", a "working directory ref num",
+which is a memory based mapped of "working directory" (ie: it creates a pseudo disk for
+every directory it returns).
+
+After having called SF[P]GetFile, one has to call GetWDInfo
+to get the read vRefNum and read dirID of the file
+
+Attention: some call have "dirID" that reference the dirID of the object,
+in case it is a directory, so you have to use the parID (parent ID).
 
 #endif
-
-#endif
-
-
-
-
-#if 0
-
-//	-------------------------------------------------------------------
-//	Unpack to screen buffer, suitable for non 512x342 screens
-//	slower due to use of multiplication
-//	(This is fixable, but non 512x342 have a lot of horsepower)
-//	(and MacintoshXL deserves its own implementation)
-//	-------------------------------------------------------------------
-
-void UnpackZ32_ext( char *dest, char *source, int rowbytes )
-{
-	asm
-	{
-			;	Save registers
-		movem.l D0/D5-D7/A2-A4,-(A7)
-
-			;	Get parameters
-		movea.l dest,a4				;	a4 == screenBase
-		movea.l source,a3			;	a3 == source data
-		move.w	rowbytes,d6			;	rowbytes
-
-@loop:
-		move.l	(a3)+,d7			;	header
-		tst.l	d7					;	0x00000000 => end of frame
-		beq.s	@exit
-
-		movea.l	a4,a2				
-									;	Low end of d7 is offset
-
-		clr.l	d0
-		sub.w	#4,d7
-		move.w  d7,d0
-
-		asr.w	#6,d0
-		mulu.w	d6,d0	
-		add.l	d0,a2
-
-		and.w	#0x03f,d7
-		add.w	d7,a2
-
-		swap	d7
-
-@loop2:
-        move.l	(a3)+,(a2)
-        add 	d6,a2				;	Take stride into account
-		tst.w	d7
-		dbeq.w	d7,@loop2
-	
-        bra.s     @loop
-
-			;	Done
-@exit:
-        movem.l   (A7)+,D0/D5-D7/A2-A4
-	}
-}
-
-#endif
-
-
-

@@ -1,15 +1,22 @@
 #include "Playback.h"
 
+//	-------------------------------------------------------------------
+//	INCLUDES
+//	-------------------------------------------------------------------
+
 #include "Config.h"
 #include "Machine.h"
 #include "Log.h"
 #include "Keyboard.h"
 #include "Screen.h"
-#include "Help.h"
 #include "Util.h"
 #include "Preferences.h"
-#include "Movie.h"
+#include "Flim.h"
 #include "Buffer.h"
+
+#include <stdio.h>
+
+//	-------------------------------------------------------------------
 
 struct Playback gPlayback;
 
@@ -65,7 +72,7 @@ FrameDataPtr NextDataPtrV( FrameDataPtr ptr )
 //	Creates an in-memory block
 //	-------------------------------------------------------------------
 
-BlockPtr MovieInitBlock( MoviePtr movie, Ptr block )
+BlockPtr FlimInitBlock( FlimPtr flim, Ptr block )
 {
 	BlockPtr blk = (BlockPtr)block;
 	blk->status = blockUnused;
@@ -77,49 +84,38 @@ BlockPtr MovieInitBlock( MoviePtr movie, Ptr block )
 	return blk;
 }
 
-/*
-//	-------------------------------------------------------------------
-//	Block deallocate
-//	-------------------------------------------------------------------
-
-void MovieDisposBlock( BlockPtr blk )
-{
-	DisposPtr( blk );
-}
-*/
-
-void CheckBlock( MoviePtr movie, BlockPtr blk )
+void CheckBlock( FlimPtr flim, BlockPtr blk )
 {
 	assert( blk->status>=blockUnused && blk->status<=blockClosed, "Block Status" );
 //	assert( blk->ticks>=0, "Block Ticks" );
 	assert( blk->frames_left>=0, "Block Frames Left" );
-//	assert( (char*)blk->sound>=blk->buffer && (char*)blk->sound<blk->buffer+movie->maxBlockSize, "Block Sound" );
-//	assert( (char*)blk->video>=blk->buffer && (char*)blk->video<blk->buffer+movie->maxBlockSize, "Block Video" );
+//	assert( (char*)blk->sound>=blk->buffer && (char*)blk->sound<blk->buffer+flim->maxBlockSize, "Block Sound" );
+//	assert( (char*)blk->video>=blk->buffer && (char*)blk->video<blk->buffer+flim->maxBlockSize, "Block Video" );
 }
 
 long kludge;
 
-void MovieReadBlock( MoviePtr movie, int index, BlockPtr blk )
+void FlimReadBlock( FlimPtr flim, int index, BlockPtr blk )
 {
 	OSErr err;
 	long readSize;
 
 #ifdef VERBOSE
-	printf( "MovieReadBlock(%d)\n", index);
+	printf( "FlimReadBlock(%d)\n", index);
 #endif
 
-	assert( index>=0 && index<MovieGetBlockCount(movie), "BlockRead" );
+	assert( index>=0 && index<FlimGetBlockCount( flim ), "BlockRead" );
 	
 	blk->index = index;
-	blk->frames_left = MovieGetBlockFrameCount( movie, index );
+	blk->frames_left = FlimGetBlockFrameCount( flim, index );
 
 		//	Block Will be read from disk
 	blk->status = blockReading;
 
-	readSize = MovieGetBlockSize( movie, index );
-	err = FSRead( MovieGetFileRefNum( movie ), &readSize, blk->buffer );
+	readSize = FlimGetBlockSize( flim, index );
+	err = FSRead( FlimGetFileRefNum( flim ), &readSize, blk->buffer );
 	assert( err==noErr, "FSRead" );
-	assert( readSize==MovieGetBlockSize( movie, index ), "Short read" );
+	assert( readSize==FlimGetBlockSize( flim, index ), "Short read" );
 
 	blk->ticks = *(short *)(blk->buffer);
 	blk->sound = (FrameDataPtr)(blk->buffer+2);
@@ -130,7 +126,7 @@ void MovieReadBlock( MoviePtr movie, int index, BlockPtr blk )
 		//	Block is now ready to be played
 	blk->status = blockReady;
 	
-	CheckBlock( movie, blk );
+	CheckBlock( flim, blk );
 }
 
 //	-------------------------------------------------------------------
@@ -182,23 +178,20 @@ ePlayResult BlockWaitPlayed( BlockPtr blk )
 
 		exec_log();
 
+#ifndef MINI_PLAYER
 		CheckKeys();
-		if (sEscape)
+		if (gEscape)
 		{
 			return kAbort;
 		}
-		if (sSkip)
+		if (gSkip)
 			return kSkip;
-		if (sPrevious)
+		if (gPrevious)
 			return kPrevious;
-		if (sRestart)
+		if (gRestart)
 			return kRestart;
-		if (sHelp)
-			DisplayHelp();
-		if (sPreferences)
-			PreferenceDialog();
 
-		if (sPause)
+		if (gPause)
 		{
 			enum State state = gState;
 
@@ -207,23 +200,25 @@ ePlayResult BlockWaitPlayed( BlockPtr blk )
 			do
 			{
 				CheckKeys();
-				if (sEscape)
+				if (gEscape)
 					return kAbort;
-				if (sSkip)
+				if (gSkip)
 					return kSkip;
-				if (sPrevious)
+				if (gPrevious)
 					return kPrevious;
-				if (sRestart)
+				if (gRestart)
 					return kRestart;
-				if (sHelp)
-					DisplayHelp();
 			}
-			while (!sPause);
+			while (!gPause);
 
             gState = playingState;
 		}
 
 		gSpinCount++;
+#else
+		if (Button())
+			return kAbort;
+#endif MINI_PLAYER
 
 	}	while (status==blockPlaying);
 
@@ -265,11 +260,17 @@ short gState;
 //	The current block getting read
 BlockPtr gReadBlock;
 
+
+static Boolean TestKey( unsigned char *keys, char k )
+{
+	return !!((keys[k>>3]>>(k&7))&1);
+}
+
 //	-------------------------------------------------------------------
 //	Plays a file
 //	-------------------------------------------------------------------
 
-ePlayResult PlayFlimFile( Str255 fName, short vRefNum )
+ePlayResult PlayFlim( FlimPtr flim, Boolean silent )
 {
 	OSErr err;
 	short fRefNum;
@@ -277,79 +278,52 @@ ePlayResult PlayFlimFile( Str255 fName, short vRefNum )
 	long next_read_size;
 	long tick = 0;
 	ePlayResult theResult;
-	MoviePtr movie;
 	int index;
 
-begin:
+	if (!MachineIsBlackAndWhite())
+		return kScreenError;
+
+	//	Hack to check the buffer size
+	{
+		unsigned char theKeys[16];
+
+		GetKeys( theKeys );
+		if (TestKey( theKeys, 0x3a ))	//	Options
+		{
+			MessageLong( BufferGetSize() );
+		}
+	}
+
 	theResult = kDone;
 
-		//	Open flim (MFS fashion)
-//	err = FSOpen( fName, vRefNum, &fRefNum );
-//	FReD #### LISA, you are tearing me apart...
-	{
-		ParamBlockRec pb;
-		pb.ioParam.ioCompletion = NULL;
-		pb.ioParam.ioNamePtr = fName;
-		pb.ioParam.ioVRefNum = vRefNum;
-		pb.ioParam.ioVersNum = 0;
-		pb.ioParam.ioPermssn = fsRdPerm;
-		pb.ioParam.ioMisc = NULL;
-		err = PBOpen( &pb, FALSE );
-		fRefNum = pb.ioParam.ioRefNum;
-	}
-
-#ifdef VERBOSE
-	printf( "%#s in %d\n", fName, vRefNum );
-#endif
-	CheckErr( err, "Open" );
-
-	if (err!=noErr)
-	{
-		printf( "OPEN ERROR=%d\n", err );
-		return kError;
-	}
-
-//DebugStr( "\pDID OPEN FILE" );
-
-		//	Skip first Kb of comments
-	SetFPos( fRefNum, fsFromStart, 1024 );
-
-#ifdef SYNCPLAY
-	theResult = FlimSyncPlay( fRefNum );
-	goto close;
-#endif
-
-		//	Set up screen
-	gScreen = ScreenInit( gScreen, 64 );
 	ScreenClear( gScreen );
 
-		//	Open flim
-	movie = MovieOpen( fRefNum, BufferGetSize()-sizeof( struct BlockRecord ) );
-
 		//	Allocate block2
-	gBlock1 = MovieInitBlock( movie, BufferGet(0) );
-	gBlock2 = MovieInitBlock( movie, BufferGet(1) );
+	gBlock1 = FlimInitBlock( flim, BufferGet(0) );
+	gBlock2 = FlimInitBlock( flim, BufferGet(1) );
 
 		//	We read the first one from disk
+	dlog_str( "\nFlimReadBlock(0)\n" );
+	exec_log();
 	gReadBlock = GetFirstBlock();
-	MovieReadBlock( movie, 0, gReadBlock );
+	FlimReadBlock( flim, 0, gReadBlock );
 	
 		//	This will be the first playback block
 	gPlaybackBlock = gReadBlock;
 
 		//	We read the second block from disk
 	gReadBlock = GetOtherBlock( gReadBlock );
-	MovieReadBlock( movie, 1, gReadBlock );
-
-
-		//	This is the block we would love to read from
-	gReadBlock = GetOtherBlock( gReadBlock );
+	gReadBlock->status = blockPlayed;
 
 		//	Start flim sound
 	exec_log();
 
 
-	if (PreferenceGetIsPlaybackVBL() || MovieGetSilent( movie ))
+	if ( silent ||
+#ifndef MINI_PLAYER
+	PreferenceGetIsPlaybackVBL() ||
+#endif
+	FlimGetIsSilent( flim ))
 	{
 		PlaybackVBLInit( &gPlayback );
 	}
@@ -364,12 +338,29 @@ begin:
 
 	tick = TickCount();
 
-	CheckBlock( movie, gBlock1 );
-	CheckBlock( movie, gBlock2 );
+	CheckBlock( flim, gBlock1 );
+	CheckBlock( flim, gBlock2 );
 
-	for (index=2;index!=MovieGetBlockCount( movie );index++)
+	for (index=1;index!=FlimGetBlockCount( flim );index++)
 	{
+			//	Goal is to load the block 'index' from the disk into gReadBlock and start playing it
+	
+			//	We sync load the data
+		dlog_str( "\nFlimReadBlock(index)\n" );
+		exec_log();
+		FlimReadBlock( flim, index, gReadBlock );
+		CheckBlock( flim, gBlock1 );
+		CheckBlock( flim, gBlock2 );
+
+			//	We switch to the next one
+		gReadBlock = GetOtherBlock( gReadBlock );
+		exec_log();
+
 		dlog_str( "\n MAIN LOOP WILL WAIT\n" );
+		exec_log();
+
+			//	We wait for that 'next one' to be available
+		dlog_str( "\nBlockWaitPlayed(index-1)\n" );
 		exec_log();
 		theResult = BlockWaitPlayed( gReadBlock );
 		if (theResult!=kDone)
@@ -379,38 +370,29 @@ begin:
 
 		dlog_str( "\n MAIN WILL READ\n" );
 		exec_log();
-
-			//	We sync load data into the next buffer into the one we just played
-		MovieReadBlock( movie, index, gReadBlock );
-	CheckBlock( movie, gBlock1 );
-	CheckBlock( movie, gBlock2 );
-
-			//	This is the next we would love to read from
-		gReadBlock = GetOtherBlock( gReadBlock );
-		exec_log();
 	}
 
-		//	Wait for the penultimate block to be played
-	while (gReadBlock->status!=blockPlayed)
-		;
+	dlog_str( "\n Wait for last block\n" );
+	exec_log();
 
-		//	Close that block
-	gReadBlock->status = blockClosed;
-
-		//	Start last block
+		//	Wait for last block
+	gReadBlock->status = blockClosed;	//	So the interrupt passes the block to played
 	theResult = BlockWaitPlayed( GetOtherBlock( gReadBlock ) );
 	
-		//	Wait until finished
-	while (GetOtherBlock( gReadBlock )->status==blockPlaying)
-		;
-
 end:
+
+	dlog_str( "\n Wait for stop\n" );
+	exec_log();
 
 	gState = stopRequestedState;
 
 		//	Wait for the VBL or Sound Interrupt to acknowledge the end
 	while (gState!=stoppedState)
 		;
+
+	dlog_str( "\n Stopped\n" );
+	exec_log();
+
 
 #ifdef VERBOSE
 	printf( "Is VLB %s\n", PreferenceGetIsPlaybackVBL()?"YES":"NO" );
@@ -436,13 +418,47 @@ end:
 		;
 #endif
 
-close:
-	err = FSClose( fRefNum );
-	CheckErr( err, "FSClose" );
-	MovieDispos( movie );
+	return theResult;
+}
 
-	if (theResult==kRestart)
-		goto begin;
+ePlayResult PlayFlimFile( Str255 fName, short vRefNum, long dirID, eFileAPI api, Boolean silent )
+{
+		//	Open flim
+	FlimPtr flim = FlimOpenByName( fName, vRefNum, dirID, api );
+	ePlayResult theResult;
+
+	if (!flim)
+		return kFileError;
+
+	do
+	{
+#ifdef SYNCPLAY
+		theResult = FlimSyncPlay( flim );
+		goto close;
+#endif
+
+		theResult = PlayFlim( flim, silent );
+	}
+	while (theResult==kRestart);
+
+close:
+	FlimDispos( flim );
+
+	return theResult;
+}
+
+//	-------------------------------------------------------------------
+//	Plays a file in a loop
+//	-------------------------------------------------------------------
+
+ePlayResult PlayFlimFileLoop( Str255 fName, short vRefNum, long dirID, eFileAPI api, Boolean silent )
+{
+	ePlayResult theResult;
+
+	do
+	{
+		theResult = PlayFlimFile( fName, vRefNum, dirID, api, silent );
+	} while (theResult==kDone);		//	Loop over if no button click
 
 	return theResult;
 }

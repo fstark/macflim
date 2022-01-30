@@ -1,37 +1,27 @@
-#ifndef RENDER_INCLUDED__
-#define RENDER_INCLUDED__
+#ifndef SELF_PLAYER_INCLUDED__
+#define SELF_PLAYER_INCLUDED__
 
 //	-------------------------------------------------------------------
-//	CODEC RENDERING FUNCTIONS
+//	SELF PLAYER INSTALLATION
 //	-------------------------------------------------------------------
 
-//	-------------------------------------------------------------------
-//	List of codecs.
-//	See source code for info on data layout of encodings
-//	-------------------------------------------------------------------
-
-typedef enum
-{
-	kNull = 0x00,
-	kZ16,
-	kZ32,
-	kInvert,
-	kCopy,
-
-	kCodecCount
-}	eCodec;
 
 //	-------------------------------------------------------------------
-//	Initialize registry of codecs
+//	Make sure internal copy of MiniPlayer is up to date
 //	-------------------------------------------------------------------
 
-void CodecInit( void );
+Boolean SelfGetMiniPlayer( void );
 
 //	-------------------------------------------------------------------
-//	Return function to display specific codec's data
+//	Let user select a file and makes it into self-playable file
 //	-------------------------------------------------------------------
 
-typedef void (*DisplayProc)( char *dest, char *source, int rowBytes );
-DisplayProc CodecGetProc( int codec, int inputWidth, int outputWidth, int type );
+void SelfInstallPlayerUI( void );
+
+//	-------------------------------------------------------------------
+//	Makes specific FLIM into a self playable flim
+//	-------------------------------------------------------------------
+
+Boolean SelfInstallPlayer( Str255 fName, short wdRefNum, short dirId );
 
 #endif

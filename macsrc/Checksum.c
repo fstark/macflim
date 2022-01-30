@@ -1,21 +1,29 @@
 #include "Checksum.h"
 
+//	-------------------------------------------------------------------
+//	INCLUDES
+//	-------------------------------------------------------------------
+
 #include "Util.h"
+#include "Resources.h"
 
 //	-------------------------------------------------------------------
 //	Returns checksum from flim file
 //	-------------------------------------------------------------------
 
-static unsigned short ChecksumFlimGet( Str255 fName, short vRefNum )
+static unsigned short ChecksumFlimGet( Str255 fName, short vRefNum, long dirID )
 {
 	unsigned fletcher = 0xffff;
 	OSErr err;
 	short fRefNum;
 
 		//	Open flim
-//	err = FSOpen( fName, vRefNum, &fRefNum );
-	{
+	if (FALSE)
+	{		//	MFS
 		ParamBlockRec pb;
+
+		//printf( "FlimOpenByName %d %s\n", vRefNum, fName );
+
 		pb.ioParam.ioCompletion = NULL;
 		pb.ioParam.ioNamePtr = fName;
 		pb.ioParam.ioVRefNum = vRefNum;
@@ -23,6 +31,23 @@ static unsigned short ChecksumFlimGet( Str255 fName, short vRefNum )
 		pb.ioParam.ioPermssn = fsRdPerm;
 		pb.ioParam.ioMisc = NULL;
 		err = PBOpen( &pb, FALSE );
+		fRefNum = pb.ioParam.ioRefNum;
+	}
+	else
+	{		//	HFS
+		HParamBlockRec pb;
+
+		//printf( "FlimOpenByName %d %s\n", vRefNum, fName );
+
+		pb.ioParam.ioCompletion = NULL;
+		pb.ioParam.ioNamePtr = fName;
+		pb.ioParam.ioVRefNum = vRefNum;
+//		pb.ioParam.ioVersNum = 0;
+		pb.ioParam.ioPermssn = fsRdPerm;
+		pb.ioParam.ioMisc = NULL;
+		pb.fileParam.ioDirID = dirID;
+		err = PBHOpen( &pb, FALSE );
+
 		fRefNum = pb.ioParam.ioRefNum;
 	}
 	CheckErr( err, "FSOpen" );
@@ -109,7 +134,7 @@ static unsigned short ChecksumFletcher16x( unsigned short fletcher, unsigned sho
 //	Performs the integrity check, with skippable dialog
 //	-------------------------------------------------------------------
 
-static Boolean ChecksumFlimPerformDialog( Str255 fName, short vRefNum, unsigned short fletcher_ref )
+static Boolean ChecksumFlimPerformDialog( Str255 fName, short vRefNum, long dirID, unsigned short fletcher_ref )
 {
 	OSErr err;
 	short fRefNum;
@@ -129,13 +154,13 @@ static Boolean ChecksumFlimPerformDialog( Str255 fName, short vRefNum, unsigned 
 	//	Check integrity by 20K blocks
 #define BUFFER_SIZE 20000
 
-#define kProgressDlog 129
-#define kProgressItem 1
-
 		//	Open flim
-//	err = FSOpen( fName, vRefNum, &fRefNum );
-	{
+	if (FALSE)
+	{		//	MFS
 		ParamBlockRec pb;
+
+		//printf( "FlimOpenByName %d %s\n", vRefNum, fName );
+
 		pb.ioParam.ioCompletion = NULL;
 		pb.ioParam.ioNamePtr = fName;
 		pb.ioParam.ioVRefNum = vRefNum;
@@ -143,6 +168,23 @@ static Boolean ChecksumFlimPerformDialog( Str255 fName, short vRefNum, unsigned 
 		pb.ioParam.ioPermssn = fsRdPerm;
 		pb.ioParam.ioMisc = NULL;
 		err = PBOpen( &pb, FALSE );
+		fRefNum = pb.ioParam.ioRefNum;
+	}
+	else
+	{		//	HFS
+		HParamBlockRec pb;
+
+		//printf( "FlimOpenByName %d %s\n", vRefNum, fName );
+
+		pb.ioParam.ioCompletion = NULL;
+		pb.ioParam.ioNamePtr = fName;
+		pb.ioParam.ioVRefNum = vRefNum;
+//		pb.ioParam.ioVersNum = 0;
+		pb.ioParam.ioPermssn = fsRdPerm;
+		pb.ioParam.ioMisc = NULL;
+		pb.fileParam.ioDirID = dirID;
+		err = PBHOpen( &pb, FALSE );
+
 		fRefNum = pb.ioParam.ioRefNum;
 	}
 #ifdef VERBOSE
@@ -163,7 +205,9 @@ static Boolean ChecksumFlimPerformDialog( Str255 fName, short vRefNum, unsigned 
 	while (Button())
 		;
 
-	theProgress = GetNewDialog( kProgressDlog, NULL, (WindowPtr)-1 );
+	ParamText( fName, "", "", "" );
+
+	theProgress = GetNewDialog( kDLOGCheckProgress, NULL, (WindowPtr)-1 );
 	GetDItem( theProgress, kProgressItem, &dummy0, &thePercentText, &dummy1 );
 	SetIText( thePercentText, "" );
 	ShowWindow( theProgress );
@@ -221,14 +265,14 @@ done:
 		{
 			ShowCursor();
 			ParamText( "\pFlim have no checksum", "", "", "" );
-			NoteAlert( 130, NULL );
+			UtilDialog( kAlertNoChecksumID );
 			HideCursor();
 		}
 		else if (fletcher!=fletcher_ref)
 		{
 			ShowCursor();
 			ParamText( "\pFlim is corrupted", "", "", "" );
-			StopAlert( 131, NULL );
+			StopAlert( kAlertCorruptedID, NULL );
 			HideCursor();
 	
 			return FALSE;
@@ -242,24 +286,25 @@ done:
 //	Checks flim integrity if possible and accepted by user
 //	-------------------------------------------------------------------
 
-Boolean ChecksumFlimIfNeeded( Str255 fName, short vRefNum )
+Boolean ChecksumFlimIfNeeded( Str255 fName, short vRefNum, long dirID, Boolean interactive )
 {
-	unsigned short checksum = ChecksumFlimGet( fName, vRefNum );
+	unsigned short checksum = ChecksumFlimGet( fName, vRefNum, dirID );
 	if (checksum!=0xffff)
 	{
 		DialogPtr theCheckDialog = NULL;
-		short itemHit;
+		short itemHit = kCheckIntegrityButtonOk;
 
-		theCheckDialog = GetNewDialog( 131, NULL, (WindowPtr)-1 );
-		ShowWindow( theCheckDialog );
-		ModalDialog( NULL, &itemHit );
-		DisposDialog( theCheckDialog );
-		if (itemHit==2)
+		if (interactive)
 		{
-			if (!ChecksumFlimPerformDialog( fName, vRefNum, checksum ))
-				return FALSE;
+			theCheckDialog = GetNewDialog( kDialogCheckIntegrityID, NULL, (WindowPtr)-1 );
+			ShowWindow( theCheckDialog );
+			ModalDialog( NULL, &itemHit );
+			DisposDialog( theCheckDialog );
 		}
+		if (itemHit==kCheckIntegrityButtonOk)
+			return ChecksumFlimPerformDialog( fName, vRefNum, dirID, checksum );
+
 	}
-	
+
 	return TRUE;
 }

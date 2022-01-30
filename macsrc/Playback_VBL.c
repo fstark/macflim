@@ -1,35 +1,53 @@
+//	-------------------------------------------------------------------
+//	The callback for silent playback driven by vertical interrupts
+//	-------------------------------------------------------------------
+
 #include "Playback.h"
 
+//	-------------------------------------------------------------------
+//	INCLUDES
+//	-------------------------------------------------------------------
+
 #include <Retrace.h>
+
+//	-------------------------------------------------------------------
+
 #include "Screen.h"
-#include "Log.h"
+#include "Util.h"
 #include "Config.h"
 #include "Machine.h"
 #include "Keyboard.h"
 #include "Buffer.h"
 
 //	-------------------------------------------------------------------
-//	The VBL task for silent playback, driven by vertical retrace
-//	-------------------------------------------------------------------
-
+//	The VBL task
 //	We insert that in the VBL task list
 //	We have saved the value of A5 in it, so we can access our globals
 //	from the VBL code
+//	-------------------------------------------------------------------
+
 typedef struct MyTaskElem
 {
     long myA5;
     VBLTask gTask;
 };
 
-//	The VBL task
-struct MyTaskElem taskElem;
+static struct MyTaskElem taskElem;
+
+//	-------------------------------------------------------------------
+//	The nested interuption level, to count reentries
+//	-------------------------------------------------------------------
 
 static int gInter = 0;	//	Counting interruption to find re-entries
 
-extern long kludge;
+//	-------------------------------------------------------------------
+//	Perf counters
+//	-------------------------------------------------------------------
 
 static long sWaitForRead = 0;
 static long sAlive = 0;
+
+//	-------------------------------------------------------------------
 
 #define noDEBUG_VBL
 
@@ -39,15 +57,17 @@ static pascal void DoFrameSilent()
 		//	from the 4 bytes before the VBL entry
     asm
     {
-        move.l A5,-(SP)
-        move.l -4(A0),A5
+        move.l a5,-(a7)
+        move.l -4(a0),a5
     }
 
-if (sDebug)
+#ifndef MINI_PLAYER
+if (gDebug)
 {
 	ScreenLogHome( gScreen );
 	ScreenLog( gScreen, "%c VBL %ld/%ld BUF=%ld", (MachineIsMinimal()?'M':' '), FreeMem(), MachineGetMemory(), BufferGetSize() );
 }
+#endif
 
 	if (gState==stopRequestedState)
 	{
@@ -56,7 +76,6 @@ if (sDebug)
 		gState = stoppedState;
 		goto end;
 	}
-
     
 		//	We want to be called next frame
 		//	But don't know when yet
@@ -157,7 +176,7 @@ end:
 		//	Restore A5 to the value it had before entry
     asm
     {
-       move.l (SP)+,A5
+       move.l (a7)+,a5
     }
 }
 
@@ -181,23 +200,20 @@ static void Init( void )
 }
 
 //	-------------------------------------------------------------------
-//	Removes VBL Handler
+//	VBL handler is removed by just no reseting vblCount in the callback
 //	-------------------------------------------------------------------
 
 static void None( void )
 {
 	//	The task was removed by the gStoppedState (keeping vblCount to 0)
 	//	The remove VBL should be used if the task is still pending
-/*
-    OSErr theError;
-    theError = VRemove( (QElemPtr)&taskElem.gTask );
-    assert( theError==noErr, "Failed to remove VBL task" );
-*/
 }
+
+//	-------------------------------------------------------------------
 
 void PlaybackVBLInit( struct Playback *playback )
 {
 	playback->init = Init;
-	playback->restart = Init;
+	playback->resume = Init;
 	playback->dispos = None;
 }

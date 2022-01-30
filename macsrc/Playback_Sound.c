@@ -4,24 +4,38 @@
 
 #include "Playback.h"
 
+//	-------------------------------------------------------------------
+//	INCLUDES
+//	-------------------------------------------------------------------
+
 #include <Sound.h>
 
+//	-------------------------------------------------------------------
+
+#include "Config.h"
+#include "Util.h"
 #include "Log.h"
 #include "Keyboard.h"
 #include "Screen.h"
-#include "Config.h"
 #include "Machine.h"
 #include "Buffer.h"
 
-//	Silence
-FFSynthPtr silence;
-
-//	The param block used to send work to the sound driver
-
-ParamBlockRec pb;
+//	-------------------------------------------------------------------
 
 //	-------------------------------------------------------------------
-//	Generates a tick of silence
+//	Contains 12 ticks of silence (#### TODO: makes that only one)
+//	-------------------------------------------------------------------
+
+FFSynthPtr silence;
+
+//	-------------------------------------------------------------------
+//	The param block used to send work to the sound driver
+//	-------------------------------------------------------------------
+
+static ParamBlockRec pb;
+
+//	-------------------------------------------------------------------
+//	Plays a tick of silence
 //	-------------------------------------------------------------------
 
 static void DoSilence( ProcPtr callback )
@@ -36,26 +50,26 @@ static void DoSilence( ProcPtr callback )
 	assert( sound_err==noErr, "DoSilence: PBWrite failed" );
 }
 
-
-
+//	-------------------------------------------------------------------
 //	The nested interuption level, to count reentries
+//	-------------------------------------------------------------------
+
 static int gInter = 0;
 
+//	-------------------------------------------------------------------
+//	Perf counters
+//	-------------------------------------------------------------------
 
-//	Per counters
 long gPlayedFrames = 0;
 long gReentryCount = 0;
 long gStalledTicks = 0;
 long gSpinCount = 0;
 
-
-
 //	-------------------------------------------------------------------
 //	Callback to play a frame of sound and display a frame of video
 //	-------------------------------------------------------------------
 
-pascal void DoFrame( void );
-pascal void DoFrame()
+static pascal void DoFrame()
 {
 	OSErr err;
 
@@ -66,17 +80,17 @@ pascal void DoFrame()
 		move.l 0x904, a5
 	}
 
-#ifdef VERBOSE
 	dlog_str( "CALLBACK #" );
 	dlog_int( gPlaybackBlock->frames_left );
 	dlog_str( " " );
-#endif
 
-if (sDebug)
+#ifndef MINI_PLAYER
+if (gDebug)
 {
 	ScreenLogHome( gScreen );
 	ScreenLog( gScreen, "%c SND %ld/%ld BUF=%ld", (MachineIsMinimal()?'M':' '), FreeMem(), MachineGetMemory(), BufferGetSize() );
 }
+#endif
 
 		//	If request to stop, do not play sound, no more callbacks, and notify new state
 	if (gState==stopRequestedState)
@@ -119,18 +133,15 @@ if (sDebug)
 			//	We want to switch to the other block
 		if (GetOtherBlock( gPlaybackBlock )->status==blockReady)
 		{
-#ifdef VERBOSE
 			dlog_str( "\nSWITCHING " );
-#endif
 			gPlaybackBlock->status = blockPlayed;	//	Now, the main loop can start filling this block again
 			gPlaybackBlock = GetOtherBlock( gPlaybackBlock );
 			gPlaybackBlock->status = blockPlaying;
 		}
 		else
 		{
-#ifdef VERBOSE
 			dlog_str( " STALLED " );
-#endif
+
 			//	We have no available blocks
 			//	We don't have enough resources
 			DoSilence( (ProcPtr)DoFrame );
@@ -151,10 +162,12 @@ if (sDebug)
 		pb.ioParam.ioReqCount = gPlaybackBlock->sound->data_size-8 /* size+header */;
 		pb.ioParam.ioCompletion = (ProcPtr)DoFrame;
 
-		if (sMuted)
+#ifndef MINI_PLAYER
+		if (gMuted)
 		{
 			audio = (Ptr)silence;
 		}
+#endif
 		if (audio==(Ptr)gPlaybackBlock->video)
 		{	//	No sound
 			audio = (Ptr)silence;
@@ -162,7 +175,6 @@ if (sDebug)
 		}
 		pb.ioParam.ioBuffer = audio;
 	}
-
 
 /*	if (muted)		//	more than 5 ticks of silence are needed...
 	{
@@ -194,11 +206,6 @@ end:
 }
 
 
-
-
-
-
-
 //	-------------------------------------------------------------------
 //	Starts sound
 //	-------------------------------------------------------------------
@@ -217,48 +224,37 @@ static void Init( void )
 	for (i=0;i!=370*12;i++)
 		silence->waveBytes[i] = 128;
 
-//	gPlaybackBlock->status = blockPlaying;	//	unsure
-
 	gState = pausedState;
 
-	DoFrame();
+	DoFrame();	//	Starts the "pump", in paused state
 }
 
 //	-------------------------------------------------------------------
-//	Stops the flim
+//	Resumes the flim
 //	-------------------------------------------------------------------
 
-static void Restart( void )
+static void Resume( void )
 {
 	gState = pausedState;
 	DoFrame();
 }
 
 //	-------------------------------------------------------------------
-//	Stops the flim
+//	Dispos resources (the silence)
 //	-------------------------------------------------------------------
 
 static void Dispos( void )
 {
-//	Does not work. Unsure why
-//	KillIO(-4);  /* stops all pending StartSounds, see Sound Manager in IM2 */
-
 	assert( silence!=NULL, "Silence unallocated1" );
 	DisposPtr( (Ptr)silence );
 	silence = NULL;
 }
 
-
-/*void PlaybackStop()
-{
-	gState = stopRequestedState;
-	while (gState!=stoppedState)
-		;
-}*/
+//	-------------------------------------------------------------------
 
 void PlaybackSoundInit( struct Playback *playback )
 {
 	playback->init = Init;
-	playback->restart = Restart;
+	playback->resume = Resume;
 	playback->dispos = Dispos;
 }

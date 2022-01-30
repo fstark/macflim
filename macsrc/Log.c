@@ -1,26 +1,19 @@
 #include "Log.h"
 
+#ifdef VERBOSE
+
+//	-------------------------------------------------------------------
+//	INCLUDES
+//	-------------------------------------------------------------------
+
 #include <stdio.h>
 #include <string.h>
+
+//	-------------------------------------------------------------------
 
 #include "Util.h"
 
 //	-------------------------------------------------------------------
-//	Generic assertion => break into debugger
-//	-------------------------------------------------------------------
-
-void assert( int v, const char *msg )
-{
-	if (!v)
-	{
-		Str255 buffer;
-		strcpy( (char *)(buffer+1), msg );
-		buffer[0] = strlen( msg );
-		Abort( buffer );
-		DebugStr( buffer );
-	}
-}
-
 
 static char *dlog_buffer;
 static char *dlog_head;
@@ -28,12 +21,9 @@ static char *dlog_tail;
 static char *dlog_end;
 
 //	-------------------------------------------------------------------
-//	Inits the log system
-//	-------------------------------------------------------------------
 
 void dinit_log( void )
 {
-#ifdef VERBOSE
 	dlog_buffer = (char *)NewPtr( 50000 );
 	if (dlog_buffer==NULL)
 	{
@@ -42,7 +32,6 @@ void dinit_log( void )
 	dlog_head = dlog_buffer;
 	dlog_tail = dlog_head;
 	dlog_end = dlog_buffer+50000;
-#endif
 }
 
 //	-------------------------------------------------------------------
@@ -68,22 +57,16 @@ static int my_memcmp( char *d, const char *f, int len )
 }
 
 //	-------------------------------------------------------------------
-//	Logs raw bytes
-//	-------------------------------------------------------------------
 
 void dlog( const char *data, int len )
 {
-#ifdef VERBOSE
 	if (len<dlog_end-dlog_head)
 	{
 		my_memcpy( dlog_head, data, len );
 		dlog_head += len;
 	}
-#endif
 }
 
-//	-------------------------------------------------------------------
-//	Logs c string
 //	-------------------------------------------------------------------
 
 void dlog_str( const char *str )
@@ -92,8 +75,6 @@ void dlog_str( const char *str )
 	dlog( str, size );
 }
 
-//	-------------------------------------------------------------------
-//	Logs number
 //	-------------------------------------------------------------------
 
 void dlog_int( long num )
@@ -104,11 +85,8 @@ void dlog_int( long num )
 	dlog_str( buffer+1 );
 }
 
+//	-------------------------------------------------------------------
 
-
-
-
-//	Must not be called from interrut -- writes log to stdout
 void exec_log( void )
 {
 	while (dlog_tail!=dlog_head)
@@ -117,3 +95,5 @@ void exec_log( void )
 		fflush( stdout );
 	}
 }
+
+#endif

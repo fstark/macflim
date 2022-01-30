@@ -1,64 +1,30 @@
 //	-------------------------------------------------------------------
 //	SCREEN HANDLING FUNCTIONS
 //	-------------------------------------------------------------------
-//	Save/restore screen
-//	-------------------------------------------------------------------
 
 #include "Screen.h"
+
+//	-------------------------------------------------------------------
+
 #include "Config.h"
-#include "Log.h"
+#include "Util.h"
 
+#ifndef MINI_PLAYER
 
-#define RectHeight(r)		((r).bottom-(r).top)
-
+//	-------------------------------------------------------------------
 
 void KillScreen( ScreenPtr scrn, short killcode )
 {
-	while (!Button())
-		ScreenFlash( scrn, 0, (killcode+1)*16 );
+	ScreenLogHome( scrn );
+	ScreenLog( scrn, "KILLED : %x ", killcode );
 	ExitToShell();
 }
 
 //	-------------------------------------------------------------------
-//	Allocated memory and saves screen
+//	FONT: this font is lifted from another project
+//	and is flipped horizontally
 //	-------------------------------------------------------------------
 
-void SaveScreen( Ptr *ptr )
-{
-	long count = ((long)screenBits.rowBytes)*RectHeight(screenBits.bounds);
-
-	*ptr = NewPtr( count );
-
-	if (*ptr)
-		BlockMove( screenBits.baseAddr, *ptr, count );
-}
-
-//	-------------------------------------------------------------------
-//	Restore saved screen and deallocates memory
-//	-------------------------------------------------------------------
-
-void RestoreScreen( Ptr *ptr )
-{
-	if (ptr)
-	{
-		long count = ((long)screenBits.rowBytes)*RectHeight(screenBits.bounds);
-		BlockMove( *ptr, screenBits.baseAddr, count );
-		DisposPtr( *ptr );
-		*ptr = NULL;
-	}
-}
-
-
-
-
-    // {0x00,0x38,0x44,0x4c,0x54,0x64,0x44,0x38,0x00},
-    // {0x00,0x10,0x30,0x50,0x10,0x10,0x10,0x38,0x00},
-    // {0x00,0x38,0x44,0x04,0x38,0x40,0x40,0x7c,0x00},
-    // {0x00,0x38,0x44,0x04,0x18,0x04,0x44,0x38,0x00},
-    // {0x00,0x08,0x18,0x28,0x48,0x7c,0x08,0x08,0x00},
-    // {0x00,0x7c,0x40,0x40,0x78,0x04,0x44,0x38,0x00},
-    // {0x00,0x38,0x44,0x40,0x78,0x44,0x44,0x38,0x00},
-    // {0x00,0x7c,0x04,0x04,0x08,0x10,0x10,0x10,0x00}
 char sFont[128][8] = {
     { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0000 (nul)
     { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0001
@@ -190,6 +156,10 @@ char sFont[128][8] = {
     { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}    // U+007F
 };
 
+//	-------------------------------------------------------------------
+//	Reverses the char for fixing the font
+//	-------------------------------------------------------------------
+
 static char Reverse( char c )
 {
 	int i;
@@ -204,6 +174,10 @@ static char Reverse( char c )
 	
 	return r^0xff;
 }
+
+//	-------------------------------------------------------------------
+//	Inits the screen font
+//	-------------------------------------------------------------------
 
 static void ScreenFontInit( void )
 {
@@ -220,11 +194,18 @@ static void ScreenFontInit( void )
 	}
 }
 
+//	-------------------------------------------------------------------
+//	Log location
+//	-------------------------------------------------------------------
 
 static int logx =0;
 static int logy =0;
 
-static void InternalDrawChar( char c, char *p, size_t rowBytes )
+//	-------------------------------------------------------------------
+//	Logs a single char
+//	-------------------------------------------------------------------
+
+static void InternalDrawChar( char c, char *p, short rowBytes )
 {
 	int i;
 	
@@ -240,6 +221,10 @@ static void InternalDrawChar( char c, char *p, size_t rowBytes )
 	
 	logx++;
 }
+
+//	-------------------------------------------------------------------
+//	Logs a string
+//	-------------------------------------------------------------------
 
 static void ScreenPrint( ScreenPtr screen, char *p, const char *s )
 {
@@ -269,15 +254,27 @@ static void ScreenPrint( ScreenPtr screen, char *p, const char *s )
     }
 }
 
+//	-------------------------------------------------------------------
+//	Finds current start of line
+//	-------------------------------------------------------------------
+
 static char *LogPtr( ScreenPtr screen )
 {
 	return screen->physAddr + (logy<<3)*screen->rowBytes;
 }
 
+//	-------------------------------------------------------------------
+//	Resets to home
+//	-------------------------------------------------------------------
+
 void ScreenLogHome( ScreenPtr screen )
 {
 	logx = logy = 0;
 }
+
+//	-------------------------------------------------------------------
+//	Moves to specific place
+//	-------------------------------------------------------------------
 
 void ScreenLogMoveTo( ScreenPtr screen, int x, int y )
 {
@@ -285,12 +282,21 @@ void ScreenLogMoveTo( ScreenPtr screen, int x, int y )
 	logy = y;
 }
 
+//	-------------------------------------------------------------------
+//	Logs string
+//	-------------------------------------------------------------------
+
 void ScreenLogString( ScreenPtr screen, const char *s )
 {
 	ScreenPrint( screen, LogPtr( screen ), s );
 }
 
+//	-------------------------------------------------------------------
+//	printf-style logging
+//	-------------------------------------------------------------------
+
 #include <stdarg.h>
+#include <stdio.h>
 
 void ScreenLog( ScreenPtr screen, const char *format, ... )
 {
@@ -303,18 +309,13 @@ void ScreenLog( ScreenPtr screen, const char *format, ... )
 }
 
 
-
-
-
-
-
-
+#endif
 
 
 
 
 //	-------------------------------------------------------------------
-//	SCREEN HANDLING FUNCTION
+//	SCREEN HANDLING FUNCTION FOR CODEC PLAYBACK
 //	-------------------------------------------------------------------
 //	Dispatches to the right codec functions
 //	Provides a few direct access routines
@@ -325,7 +326,7 @@ void ScreenLog( ScreenPtr screen, const char *format, ... )
 //	Fills scrn with information to display on the physical screen
 //	-------------------------------------------------------------------
 
-ScreenPtr ScreenInit( ScreenPtr scrn, size_t rowbytes )
+ScreenPtr ScreenInit( ScreenPtr scrn, short rowbytes )
 {
 	int i;
 
@@ -344,7 +345,7 @@ ScreenPtr ScreenInit( ScreenPtr scrn, size_t rowbytes )
 	scrn->stride4 = (scrn->rowBytes-64)/4;
 
 	scrn->baseAddr = scrn->physAddr + ((w-512)/2)/8;
-	scrn->baseAddr += scrn->rowBytes*((h-342)/2);
+	scrn->baseAddr += ((long)scrn->rowBytes)*((h-342)/2);
 
 //	Make sure the address is not odd
 //	(for instance on a Lisa, the screen is 90 bytes wide, so there is a 13 bytes offset)
@@ -355,32 +356,6 @@ ScreenPtr ScreenInit( ScreenPtr scrn, size_t rowbytes )
 		scrn->procs[i] = CodecGetProc( i, 512, scrn->rowBytes*8, CODEC_TYPE );
 		assert( scrn->procs[i]!=NULL, "Codec Not Found" );
 	}
-
-#if 0
-		//	This is slow, but work on every reasonable B&W macs
-	scrn->procs[0] = Null_ref;
-	scrn->procs[1] = UnpackZ16_ref;
-	scrn->procs[2] = UnpackZ32_ref;
-	scrn->procs[3] = Invert_ref;
-	scrn->procs[4] = CopyLines_ref;
-
-#ifndef REFERENCE
-	scrn->procs[2] = UnpackZ32_asm;
-
-	if (scrn->rowBytes==64)				//	Vintage macs
-	{
-		scrn->procs[1] = UnpackZ16_64;
-		scrn->procs[2] = UnpackZ32_64;
-		scrn->procs[3] = Invert_64;
-		scrn->procs[4] = CopyLines_64;
-	}
-
-	if (scrn->rowBytes==80)				//	Macintosh Portable
-	{
-		scrn->procs[2] = UnpackZ32_80;
-	}
-#endif
-#endif
 
 	return scrn;
 }
@@ -406,10 +381,10 @@ void ScreenClear( ScreenPtr scrn )
 //	Flashes the screen (slow)
 //	-------------------------------------------------------------------
 
-void ScreenFlash( ScreenPtr scrn, size_t from, size_t lines )
+void ScreenFlash( ScreenPtr scrn, short from, short lines )
 {
 	long *p = (long *)(scrn->baseAddr+from*scrn->rowBytes);
-	size_t stride4 = scrn->stride4;
+	short stride4 = scrn->stride4;
 
 	int y = lines+1;
 	while (--y)
@@ -438,3 +413,4 @@ void ScreenUncompressFrame( ScreenPtr scrn, char *source )
 //	printf( "[%d/%lx/%d]", (int)codec, (long)scrn->baseAddr, (int)scrn->rowBytes );
 	(scrn->procs[codec])( scrn->baseAddr, source+4, scrn->rowBytes );
 }
+

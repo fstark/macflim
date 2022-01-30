@@ -1,20 +1,13 @@
+#include "Keyboard.h"
+
 //	-------------------------------------------------------------------
-//	KEYBOARD HANDLING ROUTINES
+//	INCLUDES
 //	-------------------------------------------------------------------
 
-#include "Keyboard.h"
 #include "Config.h"
 #include "Machine.h"
+#include "Util.h"
 
-//	-------------------------------------------------------------------
-//	Helper to test a key
-//	-------------------------------------------------------------------
-
-Boolean TestKey( unsigned char *keys, char k )
-{
-	return !!((keys[k>>3]>>(k&7))&1);
-}
-	
 //	-------------------------------------------------------------------
 //	Checks for escape (and others)
 //	-------------------------------------------------------------------
@@ -133,7 +126,7 @@ static Boolean CheckDebug( unsigned char *keys )
 //	Checks for SPACE
 //	-------------------------------------------------------------------
 
-Boolean CheckPause( unsigned char *keys )
+static Boolean CheckPause( unsigned char *keys )
 {
 	static Boolean paused = TRUE;	//	See comment for ESCAPE      
 	Boolean old_state = paused;
@@ -150,7 +143,7 @@ Boolean CheckPause( unsigned char *keys )
 //	Checks for mute
 //	-------------------------------------------------------------------
 
-Boolean CheckMute( unsigned char *keys )
+static Boolean CheckMute( unsigned char *keys )
 {
 #define kMute 	0x1	//	's' key
 
@@ -170,52 +163,52 @@ Boolean CheckMute( unsigned char *keys )
 //	Sets the sEscape, sSkip, sPause, sMuted and other variables
 //	-------------------------------------------------------------------
 
-Boolean sEscape;
-Boolean sSkip;
-Boolean sPrevious;
-Boolean sRestart;
-Boolean sPause;
-Boolean sMuted = FALSE;
-Boolean sHelp;
-Boolean sPreferences;
-Boolean sDebug;
+Boolean gEscape;
+Boolean gSkip;
+Boolean gPrevious;
+Boolean gRestart;
+Boolean gPause;
+Boolean gMuted = FALSE;
+Boolean gHelp;
+Boolean gPreferences;
+Boolean gDebug;
 
 void CheckKeys( void )
 {
 	unsigned char theKeys[16];
 
 	GetKeys( theKeys );
-	sEscape = CheckEscape( theKeys );
+	gEscape = CheckEscape( theKeys );
 	if (CheckSkip( theKeys ))
 	{
 		if (TestKey( theKeys, 56 ))	//	Shift
 		{
-			sSkip = FALSE;
-			sPrevious = TRUE;
+			gSkip = FALSE;
+			gPrevious = TRUE;
 		}
 		else
 		{
-			sSkip = TRUE;
-			sPrevious = FALSE;
+			gSkip = TRUE;
+			gPrevious = FALSE;
 		}
 	}
 	else
-		sSkip = sPrevious = FALSE;
-	sRestart = CheckRestart( theKeys );
-	sPause = CheckPause( theKeys );
+		gSkip = gPrevious = FALSE;
+	gRestart = CheckRestart( theKeys );
+	gPause = CheckPause( theKeys );
 
 		//	We don't do any UI in the minimal version
 		//	and we don't support sound
 	if (!MachineIsMinimal())
 	{
-		sHelp = CheckHelp( theKeys );
+		gHelp = CheckHelp( theKeys );
 		if (CheckMute( theKeys ))
-			sMuted = !sMuted;
+			gMuted = !gMuted;
 	}
-	
-	sPreferences = CheckPreferences( theKeys );
-	
+
+	gPreferences = CheckPreferences( theKeys );
+
 	if (CheckDebug( theKeys ))
-		 sDebug = !sDebug;
+		 gDebug = !gDebug;
 }
 

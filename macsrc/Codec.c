@@ -1,9 +1,10 @@
+#include "Codec.h"
+
 //	-------------------------------------------------------------------
-//	CODEC RENDERING FUNCTIONS
+//	INCLUDES
 //	-------------------------------------------------------------------
 
-#include "Codec.h"
-#include "Log.h"
+#include "Util.h"
 
 //	-------------------------------------------------------------------
 //	Display functions
@@ -450,8 +451,7 @@ static RegistryEntry gRegistry[MAX_REGISTRY_ENTRIES];
 //	Adds an entry to the registry
 //	-------------------------------------------------------------------
 
-void CodecAdd( DisplayProc dp, int codec, int inputWidth, int outputWidth, int type );
-void CodecAdd( DisplayProc dp, int codec, int inputWidth, int outputWidth, int type )
+static void CodecAdd( DisplayProc dp, int codec, int inputWidth, int outputWidth, int type )
 {
 	RegistryEntry *r;
 
@@ -467,8 +467,6 @@ void CodecAdd( DisplayProc dp, int codec, int inputWidth, int outputWidth, int t
 	registryCount++;
 }
 
-//	-------------------------------------------------------------------
-//	Initialize the registry
 //	-------------------------------------------------------------------
 
 void CodecInit( void )
@@ -489,6 +487,8 @@ void CodecInit( void )
 	CodecAdd( CopyLines_ref,	0x04, 512, -1, 0 );
 	CodecAdd( CopyLines_64, 	0x04, 512, 64, 1 );
 }
+
+//	-------------------------------------------------------------------
 
 DisplayProc CodecGetProc( int codec, int inputWidth, int outputWidth, int type )
 {

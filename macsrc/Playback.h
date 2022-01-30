@@ -1,6 +1,7 @@
 #include <Memory.h>
 
-#include "Movie.h"
+#include "Flim.h"
+#include "Util.h"
 
 //	-------------------------------------------------------------------
 //	Each frame is composed of a tick count followed by FrameDataRecords
@@ -71,7 +72,9 @@ typedef enum
 	kAbort,
 	kSkip,
 	kPrevious,
-	kRestart
+	kRestart,
+	kFileError,		//	File was not a FLIM
+	kScreenError	//	Cannot find a B&W screen to play
 }	ePlayResult;
 
 extern BlockPtr gPlaybackBlock;
@@ -81,7 +84,7 @@ void BlockKill( BlockPtr blk );
 BlockPtr GetOtherBlock( BlockPtr blk );
 BlockPtr GetFirstBlock( void );
 
-void CheckBlock( MoviePtr movie, BlockPtr blk );
+void CheckBlock( FlimPtr flim, BlockPtr blk );
 
 
 
@@ -107,17 +110,18 @@ extern long gSpinCount;
 //void InstallPlaybackHandler( void );
 //void RemovePlaybackHandler( void );
 
-ePlayResult PlayFlimFile( Str255 fName, short vRefNum );
+ePlayResult PlayFlim( FlimPtr flim, Boolean silent );
+ePlayResult PlayFlimFile( Str255 fName, short vRefNum, long dirID, eFileAPI api, Boolean silent );
+ePlayResult PlayFlimFileLoop( Str255 fName, short vRefNum, long dirID, eFileAPI api, Boolean silent );
 
 //void FlimSoundStop( void );
 //void FlimSoundStart( void );
 
-ePlayResult FlimSyncPlay( short fRefNum );
+ePlayResult FlimSyncPlay( FlimPtr flim );
 
-BlockPtr MovieInitBlock( MoviePtr movie, Ptr block );
-//void MovieDisposBlock( BlockPtr blk );
-void MovieDispos( MoviePtr movie );
-void MovieReadBlock( MoviePtr movie, int index, BlockPtr blk );
+BlockPtr FlimInitBlock( FlimPtr flim, Ptr block );
+void FlimDispos( FlimPtr flim );
+void FlimReadBlock( FlimPtr flim, int index, BlockPtr blk );
 
 typedef void (*PlaybackControlFunc)( void );
 
@@ -126,8 +130,8 @@ struct Playback
 	//	Install the interrupt functions and start playback in paused state
 	PlaybackControlFunc init;
 
-	//	Restarts playback in paused state
-	PlaybackControlFunc restart;
+	//	Resumes playback in paused state
+	PlaybackControlFunc resume;
 
 	//	Clean up a stopped playback
 	PlaybackControlFunc dispos;

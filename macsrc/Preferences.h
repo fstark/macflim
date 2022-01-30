@@ -1,3 +1,6 @@
+#ifndef PREFERENCES_INCLUDED__
+#define PREFERENCES_INCLUDED__
+
 //	-------------------------------------------------------------------
 //	MacFlim user preferences management
 //	-------------------------------------------------------------------
@@ -12,21 +15,66 @@
 //  At the end of the program, call PreferenceDispos()
 //	-------------------------------------------------------------------
 
-//	Call at the beginning of the program
-void PreferenceInit( void );
- 
-//	Dispose of all preferences resources
-void PreferenceDispos( void );
+//	-------------------------------------------------------------------
+//	Loads preference from the resource. Can be used from mini player
+//	-------------------------------------------------------------------
 
-//	Call when you have changed a preference
-void PreferenceSave( void );
+void PreferenceLoad( void );
 
-//	VBL driven playback
+//	-------------------------------------------------------------------
+//	VBL driven playback. Can be used from mini player
+//	-------------------------------------------------------------------
+
 Boolean PreferenceGetIsPlaybackVBL( void );
 void PreferenceSetIsPlaybackVBL( Boolean b );
+
+//	-------------------------------------------------------------------
+//	Play in loop
+//	-------------------------------------------------------------------
+
+Boolean PreferenceGetLoop( void );
+void PreferenceSetLoop( Boolean b );
+
+//	-------------------------------------------------------------------
+//	Size of buffers (0 if no size set). Can be used from mini player
+//	-------------------------------------------------------------------
+
+Size PreferenceGetMaxBufferSize( void );
+void PreferenceSetMaxBufferSize( Size maxBufferSize );
+
+//	-------------------------------------------------------------------
+
+short PreferencesGetNextTipIndex( void );
+void PreferencesSetNextTipIndex( short nextTipIndex );
+short PreferencesGetNextTipBtnIndex( void );
+void PreferencesSetNextTipBtnIndex( short nextTipBtnIndex );
+Boolean PreferencesGetShowTips( void );
+void PreferencesSetShowTips( Boolean showTips );
+Boolean PreferencesGetShowTipsStartup( void );
+void PreferencesSetShowTipsStartup( Boolean showTipsStartup );
+
+//	-------------------------------------------------------------------
+//	Call at the beginning of the program
+//	-------------------------------------------------------------------
+
+void PreferenceInit( void );
+ 
+//	-------------------------------------------------------------------
+//	Dispose of all preferences resources
+//	-------------------------------------------------------------------
+
+void PreferenceDispos( void );
+
+//	-------------------------------------------------------------------
+//	Call when you have changed a preference
+//	-------------------------------------------------------------------
+
+void PreferenceSave( void );
 
 //	-------------------------------------------------------------------
 //	Shows the preference dialog, let user interact and save
 //	-------------------------------------------------------------------
 
 void PreferenceDialog( void );
+
+#endif

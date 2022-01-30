@@ -1,23 +1,36 @@
 #include "Preferences.h"
 
+//	-------------------------------------------------------------------
+//	INCLUDES
+//	-------------------------------------------------------------------
+
 #include "Config.h"
 #include "Machine.h"
 #include "Log.h"
 #include "Util.h"
 #include "Screen.h"
+#include "Resources.h"
 
 //	-------------------------------------------------------------------
 //	The preference data structure
 //	-------------------------------------------------------------------
 
-//	Bumped at every incompatible change of data structure
-#define kPrefVersion 0x01
+#define kPrefVersion 0x02 //	Bumped at every incompatible change of data structure
 
 typedef struct
 {
 	short version;
 	
 	Boolean playbackVBL;
+	Size maxBufferSize;
+	Boolean loop;
+	char filler0;
+	Boolean showTips;
+	char filler1;
+	short nextTipIndex;
+	short nextTipBtnIndex;
+	Boolean showTipsStartup;
+	char filler2;
 }	PreferenceRecord;
 
 typedef PreferenceRecord *PreferencePtr;
@@ -27,8 +40,8 @@ typedef PreferenceRecord *PreferencePtr;
 //	-------------------------------------------------------------------
 
 static short sRefNum;		//	-1 if no preferences file
-Handle sPrefHdl = NULL;		//	Handle to pref
-PreferencePtr gPreferences;	//	The preferences object
+static Handle sPrefHdl = NULL;		//	Handle to pref
+static PreferencePtr sPreferences;	//	The preferences object
 
 //	-------------------------------------------------------------------
 //	Fills gPreferences with the default preferences
@@ -36,9 +49,10 @@ PreferencePtr gPreferences;	//	The preferences object
 
 static void PreferenceDefault()
 {
-	assert( gPreferences!=NULL, "No preferences" );
-	gPreferences->version = kPrefVersion;
-	gPreferences->playbackVBL = MachineIsMinimal()?TRUE:FALSE;
+	assert( sPreferences!=NULL, "No preferences" );
+	sPreferences->version = kPrefVersion;
+	sPreferences->playbackVBL = MachineIsMinimal()?TRUE:FALSE;
+	sPreferences->maxBufferSize = 0;
 }
 
 //	-------------------------------------------------------------------
@@ -53,7 +67,7 @@ static void PreferenceDefaultInMemory()
 
 	sPrefHdl = NewHandleNoFail( PREF_SIZE );
 	HLock( sPrefHdl );
-	gPreferences = *((PreferencePtr*)sPrefHdl);
+	sPreferences = *((PreferencePtr*)sPrefHdl);
 
 	for (i=0;i!=PREF_SIZE;i++)
 		(*sPrefHdl)[i] = 0;
@@ -62,10 +76,70 @@ static void PreferenceDefaultInMemory()
 }
 
 //	-------------------------------------------------------------------
+//	Just loads from the current resource file
+//	Note: we can get a few bytes on the minimal version
+//	by not keeping the handle around
+//	-------------------------------------------------------------------
+
+void PreferenceLoad( void )
+{
+	if (MachineIsMinimal())
+	{
+		PreferenceDefaultInMemory();
+		return ;
+	}
+
+	sPrefHdl = Get1Resource( 'PREF', kPreferenceID );
+
+	//	File does not contain the right resource, we'll do everything from memory
+	if (!sPrefHdl)
+	{
+		PreferenceDefaultInMemory();
+		return ;
+	}
+	
+	HLock( sPrefHdl );
+	sPreferences = *((PreferencePtr*)sPrefHdl);
+}
+
+//	-------------------------------------------------------------------
+
+Boolean PreferenceGetIsPlaybackVBL( void )
+{
+	assert( sPreferences!=NULL, "IsPlaybackVBL" );
+
+		//	On XL we have no other solution
+	if (MachineIsMinimal())
+		return TRUE;
+
+	return sPreferences->playbackVBL;
+}
+
+//	-------------------------------------------------------------------
+
+Size PreferenceGetMaxBufferSize( void )
+{
+	return sPreferences->maxBufferSize;
+}
+
+
+#ifndef MINI_PLAYER
+
+Boolean PreferenceGetLoop( void )
+{
+	return sPreferences->loop;
+}
+
+void PreferenceSetLoop( Boolean b )
+{
+	sPreferences->loop = b;
+}
+
+//	-------------------------------------------------------------------
 //	Creates preference file in System folder if not existent
 //	Opens it
 //	Adds it to the resource path
-//	Loads the 'PREF' resource #0
+//	Loads the 'PREF' resource #128
 //	Hlock it in memory
 //	-------------------------------------------------------------------
 
@@ -79,7 +153,7 @@ void PreferenceInit( void )
 		return ;
 	}
 
-#define PREF_FILE "\pMacFlim Player Preferences"
+#define PREF_FILE "\pMacFlim Preferences"
 	
 	sRefNum = OpenResFile( PREF_FILE );
 
@@ -92,7 +166,7 @@ void PreferenceInit( void )
 		if (sRefNum!=-1)
 		{
 			PreferenceDefaultInMemory();
-			AddResource( sPrefHdl, 'PREF', 0, "\pPreferences" );
+			AddResource( sPrefHdl, 'PREF', kPreferenceID, "\pPreferences" );
 			PreferenceSave();
 		}
 	}
@@ -107,24 +181,15 @@ void PreferenceInit( void )
 	//	We have a file, we read it
 	if (sRefNum!=-1)
 	{
-		sPrefHdl = Get1Resource( 'PREF', 0 );
-		//	File does not contain the right resource, we'll do everything from memory
-		if (!sPrefHdl)
-		{
-			PreferenceDefaultInMemory();
-			return ;
-		}
-		
-		HLock( sPrefHdl );
-		gPreferences = *((PreferencePtr*)sPrefHdl);
+		PreferenceLoad();
 
 		//	Mmmm. Need to update the preferences.
-		if (gPreferences->version!=kPrefVersion)
+		if (sPreferences->version!=kPrefVersion)
 		{
 			HUnlock( sPrefHdl );
 			SetHandleSize( sPrefHdl, sizeof( PreferenceRecord ) );
 			HLock( sPrefHdl );
-			gPreferences = *((PreferencePtr*)sPrefHdl);
+			sPreferences = *((PreferencePtr*)sPrefHdl);
 
 				//	We have a new version of preferences, let's re-create them
 			PreferenceDefault();
@@ -133,7 +198,10 @@ void PreferenceInit( void )
 	}
 }
 
-//	Dispose of all preferences resources
+//	-------------------------------------------------------------------
+//	Release handle and close resource file
+//	-------------------------------------------------------------------
+
 void PreferenceDispos( void )
 {
 	if (sPrefHdl)
@@ -147,7 +215,10 @@ void PreferenceDispos( void )
 	}
 }
 
-//	Call when you have changed the preferences
+//	-------------------------------------------------------------------
+//	Write the resource back to the file
+//	-------------------------------------------------------------------
+
 void PreferenceSave( void )
 {
 	if (sRefNum!=-1)
@@ -155,66 +226,103 @@ void PreferenceSave( void )
 		ChangedResource( sPrefHdl );
 		if (ResError()==noErr)
 			WriteResource( sPrefHdl );
+		else
+			Error( "\pChangedResource failed", ResError() );
 	}
-}
-
-Boolean PreferenceGetIsPlaybackVBL( void )
-{
-	assert( gPreferences!=NULL, "IsPlaybackVBL" );
-
-		//	On XL we have no other solution
-	if (MachineIsMinimal())
-		return TRUE;
-
-	return gPreferences->playbackVBL;
-}
-
-void PreferenceSetIsPlaybackVBL( Boolean b )
-{
-	assert( gPreferences!=NULL, "PreferenceSetIsPlaybackVBL" );
-
-	if (MachineIsMinimal())
-		b = TRUE;
-
-	gPreferences->playbackVBL = b;
 }
 
 //	-------------------------------------------------------------------
 
-pascal void DoFrame( void );
+void PreferenceSetIsPlaybackVBL( Boolean b )
+{
+	assert( sPreferences!=NULL, "PreferenceSetIsPlaybackVBL" );
 
-#include "Playback.h"
-#include "Keyboard.h"
+	if (MachineIsMinimal())
+		b = TRUE;
+
+	sPreferences->playbackVBL = b;
+}
+
+//	-------------------------------------------------------------------
+
+void PreferenceSetMaxBufferSize( Size maxBufferSize )
+{
+	sPreferences->maxBufferSize = maxBufferSize;
+}
+
+//	-------------------------------------------------------------------
+
+short PreferencesGetNextTipIndex( void )
+{
+	return sPreferences->nextTipIndex;
+}
+
+void PreferencesSetNextTipIndex( short nextTipIndex )
+{
+	sPreferences->nextTipIndex = nextTipIndex;
+}
+
+short PreferencesGetNextTipBtnIndex( void )
+{
+	return sPreferences->nextTipBtnIndex;
+}
+
+void PreferencesSetNextTipBtnIndex( short nextTipBtnIndex )
+{
+	sPreferences->nextTipBtnIndex = nextTipBtnIndex;
+}
+
+Boolean PreferencesGetShowTips( void )
+{
+	return sPreferences->showTips;
+}
+
+void PreferencesSetShowTips( Boolean showTips )
+{
+	sPreferences->showTips = showTips;
+}
+
+Boolean PreferencesGetShowTipsStartup( void )
+{
+	return sPreferences->showTipsStartup;
+}
+
+void PreferencesSetShowTipsStartup( Boolean showTipsStartup )
+{
+	sPreferences->showTipsStartup = showTipsStartup;
+}
+
 
 #include "Resources.h"
 
 void PreferenceDialog( void )
 {
-	enum State state = gState;
 	DialogPtr preferences;
 	short itemHit;
 	Handle iCheckVBL;
+	Handle iMaxBufferSize;
 	short iType;
 	short iRect;
+	Str255 iText;
 	Ptr savePtr = NULL;
 
-	gState = stopRequestedState;
-	while (gState!=stoppedState)
-		;
-
-	SaveScreen( &savePtr );
-
-	preferences = GetNewDialog( kPreferenceDialogID, NULL, (WindowPtr)-1 );
+		//	Getthe dialog and fill it
+	preferences = GetNewDialog( kDialogPreferenceID, NULL, (WindowPtr)-1 );
 	GetDItem( preferences, kPreferenceCheckVBL, &iType, &iCheckVBL, &iRect );
 	SetCtlValue( iCheckVBL, PreferenceGetIsPlaybackVBL() );
+	GetDItem( preferences, kPreferenceMaxBufferSize, &iType, &iMaxBufferSize, &iRect );
+	if (PreferenceGetMaxBufferSize()!=0)
+		NumToString( PreferenceGetMaxBufferSize(), iText );
+	else
+		iText[0] = 0;
+	SetIText( iMaxBufferSize, iText );
 
 	if (MachineIsMinimal())
 		HiliteControl( iCheckVBL, 255 );
 
-	UtilPlaceWindow( preferences );
+	UtilPlaceWindow( preferences, 0.2 );
 	ShowWindow( preferences );
 	DrawDialog( preferences );
-	ShowCursor();
 	do
 	{
 		ModalDialog( NULL, &itemHit );
@@ -225,18 +333,20 @@ void PreferenceDialog( void )
 		}
 	}	while (itemHit!=kPreferenceButtonOk);
 
-	CheckKeys();	//	This reads the keyboard and don't act on it
-					//	so if the user closed the dialog with ENTER
-					//	it won't be catch by the main loop, as there will be
-					//	no transitions.
-	HideCursor();
+		//	Max buffer size
+	{
+		Size maxBufferSize;
+		GetIText( iMaxBufferSize, iText );
+		StringToNum( iText, &maxBufferSize );
+		if (maxBufferSize!=PreferenceGetMaxBufferSize())
+		{
+			UtilDialog( kALRTPreferencesRestart );
+			PreferenceSetMaxBufferSize( maxBufferSize );
+		}
+	}
 
 	PreferenceSave();
 	DisposDialog( preferences );
-
-	RestoreScreen( &savePtr );
-
-	gPlayback.restart();
-
-	gState = state;
 }
+
+#endif

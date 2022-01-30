@@ -17,77 +17,48 @@
 //		Autoplay (plays data fork)
 //	-------------------------------------------------------------------
 
+//	-------------------------------------------------------------------
+//	INCLUDES
+//	-------------------------------------------------------------------
 
 #include <stdio.h>
-#include <Types.h>
-#include <QuickDraw.h>
-#include <ToolUtils.h>
-#include <Events.h>
-#include <Memory.h>
-#include <Retrace.h>
-#include <Sound.h>
 #include <string.h>
 
-#include "Config.h"
-#include "Keyboard.h"
+//	-------------------------------------------------------------------
+
 #include "Playback.h"
 #include "Screen.h"
 #include "Log.h"
 #include "Util.h"
 #include "Preferences.h"
-#include "Codec.h"
 #include "Checksum.h"
 #include "Machine.h"
 #include "Buffer.h"
-
-
-
-
-
-
-
-
-
-
-
-
-#define noSLOW
-
-
-
-
-
-
-//	-------------------------------------------------------------------
-//	Global variables
-//	#### MOVE ME
-//	-------------------------------------------------------------------
-
-
-
-
-
-
-
+#include "Resources.h"
+#include "Self Player.h"
+#include "User Interface.h"
+#include "Library.h"
 
 //	-------------------------------------------------------------------
 //	Autoplays all the flims selected from the Finder in a loop
 //	Returns FALSE if there were no such files
 //	-------------------------------------------------------------------
 
-Boolean AutoPlayFlims( void );
-Boolean AutoPlayFlims( void )
+static Boolean AutoPlayFlims( void )
 {
 	short doWhat = appOpen;
 	short fileCnt = 0;
 	AppFile theAppFile;
 	int i;
+	Ptr savePtr;
 
 	CountAppFiles(&doWhat,&fileCnt);
 
 		//	No files, nothing to do
 	if (fileCnt==0)
 		return FALSE;
+
+	SaveScreen( &savePtr );
 
 	for (;;)
 	{
@@ -99,7 +70,7 @@ Boolean AutoPlayFlims( void )
 			//	If a file is cancelled, we abort everything
 			//	(note: this means that a bad file will abort the looping too)
 			
-			theResult = PlayFlimFile( theAppFile.fName, theAppFile.vRefNum );
+			theResult = PlayFlimFile( theAppFile.fName, theAppFile.vRefNum, kNoDirID, kHFS, FALSE );
 			if (theResult==kError || theResult==kAbort)
 				goto end;
 			if (theResult==kRestart)
@@ -116,6 +87,8 @@ Boolean AutoPlayFlims( void )
 	}
 
 end:
+	RestoreScreen( &savePtr );
+
 	return TRUE;
 }
 
@@ -123,8 +96,7 @@ end:
 //	Filter function : returns TRUE if file is not a FLIM
 //	-------------------------------------------------------------------
 
-pascal Boolean FileFilter( FileParam *pbp );
-pascal Boolean FileFilter( FileParam *pbp )
+static pascal Boolean FileFilter( FileParam *pbp )
 {
 	OSErr err;
 	short fRefNum;
@@ -162,76 +134,10 @@ pascal Boolean FileFilter( FileParam *pbp )
 	}
 
 		//	Close file
-	PBClose( &pb, 0 );
+	err = PBClose( &pb, 0 );
+	CheckErr( err, "PBClose" );
 
 	return theResult;
-}
-
-//	-------------------------------------------------------------------
-//	Returns TRUE is flim file type is correct
-//	-------------------------------------------------------------------
-
-Boolean IsFlimTypeCorrect( Str255 fName, short vRefNum );
-Boolean IsFlimTypeCorrect( Str255 fName, short vRefNum )
-{
-	FInfo fInfo;
-	if (GetFInfo( fName, vRefNum, &fInfo )==noErr && fInfo.fdType=='FLIM')
-		return TRUE;
-	return FALSE;
-}
-
-//	-------------------------------------------------------------------
-//	Sets the flim type
-//	-------------------------------------------------------------------
-
-void SetFlimTypeCreator( Str255 fName, short vRefNum );
-void SetFlimTypeCreator( Str255 fName, short vRefNum )
-{
-	FInfo fInfo;
-	if (GetFInfo( fName, vRefNum, &fInfo )==noErr)
-	{
-		fInfo.fdType='FLIM';
-		fInfo.fdCreator='FLPL';
-		SetFInfo( fName, vRefNum, &fInfo );
-	}
-}
-
-
-//	-------------------------------------------------------------------
-//	Sets flim creator if needed and accepted by user
-//	Does an optional integrity check
-//	Return FALSE if file should not be played
-//	-------------------------------------------------------------------
-
-Boolean SetFlimTypeCreatorIfNeeded( Str255 fName, short vRefNum );
-Boolean SetFlimTypeCreatorIfNeeded( Str255 fName, short vRefNum )
-{
-	DialogPtr theSetTypeDialog = NULL;
-	short itemHit;
-
-	if (IsFlimTypeCorrect( fName, vRefNum ))
-	{
-		unsigned char theKeys[16];
-		GetKeys( theKeys );
-		if (TestKey( theKeys, 0x3a ))	//	Option
-			return ChecksumFlimIfNeeded( fName, vRefNum );
-		
-		return TRUE;
-	}
-
-	theSetTypeDialog = GetNewDialog( 130, NULL, (WindowPtr)-1 );
-	ShowWindow( theSetTypeDialog );
-	ModalDialog( NULL, &itemHit );
-	DisposDialog( theSetTypeDialog );	
-	if (itemHit==1)
-	{
-		if (ChecksumFlimIfNeeded( fName, vRefNum ))
-			SetFlimTypeCreator( fName, vRefNum );
-		else
-			return FALSE;
-	}
-
-	return TRUE;
 }
 
 //	-------------------------------------------------------------------
@@ -240,10 +146,11 @@ Boolean SetFlimTypeCreatorIfNeeded( Str255 fName, short vRefNum )
 
 int main()
 {
-	Ptr savePtr;
 	OSErr err;
-	SFReply theReply;
 	Point where;
+	SFReply theReply;
+	Boolean saveScreen;
+	Size reservedSpace;
 
 		//	Mac toolbox init
 
@@ -253,17 +160,32 @@ int main()
 //	It is part of the "Pascal Toolbox interface" (OSIntf)
 //		(TODO: find old mac dev env. compile MaxApplZone. disass)
 //	It doesn't look to be in 64K ROM
-//	It is in the 128K ROM
+//	It is in the å128K ROM
 //	Its trap# is A063
 //	However, A063 is something else in old trap lists (_InitUtil in MDS1.1)
 
 	InitGraf( &thePort );
+
 	MachineInit();
 
-	if (!MachineIsMinimal())
+	if (MachineIsMinimal())
+	{
+		//	Basically a MacXL or an original Mac128K
+		saveScreen = FALSE;			//	Not needed due lack of multi-finder
+		reservedSpace = 25000L;		//	25 (is the current minimal)
+									//	This currently let us have 2x5Kb buffers on a Mac128
+	}
+	else
+	{
+		/* Normal memory usage parameters */
+		/* User may be asked to increase the MultiFinder partition */
 		MaxApplZone();
+		saveScreen = TRUE;
+		reservedSpace = 30000L + GetScreenSaveSize();
+	}
 
-	BufferInit( 600000L, 30000L );
+	//	Must be done before preferences are openend
+	PreferenceInit();
 
 	InitFonts();
 	FlushEvents( everyEvent, 0 );
@@ -272,6 +194,7 @@ int main()
 	TEInit();
 	InitDialogs( NULL );
 	InitUtilities();
+	BufferInit( PreferenceGetMaxBufferSize(), reservedSpace );
 	InitCursor();
 
 	{
@@ -282,16 +205,24 @@ int main()
 		sprintf( buffer, "%d", 42 );
 	}
 
-
-	PreferenceInit();
-
 	CodecInit();
-
 
 		//	Log subsystem
 	dinit_log();
 
-	HideCursor();
+		//SelfInstallPlayerUI();
+
+//	HideCursor();
+
+	//	Set up screen
+	gScreen = ScreenInit( gScreen, 64 );
+
+
+	if (!MachineIsBlackAndWhite())
+	{
+		Alert( kALRTErrorNoBWScreen, NULL );
+		return 0;
+	}
 
 	if (MachineIsMinimal())
 	{
@@ -304,40 +235,21 @@ int main()
 		where.h = 20;
 		where.v = 90;
 		ShowCursor();
+		
 		SFGetFile( where, 0, NULL, -1, NULL, 0, &theReply );
 		
 		if (theReply.good)
 		{
 			HideCursor();
-			PlayFlimFile( theReply.fName, theReply.vRefNum );
+			PlayFlimFileLoop( theReply.fName, theReply.vRefNum, kNoDirID, kMFS, FALSE );
 		}
+		//	There is no multi-finder, so we don't care about the screen state
 	}
 	else
 	{
-		//	The fancy version	
-		SaveScreen( &savePtr );
-	
-			//	If we have flims to autoplay, let's do exactly that
+		UserInterfaceInit();
 		if (!AutoPlayFlims())
-		{
-				//	Ask user for a file
-			where.h = 20;
-			where.v = 90;
-			ShowCursor();
-			SFGetFile( where, 0, FileFilter, -1, NULL, 0, &theReply );
-			
-			if (theReply.good)
-			{
-				if (SetFlimTypeCreatorIfNeeded( theReply.fName, theReply.vRefNum ))
-				{
-					HideCursor();
-					PlayFlimFile( theReply.fName, theReply.vRefNum );
-				}
-			}
-		}
-	
-	done:
-		RestoreScreen( &savePtr );
+			UserInterfaceLoop();
 	}
 
 	ShowCursor();

@@ -8,10 +8,16 @@
 //	-------------------------------------------------------------------
 //	Defines the optimal size of buffers and allocate them
 //	Makes sure that there are leftBytes contiguous free bytes of memory
-//	after allocation. MaxSize is the maximum size of the buffers.
+//	after allocation. MaxSize is the maximum size of each buffer.
 //	-------------------------------------------------------------------
 
 void BufferInit( Size maxSize, Size leftBytes );
+
+//	-------------------------------------------------------------------
+//	Free the buffers
+//	-------------------------------------------------------------------
+
+void BufferDispos( void );
 
 //	-------------------------------------------------------------------
 //	Return buffer size
@@ -24,11 +30,5 @@ Size BufferGetSize( void );
 //	-------------------------------------------------------------------
 
 Ptr BufferGet( int index );
-
-//	-------------------------------------------------------------------
-//	Free the buffers
-//	-------------------------------------------------------------------
-
-void BufferDispos( void );
 
 #endif

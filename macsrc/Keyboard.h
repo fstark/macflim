@@ -1,18 +1,25 @@
-extern Boolean sEscape;
-extern Boolean sSkip;
-extern Boolean sPrevious;
-extern Boolean sRestart;
-extern Boolean sPause;
-extern Boolean sMuted;
-extern Boolean sHelp;
-extern Boolean sPreferences;
-extern Boolean sDebug;
+#ifndef KEYBOARD_INCLUDED__
+#define KEYBOARD_INCLUDED__
 
-Boolean TestKey( unsigned char *keys, char k );
+//	-------------------------------------------------------------------
+//	KEYBOARD HANDLING ROUTINES AND FLAGS
+//	-------------------------------------------------------------------
+
+extern Boolean gEscape;
+extern Boolean gSkip;
+extern Boolean gPrevious;
+extern Boolean gRestart;
+extern Boolean gPause;
+extern Boolean gMuted;
+extern Boolean gHelp;
+extern Boolean gPreferences;
+extern Boolean gDebug;
+
+//	-------------------------------------------------------------------
+//	Checks keyboard state and set the flags variable to indicate
+//	user action
+//	-------------------------------------------------------------------
+
 void CheckKeys( void );
 
-//	useless
-Boolean CheckPause( unsigned char *keys );
-Boolean CheckMute( unsigned char *keys );
-
-
+#endif
