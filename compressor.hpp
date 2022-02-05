@@ -225,7 +225,6 @@ size_t vertical_from_horizontal( size_t h ) const
 
     virtual std::vector<uint8_t> compress( framebuffer &current, const framebuffer &target, /* weigths, */ size_t budget ) const
     {
-
 // std::cerr << "BUDGET:" << budget << "\n";
 
             //  transient
@@ -243,22 +242,10 @@ size_t vertical_from_horizontal( size_t h ) const
                     //  Let's increase the importance of updating this
                 // delta_[i] += countbits( target_data_[i] ^ current_data_[i] );
                 delta_[i] = ruler_.distance( target_data_[i], current_data_[i] );
-
-                // auto d0 = distance( target_data_[i], current_data_[i] );
-                // auto d1 = ruler_.distance( target_data_[i], current_data_[i] );
-
-                // if (d0!=d1)
-                // {
-                //     fprintf( stderr, "%0u-%0u %lu vs %f\n", (uint32_t)target_data_[i], (uint32_t)current_data_[i], d0, d1 );
-                // }
-                // assert( d0==d1 );
-               
-                // printf( "DIFF %x %x = %ld\n", target_data_[i], current_data_[i], delta_[i] );
             }
 
         }
             //  Display delta map in correct order
-
         if (verbose_)
         {
             std::clog << "DELTA LIST OF " << get_T_size() << " elements: [\n";
@@ -273,8 +260,6 @@ size_t vertical_from_horizontal( size_t h ) const
         if (verbose_)
             std::clog << "]\n";
 
-        // dump_histogram( "BEFORE" );
-
         auto runs = compress( budget, target_data_, delta_ );
 
         for (auto &run:runs)
@@ -284,16 +269,6 @@ size_t vertical_from_horizontal( size_t h ) const
                 assert( run.offset<get_T_size() );
             }
 
-
-        // size_t size = 4;
-        // for (auto &run:runs)
-        // {
-        //     size += sizeof(T);
-        //     size += run.data.size()*sizeof(T);
-        // }
-        // std::clog << "APPROX COMPRESSED SIZE " << size << " / MAXSIZE " << max_size << "\n";
-
-
             //  Encode the runs
         std::vector<uint8_t> res;
 
@@ -302,10 +277,6 @@ size_t vertical_from_horizontal( size_t h ) const
         std::vector<run<T>> smaller;
         for (auto &run:runs)
         {
-            // if (run.data.size()<255)
-            //     smaller.push_back( run );
-            // else
-            //     std::clog << "SKIPPING!\n";
                 //  #### : FIXME 32 words on screen
             auto rs = run.split( max_run_len, 64/sizeof(T) );
 
@@ -345,26 +316,6 @@ size_t vertical_from_horizontal( size_t h ) const
 
         for (auto &run:closer)
             assert( run.offset<get_T_size() );
-
-        // for (auto &run:closer)
-        //     if (run.data.size()==0 && run.offset!=255)
-        //         std::clog << "???" << "\n";
-
-        //  Split long runs
-
-            //  Compute the difference
-        // size_t cur = 0;
-        // for (auto &run:closer)
-        // {
-            // std::clog << run.offset-cur << "/" << run.data.size() << " ";
-
-            // assert( run.data.size()<=max_run_len );
-            // assert( run.offset-cur<=255 );
-
-// << "[" << run.offset << "]"
-            // cur = run.offset;
-        // }
-        // std::clog << "\n";
 
         if (sizeof(T)==4)
             closer = runs;
@@ -441,16 +392,8 @@ size_t vertical_from_horizontal( size_t h ) const
         }
 
             //  #### Decompresses -- needs to be moved to the right object
-
         for (auto &run:closer)
         {
-            
-        // auto s = std::begin(res);
-        // while (*s)
-        // {
-        //     uint32_t header = *s++;
-        //     size_t offset = ((header&0xffff)-4);
-
             size_t offset = run.offset*sizeof(T);
 
             assert( run.offset<get_T_size() );
@@ -469,19 +412,7 @@ size_t vertical_from_horizontal( size_t h ) const
                 delta_[offset] = 0;
                 offset++;
             }
-
-        //     int count = (header>>16)+1;
-
-        //     while (count--)
-        //     {
-        //         current_data_[offset] = *s++;
-        //         delta_[offset] = 0;
-        //         offset++;
-        //     }
-        // };
         }
-
-        // dump_histogram( "AFTER " );
 
         current = framebuffer{current_data_, W_, H_};
 
