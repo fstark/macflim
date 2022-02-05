@@ -1,4 +1,4 @@
-all: flimmaker flimutil
+all: ../flimmaker ../flimutil
 
 image.o: image.cpp imgcompress.hpp image.hpp
 	c++ -std=c++2a -c -O3 image.cpp -o image.o
@@ -21,14 +21,14 @@ imgcompress.o: imgcompress.cpp imgcompress.hpp image.hpp
 flimmaker.o: flimmaker.cpp flimencoder.hpp flimcompressor.hpp compressor.hpp imgcompress.hpp framebuffer.hpp image.hpp ruler.hpp reader.hpp writer.hpp
 	c++ -std=c++2a -c -O3 -I liblzg/src/include flimmaker.cpp -o flimmaker.o
 
-flimmaker: flimmaker.o imgcompress.o image.o watermark.o ruler.o reader.o writer.o
-	c++ -std=c++2a flimmaker.o imgcompress.o image.o watermark.o ruler.o reader.o writer.o -lavformat -lavcodec -lavutil -o flimmaker
+../flimmaker: flimmaker.o imgcompress.o image.o watermark.o ruler.o reader.o writer.o
+	c++ -std=c++2a flimmaker.o imgcompress.o image.o watermark.o ruler.o reader.o writer.o -lavformat -lavcodec -lavutil -o ../flimmaker
 
-flimutil: flimutil.c
-	cc -O3 -Wno-unused-result  flimutil.c -o flimutil
+../flimutil: flimutil.c
+	cc -O3 -Wno-unused-result  flimutil.c -o ../flimutil
 
 clean:
-	rm -f flimmaker flimutil flimmaker.o imgcompress.o image.o watermark.o ruler.o reader.o writer.o
+	rm -f ../flimmaker ../flimutil flimmaker.o imgcompress.o image.o watermark.o ruler.o reader.o writer.o
 
 debug: flimmaker.cpp flimutil.c imgcompress.cpp watermark.cpp image.cpp ruler.cpp flimencoder.hpp flimcompressor.hpp compressor.hpp imgcompress.hpp framebuffer.hpp image.hpp ruler.hpp
 	c++ -std=c++2a -c -g -fsanitize=undefined imgcompress.cpp -o imgcompress.o
@@ -38,8 +38,8 @@ debug: flimmaker.cpp flimutil.c imgcompress.cpp watermark.cpp image.cpp ruler.cp
 	c++ -std=c++2a -c -g -fsanitize=undefined ruler.cpp -o ruler.o
 	c++ -std=c++2a -c -g -fsanitize=undefined reader.cpp -o reader.o
 	c++ -std=c++2a -c -g -fsanitize=undefined writer.cpp -o writer.o
-	c++ -std=c++2a -g -fsanitize=undefined imgcompress.o flimmaker.o watermark.o image.o ruler.o reader.o writer.o -lavformat -lavcodec -lavutil -o flimmaker
-	cc -g -Wno-unused-result flimutil.c -o flimutil
+	c++ -std=c++2a -g -fsanitize=undefined imgcompress.o flimmaker.o watermark.o image.o ruler.o reader.o writer.o -lavformat -lavcodec -lavutil -o ../flimmaker
+	cc -g -Wno-unused-result flimutil.c -o ../flimutil
 #	gdb ./flimmaker
 
 video_test: video_test.c
