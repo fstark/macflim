@@ -175,6 +175,10 @@ Starts encoding at that specific time. Time format is ``[[<hours>:]<minutes>:]<s
 
 Specify the duration of the flim. See ``--from`` for time format. The default duration is 5 minutes. [Due to incompetent coding](https://github.com/fstark/macflim/issues/5), encoding movies that last longer than 10-15m is in general a bad idea.  
 
+### --poster **time**
+
+Specifies the timestamp from which to generate the 128x86 poster for display in the library. By default, the image from the third of the active duration will be extracted (note: this will product black images if duration is longer than flim).
+
 ### --bars **boolean**
 
 The Mac screen ratio is 3/2, but move movies out there are 4/3, 16/9 or something else. By default, flimmaker adds black borders around the border of the flim (because it keeps more of the original image and the black bars are less data to encode). Using ``--bars false`` instead crops the image for a nicer "fullscreen" effect. Note that, if there are already black bars in the input video, using the 'Z' filter (Zoom) described later can help.
@@ -293,4 +297,4 @@ Filter list:
 
 * Black 'k' (percent) : Remove the darkest part of the image. Often movies have black background that are not completely black. The dithering algorithm represents this by having a few white pixels in large black areas, which is visually distracting (and eats encoding bandwidth). The black filters collapses the darkest pixels into pure black. The rest of the image color is scaled to the remaining color range. 'percent' should be between 0 and 100. By default the black filter removes the 6.25% darkest pixels.
 
-* White 'w' (percent) : Same as the Black filter, but for white pixels. This is a slightly less frequent issue, as large pure white areas are rarer in movies. 'percent' should be between 0 and 100. By default the white filters removes the 6.25% lightest pixels.
+* White 'w' (percent) : Same as the ``black`` filter, but for white pixels. This is a slightly less frequent issue, as large pure white areas are rarer in movies. 'percent' should be between 0 and 100. By default the white filters removes the 6.25% lightest pixels.
