@@ -169,7 +169,7 @@ Run ``./flimmaker`` without arguments will display help, and list the detailed o
 
 ### --from **time**
 
-Starts encoding at that specific time. Time format is ``[[<hours>:]<minutes>:]<seconds>``, so ``--from 30`` means *30 seconds* from start, ``--from 120`` means *120 seconds* from start, ``--from 1:`` means *1 minute* from start, and ``--from 1:13:12`` means *1 hour, 13 minutes and 12 seconds* from start.
+Starts encoding at that specific time. Time format is ``[[<hours>:]<minutes>:]<seconds>.<milli>``, so ``--from 30`` means *30 seconds* from start, ``--from 120`` means *120 seconds* from start, ``--from 1:`` means *1 minute* from start, and ``--from 1:13:12`` means *1 hour, 13 minutes and 12 seconds* from start. ``--from 69.420`` means *1 minute, 9 seconds and 420 milliseconds* from start.
 
 ### --duration **time**
 
@@ -177,7 +177,7 @@ Specify the duration of the flim. See ``--from`` for time format. The default du
 
 ### --poster **time**
 
-Specifies the timestamp from which to generate the 128x86 poster for display in the library. By default, the image from the third of the active duration will be extracted (note: this will product black images if duration is longer than flim).
+Specifies the timestamp from which to generate the 128x86 poster for display in the library. By default, the image from the third of the active duration will be extracted (note: this can product black images if duration is longer than 3 times the source material).
 
 ### --bars **boolean**
 
