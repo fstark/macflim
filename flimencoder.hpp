@@ -41,6 +41,9 @@ public:
     size_t width() const { return W_; }
     size_t height() const { return H_; }
     void set_size( size_t W, size_t H ) { W_ = W; H_ = H; }
+    void set_width( size_t W ) { W_ = W; }
+    void set_height( size_t H ) { H_ = H; }
+
 
     size_t byterate() const { return byterate_; }
     void set_byterate( size_t byterate ) { byterate_ = byterate; }
@@ -93,10 +96,9 @@ public:
 
     static bool profile_named( const std::string name, encoding_profile &result )
     {
-        result.set_size( 512, 342 );
-
         if (name=="xl"s)
         {
+            result.set_size( 512, 342 ); //####wrong
             result.set_byterate( 580 );
             result.set_filters( "g1.6bbscz" );
             result.set_fps_ratio( 4 );
@@ -117,6 +119,7 @@ public:
         }
         if (name=="512"s)
         {
+            result.set_size( 512, 342 );
             result.set_byterate( 480 );
             result.set_filters( "g1.6bbscz" );
             result.set_fps_ratio( 4 );
@@ -137,6 +140,7 @@ public:
         }
         if (name=="plus"s)
         {
+            result.set_size( 512, 342 );
             result.set_byterate( 1500 );
             result.set_filters( "g1.6bbscz" );
             result.set_fps_ratio( 2 );
@@ -157,6 +161,7 @@ public:
         }
         if (name=="se"s)
         {
+            result.set_size( 512, 342 );
             result.set_byterate( 2500 );
             result.set_filters( "g1.6bsc" );
             result.set_fps_ratio( 2 );
@@ -177,6 +182,7 @@ public:
         }
         if (name=="se30"s)
         {
+            result.set_size( 512, 342 );
             result.set_byterate( 6000 );
             result.set_filters( "g1.6sc" );
             result.set_fps_ratio( 1 );
@@ -197,6 +203,7 @@ public:
         }
         if (name=="perfect"s)
         {
+            result.set_size( 512, 342 );
             result.set_byterate( 32000 );
             result.set_filters( "g1.6sc" );
             result.set_fps_ratio( 1 );
@@ -543,8 +550,8 @@ std::cout << "POSTER INDEX: " << poster_index << "\n";
         std::vector<u_int8_t> global;
         auto out_global = std::back_inserter( global );
 
-        write2( out_global, 512 );                      //  width
-        write2( out_global, 342 );                      //  height
+        write2( out_global, profile_.width() );                      //  width
+        write2( out_global, profile_.height() );                      //  height
         write2( out_global, profile_.silent() );        //  1 = silent
         write4( out_global, frames.size() );            //  Framecount
         size_t total_ticks = std::accumulate( std::begin(frames), std::end(frames), 0, []( size_t a, flimcompressor::frame &f ){ return a+f.ticks; } );

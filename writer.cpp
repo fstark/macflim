@@ -14,6 +14,8 @@ extern bool sDebug;
 
 class ffmpeg_writer : public output_writer
 {
+    size_t W_;  //  Should be in output_writer
+    size_t H_;
 
 
 /* check that a given sample format is supported by the encoder */
@@ -67,13 +69,13 @@ void pushFrame( const image &img, const sound_frame_t &snd )
         // for (int i=0;i!=342;i++)
         //     memset( videoFrame->data[0]+512*i, i, 512 );
 
-        memset( videoFrame->data[1], 128, 342/2*videoFrame->linesize[1] );
-        memset( videoFrame->data[2], 128, 342/2*videoFrame->linesize[2] );
+        memset( videoFrame->data[1], 128, H_/2*videoFrame->linesize[1] );
+        memset( videoFrame->data[2], 128, H_/2*videoFrame->linesize[2] );
     }
 
         uint8_t *p = videoFrame->data[0];
-        for (int y=0;y!=342;y++)
-            for (int x=0;x!=512;x++)
+        for (int y=0;y!=H_;y++)
+            for (int x=0;x!=W_;x++)
             {
                 auto v = img.at(x,y);
                 if (v<=0.5) *p++ = 0;
@@ -182,8 +184,10 @@ static AVCodec *dump_codecs()
  }
 
 public:
-    ffmpeg_writer( const std::string filename )
+    ffmpeg_writer( const std::string filename, size_t W, size_t H )
     {
+        W_ = W;
+        H_ = H;
     av_register_all();
 
     oformat = av_guess_format(nullptr, filename.c_str(), nullptr);
@@ -220,8 +224,8 @@ public:
 
     stream->codecpar->codec_id = oformat->video_codec;
     stream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
-    stream->codecpar->width = 512;
-    stream->codecpar->height = 342;
+    stream->codecpar->width = W_;
+    stream->codecpar->height = H_;
     stream->codecpar->format = AV_PIX_FMT_YUV420P;
     stream->codecpar->bit_rate = 60 * 6000 * 8;
     avcodec_parameters_to_context( video_context, stream->codecpar );
@@ -520,7 +524,7 @@ public:
 
 std::unique_ptr<output_writer> make_ffmpeg_writer( const std::string &movie_path, size_t w, size_t h )
 {
-    return std::make_unique<ffmpeg_writer>( movie_path );
+    return std::make_unique<ffmpeg_writer>( movie_path, w, h );
 }
 
 std::unique_ptr<output_writer> make_gif_writer( const std::string &movie_path, size_t w, size_t h )

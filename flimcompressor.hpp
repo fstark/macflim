@@ -176,7 +176,7 @@ public:
         {
             image dest( W_, H_ );
 
-            image source_image( 512, 342 );
+            image source_image( W_, H_ );   //  note: was 512x342
             copy( source_image, big_image, bars );
 
             image img = filter( source_image, filters.c_str() );
@@ -242,7 +242,8 @@ public:
 
                 for (auto &codec:codecs)
                 {
-                    auto codec_current_fb = current_fb;
+                    auto codec_current_fb{ current_fb };
+
                     encoded_datas.push_back( codec.coder->compress( codec_current_fb, fb, /* weigths, */ video_budget*codec.penality ) );
                     qualities.push_back( codec_current_fb.proximity( fb ) );
                     encoded_framebuffers.push_back( codec_current_fb );     //  std::move ...

@@ -149,7 +149,8 @@ void usage( const std::string name )
     std::cerr << "\n  Input options:\n";
 
     std::cerr << "    --from TIME                 : time offset to start extracting from\n";
-    std::cerr << "    --duration TIME             : time duration of the extraced clip\n";
+    std::cerr << "    --duration TIME             : time duration of the extracted clip\n";
+    std::cerr << "    --poster TIME               : frame to extract the poster from (by default 1/3 of duration)ß\n";
     std::cerr << "    --fps FPS                   : for 'pgm' pattern, specifies the framerate to be used\n";
     std::cerr << "    --audio FILE                : for 'pgm', specifices a separate u8 22200 Hz wav file with audio\n";
 
@@ -192,7 +193,7 @@ void usage( const std::string name )
     std::cerr << "      use 'auto' to use the encoding parameters as watermark\n";
 
     std::cerr << "    --debug BOOLEAN             : enables various debug options\n";
-    
+
         // else if (!strcmp(*argv,"--cover-from"))
         // else if (!strcmp(*argv,"--cover-to"))
         // else if (!strcmp(*argv,"--cover"))
@@ -292,6 +293,9 @@ try
     argc--;
     argv++;
 
+size_t width = 512;
+size_t height = 342;
+
     while (argc)
     {
         if (!strcmp(*argv,"--help"))
@@ -339,6 +343,18 @@ try
                 std::cerr << "Cannot find encoding profile '" << *argv << "'\n";
                 ::exit( EXIT_FAILURE );
             }
+        }
+        else if (!strcmp(*argv,"--width"))
+        {
+            argc--;
+            argv++;
+            custom_profile.set_width( atoi( *argv ) );
+        }
+        else if (!strcmp(*argv,"--height"))
+        {
+            argc--;
+            argv++;
+            custom_profile.set_height( atoi( *argv ) );
         }
         else if (!strcmp(*argv,"--byterate"))
         {
@@ -487,7 +503,7 @@ try
             // codecs.push_back( flimcompressor::make_codec( "lines", 512, 342, "" ) );
             // codecs.push_back( flimcompressor::make_codec( "null", 512, 342, "" ) );
             // codecs.push_back( flimcompressor::make_codec( "invert", 512, 342, "" ) );
-            codecs.push_back( flimcompressor::make_codec( *argv, 512, 342 ) );
+            codecs.push_back( flimcompressor::make_codec( *argv, width, height ) );
         }
         else if (!strcmp(*argv,"--dither"))
         {
@@ -609,9 +625,9 @@ try
 
     std::vector<std::unique_ptr<output_writer>> w;
     if (mp4_file!="")
-        w.push_back( std::move(make_ffmpeg_writer( mp4_file, 512, 342 ) ) );
+        w.push_back( std::move(make_ffmpeg_writer( mp4_file, custom_profile.width(), custom_profile.height() ) ) );
     if (gif_file!="")
-        w.push_back( std::move(make_gif_writer( gif_file, 512, 342 ) ) );
+        w.push_back( std::move(make_gif_writer( gif_file, custom_profile.width(), custom_profile.height() ) ) );
 
     auto encoder = flimencoder{ custom_profile };
     encoder.set_fps( fps );
