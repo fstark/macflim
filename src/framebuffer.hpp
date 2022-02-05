@@ -77,6 +77,7 @@ private:
     template <typename T>
     size_t get_size() const { return get_width<T>()*H_; }
 
+
     void assert_size( const framebuffer &other ) const
     {
         assert( W_==other.W_ && H_==other.H_ );

@@ -206,7 +206,7 @@ void usage( const std::string name )
     for (auto n:{ "xl", "512", "plus", "se", "se30", "perfect" })
     {
         encoding_profile p;
-        encoding_profile::profile_named( n, p );
+        encoding_profile::profile_named( n, 512, 342, p );
         std::cerr << "        " << n << " : " << p.description() << "\n";
     }
 
@@ -250,6 +250,8 @@ try
     bool generated_cache = true;
     bool downloaded_file = false;
 
+    bool profile_set = false;
+
     const std::string cmd_name{ argv[0] };
 
     // test_ffmpeg( argv[1] );
@@ -275,8 +277,11 @@ try
     comment += version;
     comment += "\n";
 
+size_t width = 512;
+size_t height = 342;
+
     encoding_profile custom_profile;
-    if (!encoding_profile::profile_named( "se30", custom_profile ))
+    if (!encoding_profile::profile_named( "se30", width, height, custom_profile ))
     {
         std::cerr << "Cannot find default profile 'se30'\n";
         ::exit( EXIT_FAILURE );
@@ -292,9 +297,6 @@ try
 
     argc--;
     argv++;
-
-size_t width = 512;
-size_t height = 342;
 
     while (argc)
     {
@@ -338,23 +340,36 @@ size_t height = 342;
         {
             argc--;
             argv++;
-            if (!encoding_profile::profile_named( *argv, custom_profile ))
+            if (!encoding_profile::profile_named( *argv, width, height, custom_profile ))
             {
                 std::cerr << "Cannot find encoding profile '" << *argv << "'\n";
                 ::exit( EXIT_FAILURE );
             }
+            profile_set = true;
         }
         else if (!strcmp(*argv,"--width"))
         {
             argc--;
             argv++;
-            custom_profile.set_width( atoi( *argv ) );
+            if (profile_set)
+            {
+                std::cerr << "Cannot change width after setting profile '" << *argv << "'\n";
+                ::exit( EXIT_FAILURE );
+            }
+            width = atoi( *argv );
+            encoding_profile::profile_named( "se30", width, height, custom_profile );
         }
         else if (!strcmp(*argv,"--height"))
         {
             argc--;
             argv++;
-            custom_profile.set_height( atoi( *argv ) );
+            if (profile_set)
+            {
+                std::cerr << "Cannot change height after setting profile '" << *argv << "'\n";
+                ::exit( EXIT_FAILURE );
+            }
+            height = atoi( *argv );
+            encoding_profile::profile_named( "se30", width, height, custom_profile );
         }
         else if (!strcmp(*argv,"--byterate"))
         {

@@ -95,10 +95,10 @@ class copy_line_compressor : public compressor
 
 // std::clog << "Lines: " << budget << " bytes " << target_count << " lines \n";
 
-        for (size_t i=0;i<342;i+=target_count)
+        for (size_t i=0;i<current.H();i+=target_count)
         {
             framebuffer fb = current;
-            size_t lc = std::min( target_count, 342-i );
+            size_t lc = std::min( target_count, current.H()-i );
             fb.copy_lines_from( target, i, lc );
             auto res = fb.count_differences( current );
             if (res>q)
@@ -137,7 +137,10 @@ class vertical_compressor : public compressor
 
     const ruler<T> &ruler_;
 
+        /// Width in underlying type
     size_t get_T_width() const { return W_/8/sizeof(T); }
+
+        /// Number of element of type for the whole screen
     size_t get_T_size() const { return get_T_width()*H_; }
 
     std::vector<run<T>> compress( size_t max_size, const std::vector<T> &target_data_, const std::vector<size_t> &delta_ ) const
@@ -403,7 +406,7 @@ size_t vertical_from_horizontal( size_t h ) const
 
             scr_x /= sizeof(T);
 
-            offset = scr_x * 342 + scr_y;
+            offset = scr_x * target.H() + scr_y;
 
             for (auto &v:run.data)
             {

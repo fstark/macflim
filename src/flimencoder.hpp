@@ -94,11 +94,11 @@ public:
     bool silent() const { return silent_; }
     void set_silent( bool silent ) { silent_ = silent; }
 
-    static bool profile_named( const std::string name, encoding_profile &result )
+    static bool profile_named( const std::string name, size_t width, size_t height, encoding_profile &result )
     {
+        result.set_size( width, height );
         if (name=="xl"s)
         {
-            result.set_size( 512, 342 ); //####wrong
             result.set_byterate( 580 );
             result.set_filters( "g1.6bbscz" );
             result.set_fps_ratio( 4 );
@@ -119,7 +119,6 @@ public:
         }
         if (name=="512"s)
         {
-            result.set_size( 512, 342 );
             result.set_byterate( 480 );
             result.set_filters( "g1.6bbscz" );
             result.set_fps_ratio( 4 );
@@ -140,7 +139,6 @@ public:
         }
         if (name=="plus"s)
         {
-            result.set_size( 512, 342 );
             result.set_byterate( 1500 );
             result.set_filters( "g1.6bbscz" );
             result.set_fps_ratio( 2 );
@@ -161,7 +159,6 @@ public:
         }
         if (name=="se"s)
         {
-            result.set_size( 512, 342 );
             result.set_byterate( 2500 );
             result.set_filters( "g1.6bsc" );
             result.set_fps_ratio( 2 );
@@ -182,7 +179,6 @@ public:
         }
         if (name=="se30"s)
         {
-            result.set_size( 512, 342 );
             result.set_byterate( 6000 );
             result.set_filters( "g1.6sc" );
             result.set_fps_ratio( 1 );
@@ -203,7 +199,6 @@ public:
         }
         if (name=="perfect"s)
         {
-            result.set_size( 512, 342 );
             result.set_byterate( 32000 );
             result.set_filters( "g1.6sc" );
             result.set_fps_ratio( 1 );
