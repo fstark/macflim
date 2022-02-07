@@ -1,121 +1,223 @@
-*** SE30, Finder.
-*** Mac Flim folder closed.
-*** User double-click, opens the folder, and launch MacFlim
-*** Selection of the first 5 flims, go to menu, play.
+# XXX => Different real-world sequence
 
-[F01] Hi guys, it's me again. Yeah, it's been a while since the last update, but as you can see things have been a bit hectic lately, and I had to get *inside* the computer to manage to deliver the new generation of Macflim.
+## [Fnn] => Different flim played
 
-And what an improvement it is over the previous version! A cool, downright futuristic user interface, which I call a flim library, that lets you collect your favourite flims in a single place. And sound, as you might have noticed. This time, it comes directly from the computer. Fancy!
+*in-flim voice*
 
-Actually, I think I could show you a few cool flims, now that I've finally managed to get that working. Right, so, right now we're in... [doigt sur les levres puis levé comme pour voir la direction du vent] yup, that's a SE30. Top of the line computer right there, the best of the best currently available... well, let's see what we can do with it.
+**action performed in real world**
 
-[F02] 1984
-[F03] Ipod
-[F04] Technologic
+voiceover : *real-world voiceover*
 
-[F05] Right, sorry, sorry. That was a lot of ads, and god knows we get a lot of these nowadays, but I just had to, you know? They're iconic, really. And no wonder they didn't keep the Daft Punk imagery for that iPod introduction ad... But I feel it's quite fitting nonetheless.
+### ON-SCREEN INFO
 
-Still, let's do something else. Why don't we look at some music -- we should have a few *short* extracts, to avoid all that nasty copyright business.
+# [MACHINE SE30]
 
-*** Selection of flim 6 to 12
+### ON-SCREEN: MacFlim 2
+### Smaller. Smarter. Noiser.
 
-[F06-11] RUS/SLEDGE/EVERY/BW/FADE/WALL
+**Shot of SE/30, booted at the finder. MacFlim folder is visible, closed. User double-click, opens the folder, and launch MacFlim.**
 
-[F12] Wasn't that quite something? I think watching music is a cool thing, and I love having my Mac TV, or MTV, as I like to call it.
+**MacFlim appears, Libary is loaded with all the SE/30 flims.**
 
-But we can do even better. Are you tired of going out with your friends and going to the movies? Wouldn't you rather stay home, and enjoy the cinematic experience from your chair? Now you can. The future is there, and it's glorious.
+**User selects of the first 9 flims, go to Library menu, selects "Play".**
 
-*** User selects the rest of the flims
+## [F01X] Fred
 
-[F13-Fxx] SW2/S2/SHINING/2001/Matrix???
+*Hi guys, it's me again. Yeah, it's been a while since the last update, but as you can see things have been a bit hectic lately, and I had to get _inside_ the computer to manage to deliver the new generation of Macflim.*
 
-[F17] Woah. And MacFlim is so advanced that it even allows to see music and flims from the future! Let's see some example, and I promise4 to come back afterward.
+## [F02] Zoolander
 
-[F18-F22] Gangnam, Sin City, 300, Bad Apple?
+## [F03X] Fred
+
+*Yep, in the computer. And what an improvement it is over the previous version! A cool, downright futuristic user interface, which I call a flim library, that lets you collect your favourite flims in a single place. And sound, as you might have noticed. This time, it comes directly from the computer. Fancy!*
+
+## [F04] Zoolander
+
+## [F05X] Fred
+
+*Thanks Hansel, much appreciated. Actually, I think I could show you a few cool flims, now that I've finally managed to get that working. Right, so, right now we're in... [doigt sur les levres puis levé comme pour voir la direction du vent] yup, that's a SE30.*
+
+### ON-SCREEN: 1989 SE/30. 15.6MHz 68030 + 68882 FPU. 64Mb RAM. SCSI Drive. 
+
+*Top of the line computer right there, the best of the best currently available... [look at watch] in 1989. well, let's see what we can do with it, but first, some advertisement.*
+
+## [F06-08] 1984/iPod/technologic
+
+## [F09X] Fred
+
+*Right, sorry, sorry. That was a lot of ads, and god knows we get a lot of these nowadays, but I just had to, you know? They're iconic, really. And no wonder they didn't keep the Daft Punk imagery for that iPod introduction ad... But I feel it's quite fitting nonetheless.*
+
+*Still, let's do something else. Why don't we look at some music -- just a few short extracts, to avoid all that nasty copyright business.*
+
+# [END OF SEQUENCE, RETURNS TO SE/30]
+
+**Selection of flims 10 to 16. Double-clic.**
+
+## [F10-15] RUS/SLEDGE/EVERY/BW/FADE/WALL
+
+## [F16X] Fred
+
+*Wasn't that quite something? I think watching music is a cool thing, and I love having my Mac TV, or MTV, as I like to call it.*
+
+*But we can do even better. Are you tired of going out with your friends and going to the movies? Wouldn't you rather stay home, and enjoy the cinematic experience from your chair? Now you can. The future is there, and it's glorious.*
+
+# [END OF SEQUENCE, RETURNS TO SE/30]
+
+**User selects the rest of the flims**
+
+## [F17-F20] SW2/S2/SHINING/2001
+
+# CCCHHHAAANNNGGEEEE
+
+## [F21X] Fred
+
+*And MacFlim is so advanced that it even allows to see music and flims from the future! Let's see some examples, and I promise to come back afterward.*
+
+## [F23-F26] Gangnam, Sin City, 300, Bad Apple, Matrix
+
+voiceover: **Woah. Breathtaking**
 
 *** Back to the app, finder, shutdown
 
-*** Mac SE
+# [END OF SEQUENCE, RETURNS TO SE/30]
 
-*** Open flim directory, folders 'Flims SE/30, .... Flims XL'
+voiceover: **"Ok, that was fun, let's go to a different machine now..."**
+voiceover: **snap fingers**
+voiceover: **"This is a Mac SE. 1987"**
 
-*** Open 'Flim SE'. Select All. Open.
+# [MACHINE SE]
 
-[F23] Hi guys, deja-vu. It's me ag- oh, this isn't the SE30 anymore, is it? Yeah, that happens sometimes, I've had to go to all sorts of computers to make sure macflim worked on as many apple products as possible. I'm sure it'll be fine. I did want to show you how well macflim worked on older machines anyway.
+**Launches Macflim**
 
-[F24] [bad apple AGAIN]
+**Open flim directory, folders 'Flims SE/30, .... Flims XL'**
 
-[F25] See the difference? Some sacrifices have to be made to be able to run it, sadly. Contrarily to the SE30, it doesn't handle quick changes all that well, and the lines aren't as crisp. But with the right dithering, you can get some aesthetically pleasing results.
+**Open 'Flim SE'. Select All. Open.**
 
-[F26] [take on me]
+## [XXX F27] Fred
 
-**** loop starts, click to cancel, back to Finder. Shutdown
+*Hi guys, deja-vu. It's me ag- oh, this isn't the SE30 anymore, is it?*
+*That looks like a Mac SE*
+### ON-SCREEN: 1987 Mac SE. 8MHz 68000. 4Mb RAM. SCSI Drive. 
+*Yeah, that happens sometimes, I've had to go into all sorts of computers to make sure macflim worked on as many Macs as possible. I'm sure it'll be fine. I did want to show you how well macflim worked on older machines anyway.*
+*So, let's see Bad Apple again, for comparison*
+
+## [F28] [bad apple AGAIN, for SE]
+
+## [F29X] Fred
+
+*See the difference? Some sacrifices have to be made to be able to run it, sadly. Contrarily to the SE30, it doesn't handle quick changes all that well, and the lines aren't as crisp. But with the right dithering, you can get some aesthetically pleasing results. Look at that, for instance*
+
+## [F30] [take on me]
+
+## [F31X] Fred
+
+*Let's not spend more time on the SE, we have more stuff to look at. Note that when you play a sequence of flims, you can choose to loop, so we're going back at the beginning, now.*
+
+**** loop starts, click to cancel,
+
+**back to Finder. Shutdown**
+
+[MACHINE PLUS]
 
 **** Mac Plus, launch MacFlim
 **** Library is empty, use 'Add Folder'
 
-[F27] Yeah, I don't-- oh, crap. That's a mac plus. I really need to stay still there, otherwise...
+## [F32X] Fred
 
-(Large arm movments).
+*Yeah, I don't-- oh, crap. That's a mac plus.*
+### ON-SCREEN: 1986 Mac Plus. 8MHz 68000. 2.5Mb RAM. SCSI Drive. Speed of the original Mac.
+*Don't take it wrong, I love this machine. It is the first Mac I owned.*
+*But I really need to stay still there, otherwise...*
 
-Yeah. Otherwise, this happens.
+*(Large arm movements).*
 
-(sigh)
+*Yeah. Otherwise, this happens.*
 
-Obviously, there's only so much I can do here. I need to select the flims very carefully, compress the image, apply all kind of filters... it's work. Still, in the end, it can work very nicely indeed.
+*(sigh)*
 
-[F28] [sweet dreams are made of these]
+*Obviously, there's only so much I can do here. I need to select the flims very carefully, compress the image, apply all kind of filters... it's work. Still, in the end, it can work very nicely indeed*
 
-[F29] All the flims that you've see on the SE/30 are available on the plus. If you stay until the end of the video, you'll see a comparison of the quality between the various machine. Let's go on, we don't have all day.
+## [F33] Sweet Dreams
+
+## [F34X] Fred
+
+*All the flims that you've seen on the SE/30 can be compressed for the plus, of course. If you stay until the end of the video, I'll show a comparison of the quality between the various machines. But let's go on, we don't have all day.*
 
 **** Mac Plus shutdown
 
-[F30] Hey, this... wait, can you hear me? Am I on mute? Hello? (show 'Sound?' -- facepalm)
+[MACHINE 512]
 
-[F31] Star-Wars intro
+## [F35X] Hey, this... wait, can you hear me? Am I on mute? Hello? (show 'Sound?' -- facepalm)
 
-**** [Voix off] "Well, this is a Mac 512K, with the original HD20 hard drive. It is a floppy-interface based hard drive, is extremely slow while hogging most of the CPU time. It is impossible to access the flim data while playing sound.
+## [F36] Star-Wars intro
+
+voiceover : *Okay, I'll do the talking now. So, this is a Mac 512K*
+
+### ON-SCREEN: 1985 Mac 512K. 8MHz 68000. 512K RAM. Speed of the original Mac. No SCSI. Slow hard drive.
+
+voiceover : *with the original HD20 hard drive. It is a floppy-interface based hard drive, is extremely slow while hogging most of the CPU time. It is impossible to access the flim data while playing sound.
+
+voiceover : *but it works*
 
 **** Back to macflim, exit, finder, shutdown
 
-**** Mac 128. So, there *is* something I want to show you. It is the anniversary of the original Mac 128 today. And frankly, while all the commercials at the time were nice, I think I personally would have gone for something else entirely.
+[MACHINE 128]
 
-**** Insert disk.
+voiceover : *So, there *is* something I want to show you. The original Mac is 38 years old.*
 
-**** A feature of MacFlim I didn't talk about it the ability to transform flims into small self-playable application. It is great when you need the whole thing to fit on a 400KB disk...
+### ON-SCREEN: 1984 Mac 128K. 8MHz 68000. 128K RAM. Speed of the original Mac. No Hard drive.
 
-[F32] Amigaball 128
+voiceover : *And frankly, while all the commercials at the time were nice, I think I personally would have gone for something else entirely.*
+
+
+voiceover : Let's take that mass-media.
+
+### ON-SCREEN: 400K Floppy Drive.
+
+voiceover : A feature of MacFlim I didn't talk about it the ability to transform flims into small self-playable application. It is great when you need the whole thing to fit on a 400KB disk...
+
+## [F37] Amigaball 128
 
 **** Showcase du mode standalone. La boule d'amiga joue a l'ecran.
 
+voiceover : *That should settle it. It was clearly the best machine of the time*
 
-**** "Suck on *that*, AMIGA."
+**** Holding a floppy disk, labelled "Matrix, disk 137/165"
 
-**** And you can play real flims too, no doubt the original mac was a multimedia machine.
+voiceover : *And you can play real flims too, no doubt the original mac was a multimedia machine.*
 
-[F33] Matrix 128
+## [F38] Matrix 128
 
-**** Exit desktop
+voiceover: So, did we do all the black and white macintosh, right? Well, there is one missing, the Macintosh Portable. I wrote some specific assembly routines so MacFlim does work on it, but mine is currently broken. You have to believe me on this one.
 
-**** So, we did all the black and white macintosh, right? Well, there is one missing, the Macintosh Portable. I wrote some specific assembly routines so MacFlim does work on it, but mine is currently broken. You have to believe me on this one.
+voiceover : And there is another one missing, one both older and younger than the original Mac
 
-**** And there is another one missing, one both older and younger than the original Mac
+### ON-SCREEN: 1984 Lisa 2/10. 5MHz 68000. 2MB RAM. Slower than the Mac. 10 Mb Widget hard drive.
 
 **** Shows Lisa XL
 
-**** This is Mac Works XL 3, running on an unmodded Lisa 2/10. It runs a pretty old version of MacOs. It is a slower computer than the Mac, but has more RAM and the hard drive is better than the Mac floppy.
+voiceover : This is Mac Works XL 3, running on an unmodded Lisa 2/10. It runs a pretty old version of MacOs. It is a slower computer than the Mac, but has more RAM and the hard drive is better than the Mac floppy.
 
-[F34] Launch Star Wars
+## [F39] Launch Star Wars
 
-So, that's all for today, hop you enjoyed. As a bonus, here is a visual comparion of the quality of the encodings in various cases. Please visit www.macflim.com and the github, to get MacFlim and some example flims. Have fun!
+voiceover : So, that's all for today, hop you enjoyed. Please visit www.macflim.com and the github, to get MacFlim and some example flims. Have fun!
+
+### ON-SCREEN: http://www.macflim.com
+### ON-SCREEN: http://github.com/fstark/macflim
+### ON-SCREEN: @fredericstark
+
+As a bonus, here is a visual comparion of the quality of the encodings in various cases. 
+
+### ON-SCREEN: Matrix
 
 comparaison des 4 matrix.
+
+### ON-SCREEN: Bad Apple
+
 comparaison des 4 bad apple.
+
+### ON-SCREEN: Should should go now
+
 comparaison des 4 rick roll.
 
-
-
-ffmpeg -loglevel info -y -i "YT-99-MAT-se30.mp4" -i "YT-99-MAT-se.mp4" -i "YT-99-MAT-plus.mp4" -i "YT-99-MAT-xl.mp4" -filter_complex "[0:v][1:v]hstack=inputs=2[top]; [2:v][3:v]hstack=inputs=2[bottom]; [top][bottom]vstack=inputs=2[v]; [2:a]acopy[a]" -map_metadata -1 -map "[v]" -map "[a]" YT-99-MAT-grid.mp4 && open YT-99-MAT-grid.mp4 
-ffmpeg -loglevel info -y -i "YT-99-BAD-se30.mp4" -i "YT-99-BAD-se.mp4" -i "YT-99-BAD-plus.mp4" -i "YT-99-BAD-xl.mp4" -filter_complex "[0:v][1:v]hstack=inputs=2[top]; [2:v][3:v]hstack=inputs=2[bottom]; [top][bottom]vstack=inputs=2[v]; [2:a]acopy[a]" -map_metadata -1 -map "[v]" -map "[a]" YT-99-BAD-grid.mp4 && open YT-99-BAD-grid.mp4 
-ffmpeg -loglevel info -y -i "YT-99-RR-se30.mp4" -i "YT-99-RR-se.mp4" -i "YT-99-RR-plus.mp4" -i "YT-99-RR-xl.mp4" -filter_complex "[0:v][1:v]hstack=inputs=2[top]; [2:v][3:v]hstack=inputs=2[bottom]; [top][bottom]vstack=inputs=2[v]; [2:a]acopy[a]" -map_metadata -1 -map "[v]" -map "[a]" YT-99-RR-grid.mp4 && open YT-99-RR-grid.mp4 
-
+## [F40], as an mp4
