@@ -1,3 +1,7 @@
+most other todos are in the .dsk file for the client
+
+* Support non 512x342
+
 * [DONE] Add sound
 * [DONE] Unknown profile crashes (--profile se)
 * [DONE] check issue with default duration parameter
@@ -9,12 +13,12 @@
 * better options for .pgm image generation
 
 * [DONE] Last sound frames
-* --from doesn't work for sound
+* [DONE] --from doesn't work for sound
 * [DONE] Play last bits of flim on the mac
 * [DONE] add --pgm for dumping pgms
 * [DONE] command-line help
 
-* Add caching option for youtube
+* [DONE] Add caching option for youtube
 
 BUGS TO INVESTIGATE:
 
@@ -22,6 +26,55 @@ BUGS TO INVESTIGATE:
 
 ---------------
 
+
+
+
+
+### --codec **codec-definition**
+
+The encoding is performed by a serie of codecs. Each frame is encoded by all the codecs with the existing byterate, and the one which produces the "best" image is choosen. As soon as the ``--codec`` command-line argument is specified, the codecs list is reset, and all codecs needs to be added manually. A codec is specified using its name, followed by an optional argument list, in the following format: ``--codec name:arg1=value1,arg2=value2``. The use of the ``--codec`` argument is mostly useful during development.
+
+Each codec is defined by a name and an optional list of parameters. Here is the list of codecs and their parameters.
+
+* null (0x00) : The ``null`` codec just doesn't encode anything. It is useful when an image doesn't change from a frame to the next.
+
+* z16 (0x01) : The ``z16`` codec compresses the image in 16 pixels vertical bands. It is almost always inferior to the z32 codec.
+
+* z32 (0x02) : The ``z32`` codec compresses the image in 32 pixels vertical bands. It is generally the most efficient codec.
+
+* invert (0x03) : The ``invert`` codec (currently) bluntly inverts the whole image. This is useful in encoding movies that have sudden complete reversal of colors, which is a worst case for th ``z32`` codec, but can be trivialy encoded by ``invert``.
+
+* lines (0x04) : The ``lines`` codec encodes a fixed amount of consecutive horizontal lines. It is usefull when there is a large change in the image, as it has less overhead than the z32 codec. The number of lines than can be encoded in a single frame is based on an average of 50 bytes per lines (which is wrong, but right)
+
+The 0x00, 0x01, 0x02, 0x03 and 0x04 are the *signature* of the codecs, which can also be seen with the ``--watermark auto`` option.
+
+One can see the exact behavior of each codec by specifying those one by one:
+
+./flimmaker gangnam-style.mp4 --mp4 out.mp4 --duration 20 --codec z16
+
+
+[to be continued]
+
+
+
+
+Old stuff to be moved or deleted
+
+
+
+creating the bullet-demo gif:
+
+( sleep 1 ; xdotool type "ls -l matrix.mp4" && xdotool key Return && sleep 1 && xdotool type "./flimmaker matrix.mp4 --from 01:46:27 --duration 10 --mp4 bullet.mp4 --flim bullet.flim --profile se30" && xdotool key Return ; sleep 60 ) &
+clear
+
+using 'peek' as a screen grabber
+
+
+ls -l matrix.mp4
+./flimmaker --profile se30 matrix.mp4 --from 01:46:27 --duration 10 --mp4 bullet.mp4 --flim bullet.flim
+vlc bullet.mp4
+ls -l bullet.mp4
+ls -l bullet.flim
 
 
 note:
