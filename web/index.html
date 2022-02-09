@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-control" content="no-cache">
+<style>
+
+h1 {
+    text-align: center; 
+    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+    font-weight: normal;
+}
+h2 { text-align: center; }
+h3 { text-align: center; }
+
+iframe
+{
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+img
+{
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+ul
+{
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+li p
+{
+    text-align: center;
+}
+
+ul li h4
+{
+    margin-top: 100px;
+    text-align: center;
+}
+
+ul.download-links
+{
+    text-align: center;
+}
+
+.download-links li
+{
+    display: inline-block;
+}
+
+.download-links li:before
+{
+    content: " | ";
+}
+
+.download-links li:first-of-type:before
+{
+    content: "";
+}
+
+img.large
+{
+    width: 1024px;
+}
+
+img.screenshot
+{
+    border-radius: 8px;
+}
+
+.notice
+{
+    text-align: right;
+}
+
+body
+{
+  max-width: 1024px;
+  margin: auto;
+}
+
+.disclaimer
+{
+    font-size: 50%;
+}
+
+</style>
+</head>
+<body>
+
+<h1>Smaller. Smarter. Noiser.</h1>
+
+<iframe width="420" height="315"
+src="https://www.youtube.com/embed/dQw4w9WgXcQ">
+</iframe> 
+<p>[THIS WILL BE REPLACED BY THE RELEASE VIDEO]</p>
+
+<p>
+    This is MacFlim Player, the Macintosh flim player. Whichever Macintosh you have, if it is a 512x342 one or a Macintosh Portable with ample disk space, you will be able to admire and listen to many flim clips, in their glorious black and white.
+</p>
+<p>
+    If your Macintosh is currently getting re-capped or if you are unfortunately stuck in the past with a 5150, you can still enjoy the flims via their respective video links.
+</p>
+<ul>
+    <li>
+        <img class="large" src="assets/placeholder.png"></img>
+        <p>Supported systems</p>
+        <p>MacFlim Player supports all Macs, from the 128K to the SE/30, including the Mac XL, or the Macintosh Portable.</p>
+    </li>
+
+    <li>
+        <img class="screenshot" src="releases/placeholder.png"></img>
+        <p>Just double-click on one or several flims, and the fun starts!</p>
+        <p></p>
+    </li>
+</ul>
+
+<h2>The new version of MacFlim has arrived!</h2>
+
+Remember when your kids uttered their first words? What a milestone!
+
+Well, the same happened to MacFlim, it has now learned how to speak!
+
+And can play Flims at their exact orginal frame rate! And thanks to is new lossy compression, flims size are 3 to 4 times smaller than first version of MacFlim!
+
+And the encoder is way simpler to use, so creating your own flims is a breeze!
+
+<p class="disclaimer">disclaimer: compressed flims are not always as nice (due to the extra space used for sound), the player doesn't support multiple windows, and have slightly less inside jokes.</p>
+
+So, what are you waiting for?
+
+<h2>How to install MacFlim Player</h2>
+
+<p>Beware, flim files can still be quite big. How big? Well, it depends on the desired quality. You are looking at around 100Kb/seconds for Mac Plus quality, 150 for SE and more than 300 for SE30.</p>
+<p>    You need a <a href="https://store.inertialcomputing.com/SCSI2SD-s/100.htm">SCSI2SD</a> (if you can make sense of the different models), or a <a href="https://www.tindie.com/products/landogriffin/rascsi-macintosh-version/">RaSCSI</a> (if you like soldering), or a <a href="https://gumroad.com/l/bluescsi-1b">BlueSCSI</a> (if you don't live in the EU) to store them. There is also the <a href="http://macsd.com/">MacSD</a> which I know nothing about, but it does look neat.</p>
+
+<p>Download the app, in a Stuffit 1.5.1 archive:</p>
+
+<b>#### PUT THE RELEASE VERSION HERE</b>
+
+<a href="releases/MacFlim%20Player.sit">MacFlim Player</a>
+
+<p>
+You then need to download a few sample flims. The versions are different between Plus, SE and SE/30. Some flims are not available for earlier Macs (because they don't play well enough with the current codecs). There are no Mac 512, Mac 128 or Mac XL ready flims here, drop me a line in a github issue if you'd like some to be included.
+</p>
+<p>While you can play a flim for a Mac Plus on a SE or a SE/30, or play a SE flim on a SE/30, the reverse is not possible, so download the best possible flim for your hardware</p>
+<p>
+If you are bored or just want to bring my site down, there is a link to the mp4s of the result for streaming on the browser. Those are positively huge, because H.264 isn't really designed to compress black and white.
+</p>
+
+<p>If you like the idea of creating your own flims, <a href="https://www.github.com/fstark/macflim">you can install <code>flimencoder</code> on linux or mac os x</a>. You can also use <code>flimencoder</code> to directly generate mp4 files that shows the frame perfect result of MacFlim on selected hardware, so you don't need to have access to a vintage mac to enjoy it<a href="#footnote1">[1]</a> .</p>
+
+<h3>Download samples formats</h3>
+<ul>
+    <li>Raw flim file, zipped: just the flim, maximal compatibility between modern machines. You will have to open the flim once from MacFlim Player for the file to have the right icon.</li>
+    <li>Macintosh Disk Image, zipped: a mountable disk, with both MacFlim Player and the flim file. Trivial to load in an emulator. You can get this to mount with DiskCopy with the following steps:
+        <ol>
+            <li>Copy the file over to your mac</li>
+            <li>Open the file in ResEdit, and create an empty resource fork</li>
+            <li>Set the type/creator to dimg/ddsk</li>
+        </ol>
+        Disk Image should now be able to mount your disk image.
+    </li>
+    <li>Raw flim: just the bytes, in case you can't unzip.</li>
+    <li>View in your browser: directly plays an mp4 of the resulting flim, for the impatients. Those files are large, it can easily bring my server down.</li>
+</ul>
+
+<h3>Sample flims for your SE/30</h3>
+
+<ul>
+    <li>
+        <h4>Sin City</h4>
+        <img class="screenshot" src="samples/SinCity-Intro-se30.gif"></img>
+        <p>The intro of SinCity, true love in black and white</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/SinCity-Intro-se30.zip>10 Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/SinCity-Intro-se30.dsk.zip>10 Mb</a></li>
+            <li>Raw flim, <a href=samples/SinCity-Intro-se30.flim>17 Mb</a></li>
+            <li>View in your browser, <a href=samples/SinCity-Intro-se30.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>300</h4>
+        <img class="screenshot" src="samples/300-se30.gif"></img>
+        <p>Diplomatic encounter in Sparta</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/300-se30.zip>30 Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/300-se30.dsk.zip>30 Mb</a></li>
+            <li>Raw flim, <a href=samples/300-se30.flim>38 Mb</a></li>
+            <li>View in your browser, <a href=samples/300-se30.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>1984</h4>
+        <img class="screenshot" src="samples/1984-se30.gif"></img>
+        <p>PC supremacy will soon be over</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/1984-se30.zip>16 Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/1984-se30.dsk.zip>16 Mb</a></li>
+            <li>Raw flim, <a href=samples/1984-se30.flim>20 Mb</a></li>
+            <li>View in your browser, <a href=samples/1984-se30.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>Black or White</h4>
+        <img class="screenshot" src="samples/BlackOrWhite-se30.gif"></img>
+        <p>Michael Jackson sings the beauty of the black and white pixels of the Macintosh</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/BlackOrWhite-se30.zip>11 Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/BlackOrWhite-se30.dsk.zip>11 Mb</a></li>
+            <li>Raw flim, <a href=samples/BlackOrWhite-se30.flim>14 Mb</a></li>
+            <li>View in your browser, <a href=samples/BlackOrWhite-se30.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>Matrix</h4>
+        <img class="screenshot" src="samples/Matrix-se30.gif"></img>
+        <p>Neo took the black pill</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/Matrix-se30.zip>11 Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/Matrix-se30.dsk.zip>11 Mb</a></li>
+            <li>Raw flim, <a href=samples/Matrix-se30.flim>15 Mb</a></li>
+            <li>View in your browser, <a href=samples/Matrix-se30.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>Bad Apple</h4>
+        <img class="screenshot" src="samples/BadApple-se30.gif"></img>
+        <p>The most requested flim, by far, is not so bad on Apple anymore...</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/BadApple-se30.zip>12 Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/BadApple-se30.dsk.zip>12 Mb</a></li>
+            <li>Raw flim, <a href=samples/BadApple-se30.flim>28 Mb</a></li>
+            <li>View in your browser, <a href=samples/BadApple-se30.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>iPod Introduction</h4>
+        <img class="screenshot" src="samples/iPodIntroduction-se30.gif"></img>
+        <p>Steve Jobs wanted to delay the introduction of the iPod until MacFlim was available</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/iPodIntroduction-se30.zip>1.5 Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/iPodIntroduction-se30.dsk.zip>1.5 Mb</a></li>
+            <li>Raw flim, <a href=samples/iPodIntroduction-se30.flim>4 Mb</a></li>
+            <li>View in your browser, <a href=samples/iPodIntroduction-se30.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>Space 1999</h4>
+        <img class="screenshot" src="samples/Space-1999-se30.gif"></img>
+        <p>Enjoy classic science-fiction the way it was meant to be experienced</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/Space-1999-se30.zip>? Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/Space-1999-se30.dsk.zip>? Mb</a></li>
+            <li>Raw flim, <a href=samples/Space-1999-se30.flim>? Mb</a></li>
+            <li>View in your browser, <a href=samples/Space-1999-se30.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>Fade To Grey</h4>
+        <img class="screenshot" src="samples/FadeToGrey-se30.gif"></img>
+        <p><i>Devenir gris</i>. Your Macintosh is already looking for the NeXT step...</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/FadeToGrey-se30.zip>? Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/FadeToGrey-se30.dsk.zip>? Mb</a></li>
+            <li>Raw flim, <a href=samples/FadeToGrey-se30.flim>? Mb</a></li>
+            <li>View in your browser, <a href=samples/FadeToGrey-se30.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>Sledgehammer</h4>
+        <img class="screenshot" src="samples/Sledgehammer-se30.gif"></img>
+        <p>You could have a nice flim playing, if you'd just boot up your Mac...</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/Sledgehammer-se30.zip>? Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/Sledgehammer-se30.dsk.zip>? Mb</a></li>
+            <li>Raw flim, <a href=samples/Sledgehammer-se30.flim>? Mb</a></li>
+            <li>View in your browser, <a href=samples/Sledgehammer-se30.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>The Wall</h4>
+        <img class="screenshot" src="samples/The-Wall-se30.gif"></img>
+        <p>Hey, teachers, leaves them Macs alone!</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/The-Wall-se30.zip>? Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/The-Wall-se30.dsk.zip>? Mb</a></li>
+            <li>Raw flim, <a href=samples/The-Wall-se30.flim>? Mb</a></li>
+            <li>View in your browser, <a href=samples/The-Wall-se30.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>2001</h4>
+        <img class="screenshot" src="samples/2001-se30.gif"></img>
+        <p>My instructor was Mr. Langley, and he taught me to play a flim</p>
+        <!-- That's a very nice rendering, Mac. I think you've improved a great deal. -->
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/2001-se30.zip>? Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/2001-se30.dsk.zip>? Mb</a></li>
+            <li>Raw flim, <a href=samples/2001-se30.flim>? Mb</a></li>
+            <li>View in your browser, <a href=samples/2001-se30.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>Gangnam Style</h4>
+        <img class="screenshot" src="samples/Gangnan-Style-se30.gif"></img>
+        <p>Jeongsokhae bo-ijiman nol ddaen noneun maekintosi</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/Gangnan-Style-se30.zip>? Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/Gangnan-Style-se30.dsk.zip>? Mb</a></li>
+            <li>Raw flim, <a href=samples/Gangnan-Style-se30.flim>? Mb</a></li>
+            <li>View in your browser, <a href=samples/Gangnan-Style-se30.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>Take On Me</h4>
+        <img class="screenshot" src="samples/TakeOnMe-se30.gif"></img>
+        <p>???</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/TakeOnMe-se30.zip>? Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/TakeOnMe-se30.dsk.zip>? Mb</a></li>
+            <li>Raw flim, <a href=samples/TakeOnMe-se30.flim>4 Mb</a></li>
+            <li>View in your browser, <a href=samples/TakeOnMe-se30.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>Sweet Dreams</h4>
+        <img class="screenshot" src="samples/SweetDreams-se30.gif"></img>
+        <p>Sweet Dreams (Are Made of Macs). Who am I to disagree?</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/SweetDreams-se30.zip>? Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/SweetDreams-se30.dsk.zip>? Mb</a></li>
+            <li>Raw flim, <a href=samples/SweetDreams-se30.flim>? Mb</a></li>
+            <li>View in your browser, <a href=samples/SweetDreams-se30.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>Am*ga Balls</h4>
+        <img class="screenshot" src="samples/AmigaBall-se30.gif"></img>
+        <p>That would probably have made a nice demo for the capabilities of the Mac...</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/AmigaBall-se30.zip>? Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/AmigaBall-se30.dsk.zip>? Mb</a></li>
+            <li>Raw flim, <a href=samples/AmigaBall-se30.flim>? Mb</a></li>
+            <li>View in your browser, <a href=samples/AmigaBall-se30.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+    <li>
+        <h4>Star Wars : Attack on the Death Star (spoilers)</h4>
+        <img class="screenshot" src="samples/StarWars-Attack-se30.gif"></img>
+        <p>Will the empire be able to repeal the terrorist attack on its flagship? Revive the excitment of this jaw dropping sequence (spoilers) !</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/StarWars-Attack-se30.zip>? Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/StarWars-Attack-se30.dsk.zip>? Mb</a></li>
+            <li>Raw flim, <a href=samples/StarWars-Attack-se30.flim>? Mb</a></li>
+            <li>View in your browser, <a href=samples/StarWars-Attack-se30.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+</ul>
+<h3>Sample flims for your SE</h3>
+
+<ul>
+    <li>
+        <h4>Sledgehammer</h4>
+        <img class="screenshot" src="samples/Sledgehammer-se.gif"></img>
+        <p>You could have a nice flim playing, if you'd just boot up your SE...</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/Sledgehammer-se.zip>? Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/Sledgehammer-se.dsk.zip>? Mb</a></li>
+            <li>Raw flim, <a href=samples/Sledgehammer-se.flim>? Mb</a></li>
+            <li>View in your browser, <a href=samples/Sledgehammer-se.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>The Wall</h4>
+        <img class="screenshot" src="samples/The-Wall-se.gif"></img>
+        <p>Hey, teachers, leaves them Macs alone!</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/The-Wall-se.zip>? Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/The-Wall-se.dsk.zip>? Mb</a></li>
+            <li>Raw flim, <a href=samples/The-Wall-se.flim>? Mb</a></li>
+            <li>View in your browser, <a href=samples/The-Wall-se.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>2001</h4>
+        <img class="screenshot" src="samples/2001-se.gif"></img>
+        <p>My instructor was Mr. Langley, and he taught me to play a flim</p>
+        <!-- That's a very nice rendering, Mac. I think you've improved a great deal. -->
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/2001-se.zip>? Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/2001-se.dsk.zip>? Mb</a></li>
+            <li>Raw flim, <a href=samples/2001-se.flim>? Mb</a></li>
+            <li>View in your browser, <a href=samples/2001-se.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>Take On Me</h4>
+        <img class="screenshot" src="samples/TakeOnMe-se.gif"></img>
+        <p>???</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/TakeOnMe-se.zip>? Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/TakeOnMe-se.dsk.zip>? Mb</a></li>
+            <li>Raw flim, <a href=samples/TakeOnMe-se.flim>? Mb</a></li>
+            <li>View in your browser, <a href=samples/TakeOnMe-se.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>Sweet Dreams</h4>
+        <img class="screenshot" src="samples/SweetDreams-se.gif"></img>
+        <p>Sweet Dreams (Are Made of Macs). Who am I to disagree?</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/SweetDreams-se.zip>? Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/SweetDreams-se.dsk.zip>? Mb</a></li>
+            <li>Raw flim, <a href=samples/SweetDreams-se.flim>? Mb</a></li>
+            <li>View in your browser, <a href=samples/SweetDreams-se.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>Am*ga Balls</h4>
+        <img class="screenshot" src="samples/AmigaBall-se.gif"></img>
+        <p>That would probably have made a nice demo for the capabilities of the Mac...</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/AmigaBall-se.zip>? Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/AmigaBall-se.dsk.zip>? Mb</a></li>
+            <li>Raw flim, <a href=samples/AmigaBall-se.flim>? Mb</a></li>
+            <li>View in your browser, <a href=samples/AmigaBall-se.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+</ul>
+
+<h3>Sample flims for your Plus</h3>
+
+<ul>
+    <li>
+        <h4>Sledgehammer</h4>
+        <img class="screenshot" src="samples/Sledgehammer-plus.gif"></img>
+        <p>You could have a nice flim playing, if you'd just boot up your Plus...</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/Sledgehammer-plus.zip>? Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/Sledgehammer-plus.dsk.zip>? Mb</a></li>
+            <li>Raw flim, <a href=samples/Sledgehammer-plus.flim>? Mb</a></li>
+            <li>View in your browser, <a href=samples/Sledgehammer-plus.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>2001</h4>
+        <img class="screenshot" src="samples/2001-plus.gif"></img>
+        <p>My instructor was Mr. Langley, and he taught me to play a flim</p>
+        <!-- That's a very nice rendering, Mac. I think you've improved a great deal. -->
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/2001-plus.zip>? Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/2001-plus.dsk.zip>? Mb</a></li>
+            <li>Raw flim, <a href=samples/2001-plus.flim>? Mb</a></li>
+            <li>View in your browser, <a href=samples/2001-plus.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>Take On Me</h4>
+        <img class="screenshot" src="samples/TakeOnMe-plus.gif"></img>
+        <p>???</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/TakeOnMe-plus.zip>? Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/TakeOnMe-plus.dsk.zip>? Mb</a></li>
+            <li>Raw flim, <a href=samples/TakeOnMe-plus.flim></a>? Mb</a></li>
+            <li>View in your browser, <a href=samples/TakeOnMe-plus.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>Sweet Dreams</h4>
+        <img class="screenshot" src="samples/SweetDreams-plus.gif"></img>
+        <p>Sweet Dreams (Are Made of Macs). Who am I to disagree?</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/SweetDreams-plus.zip>? Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/SweetDreams-plus.dsk.zip>? Mb</a></li>
+            <li>Raw flim, <a href=samples/SweetDreams-plus.flim>? Mb</a></li>
+            <li>View in your browser, <a href=samples/SweetDreams-plus.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+
+    <li>
+        <h4>Am*ga Balls</h4>
+        <img class="screenshot" src="samples/AmigaBall-plus.gif"></img>
+        <p>That would probably have made a nice demo for the capabilities of the Mac...</p>
+        <ul class="download-links">
+            <li>Raw flim, Zipped, <a href=samples/AmigaBall-plus.zip>? Mb</a></li>
+            <li>Macintosh Disk Image, zipped, <a href=samples/AmigaBall-plus.dsk.zip>? Mb</a></li>
+            <li>Raw flim, <a href=samples/AmigaBall-plus.flim>? Mb</a></li>
+            <li>View in your browser, <a href=samples/AmigaBall-plus.mp4>MP4 movie</a></li>
+        </ul>
+    </li>
+</ul>
+
+<p class="notice"><i>There is no flim about cyclimse. This is as expected.</i></p>
+
+</body>
+</html>
