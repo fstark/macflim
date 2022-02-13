@@ -114,7 +114,7 @@ struct LibraryRecord
 #define INTER_X			8
 #define INTER_Y			8
 #define MARGIN_X		15
-#define MARGIN_Y		15		//	Suspects it should be removed for better key scroll behavior in first and last line
+#define MARGIN_Y		8		//	Suspects it should be removed for better key scroll behavior in first and last line
 
 //	outer border, white border, inner border, pict, inner border, white border, outer border
 #define POLAROID_WIDTH (2+POLAROID_BORDER+PICT_WIDTH+POLAROID_BORDER+2)
@@ -310,7 +310,7 @@ LibraryPtr LibraryOpenDefault( void )
 
 	if (resFile==-1)
 	{
-		Create( LIBRARY_FILE, 0, 'FLIM', 'FLIB' );
+		Create( LIBRARY_FILE, 0, 'FLPL', 'FLIB' );
 		CreateResFile( LIBRARY_FILE );
 		resFile = OpenResFile( LIBRARY_FILE );
 		if (resFile==-1)
@@ -345,14 +345,14 @@ LibraryPtr LibraryOpenDefault( void )
 		lib->entries[i].needsUpdate = FALSE;
 	}
 
-	lib->visibleHeight = 271;	//	This is *just* the right size for the initial window
+	lib->visibleHeight = 295;
 	lib->offsetHeight = 0;
 	LibrarySetColumnCount( lib, LIBRARY_COLUMNS );
 
 	lib->window = GetNewWindow( kWindowLibraryID, NULL, (WindowPtr)-1 );
 	
 	SizeWindow( lib->window, lib->contentWidth, lib->visibleHeight, FALSE );
-	UtilPlaceWindow( lib->window, 0.3 );
+	UtilPlaceWindow( lib->window, 0.5 );
 
 	{
 		Rect r;
@@ -984,7 +984,7 @@ FlimPtr LibraryOpenFlim( LibraryPtr lib, int index )
 		
 		ParamText( lef->fName, errStr, vRefNumStr, dirIDStr );
 		
-		Alert( kAlertOpenFlimErrorID, NULL );
+		UtilDialog( kDLOGOpenFlimError );
 		return NULL;
 	}
 	return flim;

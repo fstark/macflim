@@ -15,22 +15,23 @@
 //	The preference data structure
 //	-------------------------------------------------------------------
 
-#define kPrefVersion 0x02 //	Bumped at every incompatible change of data structure
+#define kPrefVersion 0x03 //	Bumped at every incompatible change of data structure
 
 typedef struct
 {
 	short version;
 	
 	Boolean playbackVBL;
-	Size maxBufferSize;
+	Boolean showAll;
+	Boolean setTypeCreator;
+	Boolean showTipsStartup;
 	Boolean loop;
-	char filler0;
-	Boolean showTips;
+
 	char filler1;
+
+	Size maxBufferSize;
 	short nextTipIndex;
 	short nextTipBtnIndex;
-	Boolean showTipsStartup;
-	char filler2;
 }	PreferenceRecord;
 
 typedef PreferenceRecord *PreferencePtr;
@@ -117,6 +118,34 @@ Boolean PreferenceGetIsPlaybackVBL( void )
 
 //	-------------------------------------------------------------------
 
+Boolean PreferenceGetShowAll( void )
+{
+	return sPreferences->showAll;
+}
+
+//	-------------------------------------------------------------------
+
+void PreferenceSetShowAll( Boolean b )
+{
+	sPreferences->showAll = b;
+}
+
+//	-------------------------------------------------------------------
+
+Boolean PreferenceGetSetTypeCreator( void )
+{
+	return sPreferences->setTypeCreator;
+}
+
+//	-------------------------------------------------------------------
+
+void PreferenceSetSetTypeCreator( Boolean b )
+{
+	sPreferences->setTypeCreator = b;
+}
+
+//	-------------------------------------------------------------------
+
 Size PreferenceGetMaxBufferSize( void )
 {
 	return sPreferences->maxBufferSize;
@@ -160,7 +189,7 @@ void PreferenceInit( void )
 	if (sRefNum==-1)
 	{
 			//	Creates initial preference file
-		Create( PREF_FILE, 0, 'FLIM', 'PREF' );
+		Create( PREF_FILE, 0, 'FLPL', 'PREF' );
 		CreateResFile( PREF_FILE );
 		sRefNum = OpenResFile( PREF_FILE );
 		if (sRefNum!=-1)
@@ -272,16 +301,6 @@ void PreferencesSetNextTipBtnIndex( short nextTipBtnIndex )
 	sPreferences->nextTipBtnIndex = nextTipBtnIndex;
 }
 
-Boolean PreferencesGetShowTips( void )
-{
-	return sPreferences->showTips;
-}
-
-void PreferencesSetShowTips( Boolean showTips )
-{
-	sPreferences->showTips = showTips;
-}
-
 Boolean PreferencesGetShowTipsStartup( void )
 {
 	return sPreferences->showTipsStartup;
@@ -299,7 +318,8 @@ void PreferenceDialog( void )
 {
 	DialogPtr preferences;
 	short itemHit;
-	Handle iCheckVBL;
+	Handle iCheckShowAll;
+	Handle iCheckSetTypeCreator;
 	Handle iMaxBufferSize;
 	short iType;
 	short iRect;
@@ -308,8 +328,11 @@ void PreferenceDialog( void )
 
 		//	Getthe dialog and fill it
 	preferences = GetNewDialog( kDialogPreferenceID, NULL, (WindowPtr)-1 );
-	GetDItem( preferences, kPreferenceCheckVBL, &iType, &iCheckVBL, &iRect );
-	SetCtlValue( iCheckVBL, PreferenceGetIsPlaybackVBL() );
+	GetDItem( preferences, kPreferenceShowAll, &iType, &iCheckShowAll, &iRect );
+	SetCtlValue( iCheckShowAll, PreferenceGetShowAll() );
+	GetDItem( preferences, kPreferenceSetTypeCreator, &iType, &iCheckSetTypeCreator, &iRect );
+	SetCtlValue( iCheckSetTypeCreator, PreferenceGetSetTypeCreator() );
+
 	GetDItem( preferences, kPreferenceMaxBufferSize, &iType, &iMaxBufferSize, &iRect );
 	if (PreferenceGetMaxBufferSize()!=0)
 		NumToString( PreferenceGetMaxBufferSize(), iText );
@@ -317,8 +340,7 @@ void PreferenceDialog( void )
 		iText[0] = 0;
 	SetIText( iMaxBufferSize, iText );
 
-	if (MachineIsMinimal())
-		HiliteControl( iCheckVBL, 255 );
+	HiliteControl( iCheckSetTypeCreator, PreferenceGetShowAll()?0:255 );
 
 	UtilPlaceWindow( preferences, 0.2 );
 	ShowWindow( preferences );
@@ -326,10 +348,16 @@ void PreferenceDialog( void )
 	do
 	{
 		ModalDialog( NULL, &itemHit );
-		if (itemHit==kPreferenceCheckVBL)
+		if (itemHit==kPreferenceShowAll)
 		{
-			PreferenceSetIsPlaybackVBL( !PreferenceGetIsPlaybackVBL() );
-			SetCtlValue( iCheckVBL, PreferenceGetIsPlaybackVBL() );
+			PreferenceSetShowAll( !PreferenceGetShowAll() );
+			SetCtlValue( iCheckShowAll, PreferenceGetShowAll() );
+			HiliteControl( iCheckSetTypeCreator, PreferenceGetShowAll()?0:255 );
+		}
+		if (itemHit==kPreferenceSetTypeCreator)
+		{
+			PreferenceSetSetTypeCreator( !PreferenceGetSetTypeCreator() );
+			SetCtlValue( iCheckSetTypeCreator, PreferenceGetSetTypeCreator() );
 		}
 	}	while (itemHit!=kPreferenceButtonOk);
 
@@ -340,7 +368,9 @@ void PreferenceDialog( void )
 		StringToNum( iText, &maxBufferSize );
 		if (maxBufferSize!=PreferenceGetMaxBufferSize())
 		{
-			UtilDialog( kALRTPreferencesRestart );
+			HideCursor();	//	#### Hideous
+			UtilDialog( kDLOGPreferencesRestart );
+			ShowCursor();
 			PreferenceSetMaxBufferSize( maxBufferSize );
 		}
 	}

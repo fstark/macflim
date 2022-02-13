@@ -94,13 +94,13 @@ void ToggleTips()
 		DisposTips();
 }
 
-void DoTipsSelect( short anItem, EventRecord *anEvent )
+Boolean DoTipsSelect( short anItem, EventRecord *anEvent )
 {
 	switch (anItem)
 	{
 		case kNextTipItemID:
 			DisplayNextTip();
-			break;
+			return TRUE;
 		case kShowTipItemID:
 		{
 			short theType;
@@ -110,7 +110,9 @@ void DoTipsSelect( short anItem, EventRecord *anEvent )
 			PreferencesSetShowTipsStartup( !GetCtlValue( theItem ) );
 			SetCtlValue( theItem, PreferencesGetShowTipsStartup() );
 			PreferenceSave();
-			break;
+			return TRUE;
 		}
 	}
+
+	return FALSE;
 }

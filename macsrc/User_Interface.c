@@ -41,7 +41,7 @@ static Boolean IsFlimTypeCorrect( Str255 fName, short vRefNum, long dirID )
 	CheckErr( err, "UtilGetFileTypeCreator" );
 
 	if (err==noErr &&
-			(type=='FLIM' || type=='AFLM'))
+			(type=='FLIM' || type=='MMFL'))
 		return TRUE;
 
 	return FALSE;
@@ -131,7 +131,7 @@ static void SetFlimTypeCreator( Str255 fName, short vRefNum, long dirID )
 //	-------------------------------------------------------------------
 //	Sets flim creator if needed and accepted by user
 //	Does an optional integrity check
-//	Return FALSE if file should not be played
+//	Return FALSE if file should not be played (checksum error)
 //	-------------------------------------------------------------------
 
 static Boolean SetFlimTypeCreatorIfNeeded( Str255 fName, short vRefNum, long dirID )
@@ -149,6 +149,12 @@ static Boolean SetFlimTypeCreatorIfNeeded( Str255 fName, short vRefNum, long dir
 		return TRUE;
 	}
 
+	if (PreferenceGetSetTypeCreator())
+	{
+		SetFlimTypeCreator( fName, vRefNum, dirID );
+		return TRUE;
+	}
+
 	ParamText( fName, "", "", "" );
 	theSetTypeDialog = GetNewDialog( kDialogSetTypeID, NULL, (WindowPtr)-1 );
 	ShowWindow( theSetTypeDialog );
@@ -156,10 +162,10 @@ static Boolean SetFlimTypeCreatorIfNeeded( Str255 fName, short vRefNum, long dir
 	DisposDialog( theSetTypeDialog );	
 	if (itemHit==kSetTypeButtonOk)
 	{
-		if (ChecksumFlimIfNeeded( fName, vRefNum, dirID, TRUE ))
-			SetFlimTypeCreator( fName, vRefNum, dirID );
-		else
+		if (!ChecksumFlimIfNeeded( fName, vRefNum, dirID, TRUE ))
 			return FALSE;
+
+		SetFlimTypeCreator( fName, vRefNum, dirID );
 	}
 
 	return TRUE;
@@ -224,7 +230,7 @@ static pascal Boolean CustomFileFilter( FileParam *pbp )
 		return FALSE;
 	
 	if (pbp->ioFlFndrInfo.fdType=='APPL'
-	 	&& pbp->ioFlFndrInfo.fdCreator=='AFLM')
+	 	&& pbp->ioFlFndrInfo.fdCreator=='MMFL')
 		return FALSE;
 		
 	if (gDeepInspection)
@@ -269,7 +275,9 @@ static pascal short CustomHook( short item, DialogPtr dlg )
 
 	GetDItem( dlg, kSFAddFolderChooseDirectoryID, &iType, &iHandle, &iRect);
 
-	SetCTitle( (ControlHandle)iHandle, gDirectoryName );
+//	This only works on the emulator, not on real hardware. Maybe a patch in ROM?
+//	SetCTitle( (ControlHandle)iHandle, gDirectoryName );
+	SetCTitle( (ControlHandle)iHandle, "\pAdd Current Directory" );
 
 	if (item==kSFAddFolderChooseDirectoryID)
 		return 1;		//	Treat this as 'ok'
@@ -340,15 +348,13 @@ static Boolean UserInterfaceSFGetFlim( Boolean option, Str255 fName, short *vRef
 	SFReply theReply;
 	Ptr savePtr;
 
-	if (option)
+	if (PreferenceGetShowAll())
 	{
 		gDeepInspection = TRUE;
-		ParamText( "\pShowing all flims", "", "", "" );
 	}
 	else
 	{
 		gDeepInspection = FALSE;
-		ParamText( "\pHint: Open menu with Option key to see all flim files", "", "", "" );
 	}
 
 		//	Ask user for a file
@@ -878,17 +884,28 @@ static void UserInterfaceDoMenuResult( long theMenuResult, Boolean thefOption )
 	}
 }
 
-static void UserInterfaceDoKey( EventRecord *anEvent )
+///	Returns top-most window that accepts keys
+static WindowPtr UserInterfaceKeyWindow()
+{
+	WindowPtr result = FrontWindow();
+	if (IsTips(result))
+		result = (WindowPtr)(((WindowRecord *)result)->nextWindow);
+
+	return result;
+}
+
+static Boolean UserInterfaceDoKey( EventRecord *anEvent )
 {
 	char theKey = anEvent->message & charCodeMask;
 	if (anEvent->modifiers & cmdKey)
 	{
 		UserInterfaceEnableDisableMenus();
 		UserInterfaceDoMenuResult( MenuKey( theKey ), !!(anEvent->modifiers&optionKey) );
+		return TRUE;
 	}
 	else
 	{
-		if (FrontWindow()==LibraryGetWindow(sLibrary))
+		if (UserInterfaceKeyWindow()==LibraryGetWindow(sLibrary))
 		{
 			switch (anEvent->message&charCodeMask)
 			{
@@ -936,9 +953,14 @@ static void UserInterfaceDoKey( EventRecord *anEvent )
 					UserInterfaceTrySelect( sLibrary, selection );
 					break;
 				}
+				default:
+				{
+					return FALSE;
+				}
 			}
 		}
 	}
+	return TRUE;
 }
 
 static void UserInterfaceDoCloseWindow( WindowPtr aWindow )
@@ -965,18 +987,6 @@ static void UserInterfaceDoMenuBar( Point aPoint, Boolean thefOption )
 		SetItem( gFileMenu, kMENUItemShowTips, "\pHide Tips" );	//	#### Localization
 	else
 		SetItem( gFileMenu, kMENUItemShowTips, "\pShow Tips..." );	//	#### Localization
-
-		//	Reword the menu items if option is pressed
-	if (!thefOption)
-	{
-		SetItem( gLibraryMenu, kMenuItemAddFlimID, "\pAdd Flim..." );	//	#### Localization
-		SetItem( gLibraryMenu, kMenuItemAddFolderID, "\pAdd Folder Of Flims..." );	//	#### Localization
-	}
-	else
-	{
-		SetItem( gLibraryMenu, kMenuItemAddFlimID, "\pAdd Flim Of Any Type..." );	//	#### Localization
-		SetItem( gLibraryMenu, kMenuItemAddFolderID, "\pAdd Folder Of Flims Of Any Type..." );	//	#### Localization
-	}
 
 	if (LibraryIsSelectionEmpty( sLibrary ) && LibraryGetCount( sLibrary)>0)
 	{
@@ -1182,23 +1192,25 @@ static void UserInterfaceDoUpdate( WindowPtr aWindow )
 	SetPort( savedPort );
 }
 
-static void DoDialogEvent( EventRecord *anEvent )
+///	Return TRUE if event was handled
+static Boolean DoDialogEvent( EventRecord *anEvent )
 {
 	DialogPtr theDialog;
 	short theItem;
 	
 	if (anEvent->what==keyDown && anEvent->modifiers&cmdKey)
 	{
-		UserInterfaceDoKey( anEvent );
-		return ;
+		return UserInterfaceDoKey( anEvent );
 	}
 	
 	
 	if (DialogSelect( anEvent, &theDialog, &theItem ))
 	{
 		if (IsTips( theDialog ))
-			DoTipsSelect( theItem, anEvent );
+			return DoTipsSelect( theItem, anEvent );
 	}
+	
+	return FALSE;
 }
 
 void UserInterfaceLoop()
@@ -1228,8 +1240,8 @@ void UserInterfaceLoop()
 
 		if (IsDialogEvent( &theEvent ))
 		{
-			DoDialogEvent( &theEvent );
-			continue;
+			if (DoDialogEvent( &theEvent ))
+				continue;		//	Handled
 		}
 
 		switch (theEvent.what)

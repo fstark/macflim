@@ -3,34 +3,37 @@
 #if 0
 
 TODO:
-	Loop single flim [DONE]
-	Create autoplay
-	Magically set type
-	Handle 'SELF' flim
 	PREF for SELF?
 	VERSION for SELF?
 
-
+#### Use Command-C during playback to copy the current frame in the Clipboard. You can print it and put it on your wall!
 
 
 
 A974 : Button
 
-* Add back the Help
 * Play commands (restart/prev/next/etc) in ApplyPlay
 * Manage play commands (at least) abort (Button) from VBL
 * Mouse selection is a bit off (click on right border of polaroid)
 * Check all resource IDs in Resources.h
 * Don't add duplicate
+* Do not show flim already in the Library in SFPGetFile
 * Sort flims
 * Drag/drop reorder
 * When selected, play should indicates the number of selected flims
-* When a single one, play indicates the name
+* When a single one, play indicates the name in the Play Menu
 * Add a "Restore Default" in preference dialog.
 * Changing flim types should not remove auto play
-* Select all (and other menus) should not work when Library window not front
-* "Cannot open flim" : dialog uncentererd + no mouse
+* Empty state for Library	
 
+* [DONE] Remove VBL from preferences
+* [DONE] Adds for type/creator when opening flim files
+* [DONE] Put "Show all flims" into the SFPGetFile dialog itself (remove option trick), or add it in preferences
+* [DONE] Poster should use flim filter
+* [DONE] Double-clic on library crashes
+* [DONE] Select directory of SFPGetFile is wrong
+* [DONE] Better handling of keys when multiple windows
+* [DONE] "Cannot open flim" : dialog uncentererd + no mouse
 * [DONE] Incomprehensible crash if buffers too small
 * [DONE] Flim 'A' makes MacFlim crash
 * [DONE] Escape deselects all.

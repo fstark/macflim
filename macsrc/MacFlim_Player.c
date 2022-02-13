@@ -51,6 +51,7 @@ static Boolean AutoPlayFlims( void )
 	AppFile theAppFile;
 	int i;
 	Ptr savePtr;
+	Boolean played = FALSE;	//	Will be TRUE if we played one flim
 
 	CountAppFiles(&doWhat,&fileCnt);
 
@@ -58,6 +59,7 @@ static Boolean AutoPlayFlims( void )
 	if (fileCnt==0)
 		return FALSE;
 
+	HideCursor();
 	SaveScreen( &savePtr );
 
 	for (;;)
@@ -71,7 +73,10 @@ static Boolean AutoPlayFlims( void )
 			//	(note: this means that a bad file will abort the looping too)
 			
 			theResult = PlayFlimFile( theAppFile.fName, theAppFile.vRefNum, kNoDirID, kHFS, FALSE );
-			if (theResult==kError || theResult==kAbort)
+			if (theResult==kError || theResult==kFileError || theResult==kScreenError)
+				continue;
+			played = TRUE;
+			if (theResult==kAbort)
 				goto end;
 			if (theResult==kRestart)
 				i = i-1;
@@ -82,12 +87,16 @@ static Boolean AutoPlayFlims( void )
 				if (i==-2)
 					i = fileCnt-2;
 			}
-			ClrAppFiles( i+1 );
 		}
+
+			//	If we failed at every flim, we abort
+		if (!played)
+			break;
 	}
 
 end:
 	RestoreScreen( &savePtr );
+	ShowCursor();
 
 	return TRUE;
 }

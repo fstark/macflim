@@ -149,7 +149,7 @@ Boolean SelfInstallPlayer( Str255 fName, short vRefNum, short dirID )
 
 	HUnlock( sCopyHdl );
 	
-	UtilSetFileTypeCreator( fName, vRefNum, dirID, 'APPL', 'AFLM' );
+	UtilSetFileTypeCreator( fName, vRefNum, dirID, 'APPL', 'MMFL' );
 
 done1:
 	CloseResFile( dest );

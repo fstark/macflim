@@ -49,10 +49,8 @@ enum {	kMenuItemAddFlimID = 1,
 //	ALRT
 //	-------------------------------------------------------------------
 
-#define kAlertOpenFlimErrorID 			137
 #define kALRTErrorNonFatal				140
 #define kALRTErrorNoBWScreen			142		//	No BW screen present
-#define kALRTPreferencesRestart			143		//	Need to restart to apply prefs
 
 //	-------------------------------------------------------------------
 //	Dialogs
@@ -74,11 +72,15 @@ enum {	kMenuItemAddFlimID = 1,
 
 #define kDialogPreferenceID 			135
 	#define kPreferenceButtonOk			1
-	#define kPreferenceCheckVBL			2
-	#define kPreferenceMaxBufferSize	3
+	#define kPreferenceShowAll			2
+	#define kPreferenceSetTypeCreator	3
+	#define kPreferenceMaxBufferSize	4
 
 #define kDLOGFatal						136
 
+#define kDLOGOpenFlimError	 			137
+
+#define kDLOGPreferencesRestart			143
 #define kDLOGProgress					144
 
 //	-------------------------------------------------------------------
@@ -109,10 +111,8 @@ enum {	kMenuItemAddFlimID = 1,
 //	-------------------------------------------------------------------
 
 #define kSFAddFlimDialogID					2000
-	#define kSFAddFlimHelpTextID			11
 
 #define kSFAddFolderDialogID				2001
-	#define kSFAddFolderHelpTextID			11
-	#define kSFAddFolderChooseDirectoryID	12
+	#define kSFAddFolderChooseDirectoryID	11
 
 #endif

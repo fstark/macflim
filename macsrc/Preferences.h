@@ -36,6 +36,20 @@ Boolean PreferenceGetLoop( void );
 void PreferenceSetLoop( Boolean b );
 
 //	-------------------------------------------------------------------
+//	Show all flims in SFPGetFile
+//	-------------------------------------------------------------------
+
+Boolean PreferenceGetShowAll( void );
+void PreferenceSetShowAll( Boolean b );
+
+//	-------------------------------------------------------------------
+//	Set type/creator on open
+//	-------------------------------------------------------------------
+
+Boolean PreferenceGetSetTypeCreator( void );
+void PreferenceSetSetTypeCreator( Boolean b );
+
+//	-------------------------------------------------------------------
 //	Size of buffers (0 if no size set). Can be used from mini player
 //	-------------------------------------------------------------------
 
@@ -48,8 +62,6 @@ short PreferencesGetNextTipIndex( void );
 void PreferencesSetNextTipIndex( short nextTipIndex );
 short PreferencesGetNextTipBtnIndex( void );
 void PreferencesSetNextTipBtnIndex( short nextTipBtnIndex );
-Boolean PreferencesGetShowTips( void );
-void PreferencesSetShowTips( Boolean showTips );
 Boolean PreferencesGetShowTipsStartup( void );
 void PreferencesSetShowTipsStartup( Boolean showTipsStartup );
 

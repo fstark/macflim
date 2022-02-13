@@ -12,7 +12,7 @@ Boolean IsTips( DialogPtr aDialog );
 void ToggleTips( void );
 
 //	Handle interaction with the dialog
-void DoTipsSelect( short anItem, EventRecord *anEvent );
+Boolean DoTipsSelect( short anItem, EventRecord *anEvent );
 
 //	Clean-up
 void DisposTips( void );
