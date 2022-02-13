@@ -408,14 +408,27 @@ public:
 
 std::cout << "POSTER INDEX: " << poster_index << "\n";
 
+        auto filters_string = profile_.filters();
+        poster_image = filter( poster_image, filters_string.c_str() );
+
+
         image poster_small( 128, 86 );
         copy( poster_small, poster_image, false );
 
-        auto prev = poster_small;
-        auto poster_small_bw = poster_small;
-        auto error_diff = get_error_diffusion_by_name( "floyd" );
+        image previous( poster_small.W(), poster_small.H() );
+        fill( previous, 0 );
 
-        error_diffusion( poster_small_bw, poster_small, prev, 0, *error_diff, 0.99, true );
+        // auto prev = poster_small;
+        auto poster_small_bw = poster_small;
+        // auto error_diff = get_error_diffusion_by_name( "floyd" );
+
+
+        if (profile_.dither()==image::error_diffusion)
+            error_diffusion( poster_small_bw, poster_small, previous, 0, *get_error_diffusion_by_name( profile_.error_algorithm() ), profile_.error_bleed(), profile_.error_bidi() );
+        else if (profile_.dither()==image::ordered)
+            ordered_dither( poster_small_bw, poster_small, previous );
+
+        // error_diffusion( poster_small_bw, poster_small, prev, 0, *error_diff, 0.99, true );
         write_image( "/tmp/poster1.pgm", poster_image );
         write_image( "/tmp/poster2.pgm", poster_small );
         write_image( "/tmp/poster3.pgm", poster_small_bw );
