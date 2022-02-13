@@ -1,19 +1,7 @@
-# XXX => Different real-world sequence
-
-## [Fnn] => Different flim played
-
-*in-flim voice*
-
-**action performed in real world**
-
-voiceover : *real-world voiceover*
-
-### ON-SCREEN INFO
-
 # [MACHINE SE30]
 
 ### ON-SCREEN: MacFlim 2
-### Smaller. Smarter. Noiser.
+### ON-SCREEN: Smaller. Smarter. Noiser.
 
 **Shot of SE/30, booted at the finder. MacFlim folder is visible, closed. User double-click, opens the folder, and launch MacFlim.**
 
@@ -29,25 +17,23 @@ voiceover : *real-world voiceover*
 
 ## [F03X] Fred
 
-*Yep, in the computer. And what an improvement it is over the previous version! A cool, downright futuristic user interface, which I call a flim library, that lets you collect your favourite flims in a single place. And sound, as you might have noticed. This time, it comes directly from the computer. Fancy!*
+*Yep, in the computer. So, right now we're in... [doigt sur les levres puis levé comme pour voir la direction du vent]... a 15.6MHz 68030 32 bits CPU, with a 68882 FPU. 64MB of RAM, and a SCSI drive.*
+*Yes, top of the line computer right there, that's an SE/30 the best of the best available... [look at watch] in 1989*
+*Perfect to show the new MacFlim. And what an improvement it is over the previous version! A cool, downright futuristic user interface, which I call a flim library, that lets you collect your favourite flims in a single place. And sound, as you might have noticed. This time, it comes directly from the computer!*
 
 ## [F04] Zoolander
 
 ## [F05X] Fred
 
-*Thanks Hansel, much appreciated. Actually, I think I could show you a few cool flims, now that I've finally managed to get that working. Right, so, right now we're in... [doigt sur les levres puis levé comme pour voir la direction du vent] yup, that's a SE30.*
-
-### ON-SCREEN: 1989 SE/30. 15.6MHz 68030 + 68882 FPU. 64Mb RAM. SCSI Drive. 
-
-*Top of the line computer right there, the best of the best currently available... [look at watch] in 1989. well, let's see what we can do with it, but first, some advertisement.*
+*Thanks Hansel, much appreciated. It may not have been a simple as it looks. So, let's do a proper demo, just after the advertisements!*
 
 ## [F06-08] 1984/iPod/technologic
 
 ## [F09X] Fred
 
-*Right, sorry, sorry. That was a lot of ads, and god knows we get a lot of these nowadays, but I just had to, you know? They're iconic, really. And no wonder they didn't keep the Daft Punk imagery for that iPod introduction ad... But I feel it's quite fitting nonetheless.*
+*Right, sorry, sorry. That was a lot of ads, and god knows we get a lot of these nowadays, but I just had to, you know? They're iconic, really. And that weird futuristic music player. I think they should remove that last part, even if it is quite fitting...*
 
-*Still, let's do something else. Why don't we look at some music -- just a few short extracts, to avoid all that nasty copyright business.*
+*So, that demo, let's start with some music videos of the latest hits, just a few short extracts, to avoid all that nasty copyright business.*
 
 # [END OF SEQUENCE, RETURNS TO SE/30]
 
