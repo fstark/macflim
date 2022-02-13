@@ -91,6 +91,7 @@ void write_image( const char *file, const image &img );
 #include <string>
 
 void watermark( image &img, const std::string &s );
+void burn_subtitle( image &img, const std::string &sub );
 
 void copy( image &destination, const image &source, bool black_bars=true );
 

@@ -141,15 +141,20 @@ uint8_t sFont[128][8] = {
     { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}    // U+007F
 };
 
+//  Draws a single 8x9 character
 static void putc( image &img, char c, size_t posx, size_t posy )
 {
     c &= 0x7f;
 
+        //  A black line (only on the top, as the font have a bottom black line)
     for (int x=0;x!=8;x++)
-        img.at( 8+posx*8+x, posy*8+3 ) = 0;
+        img.at( posx+x, posy ) = 0;
+
+    posy++;
+        //  The 8 lines
     for (int y=0;y!=8;y++)
         for (int x=0;x!=8;x++)
-            img.at(8+posx*8+x,y+posy*8+4) = (sFont[c][y] & (1<<(x))) ? 1 : 0;
+            img.at(posx+x,y+posy) = (sFont[c][y] & (1<<(x))) ? 1 : 0;
 }
 
 void watermark( image &img, const std::string &s )
@@ -160,7 +165,7 @@ void watermark( image &img, const std::string &s )
     {
         if (c>=32)
         {
-            putc( img, c, x, y );
+            putc( img, c, 8+x*8, y*8+3 );
             x++;
             if (x==62)
             {
@@ -175,4 +180,20 @@ void watermark( image &img, const std::string &s )
                 y++;
             }
     }
+}
+
+using namespace std::string_literals;
+
+void burn_subtitle( image &img, const std::string &sub )
+{
+    size_t char_width = img.W()/8;
+    auto s = " "s + sub + " "s;
+    s = s.substr(0, char_width );
+
+    size_t l = s.size();
+    size_t x = (char_width-l)/2;
+    size_t y = img.H()-9-3;
+
+    for (auto c:s)
+        putc( img, c, x++*8, y );
 }

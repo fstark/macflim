@@ -193,6 +193,10 @@ public:
             
             round_corners( dest );
             ::watermark( dest, watermark );
+
+//            ::burn_subtitle( dest, "HELLO WORLD" );
+
+
             //  DEBUG frame count
             // {
             //     char buffer[1024];
