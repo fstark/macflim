@@ -13,6 +13,7 @@
 #include <memory>
 
 #include "reader.hpp"
+#include "subtitles.hpp"
 
 #define VERBOSE
 
@@ -45,6 +46,7 @@ private:
     const std::vector<image> &images_;
     const std::vector<sound_frame_t> &audio_;
     const double fps_;
+    std::vector<subtitle> subtitles_;
 
     std::vector<frame> frames_;
 
@@ -52,7 +54,7 @@ private:
     size_t H_;
 
 public:
-    flimcompressor( size_t W, size_t H, const std::vector<image> &images, const std::vector<sound_frame_t> &audio, double fps ) : W_{W}, H_{H}, images_{images}, audio_{audio}, fps_{fps} {}
+    flimcompressor( size_t W, size_t H, const std::vector<image> &images, const std::vector<sound_frame_t> &audio, double fps, const std::vector<subtitle> &subtitles ) : W_{W}, H_{H}, images_{images}, audio_{audio}, fps_{fps}, subtitles_{subtitles} {}
 
     const std::vector<frame> &get_frames() const { return frames_; }
 
@@ -194,7 +196,22 @@ public:
             round_corners( dest );
             ::watermark( dest, watermark );
 
-//            ::burn_subtitle( dest, "HELLO WORLD" );
+            if (subtitles_.size()>0)
+            {
+                double t = in_fr/fps_;
+                if (t>=subtitles_.front().start)
+                {
+                    if (t<subtitles_.front().stop)
+                    {
+                        ::burn_subtitle( dest, subtitles_.front().text.front() );   //  #### zero line subtitles will crash
+                    }
+                    else
+                    {
+                        subtitles_.erase( subtitles_.begin() ); //  We should flip the subtitles order in constructor!
+                    }
+                }
+            }
+
 
 
             //  DEBUG frame count

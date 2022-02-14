@@ -9,7 +9,7 @@ MacFlim is a video encoder and player for black and white vintage Macintoshes, n
 _The iPod introduction should have waited for MacFlim to be available_
 
 
-MacFlim brings movie playing abilities to most of the Macintosh familiy, namely:
+MacFlim brings movie playing abilities to the most popular members of the Macintosh familiy, namely:
 
 * Macintosh XL
 * Macintosh 128K
@@ -179,6 +179,10 @@ Specify the duration of the flim. See ``--from`` for time format. The default du
 
 Specifies the timestamp from which to generate the 128x86 poster for display in the library. By default, the image from the third of the active duration will be extracted (note: this can product black images if duration is longer than 3 times the source material).
 
+### --srt **subtitles file**
+
+Burns the subtitle file into the flim. Note that there are currently limitations (multi-lines are not supported well).
+
 ### --bars **boolean**
 
 The Mac screen ratio is 3/2, but move movies out there are 4/3, 16/9 or something else. By default, flimmaker adds black borders around the border of the flim (because it keeps more of the original image and the black bars are less data to encode). Using ``--bars false`` instead crops the image for a nicer "fullscreen" effect. Note that, if there are already black bars in the input video, using the 'Z' filter (Zoom) described later can help.
@@ -199,7 +203,6 @@ When specifiying a set of pgm files as input, the audio must be provided using a
 
     ffmpeg -i movie.mp4 audio.wav
     sox -V2 audio.wav -r 22200 -e unsigned-integer -b 8 audio.raw remix 1 norm
-
 
 ### --silent **boolean**
 

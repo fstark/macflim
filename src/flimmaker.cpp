@@ -25,6 +25,7 @@
 #include <assert.h>
 #include <limits>
 #include <iostream>
+#include <fstream>
 #include <stdio.h>
 #include <vector>
 #include <array>
@@ -53,6 +54,7 @@ static int sStream = 0;
 #include "image.hpp"
 #include "reader.hpp"
 #include "writer.hpp"
+#include "subtitles.hpp"
 
 inline bool ends_with(std::string const & value, std::string const & ending)
 {
@@ -153,6 +155,7 @@ void usage( const std::string name )
     std::cerr << "    --poster TIME               : frame to extract the poster from (by default 1/3 of duration)ß\n";
     std::cerr << "    --fps FPS                   : for 'pgm' pattern, specifies the framerate to be used\n";
     std::cerr << "    --audio FILE                : for 'pgm', specifices a separate u8 22200 Hz wav file with audio\n";
+    std::cerr << "    --srt FILE                  : burns the subtitle file into the flim\n";
 
     std::cerr << "\n  Output options:\n";
 
@@ -229,12 +232,13 @@ try
 {
     // std::string in_arg = "movie-%06d.pgm";
     std::string input_file = "";
+    std::string srt_file = "";
     std::string mp4_file = "";
     std::string gif_file = "";
     std::string out_arg = "out.flim";
     std::string audio_arg = "audio.raw";
-    double from_index = 0;
-    double to_index = std::numeric_limits<int>::max();
+    double from_index = 0;  //  #### This is not an index, it is a timestamp
+    double to_index = std::numeric_limits<double>::max();
     double duration = 300;   //  5 minutes by default
     double poster_ts = -1;
     int cover_from = -1;
@@ -329,6 +333,12 @@ size_t height = 342;
             argc--;
             argv++;
             mp4_file = *argv;
+        }
+        else if (!strcmp(*argv,"--srt"))
+        {
+            argc--;
+            argv++;
+            srt_file = *argv;
         }
         else if (!strcmp(*argv,"--gif"))
         {
@@ -572,6 +582,27 @@ size_t height = 342;
         exit( EXIT_FAILURE );
     }
 
+    std::vector<subtitle> subs;
+
+    if (srt_file!="")
+    {
+        std::ifstream ifs;
+
+        ifs.open( srt_file, std::ifstream::in );
+
+        if (!ifs.good())
+        {
+            std::cerr << "ERROR : Cannot open subtitle file [" << srt_file << "]\n";
+            exit( EXIT_FAILURE );
+        }
+
+        subs = ::read_subtitles( ifs );
+
+        ifs.close();
+
+        subs = ::subtitles_extract( subs, from_index, duration );
+    }
+
     //  If input-file is an url, use youtube-dl to retreive content
     if (input_file.rfind( "https://", 0 )==0)
     {
@@ -655,6 +686,7 @@ size_t height = 342;
     encoder.set_target_pattern( target_pattern );
 
     encoder.set_poster_ts( poster_ts );
+    encoder.set_subtitles( subs );
 
     // encoder.set_input_single_random();
 

@@ -18,7 +18,7 @@ watermark.o: watermark.cpp imgcompress.hpp image.hpp
 imgcompress.o: imgcompress.cpp imgcompress.hpp image.hpp
 	c++ -std=c++2a -c -O3 imgcompress.cpp -o imgcompress.o
 
-flimmaker.o: flimmaker.cpp flimencoder.hpp flimcompressor.hpp compressor.hpp imgcompress.hpp framebuffer.hpp image.hpp ruler.hpp reader.hpp writer.hpp
+flimmaker.o: flimmaker.cpp flimencoder.hpp flimcompressor.hpp compressor.hpp imgcompress.hpp framebuffer.hpp image.hpp ruler.hpp reader.hpp writer.hpp subtitles.hpp
 	c++ -std=c++2a -c -O3 -I liblzg/src/include flimmaker.cpp -o flimmaker.o
 
 ../flimmaker: flimmaker.o imgcompress.o image.o watermark.o ruler.o reader.o writer.o

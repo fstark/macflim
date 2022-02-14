@@ -262,6 +262,8 @@ public:
     }
 };
 
+#include "subtitles.hpp"
+
 class flimencoder
 {
     const encoding_profile &profile_;
@@ -270,6 +272,8 @@ class flimencoder
     std::string change_pattern_ = "change-%06d.pgm"s;
     std::string diff_pattern_ = "diff-%06d.pgm"s;
     std::string target_pattern_ = "target-%06d.pgm"s;
+
+    std::vector<subtitle> subtitles_;
 
     std::vector<image> images_;
     std::vector<sound_frame_t> audio_samples_;
@@ -383,6 +387,7 @@ public:
     void set_change_pattern( const std::string pattern ) { change_pattern_ = pattern; }
     void set_target_pattern( const std::string pattern ) { target_pattern_ = pattern; }
     void set_poster_ts( double poster_ts ) { poster_ts_ = poster_ts; }
+    void set_subtitles( const std::vector<subtitle> &subtitles ) { subtitles_ = subtitles; /* yes, it is a copy */ }
 
     //  Encode all the frames
     void make_flim( const std::string flim_pathname, input_reader *reader, const std::vector<std::unique_ptr<output_writer>> &writers )
@@ -443,7 +448,7 @@ std::cout << "POSTER INDEX: " << poster_index << "\n";
 
         fix();
 
-        flimcompressor fc{ profile_.width(), profile_.height(), images_, audio_samples_, fps_ / profile_.fps_ratio() };
+        flimcompressor fc{ profile_.width(), profile_.height(), images_, audio_samples_, fps_ / profile_.fps_ratio(), subtitles_ };
 
         fc.compress( profile_.stability(), profile_.byterate(), profile_.group(), profile_.filters(), watermark_, profile_.codecs(), profile_.dither(), profile_.bars(), profile_.error_algorithm(), profile_.error_bleed(), profile_.error_bidi() );
 
