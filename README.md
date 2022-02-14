@@ -8,22 +8,13 @@ MacFlim is a video encoder and player for black and white vintage Macintoshes, n
 
 _The iPod introduction should have waited for MacFlim to be available_
 
-
-MacFlim brings movie playing abilities to the most popular members of the Macintosh familiy, namely:
-
-* Macintosh XL
-* Macintosh 128K
-* Macintosh 512K
-* Mac Plus
-* Mac SE
-* Mac SE/30
-* Macintosh Portable
-
-on their beautiful internal back and white 512x342 display (or in a part of it for the Mac XL and the Portable).
+MacFlim brings movie playing abilities to the most popular members of the Macintosh familiy, namely the Macintosh XL, Macintosh 128K, Macintosh 512K, Mac Plus, Mac SE, Mac SE/30 and the Macintosh Portable, on their beautiful internal back and white 512x342 display (or in a part of it for the Mac XL and the Portable).
 
 ## What is in the repository?
 
-* The source code and binaries for "MacFlim Player", the new standalone video player for the vintage mac.
+* The source code and binaries for "MacFlim", the popular video player for the vintage mac.
+
+* The source code and binaries for "Mini MacFlim", a low-memory version of the popular video player for the vintage mac.
 
 * The source code of flimmaker, the command line encoder. It runs on Mac and Linux (and could probably compiled on windows with a C++20 compiler).
 
