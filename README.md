@@ -225,7 +225,7 @@ NOTE: as of today, the byterate is only the *video* byterate. 376 extra bytes ar
 
 ``--fps-ratio 2`` will effectively halve the framerate of the input, resulting in a worse looking, but smaller flim. If Mac Flim has troubles displaying your flim, using ``--fps-ratio 2`` or higher can vastly improve the visual result.
 
-The Mac Plus and the Mac SE profiles are ``--fps-ratio 2`` by default, while the SE/30 displays all the frames.
+The Mac Plus and the Mac SE profiles are ``--fps-ratio 2`` by default, while the SE/30 displays all the frames. The 512 and xl profiles use ``--fps-ratio 4`` to compensate for the extremely low byterate due to the slow drives.
 
 ### --group **boolean**
 
