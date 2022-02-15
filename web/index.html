@@ -46,24 +46,18 @@ ul li h4
     text-align: center;
 }
 
-ul.download-links
+.download-link
 {
-    text-align: center;
-}
+    display: flex;
+    align-items: center;
+    /* text-align: center; */
 
-.download-links li
-{
-    display: inline-block;
-}
+    background: url(assets/download.gif) no-repeat left center;
+    padding-left: 34px;
+    height: 34px;
 
-.download-links li:before
-{
-    content: " | ";
-}
-
-.download-links li:first-of-type:before
-{
-    content: "";
+    /* width:226px;
+    margin: 0 2px 0 2px; */
 }
 
 img.large
@@ -104,7 +98,7 @@ src="https://www.youtube.com/embed/dQw4w9WgXcQ">
 <p>[THIS WILL BE REPLACED BY THE RELEASE VIDEO]</p>
 
 <p>
-    This is MacFlim Player, the Macintosh flim player. Whichever Macintosh you have, if it has one of those modern 68000 CPUs you will be able to admire and listen to many flim clips, in their glorious black and white.
+    This is MacFlim Player, the most popular Macintosh flim player. Whichever Macintosh you have, if it blessed with one of those modern 68000 CPUs you will be able to admire and listen to many flim clips, in their gorgeous black and white.
 </p>
 <p>
     If your Macintosh is currently getting re-capped or if you are unfortunately stuck in the past with an IBM 5150, you can still enjoy the flims by clicking on the animated gifs to play them in your browser.
@@ -113,7 +107,7 @@ src="https://www.youtube.com/embed/dQw4w9WgXcQ">
     <li>
         <img class="large" src="assets/placeholder.png"></img>
         <p>Supported systems</p>
-        <p>MacFlim Player supports all current Macs, from the 128K to the SE/30, including the Mac XL, or the new Macintosh Portable.</p>
+        <p>MacFlim Player supports all current Macs, from the 128K to the SE/30, including the Mac XL, or the brand new Macintosh Portable.</p>
     </li>
 
     <li>
@@ -123,13 +117,15 @@ src="https://www.youtube.com/embed/dQw4w9WgXcQ">
     </li>
 </ul>
 
-<h2>The new version of MacFlim has arrived!</h2>
+<h2>The popular Macintosh video player just got even better!</h2>
 
-Remember when your kids uttered their first words? What a milestone!
+Remember when your kids uttered their first words? Remember how proud you were?
 
 Well, the same happened to MacFlim, it has now learned how to speak!
 
-And can play Flims at their exact orginal frame rate! And thanks to is new lossy compression, flims size are 3 to 4 times smaller than first version of MacFlim!
+And can play Flims at their exact orginal frame rate! And thanks to is new lossy compression, flims size are 3 to 4 times smaller than they used to be!
+
+And it supports even more models of Macintoshs!
 
 And the encoder is way simpler to use, so creating your own flims is a breeze!
 
@@ -140,7 +136,7 @@ So, what are you waiting for?
 <h2>How to install MacFlim Player</h2>
 
 <p>Beware, flim files can still be quite big. How big? Well, it depends on the desired quality. You are looking at around 100Kb/seconds for Mac Plus quality, 150 for SE and more than 300 for SE30.</p>
-<p>    You need a <a href="https://store.inertialcomputing.com/SCSI2SD-s/100.htm">SCSI2SD</a> (if you can make sense of the different models), or a <a href="https://www.tindie.com/products/landogriffin/rascsi-macintosh-version/">RaSCSI</a> (if you like soldering), or a <a href="https://gumroad.com/l/bluescsi-1b">BlueSCSI</a> (if you don't live in the EU) to store them. There is also the <a href="http://macsd.com/">MacSD</a> which I know nothing about, but it does look neat.</p>
+<p>You need a <a href="https://store.inertialcomputing.com/SCSI2SD-s/100.htm">SCSI2SD</a> (if you can make sense of the different models), or a <a href="https://www.tindie.com/products/landogriffin/rascsi-macintosh-version/">RaSCSI</a> (if you like soldering), or a <a href="https://gumroad.com/l/bluescsi-1b">BlueSCSI</a> (if you don't live in the EU) to store them. There is also the <a href="http://macsd.com/">MacSD</a> which I know nothing about, but it does look neat.</p>
 
 <p>Download the app, as a .dsk file</p>
 
@@ -149,15 +145,15 @@ So, what are you waiting for?
 
 <p>Flims are available as ``.flim`` files. Just download the ones you want, move them to your mac and add them to you MacFlim Library</p>
 
-<p>While you can play a flim for a Mac Plus on a SE or a SE/30, or play a SE flim on a SE/30, the reverse is not possible, so download the best possible flim for your hardware</p>
+<p>While you can play a flim encoded for a Mac Plus on a SE or a SE/30, the reverse is not possible, so download the best possible flim for your hardware</p>
 
-<p> By clicking on the animated gif, you will directly plays an mp4 of the resulting flim. However, as mp4 is not designed to compress well high frequency black and white, those files are *much larger* than the flims (like between x10 and x25x), they can easily bring the MacFlim server down
+<p>By clicking on the animated gif, you will directly plays an mp4 of the resulting flim. However, as mp4 is not designed to compress well high frequency black and white, those files are *much larger* than the flims (like between x10 and x25x), they can easily bring the MacFlim server down.
 </p>
 
 <p>#### MOVE TO THE END</p>
-<p>If you like the idea of creating your own flims, <a href="https://www.github.com/fstark/macflim">you can install <code>flimmaker</code> on linux or mac os x</a>. You can also use <code>flimmaker</code> to directly generate mp4 files that shows the frame perfect result of MacFlim on selected hardware, so you don't need to have access to a vintage mac to enjoy it<a href="#footnote1">[1]</a> .</p>
+<p>If you like the idea of creating your own flims, <a href="https://www.github.com/fstark/macflim">you can install <code>flimmaker</code> on linux or mac os x</a>. You can also use <code>flimmaker</code> to generate mp4 files that shows the frame perfect result of MacFlim on selected hardware, so you don't need to have access to a vintage mac to enjoy tweaking the encoding of your favorite flim<a href="#footnote1">[1]</a> .</p>
 
-<h3>Downloading samples</h3>
+<h3>Downloading samples flims</h3>
 <ul>
 </ul>
 
