@@ -43,7 +43,7 @@ To ease with testing, an optional mp4 of the flim can be generated. This will le
 ## How do I play flims on my Mac?
 
 Head to http://www.macflim.com/macflim2 to download the standalone player.
-Alternatively, if you want to have the latest version and the source code, the 'MacFlim Source Code.dsk' file is a disk image, containing a working System 6.0.8, the MacFlim source code and binaries, and a THINK 5 development environment.
+Alternatively, if you want to have the latest version and the source code, the 'MacFlim Source Code.dsk' file is a disk image, containing a working System 6.0.8, the MacFlim source code and binaries, and a THINK 5 development environment. This is what is used to develop MacFlim and Mini MacFlim.
 
 ## Ok, how do I compile the encoder?
 
@@ -106,7 +106,7 @@ The general format is:
 
 * An url supported by ``youtube-dl`` (or ``yy-dlp``). If the ``input-file-name`` starts with ``https://``, flimmaker will try to use ``youtube-dl`` to download the specified file and encode it. See the ``--cache`` option to avoid downloading multiple times the same source.
 
-* A set of local 512x342 8 bits pgm files. If the ``input-file-name`` ends with ``.pgm``, it will be considered as a ``printf`` pattern and used to read local images (starting at index 1? #### CHECK ME). For instance, ``movie-%06d.pgm`` will read all files named ``movie-000001.pgm``, ``movie-000002.pgm``, etc... [Yes, if one uses '%s', the app will crash](https://github.com/fstark/macflim/issues/4). See the ``--fps`` and ``--audio`` option to specify the audio of pgm files.
+* A set of local 512x342 8 bits pgm files. If the ``input-file-name`` ends with ``.pgm``, it will be considered as a ``printf`` pattern and used to read local images (starting at index 1? #### CHECK ME). For instance, ``movie-%06d.pgm`` will read all files named ``movie-000001.pgm``, ``movie-000002.pgm``, etc... [Yes, if one uses '%s', the app will crash](https://github.com/fstark/macflim/issues/4). See the ``--fps`` and ``--audio`` option to specify the audio for pgm files.
 
 All other arguments to ``flimmaker`` go in pairs.
 
@@ -116,11 +116,11 @@ Specifies the name of the generated flim file. If there is no ``--flim`` option 
 
 ### --mp4 **file**
 
-Creates a 512x342 60fps mp4 file that renders exactly the flim, with its associated sound. This can be used to view the flim without having to load the ``.flim`` file to a vintage Macintosh, or uploaded to the web. While the sound channel is 44KHz 16 bits, it really contains the 22KHz 8 bits Macintosh sound. This is by far the easiest way to iterate with the encoder parameters. Note that mp4 is no designed to encode such movies, and the result are *huge*.
+Creates a 512x342 60fps mp4 file that renders exactly the flim, with its associated sound. This can be used to view the flim without having to load the ``.flim`` file to a vintage Macintosh, or uploaded to the web. While the sound channel is 44KHz 16 bits, it really contains the 22KHz 8 bits Macintosh sound. This is by far the easiest way to iterate with the encoder parameters. Note that mp4 is no designed to encode such movies, and the result are *huge* because encoding high frequency black and white images at 60fps efficiently was definitely not a goal for H.264. Mp4 files are often around 25Mbits/second. A 90 minute movie would be around 16GB...
 
 ### --pgm **pattern**
 
-Write every generated frame as a pgm file. This is useful to embed a specific frame in a web site, or to look at the detail of the generation of different set of parameters. The pattern should contain a single '%d', which will be replaced by the frame number. Existing files with this pattern will be removed. Again, if one uses '%s', the app will crash. Example: ``--pgm out-%06d.pgm``. Beware, it is an extremely efficient way to generate ten of thousands of files.
+Write every generated frame as a pgm file. This is useful to embed a specific frame in a web site, or to look at the detail of the generation of different set of parameters. The pattern should contain a single '%d', which will be replaced by the frame number. Existing files with this pattern will be removed. Again, if one uses '%s', the app will crash. Example: ``--pgm out-%06d.pgm``. Beware, it is an extremely efficient way to generate ten of thousands of files. Note that the files matching the pattern are removed before generation.
 
 ### --gif **file**
 
@@ -138,15 +138,15 @@ Specifies the encoding/playback profile you want to use.
 
 * se : As the Macintosh SE has slightly more processing power than the Macintosh Plus, it can manage files will less compression. It still skips half of the frames, but uses the nicer floyd error dithering.
 
-* se30 : Targets the SE/30 the most powerful comnpact Macintosh. Encoding can use 4 times more space, doesn't skip frames, and limits leakage from a frame to the next. se30 movies are in general correct, in the sense that mostly anything can be faithfully encoded, with a few artifacts.
+* se30 : Targets the SE/30, the most powerful Macintosh. Encoding can use 4 times more space, doesn't skip frames, and limits leakage from a frame to the next. se30 movies are in general correct, in the sense that mostly anything can be faithfully encoded, with a few artifacts.
 
 * perfect : this profile aims at a "perfect" playback. The resulting files can be played on an upgraded computer. For instance, playing from a se30 with a ram disk allows those "perfect" flims to be played.
 
-* xl : The xl profile generates flim that can be played on a 5MHz Lisa 2/10, running Mac Works XL 3.0, from the internal widget. Flims have no sound, and are encoded at a very low framerate (divided by 4) and low byterate (580 bytes per ticks)
+* xl : The xl profile generates flim that can be played on a 5MHz Lisa 2/10, running Mac Works XL 3.0, from the internal widget. Flims have no sound, and are encoded at a very low framerate (divided by 4) and low byterate (580 bytes per ticks).
 
 * 512 : This profile generates a flim that can be played on a Macintosh 512, from the slow floppy-based HD20 hard drive. The framerate is divided by 4, the byterate is 480 bytes per ticks, and there is no sound.
 
-[todo: 128k profile]
+[todo: do we want a 128k profile?]
 
 Examples:
 
