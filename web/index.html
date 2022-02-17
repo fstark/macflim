@@ -48,16 +48,44 @@ ul li h4
 
 .download-link
 {
-    display: flex;
-    align-items: center;
-    /* text-align: center; */
-
-    background: url(assets/download.gif) no-repeat left center;
-    padding-left: 34px;
+    /* background-color: red; */
     height: 34px;
+    text-align: center;
+}
 
-    /* width:226px;
-    margin: 0 2px 0 2px; */
+ul.se30 li div.download-link a
+{
+    background: url(assets/download-se30.gif) no-repeat left center;
+}
+ul.se li div.download-link a
+{
+    background: url(assets/download-se.gif) no-repeat left center;
+}
+ul.plus li div.download-link a
+{
+    background: url(assets/download-plus.gif) no-repeat left center;
+}
+
+img.maclist
+{
+    display: inline-block;
+}
+
+.download-link a
+{
+    display: inline-block;
+    padding-left: 34px;
+    top: 20px;
+    height: 34px;
+    line-height: 34px;
+}
+
+a.preview img::before
+{
+  content:url(assets/download.gif);
+  position:relative; 
+  left:-3px;
+  top:10px;
 }
 
 img.large
@@ -104,15 +132,15 @@ src="https://www.youtube.com/embed/dQw4w9WgXcQ">
     If your Macintosh is currently getting re-capped or if you are unfortunately stuck in the past with an IBM 5150, you can still enjoy the flims by clicking on the animated gifs to play them in your browser.
 </p>
 <ul>
-    <li>
+    <!-- <li>
         <img class="large" src="assets/placeholder.png"></img>
         <p>Supported systems</p>
         <p>MacFlim Player supports all current Macs, from the 128K to the SE/30, including the Mac XL, or the brand new Macintosh Portable.</p>
-    </li>
+    </li> -->
 
     <li>
-        <img class="screenshot" src="releases/placeholder.png"></img>
-        <p>Just double-click on one or several flims, and the fun starts!</p>
+        <img class="screenshot" src="assets/demo.gif"></img>
+        <p>Your flim library, at your fingertips!</p>
         <p></p>
     </li>
 </ul>
@@ -138,10 +166,7 @@ So, what are you waiting for?
 <p>Beware, flim files can still be quite big. How big? Well, it depends on the desired quality. You are looking at around 100Kb/seconds for Mac Plus quality, 150 for SE and more than 300 for SE30.</p>
 <p>You need a <a href="https://store.inertialcomputing.com/SCSI2SD-s/100.htm">SCSI2SD</a> (if you can make sense of the different models), or a <a href="https://www.tindie.com/products/landogriffin/rascsi-macintosh-version/">RaSCSI</a> (if you like soldering), or a <a href="https://gumroad.com/l/bluescsi-1b">BlueSCSI</a> (if you don't live in the EU) to store them. There is also the <a href="http://macsd.com/">MacSD</a> which I know nothing about, but it does look neat.</p>
 
-<p>Download the app, as a .dsk file</p>
-
-<b>#### PUT THE RELEASE VERSION HERE</b>
-<b>#### FOR NOW GRAB THE APP FROM THE DSK IN https://www.github.com/fstark/macflim</b>
+<p>Download the app, <a href="releases/Mac Flim 2.0.0.dsk">as a 800K .dsk file</a></p>
 
 <p>Flims are available as ``.flim`` files. Just download the ones you want, move them to your mac and add them to you MacFlim Library</p>
 
@@ -150,284 +175,353 @@ So, what are you waiting for?
 <p>By clicking on the animated gif, you will directly plays an mp4 of the resulting flim. However, as mp4 is not designed to compress well high frequency black and white, those files are *much larger* than the flims (like between x10 and x25x), they can easily bring the MacFlim server down.
 </p>
 
-<p>#### MOVE TO THE END</p>
-<p>If you like the idea of creating your own flims, <a href="https://www.github.com/fstark/macflim">you can install <code>flimmaker</code> on linux or mac os x</a>. You can also use <code>flimmaker</code> to generate mp4 files that shows the frame perfect result of MacFlim on selected hardware, so you don't need to have access to a vintage mac to enjoy tweaking the encoding of your favorite flim<a href="#footnote1">[1]</a> .</p>
-
-<h3>Downloading samples flims</h3>
-<ul>
-</ul>
-
-<h3>Sample flims for your SE/30</h3>
-
+<h3>Samples flims downloads:</h3>
 <ul>
     <li>
+        <a href="#se30"><img class="maclist" src="assets/download-se30.gif"></img>Flims for your Macintosh SE/30</a>
+    </li>
+    <li>
+        <a href="#se"><img class="maclist" src="assets/download-se.gif"></img>Flims for your Macintosh SE</a>
+    </li>
+    <li>
+        <a href="#plus"><img class="maclist" src="assets/download-plus.gif"></img>Flims for your Macintosh Plus</a>
+    </li>
+</ul>
+
+<hr>
+
+<h3 id="se30">Sample flims for your Macintosh SE/30</h3>
+
+<p>Here are flims for you SE/30. The SE/30 being a very powerful modern machine, those are playing at the original framerate, with next to no artifacts!</p>
+
+<ul class="se30">
+    <li>
         <h4>Sin City</h4>
-        <a href=samples/SinCity-Intro-se30.mp4>
+        <a class="preview" href="samples/SinCity-Intro-se30.mp4" target="_blank">
             <img class="screenshot" src="samples/SinCity-Intro-se30.gif"></img>
         </a>
         <p>The intro of SinCity, true love in black and white</p>
-        <a class="download-link" href=samples/SinCity-Intro-se30.flim>17 Mb</a>
+        <div class="download-link">
+        <a href="samples/SinCity-Intro-se30.flim">17 Mb</a>
+        </div>
     </li>
-
     <li>
         <h4>300</h4>
-        <a href=samples/300-se30.mp4>
+        <a href="samples/300-se30.mp4" target="_blank">
             <img class="screenshot" src="samples/300-se30.gif"></img>
         </a>
         <p>My reaction when someone misspell MacFlim</p>
-        <a class="download-link" href=samples/300-se30.flim>Flim file</a>
+        <div class="download-link">
+        <a href="samples/300-se30.flim">Flim file</a>
+        </div>
     </li>
 
     <li>
         <h4>1984</h4>
-        <a href=samples/1984-se30.mp4>
+        <a href="samples/1984-se30.mp4" target="_blank">
             <img class="screenshot" src="samples/1984-se30.gif"></img>
         </a>
         <p>PC supremacy will soon be over</p>
-        <a class="download-link" href=samples/1984-se30.flim>Flim file</a>
+        <div class="download-link">
+        <a href="samples/1984-se30.flim">Flim file</a>
+        </div>
     </li>
 
 
     <li>
         <h4>Black or White</h4>
-        <a href=samples/BlackOrWhite-se30.mp4>
+        <a href="samples/BlackOrWhite-se30.mp4" target="_blank">
             <img class="screenshot" src="samples/BlackOrWhite-se30.gif"></img>
         </a>
         <p>Michael Jackson sings the beauty of the black and white pixels of the Macintosh</p>
-        <a class="download-link" href=samples/BlackOrWhite-se30.flim>Flim file</a>
+        <div class="download-link">
+        <a href="samples/BlackOrWhite-se30.flim">Flim file</a>
+        </div>
     </li>
 
     <li>
         <h4>Matrix</h4>
-        <a href="samples/Matrix-se30.mp4">
+        <a href="samples/Matrix-se30.mp4" target="_blank">
             <img class="screenshot" src="samples/Matrix-se30.gif"></img>
         </a>
         <p>Neo took the black pill</p>
-        <a class="download-link" href=samples/Matrix-se30.flim>Flim file</a>
+        <div class="download-link">
+        <a href="samples/Matrix-se30.flim">Flim file</a>
+        </div>
     </li>
 
     <li>
         <h4>Bad Apple</h4>
-        <a href="samples/BadApple-se30.mp4">
+        <a href="samples/BadApple-se30.mp4" target="_blank">
             <img class="screenshot" src="samples/BadApple-se30.gif"></img>
         </a>
         <p>The most requested flim, by far, is not so bad on Apple anymore...</p>
-        <a class="download-link" href=samples/BadApple-se30.flim>Flim file</a>
+        <div class="download-link">
+        <a href="samples/BadApple-se30.flim">Flim file</a>
+        </div>
     </li>
 
     <li>
         <h4>iPod Introduction</h4>
-        <a href="samples/iPodIntroduction-se30.mp4">
+        <a href="samples/iPodIntroduction-se30.mp4" target="_blank">
             <img class="screenshot" src="samples/iPodIntroduction-se30.gif"></img>
         </a>
         <p>Steve Jobs wanted to delay the introduction of the iPod until MacFlim was available</p>
-        <a class="download-link" href=samples/iPodIntroduction-se30.flim>Flim file</a>
+        <div class="download-link">
+        <a href="samples/iPodIntroduction-se30.flim">Flim file</a>
+        </div>
     </li>
 
     <li>
         <h4>Space 1999</h4>
-        <a href="samples/Space-1999-se30.mp4">
+        <a href="samples/Space-1999-se30.mp4" target="_blank">
             <img class="screenshot" src="samples/Space-1999-se30.gif"></img>
         </a>
         <p>Enjoy classic science-fiction the way it was meant to be experienced</p>
-        <a class="download-link" href=samples/Space-1999-se30.flim>Flim file</a>
+        <div class="download-link">
+        <a href="samples/Space-1999-se30.flim">Flim file</a>
+        </div>
     </li>
 
     <li>
         <h4>Fade To Grey</h4>
-        <a href="samples/FadeToGrey-se30.mp4">
+        <a href="samples/FadeToGrey-se30.mp4" target="_blank">
             <img class="screenshot" src="samples/FadeToGrey-se30.gif"></img>
         </a>
         <p><i>Devenir gris</i>. Your Macintosh is already looking for the NeXT step...</p>
-        <a class="download-link" href=samples/FadeToGrey-se30.flim>Flim file</a>
+        <div class="download-link">
+        <a href="samples/FadeToGrey-se30.flim">Flim file</a>
+        </div>
     </li>
 
     <li>
         <h4>Sledgehammer</h4>
-        <a href="samples/Sledgehammer-se30.mp4">
+        <a href="samples/Sledgehammer-se30.mp4" target="_blank">
             <img class="screenshot" src="samples/Sledgehammer-se30.gif"></img>
         </a>
         <p>You could have a nice flim playing, if you'd just boot up your Mac...</p>
-        <a class="download-link" href=samples/Sledgehammer-se30.flim>Flim file</a>
+        <div class="download-link">
+        <a href="samples/Sledgehammer-se30.flim">Flim file</a>
+        </div>
     </li>
 
     <li>
         <h4>The Wall</h4>
-        <a href="samples/The-Wall-se30.mp4">
+        <a href="samples/The-Wall-se30.mp4" target="_blank">
             <img class="screenshot" src="samples/The-Wall-se30.gif"></img>
         </a>
         <p>Hey, teachers, leaves them Macs alone!</p>
-        <a class="download-link" href=samples/The-Wall-se30.flim>Flim file</a>
+        <div class="download-link">
+        <a href="samples/The-Wall-se30.flim">Flim file</a>
+        </div>
     </li>
 
     <li>
         <h4>2001</h4>
-        <a href="samples/2001-se30.mp4">
+        <a href="samples/2001-se30.mp4" target="_blank">
             <img class="screenshot" src="samples/2001-se30.gif"></img>
         </a>
         <p>My instructor was Mr. Langley, and he taught me to play a flim</p>
         <!-- That's a very nice rendering, Mac. I think you've improved a great deal. -->
-        <a class="download-link" href=samples/2001-se30.flim>Flim file</a>
+        <div class="download-link">
+        <a href="samples/2001-se30.flim">Flim file</a>
+        </div>
     </li>
 
     <li>
         <h4>Gangnam Style</h4>
-        <a href="samples/Gangnan-Style-se30.mp4">
+        <a href="samples/Gangnan-Style-se30.mp4" target="_blank">
             <img class="screenshot" src="samples/Gangnan-Style-se30.gif"></img>
         </a>
         <p>Jeongsokhae bo-ijiman nol ddaen noneun maekintosi</p>
-        <a class="download-link" href=samples/Gangnan-Style-se30.flim>Flim file</a>
+        <div class="download-link">
+        <a href="samples/Gangnan-Style-se30.flim">Flim file</a>
+        </div>
     </li>
 
     <li>
         <h4>Take On Me</h4>
-        <a href="samples/TakeOnMe-se30.mp4">
+        <a href="samples/TakeOnMe-se30.mp4" target="_blank">
             <img class="screenshot" src="samples/TakeOnMe-se30.gif"></img>
         </a>
         <p>[]</p>
-        <a class="download-link" href=samples/TakeOnMe-se30.flim>Flim file</a>
+        <div class="download-link">
+        <a href="samples/TakeOnMe-se30.flim">Flim file</a>
+        </div>
     </li>
 
     <li>
         <h4>Sweet Dreams</h4>
-        <a href="samples/SweetDreams-se30.mp4">
+        <a href="samples/SweetDreams-se30.mp4" target="_blank">
             <img class="screenshot" src="samples/SweetDreams-se30.gif"></img>
         </a>
         <p>Sweet Dreams (Are Made of Macs). Who am I to disagree?</p>
-        <a class="download-link" href=samples/SweetDreams-se30.flim>Flim file</a>
+        <div class="download-link">
+        <a href="samples/SweetDreams-se30.flim">Flim file</a>
+        </div>
     </li>
 
     <li>
         <h4>Am*ga Balls</h4>
-        <a href="samples/AmigaBall-se30.mp4">
+        <a href="samples/AmigaBall-se30.mp4" target="_blank">
             <img class="screenshot" src="samples/AmigaBall-se30.gif"></img>
         </a>
         <p>That would probably have made a nice demo for the capabilities of the Mac...</p>
-        <a class="download-link" href=samples/AmigaBall-se30.flim>Flim file</a>
+        <div class="download-link">
+        <a href="samples/AmigaBall-se30.flim">Flim file</a>
+        </div>
     </li>
 
     <li>
         <h4>Star Wars : Attack on the Death Star (spoilers)</h4>
-        <a href="samples/StarWars-Attack-se30.mp4">
+        <a href="samples/StarWars-Attack-se30.mp4" target="_blank">
             <img class="screenshot" src="samples/StarWars-Attack-se30.gif"></img>
         </a>
         <p>Will the empire be able to repeal the terrorist attack on its flagship? Revive the excitment of this jaw dropping sequence (spoilers) !</p>
-        <a class="download-link" href=samples/StarWars-Attack-se30.flim>Flim file</a>
+        <div class="download-link">
+        <a href="samples/StarWars-Attack-se30.flim">Flim file</a>
+        </div>
     </li>
 
 </ul>
 
-<h3>Sample flims for your SE</h3>
+<hr>
 
-<ul>
+<h3 id="se">Sample flims for your Macintosh SE</h3>
+
+<p>Thanks to the large set of optimization options of the MacFlim encoder, the following flims can be played on your Macintosh SE or your Macintosh Portable, albeit at half the original framerate!</p>
+
+<ul class="se">
 <li>
     <h4>Sledgehammer</h4>
-    <a href="samples/Sledgehammer-se.mp4">
+    <a href="samples/Sledgehammer-se.mp4" target="_blank">
         <img class="screenshot" src="samples/Sledgehammer-se.gif"></img>
     </a>
     <p>You could have a nice flim playing, if you'd just boot up your Mac...</p>
-    <a class="download-link" href=samples/Sledgehammer-se.flim>Flim file</a>
+    <div class="download-link">
+        <a href="samples/Sledgehammer-se.flim">Flim file</a>
 </li>
 
 <li>
     <h4>The Wall</h4>
-    <a href="samples/The-Wall-se.mp4">
+    <a href="samples/The-Wall-se.mp4" target="_blank">
         <img class="screenshot" src="samples/The-Wall-se.gif"></img>
     </a>
     <p>Hey, teachers, leaves them Macs alone!</p>
-    <a class="download-link" href=samples/The-Wall-se.flim>Flim file</a>
+    <div class="download-link">
+        <a href="samples/The-Wall-se.flim">Flim file</a>
 </li>
 
 <li>
     <h4>2001</h4>
-    <a href="samples/2001-se.mp4">
+    <a href="samples/2001-se.mp4" target="_blank">
         <img class="screenshot" src="samples/2001-se.gif"></img>
     </a>
     <p>My instructor was Mr. Langley, and he taught me to play a flim</p>
     <!-- That's a very nice rendering, Mac. I think you've improved a great deal. -->
-    <a class="download-link" href=samples/2001-se.flim>Flim file</a>
+    <div class="download-link">
+        <a href="samples/2001-se.flim">Flim file</a>
 </li>
 
 <li>
     <h4>Take On Me</h4>
-    <a href="samples/TakeOnMe-se.mp4">
+    <a href="samples/TakeOnMe-se.mp4" target="_blank">
         <img class="screenshot" src="samples/TakeOnMe-se.gif"></img>
     </a>
     <p>[]</p>
-    <a class="download-link" href=samples/TakeOnMe-se.flim>Flim file</a>
+    <div class="download-link">
+        <a href="samples/TakeOnMe-se.flim">Flim file</a>
 </li>
 
 <li>
     <h4>Sweet Dreams</h4>
-    <a href="samples/SweetDreams-se.mp4">
+    <a href="samples/SweetDreams-se.mp4" target="_blank">
         <img class="screenshot" src="samples/SweetDreams-se.gif"></img>
     </a>
     <p>Sweet Dreams (Are Made of Macs). Who am I to disagree?</p>
-    <a class="download-link" href=samples/SweetDreams-se.flim>Flim file</a>
+    <div class="download-link">
+        <a href="samples/SweetDreams-se.flim">Flim file</a>
 </li>
 
 <li>
     <h4>Am*ga Balls</h4>
-    <a href="samples/AmigaBall-se.mp4">
+    <a href="samples/AmigaBall-se.mp4" target="_blank">
         <img class="screenshot" src="samples/AmigaBall-se.gif"></img>
     </a>
     <p>That would probably have made a nice demo for the capabilities of the Mac...</p>
-    <a class="download-link" href=samples/AmigaBall-se.flim>Flim file</a>
+    <div class="download-link">
+        <a href="samples/AmigaBall-se.flim">Flim file</a>
 </li>
 
 
     
 </ul>
 
-<h3>Sample flims for your Plus</h3>
+<hr>
 
-<ul>
+<h3 id="plus">Sample flims for your Macintosh Plus</h3>
+
+<p>To be honest, the Macintosh Plus is almost capable of the same feats as the SE, so here are a some other flims, optimized for you favorite Mac from 1986!</p>
+
+<ul class="plus">
     <li>
         <h4>Sledgehammer</h4>
-        <a href="samples/Sledgehammer-plus.mp4">
+        <a href="samples/Sledgehammer-plus.mp4" target="_blank">
             <img class="screenshot" src="samples/Sledgehammer-plus.gif"></img>
         </a>
         <p>You could have a nice flim playing, if you'd just boot up your Mac...</p>
-        <a class="download-link" href=samples/Sledgehammer-plus.flim>Flim file</a>
+        <div class="download-link">
+        <a href="samples/Sledgehammer-plus.flim">Flim file</a>
+        </div>
     </li>
     
     <li>
         <h4>2001</h4>
-        <a href="samples/2001-plus.mp4">
+        <a href="samples/2001-plus.mp4" target="_blank">
             <img class="screenshot" src="samples/2001-plus.gif"></img>
         </a>
         <p>My instructor was Mr. Langley, and he taught me to play a flim</p>
         <!-- That's a very nice rendering, Mac. I think you've improved a great deal. -->
-        <a class="download-link" href=samples/2001-plus.flim>Flim file</a>
+        <div class="download-link">
+        <a href="samples/2001-plus.flim">Flim file</a>
+        </div>
     </li>
     
     <li>
         <h4>Take On Me</h4>
-        <a href="samples/TakeOnMe-plus.mp4">
+        <a href="samples/TakeOnMe-plus.mp4" target="_blank">
             <img class="screenshot" src="samples/TakeOnMe-plus.gif"></img>
         </a>
         <p>[]</p>
-        <a class="download-link" href=samples/TakeOnMe-plus.flim>Flim file</a>
+        <div class="download-link">
+        <a href="samples/TakeOnMe-plus.flim">Flim file</a>
+        </div>
     </li>
     
     <li>
         <h4>Sweet Dreams</h4>
-        <a href="samples/SweetDreams-plus.mp4">
+        <a href="samples/SweetDreams-plus.mp4" target="_blank">
             <img class="screenshot" src="samples/SweetDreams-plus.gif"></img>
         </a>
         <p>Sweet Dreams (Are Made of Macs). Who am I to disagree?</p>
-        <a class="download-link" href=samples/SweetDreams-plus.flim>Flim file</a>
+        <div class="download-link">
+        <a href="samples/SweetDreams-plus.flim">Flim file</a>
+        </div>
     </li>
     
     <li>
         <h4>Am*ga Balls</h4>
-        <a href="samples/AmigaBall-plus.mp4">
+        <a href="samples/AmigaBall-plus.mp4" target="_blank">
             <img class="screenshot" src="samples/AmigaBall-plus.gif"></img>
         </a>
         <p>That would probably have made a nice demo for the capabilities of the Mac...</p>
-        <a class="download-link" href=samples/AmigaBall-plus.flim>Flim file</a>
+        <div class="download-link">
+        <a href="samples/AmigaBall-plus.flim">Flim file</a>
+        </div>
     </li>
 </ul>
+
+<p>If you like the idea of creating your own flims, <a href="https://www.github.com/fstark/macflim">you can install <code>flimmaker</code> on linux or mac os x</a>. You can also use <code>flimmaker</code> to generate mp4 files that shows the frame perfect result of MacFlim on selected hardware, so you don't need to have access to a vintage mac to enjoy tweaking the encoding of your favorite flim.</p>
 
 <p class="notice"><i>There are no flim about cyclimse. This is as expected.</i></p>
 
