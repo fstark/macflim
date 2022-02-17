@@ -298,6 +298,9 @@ ePlayResult PlayFlim( FlimPtr flim, Boolean silent )
 
 	ScreenClear( gScreen );
 
+		//	Start of flim
+	FlimSeekStart( flim );
+
 		//	Allocate block2
 	gBlock1 = FlimInitBlock( flim, BufferGet(0) );
 	gBlock2 = FlimInitBlock( flim, BufferGet(1) );

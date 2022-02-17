@@ -12,7 +12,6 @@ TODO:
 
 A974 : Button
 
-* Play commands (restart/prev/next/etc) in ApplyPlay
 * Manage play commands (at least) abort (Button) from VBL
 * Mouse selection is a bit off (click on right border of polaroid)
 * Check all resource IDs in Resources.h
@@ -26,6 +25,7 @@ A974 : Button
 * Changing flim types should not remove auto play
 * Empty state for Library	
 
+* [DONE] Play commands (restart/prev/next/etc) in ApplyPlay
 * [DONE] Remove VBL from preferences
 * [DONE] Adds for type/creator when opening flim files
 * [DONE] Put "Show all flims" into the SFPGetFile dialog itself (remove option trick), or add it in preferences

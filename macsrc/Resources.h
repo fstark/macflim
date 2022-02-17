@@ -28,7 +28,6 @@ enum {	kMENUItemSelectAll = 7 };
 
 #define kMENULibrary					131
 enum {	kMenuItemAddFlimID = 1,
-		kMenuItemAddFolderID,
 		kSkip20,
 		kMENUItemPlay,
 		kMENUItemRemove,
@@ -109,8 +108,6 @@ enum {	kMenuItemAddFlimID = 1,
 //	-------------------------------------------------------------------
 //	DLOG
 //	-------------------------------------------------------------------
-
-#define kSFAddFlimDialogID					2000
 
 #define kSFAddFolderDialogID				2001
 	#define kSFAddFolderChooseDirectoryID	11

@@ -91,7 +91,7 @@ static Size FlimStreamGetOffset( FlimPtr flim, int index )
 
 //	-------------------------------------------------------------------
 
-static void FlimSeekStart( FlimPtr flim )
+void FlimSeekStart( FlimPtr flim )
 {
 	OSErr err = SetFPos( flim->fRefNum, fsFromStart, FlimStreamGetOffset( flim, kFlimStreamFlim ) );
 	assert( err==noErr, "FlimSeek" );

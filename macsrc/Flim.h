@@ -66,6 +66,12 @@ OSErr FlimError( void );
 void FlimDispos( FlimPtr flim );
 
 //	-------------------------------------------------------------------
+//	Unclear if needs to be exposed: seek flim to start (for replay)
+//	-------------------------------------------------------------------
+
+void FlimSeekStart( FlimPtr flim );
+
+//	-------------------------------------------------------------------
 //	Number of blocks in that flim
 //	-------------------------------------------------------------------
 

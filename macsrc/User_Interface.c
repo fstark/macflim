@@ -241,6 +241,7 @@ static pascal Boolean CustomFileFilter( FileParam *pbp )
 
 Boolean gFirstHook = TRUE;
 Str255 gDirectoryName;
+Boolean gFolderSelected = FALSE;
 
 //	The core problem is that there is no specific hook when user changes directory
 //	We get an "item==100" all the time, so we can use it to update for "first time" interactions
@@ -277,10 +278,15 @@ static pascal short CustomHook( short item, DialogPtr dlg )
 
 //	This only works on the emulator, not on real hardware. Maybe a patch in ROM?
 //	SetCTitle( (ControlHandle)iHandle, gDirectoryName );
-	SetCTitle( (ControlHandle)iHandle, "\pAdd Current Directory" );
+	SetCTitle( (ControlHandle)iHandle, "\pAdd All Flims In Current Folder" );
 
 	if (item==kSFAddFolderChooseDirectoryID)
+	{
+		gFolderSelected = TRUE;
 		return 1;		//	Treat this as 'ok'
+	}
+
+	gFolderSelected = FALSE;
 	return item;
 }
 
@@ -341,7 +347,7 @@ static void FindAll( short vRefNum, long dirId )
 	}
 }
 
-static Boolean UserInterfaceSFGetFlim( Boolean option, Str255 fName, short *vRefNum, long *dirID, Boolean folders )
+static Boolean UserInterfaceSFGetFlim( Boolean option, Str255 fName, short *vRefNum, long *dirID, Boolean *folders )
 {
 	OSErr err;
 	Point where;
@@ -362,10 +368,7 @@ static Boolean UserInterfaceSFGetFlim( Boolean option, Str255 fName, short *vRef
 	where.v = 90;
 	gFirstHook = TRUE;			//	Make sure custom file filters have a good initial button
 
-	if (!folders)
-		SFPGetFile( where, 0, CustomFileFilter, -1, NULL, NULL, &theReply, kSFAddFlimDialogID, NULL );
-	else
-		SFPGetFile( where, 0, CustomFileFilter, -1, NULL, CustomHook, &theReply, kSFAddFolderDialogID, NULL );
+	SFPGetFile( where, 0, CustomFileFilter, -1, NULL, CustomHook, &theReply, kSFAddFolderDialogID, NULL );
 	
 	if (!theReply.good)
 		return FALSE;
@@ -377,7 +380,9 @@ static Boolean UserInterfaceSFGetFlim( Boolean option, Str255 fName, short *vRef
 
 //		printf( "%d %ld\n", *vRefNum, *dirID );
 
-		if (!folders && SetFlimTypeCreatorIfNeeded( theReply.fName, *vRefNum, *dirID ))
+		*folders = gFolderSelected;
+
+		if (!*folders)
 		{
 			StrCpyPP( fName, theReply.fName );			
 		}
@@ -606,17 +611,27 @@ static void XorZoom( Rect *fromRectPtr, int ticks, Boolean open )
 	SetPort( savePort );
 }
 
+typedef enum
+{
+	kStop,
+	kPrev,
+	kAgain,
+	kNext
+}	eIterateChoice;
+
+
+
 static Boolean sZoomed;		//	Did we execute the "zoom-in code" ?
 static Rect sZoomedRect;	//	From which rect did we "zoom-in" (for the zoom-out) ?
 
-static Boolean ApplyPlay( LibraryPtr lib, int index, Str255 fName, short vRefNum, long dirID )
+static eIterateChoice ApplyPlay( LibraryPtr lib, int index, Str255 fName, short vRefNum, long dirID )
 {
 	FlimPtr flim = LibraryOpenFlim( lib, index );
-	Boolean abort = FALSE;
+	eIterateChoice result = kStop;
 	Rect fromRect;
 
 	if (!flim)
-		return TRUE;
+		return result;
 
 	if (!sZoomed)
 	{
@@ -635,7 +650,16 @@ static Boolean ApplyPlay( LibraryPtr lib, int index, Str255 fName, short vRefNum
 		case kError:
 		case kFileError:
 		case kAbort:
-			abort = TRUE;
+			result = kStop;
+			break;
+		case kRestart:
+			result = kAgain;
+			break;
+		case kSkip:
+			result = kNext;
+			break;
+		case kPrevious:
+			result = kPrev;
 			break;
 		default:
 			break;
@@ -645,15 +669,15 @@ static Boolean ApplyPlay( LibraryPtr lib, int index, Str255 fName, short vRefNum
 	FlushEvents( everyEvent, 0 );
 	FlimDispos( flim );
 	
-	return abort;
+	return result;
 }
 
-static Boolean ApplyCheckIntegrity( LibraryPtr lib, int index, Str255 fName, short vRefNum, long dirID )
+static eIterateChoice ApplyCheckIntegrity( LibraryPtr lib, int index, Str255 fName, short vRefNum, long dirID )
 {
-	return !ChecksumFlimIfNeeded( fName, vRefNum, dirID, FALSE );
+	return ChecksumFlimIfNeeded( fName, vRefNum, dirID, FALSE )?kNext:kAbort;
 }
 
-typedef Boolean (*ApplyFun)( LibraryPtr lib, int index, Str255 fName, short vRefNum, long dirID );
+typedef eIterateChoice (*ApplyFun)( LibraryPtr lib, int index, Str255 fName, short vRefNum, long dirID );
 
 static void UserInterfaceIterateSelection( LibraryPtr lib, ApplyFun f, Boolean loop )
 {
@@ -667,9 +691,29 @@ static void UserInterfaceIterateSelection( LibraryPtr lib, ApplyFun f, Boolean l
 		for (i=0;i!=LibraryGetCount(lib);i++)
 			if (LibraryGetSelection(lib,i))
 			{
+				eIterateChoice c;
 				LibraryGet( lib, i, fName, &vRefNum, &dirID );
-				if ((*f)( lib, i, fName, vRefNum, dirID ))
-					return;
+				c = ((*f)( lib, i, fName, vRefNum, dirID ));
+				switch (c)
+				{
+					case kStop:
+						return;
+					case kPrev:
+						i -= 2;
+						if (i==-2)
+						{
+							if (!loop)
+								i = -1;	//	No Loop? we repeat first
+							else
+								i = LibraryGetCount(lib)-2;	//	ugly
+						}
+						break;
+					case kAgain:
+						i--;
+						break;
+					case kNext:
+						break;
+				}
 			}
 	} while (loop);
 }
@@ -789,40 +833,30 @@ static void UserInterfaceDoLibraryMenu( short item, Boolean option )
 			Str255 fName;
 			short vRefNum;
 			long dirID;
-			if (UserInterfaceSFGetFlim( option, fName, &vRefNum, &dirID, FALSE ))
-			{
-				WindowPtr w;
-				GrafPtr savePort;
-				LibraryAddFlim( &sLibrary, fName, vRefNum, dirID );
-				LibraryXXX( sLibrary );
-				w = LibraryGetWindow( sLibrary );
-				GetPort( &savePort );
-				SetPort( w );
-				InvalRect( &w->portRect );
-				SetPort( savePort );
-			}
-			break;
-		}
-		case kMenuItemAddFolderID:
-		{
-			Str255 fName;
-			short vRefNum;
-			long dirID;
-			if (UserInterfaceSFGetFlim( option, fName, &vRefNum, &dirID, TRUE ))
-			{
-				WindowPtr w;
-				GrafPtr savePort;
+			Boolean isFolder;
 
-				assert( gProgress==NULL, "Progress Dialog" );
-				gProgress = GetNewDialog( kDLOGProgress, NULL, (WindowPtr)-1 );
-				assert( gProgress!=NULL, "GetNewDialog( kDLOGProgress )" );
-				ShowWindow( gProgress );
+			if (UserInterfaceSFGetFlim( option, fName, &vRefNum, &dirID, &isFolder ))
+			{
+				WindowPtr w;
+				GrafPtr savePort;
 				
-				FindAll(vRefNum, dirID );
-
-				HideWindow( gProgress );
-				DisposDialog( gProgress );
-				gProgress = NULL;
+				
+				if (!isFolder)
+				{
+					if (SetFlimTypeCreatorIfNeeded( fName, vRefNum, dirID ))
+						LibraryAddFlim( &sLibrary, fName, vRefNum, dirID );
+				}
+				else
+				{
+					assert( gProgress==NULL, "Progress Dialog is NULL" );
+					gProgress = GetNewDialog( kDLOGProgress, NULL, (WindowPtr)-1 );
+					assert( gProgress!=NULL, "GetNewDialog( kDLOGProgress )" );
+					ShowWindow( gProgress );
+					FindAll(vRefNum, dirID );
+					HideWindow( gProgress );
+					DisposDialog( gProgress );
+					gProgress = NULL;
+				}
 
 				LibraryXXX( sLibrary );
 				w = LibraryGetWindow( sLibrary );
@@ -833,6 +867,7 @@ static void UserInterfaceDoLibraryMenu( short item, Boolean option )
 			}
 			break;
 		}
+
 		case kMENUItemPlay:
 			UserInterfacePlaySelected( sLibrary );
 			break;

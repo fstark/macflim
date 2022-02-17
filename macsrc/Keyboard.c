@@ -44,7 +44,6 @@ static Boolean CheckSkip( unsigned char *keys )
 	Boolean old_state = nexted;
 
 	nexted = TestKey( keys, 0x30 )		//	Tab
-		|| TestKey( keys, 0x24 )		//	Return
 		|| TestKey( keys, 0x05 )		//	Right Arrow (plus)
 		|| TestKey( keys, 0x0D );		//	Left Arrow (plus)
 
@@ -63,7 +62,8 @@ static Boolean CheckRestart( unsigned char *keys )
 	static Boolean restarted = TRUE; //	See comment for ESCAPE
 	Boolean old_state = restarted;
 
-	restarted = TestKey( keys, 0x0f );		//	'r'
+	restarted = TestKey( keys, 0x0f )		//	'r'
+		|| TestKey( keys, 0x24 );		//	Return
 
 	if (!old_state && restarted)
 		return TRUE;	//	TRANSITION
