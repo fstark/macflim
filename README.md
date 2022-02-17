@@ -1,7 +1,5 @@
 # MacFlim, the true Mac video player
 
-(This is a work in progress. See http://www.macflim.com for the previous version)
-
 MacFlim is a video encoder and player for black and white vintage Macintoshes, now in its second incarnation.
 
 ![MacFlim](./assets/macflim.gif)
