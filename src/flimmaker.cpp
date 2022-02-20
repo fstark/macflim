@@ -206,7 +206,7 @@ void usage( const std::string name )
         // else if (!strcmp(*argv,"--comment"))
 
     std::cerr << "\nList of profiles names for the --profile option (default 'se30'):\n";
-    for (auto n:{ "xl", "512", "plus", "se", "se30", "perfect" })
+    for (auto n:{ "128k", "512k", "xl", "plus", "se", "se30", "perfect" })
     {
         encoding_profile p;
         encoding_profile::profile_named( n, 512, 342, p );

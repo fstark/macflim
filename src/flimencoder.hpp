@@ -97,12 +97,12 @@ public:
     static bool profile_named( const std::string name, size_t width, size_t height, encoding_profile &result )
     {
         result.set_size( width, height );
-        if (name=="xl"s)
+        if (name=="128k"s)
         {
-            result.set_byterate( 580 );
+            result.set_byterate( 380 );
             result.set_filters( "g1.6bbscz" );
             result.set_fps_ratio( 4 );
-            result.set_group( true );
+            result.set_group( false );
             result.set_stability( 0.5 );
             result.set_bars( true );
             result.set_dither( "ordered" );
@@ -117,12 +117,32 @@ public:
             result.set_silent( true );
             return true;
         }
-        if (name=="512"s)
+        if (name=="512k"s)
         {
             result.set_byterate( 480 );
             result.set_filters( "g1.6bbscz" );
             result.set_fps_ratio( 4 );
             result.set_group( false );
+            result.set_stability( 0.5 );
+            result.set_bars( true );
+            result.set_dither( "ordered" );
+            result.set_error_algorithm( "floyd" );
+            result.set_error_bidi( true );
+            result.set_error_bleed( 0.95 );
+            result.codecs_.clear();
+            result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "lines:count=10", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
+            result.set_silent( true );
+            return true;
+        }
+        if (name=="xl"s)
+        {
+            result.set_byterate( 580 );
+            result.set_filters( "g1.6bbscz" );
+            result.set_fps_ratio( 4 );
+            result.set_group( true );
             result.set_stability( 0.5 );
             result.set_bars( true );
             result.set_dither( "ordered" );
