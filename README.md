@@ -24,7 +24,7 @@ Fear not, if you have no access to a vintage mac, or if you want to look at resu
 
 ![Bullet demo creation](./assets/bullet-demo.gif)
 
-_Create flims and immediately admire them. Note the gif has reduced frame rate, reality is twice as smooth. And have sound._
+_Create flims and immediately admire them. Note the gif [has reduced frame rate](https://www.biphelps.com/blog/The-Fastest-GIF-Does-Not-Exist), reality is twice as smooth. And have sound._
 
 ## What is new since MacFlim 1.0?
 
