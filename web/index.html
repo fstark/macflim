@@ -65,10 +65,30 @@ ul.plus li div.download-link a
 {
     background: url(assets/download-plus.gif) no-repeat left center;
 }
+ul.xl li div.download-link a
+{
+    background: url(assets/download-xl.gif) no-repeat left center;
+    padding-left: 51px;
+}
+ul.m512k li div.download-link a
+{
+    background: url(assets/download-512.gif) no-repeat left center;
+}
+ul.m128k li div.download-link a
+{
+    background: url(assets/download-128.gif) no-repeat left center;
+}
 
 img.maclist
 {
     display: inline-block;
+    padding-left: 17px;
+}
+
+img.maclist.xl
+{
+    display: inline-block;
+    padding-left: 0px;
 }
 
 .download-link a
@@ -129,7 +149,7 @@ src="https://www.youtube.com/embed/dQw4w9WgXcQ">
     This is MacFlim Player, the most popular Macintosh flim player. Whichever Macintosh you have, if it blessed with one of those modern 68000 CPUs you will be able to admire and listen to many flim clips, in their gorgeous black and white.
 </p>
 <p>
-    If your Macintosh is currently getting re-capped or if you are unfortunately stuck in the past with an IBM 5150, you can still enjoy the flims by clicking on the animated gifs to play them in your browser.
+    If your Macintosh is currently getting re-capped or if you are unfortunately stuck in the past with an IBM 5150, you can still enjoy the flims by clicking on the animated gifs and play them in your browser.
 </p>
 <ul>
     <!-- <li>
@@ -140,7 +160,7 @@ src="https://www.youtube.com/embed/dQw4w9WgXcQ">
 
     <li>
         <img class="screenshot" src="assets/demo.gif"></img>
-        <p>Your flim library, at your fingertips!</p>
+        <p>This is MacFlim, indeed</p>
         <p></p>
     </li>
 </ul>
@@ -155,9 +175,9 @@ And can play Flims at their exact orginal frame rate! And thanks to is new lossy
 
 And it supports even more models of Macintoshs!
 
-And the encoder is way simpler to use, so creating your own flims is a breeze!
+And <a href="#flimmaker">the encoder</a> is way simpler to use, so creating your own flims is a breeze!
 
-<p class="disclaimer">disclaimer: compressed flims are not always as nice (due to the extra space used for sound), the player doesn't support multiple windows, and have slightly less inside jokes, but we are working hard on that.</p>
+<p class="disclaimer">disclaimer: Compressed flims are not always as nice as they used to be due to the extra space used for sound. Also the player doesn't support multiple windows, and have slightly less inside jokes, but we are working hard on that. Entirely harmless if used as directed.</p>
 
 So, what are you waiting for?
 
@@ -186,6 +206,15 @@ So, what are you waiting for?
     <li>
         <a href="#plus"><img class="maclist" src="assets/download-plus.gif"></img>Flims for your Macintosh Plus</a>
     </li>
+    <li>
+        <a href="#xl"><img class="maclist xl" src="assets/download-xl.gif"></img>A couple of flims for your Macintosh XL</a>
+    </li>
+    <li>
+        <a href="#512"><img class="maclist" src="assets/download-512.gif"></img>A couple of flims for your HD20 Macintosh 512</a>
+    </li>
+    <li>
+        <a href="#128"><img class="maclist" src="assets/download-128.gif"></img>A couple of flims for your 400KB floppy Macintosh 128</a>
+    </li>
 </ul>
 
 <hr>
@@ -202,17 +231,17 @@ So, what are you waiting for?
         </a>
         <p>The intro of SinCity, true love in black and white</p>
         <div class="download-link">
-        <a href="samples/SinCity-Intro-se30.flim">17 Mb</a>
+        <a href="samples/SinCity-Intro-se30.flim">17 Mb flim file</a>
         </div>
     </li>
-    <li>
+    <li id="se30-300">
         <h4>300</h4>
         <a href="samples/300-se30.mp4" target="_blank">
             <img class="screenshot" src="samples/300-se30.gif"></img>
         </a>
         <p>My reaction when someone misspell MacFlim</p>
         <div class="download-link">
-        <a href="samples/300-se30.flim">Flim file</a>
+        <a href="samples/300-se30.flim">38 Mb flim file</a>
         </div>
     </li>
 
@@ -223,7 +252,7 @@ So, what are you waiting for?
         </a>
         <p>PC supremacy will soon be over</p>
         <div class="download-link">
-        <a href="samples/1984-se30.flim">Flim file</a>
+        <a href="samples/1984-se30.flim">20 Mb flim file</a>
         </div>
     </li>
 
@@ -235,7 +264,18 @@ So, what are you waiting for?
         </a>
         <p>Michael Jackson sings the beauty of the black and white pixels of the Macintosh</p>
         <div class="download-link">
-        <a href="samples/BlackOrWhite-se30.flim">Flim file</a>
+        <a href="samples/BlackOrWhite-se30.flim">14 Mb flim file</a>
+        </div>
+    </li>
+
+    <li>
+        <h4>Star Wars Intro</h4>
+        <a href="samples/StarWars-Intro-se30.mp4" target="_blank">
+            <img class="screenshot" src="samples/StarWars-Intro-se30.gif"></img>
+        </a>
+        <p>The rebels are trying to escape with the blueprints of the Macintosh!</p>
+        <div class="download-link">
+        <a href="samples/StarWars-Intro-se30.flim">9 Mb flim file</a>
         </div>
     </li>
 
@@ -246,7 +286,7 @@ So, what are you waiting for?
         </a>
         <p>Neo took the black pill</p>
         <div class="download-link">
-        <a href="samples/Matrix-se30.flim">Flim file</a>
+        <a href="samples/Matrix-se30.flim">15 Mb flim file</a>
         </div>
     </li>
 
@@ -257,7 +297,7 @@ So, what are you waiting for?
         </a>
         <p>The most requested flim, by far, is not so bad on Apple anymore...</p>
         <div class="download-link">
-        <a href="samples/BadApple-se30.flim">Flim file</a>
+        <a href="samples/BadApple-se30.flim">28 Mb flim file</a>
         </div>
     </li>
 
@@ -268,7 +308,7 @@ So, what are you waiting for?
         </a>
         <p>Steve Jobs wanted to delay the introduction of the iPod until MacFlim was available</p>
         <div class="download-link">
-        <a href="samples/iPodIntroduction-se30.flim">Flim file</a>
+        <a href="samples/iPodIntroduction-se30.flim">4 Mb flim file</a>
         </div>
     </li>
 
@@ -279,7 +319,7 @@ So, what are you waiting for?
         </a>
         <p>Enjoy classic science-fiction the way it was meant to be experienced</p>
         <div class="download-link">
-        <a href="samples/Space-1999-se30.flim">Flim file</a>
+        <a href="samples/Space-1999-se30.flim">13 Mb flim file</a>
         </div>
     </li>
 
@@ -290,7 +330,7 @@ So, what are you waiting for?
         </a>
         <p><i>Devenir gris</i>. Your Macintosh is already looking for the NeXT step...</p>
         <div class="download-link">
-        <a href="samples/FadeToGrey-se30.flim">Flim file</a>
+        <a href="samples/FadeToGrey-se30.flim">58 Mb flim file</a>
         </div>
     </li>
 
@@ -301,7 +341,7 @@ So, what are you waiting for?
         </a>
         <p>You could have a nice flim playing, if you'd just boot up your Mac...</p>
         <div class="download-link">
-        <a href="samples/Sledgehammer-se30.flim">Flim file</a>
+        <a href="samples/Sledgehammer-se30.flim">87 Mb flim file</a>
         </div>
     </li>
 
@@ -312,7 +352,7 @@ So, what are you waiting for?
         </a>
         <p>Hey, teachers, leaves them Macs alone!</p>
         <div class="download-link">
-        <a href="samples/The-Wall-se30.flim">Flim file</a>
+        <a href="samples/The-Wall-se30.flim">96 Mb flim file</a>
         </div>
     </li>
 
@@ -324,7 +364,7 @@ So, what are you waiting for?
         <p>My instructor was Mr. Langley, and he taught me to play a flim</p>
         <!-- That's a very nice rendering, Mac. I think you've improved a great deal. -->
         <div class="download-link">
-        <a href="samples/2001-se30.flim">Flim file</a>
+        <a href="samples/2001-se30.flim">17 Mb flim file</a>
         </div>
     </li>
 
@@ -335,7 +375,7 @@ So, what are you waiting for?
         </a>
         <p>Jeongsokhae bo-ijiman nol ddaen noneun maekintosi</p>
         <div class="download-link">
-        <a href="samples/Gangnan-Style-se30.flim">Flim file</a>
+        <a href="samples/Gangnan-Style-se30.flim">85 Mb flim file</a>
         </div>
     </li>
 
@@ -346,7 +386,7 @@ So, what are you waiting for?
         </a>
         <p>Mac Me On, Mac On Me</p>
         <div class="download-link">
-        <a href="samples/TakeOnMe-se30.flim">Flim file</a>
+        <a href="samples/TakeOnMe-se30.flim">70 Mb flim file</a>
         </div>
     </li>
 
@@ -357,7 +397,7 @@ So, what are you waiting for?
         </a>
         <p>Sweet Dreams (Are Made of Macs). Who Am I To Disagree?</p>
         <div class="download-link">
-        <a href="samples/SweetDreams-se30.flim">Flim file</a>
+        <a href="samples/SweetDreams-se30.flim">58 Mb flim file</a>
         </div>
     </li>
 
@@ -368,7 +408,7 @@ So, what are you waiting for?
         </a>
         <p>That would probably have made a nice demo for the capabilities of the Mac...</p>
         <div class="download-link">
-        <a href="samples/AmigaBall-se30.flim">Flim file</a>
+        <a href="samples/AmigaBall-se30.flim">$ Mb flim file</a>
         </div>
     </li>
 
@@ -379,7 +419,7 @@ So, what are you waiting for?
         </a>
         <p>Will the empire be able to repeal the terrorist attack on its flagship? Revive the excitment of this jaw dropping sequence (spoilers) !</p>
         <div class="download-link">
-        <a href="samples/StarWars-Attack-se30.flim">Flim file</a>
+        <a href="samples/StarWars-Attack-se30.flim">79 Mb flim file</a>
         </div>
     </li>
 
@@ -389,7 +429,7 @@ So, what are you waiting for?
 
 <h3 id="se">Sample flims for your Macintosh SE</h3>
 
-<p>Thanks to the large set of optimization options of the MacFlim encoder, the following flims can be played on your Macintosh SE or your Macintosh Portable, albeit at half the original framerate!</p>
+<p>Thanks to the large set of optimization options of the MacFlim encoder, the following flims can be played on your Macintosh SE or your Macintosh Portable, albeit at half the original framerate. But at 60 frame per second! It is hard to grasp, so just look at the result for yourself...</p>
 
 <ul class="se">
 <li>
@@ -399,7 +439,7 @@ So, what are you waiting for?
     </a>
     <p>You could have a nice flim playing, if you'd just boot up your Mac...</p>
     <div class="download-link">
-        <a href="samples/Sledgehammer-se.flim">Flim file</a>
+        <a href="samples/Sledgehammer-se.flim">38 Mb flim file</a>
 </li>
 
 <li>
@@ -409,7 +449,7 @@ So, what are you waiting for?
     </a>
     <p>Hey, teachers, leaves them Macs alone!</p>
     <div class="download-link">
-        <a href="samples/The-Wall-se.flim">Flim file</a>
+        <a href="samples/The-Wall-se.flim">50 Mb flim file</a>
 </li>
 
 <li>
@@ -420,7 +460,18 @@ So, what are you waiting for?
     <p>My instructor was Mr. Langley, and he taught me to play a flim</p>
     <!-- That's a very nice rendering, Mac. I think you've improved a great deal. -->
     <div class="download-link">
-        <a href="samples/2001-se.flim">Flim file</a>
+        <a href="samples/2001-se.flim">8 Mb flim file</a>
+</li>
+
+<li>
+    <h4>Star Wars Intro</h4>
+    <a href="samples/StarWars-Intro-se.mp4" target="_blank">
+        <img class="screenshot" src="samples/StarWars-Intro-se.gif"></img>
+    </a>
+    <p>The rebels are trying to escape with the blueprints of the Macintosh!</p>
+    <div class="download-link">
+    <a href="samples/StarWars-Intro-se.flim">3.3 Mb flim file</a>
+    </div>
 </li>
 
 <li>
@@ -430,7 +481,7 @@ So, what are you waiting for?
     </a>
     <p>Mac Me On, Mac On Me</p>
     <div class="download-link">
-        <a href="samples/TakeOnMe-se.flim">Flim file</a>
+        <a href="samples/TakeOnMe-se.flim">33 Mb flim file</a>
 </li>
 
 <li>
@@ -440,7 +491,7 @@ So, what are you waiting for?
     </a>
     <p>Sweet Dreams (Are Made of Macs). Who Am I To Disagree?</p>
     <div class="download-link">
-        <a href="samples/SweetDreams-se.flim">Flim file</a>
+        <a href="samples/SweetDreams-se.flim">21 Mb flim file</a>
 </li>
 
 <li>
@@ -450,7 +501,7 @@ So, what are you waiting for?
     </a>
     <p>That would probably have made a nice demo for the capabilities of the Mac...</p>
     <div class="download-link">
-        <a href="samples/AmigaBall-se.flim">Flim file</a>
+        <a href="samples/AmigaBall-se.flim">3.5 Mb flim file</a>
 </li>
 
 
@@ -471,7 +522,7 @@ So, what are you waiting for?
         </a>
         <p>You could have a nice flim playing, if you'd just boot up your Mac...</p>
         <div class="download-link">
-        <a href="samples/Sledgehammer-plus.flim">Flim file</a>
+        <a href="samples/Sledgehammer-plus.flim">31 Mb flim file</a>
         </div>
     </li>
     
@@ -483,7 +534,18 @@ So, what are you waiting for?
         <p>My instructor was Mr. Langley, and he taught me to play a flim</p>
         <!-- That's a very nice rendering, Mac. I think you've improved a great deal. -->
         <div class="download-link">
-        <a href="samples/2001-plus.flim">Flim file</a>
+        <a href="samples/2001-plus.flim">6 Mb flim file</a>
+        </div>
+    </li>
+    
+    <li>
+        <h4>Star Wars Intro</h4>
+        <a href="samples/StarWars-Intro-plus.mp4" target="_blank">
+            <img class="screenshot" src="samples/StarWars-Intro-plus.gif"></img>
+        </a>
+        <p>The rebels are trying to escape with the blueprints of the Macintosh!</p>
+        <div class="download-link">
+        <a href="samples/StarWars-Intro-plus.flim">3.3 Mb flim file</a>
         </div>
     </li>
     
@@ -494,7 +556,7 @@ So, what are you waiting for?
         </a>
         <p>Mac Me On, Mac On Me</p>
         <div class="download-link">
-        <a href="samples/TakeOnMe-plus.flim">Flim file</a>
+        <a href="samples/TakeOnMe-plus.flim">23 Mb flim file</a>
         </div>
     </li>
     
@@ -505,7 +567,7 @@ So, what are you waiting for?
         </a>
         <p>Sweet Dreams (Are Made of Macs). Who Am I To Disagree?</p>
         <div class="download-link">
-        <a href="samples/SweetDreams-plus.flim">Flim file</a>
+        <a href="samples/SweetDreams-plus.flim">16 Mb flim file</a>
         </div>
     </li>
     
@@ -516,12 +578,120 @@ So, what are you waiting for?
         </a>
         <p>That would probably have made a nice demo for the capabilities of the Mac...</p>
         <div class="download-link">
-        <a href="samples/AmigaBall-plus.flim">Flim file</a>
+        <a href="samples/AmigaBall-plus.flim">2 Mb flim file</a>
         </div>
     </li>
 </ul>
 
-<p>If you like the idea of creating your own flims, <a href="https://www.github.com/fstark/macflim">you can install <code>flimmaker</code> on linux or mac os x</a>. You can also use <code>flimmaker</code> to generate mp4 files that shows the frame perfect result of MacFlim on selected hardware, so you don't need to have access to a vintage mac to enjoy tweaking the encoding of your favorite flim.</p>
+
+<hr>
+
+<h3 id="xl">Sample flims for your Macintosh XL</h3>
+
+<p>The Macintosh XL is slower than the orignal Macs (5MHz vs 8MHz), but the slow Widget is faster than floppies or HD20. If you can transfer those files, you should be looking at those flims on that fabulous machine.</p>
+<p>Note: while the XL have a large screen, but flims are still played 512x342. Also flims are encoded with square pixels. You may need to use Mini MacFlim to play the flims. There is no sound, as the Lisa hardware was only capable of beeps.</p>
+
+<ul class="xl">
+    <li>
+        <h4>Matrix</h4>
+        <a href="samples/Matrix-xl.mp4" target="_blank">
+            <img class="screenshot" src="samples/Matrix-xl.gif"></img>
+        </a>
+        <p>Neo took the black pill</p>
+        <div class="download-link">
+        <a href="samples/Matrix-xl.flim">1.2 Mb flim file</a>
+        </div>
+    </li>
+
+    <li>
+        <h4>Star Wars Intro</h4>
+        <a href="samples/StarWars-Intro-xl.mp4" target="_blank">
+            <img class="screenshot" src="samples/StarWars-Intro-xl.gif"></img>
+        </a>
+        <p>The rebels are trying to escape with the blueprints of the Macintosh!</p>
+        <div class="download-link">
+        <a href="samples/StarWars-Intro-xl.flim">1 Mb flim file</a>
+        </div>
+    </li>
+</ul>
+
+<hr>
+
+<h3 id="512">Sample flims for your Macintosh 512 with an Apple HD20</h3>
+
+<p>The Macintosh 512 have no SCSI, but can have a HD20 floppy port hard drive. You can't have floppy and sound, so flims are silent, and the transfer rate isn't that impressive. But you can still enjoy your flims!</p>
+
+<ul class="m512k">
+    <li>
+        <h4>Matrix</h4>
+        <a href="samples/Matrix-512k.mp4" target="_blank">
+            <img class="screenshot" src="samples/Matrix-512k.gif"></img>
+        </a>
+        <p>Neo took the black pill</p>
+        <div class="download-link">
+        <a href="samples/Matrix-512k.flim">1.1 Mb flim file</a>
+        </div>
+    </li>
+
+    <li>
+        <h4>Star Wars Intro</h4>
+        <a href="samples/StarWars-Intro-512k.mp4" target="_blank">
+            <img class="screenshot" src="samples/StarWars-Intro-512k.gif"></img>
+        </a>
+        <p>The rebels are trying to escape with the blueprints of the Macintosh!</p>
+        <div class="download-link">
+        <a href="samples/StarWars-Intro-512k.flim">1 Mb flim file</a>
+        </div>
+    </li>
+</ul>
+
+<hr>
+
+<h3 id="128">Sample floppy-sized flims for your Macintosh 128</h3>
+
+<p>Who said the original Mac couldn't do video? Here are two floppy-sized flims for your Macintosh 128. You'll need to put Mini MacFlim on your system disk to play those.</p>
+
+<ul class="m128k">
+    <li>
+        <h4>Matrix</h4>
+        <a href="samples/Matrix-128k.mp4" target="_blank">
+            <img class="screenshot" src="samples/Matrix-128k.gif"></img>
+        </a>
+        <p>Neo took the black pill</p>
+        <div class="download-link">
+        <a href="samples/Matrix-128k.flim">395 Kb flim file</a>
+        </div>
+    </li>
+
+    <li>
+        <h4>Star Wars Intro</h4>
+        <a href="samples/StarWars-Intro-128k.mp4" target="_blank">
+            <img class="screenshot" src="samples/StarWars-Intro-128k.gif"></img>
+        </a>
+        <p>The rebels are trying to escape with the blueprints of the Macintosh!</p>
+        <div class="download-link">
+        <a href="samples/StarWars-Intro-128k.flim">380 Kb flim file</a>
+        </div>
+    </li>
+</ul>
+
+<hr>
+
+<p id="flimmaker">If you like the idea of creating your own flims, <a href="https://www.github.com/fstark/macflim">you can install <code>flimmaker</code> on linux or mac os x</a>. <code>Flimmaker</code> will also hapilly generate mp4 files that shows the frame perfect result of MacFlim on any hardware, so you don't need to have access to a vintage mac to enjoy tweaking the encoding of your favorite flim!</p>
+
+<ul>
+    <!-- <li>
+        <img class="large" src="assets/placeholder.png"></img>
+        <p>Supported systems</p>
+        <p>MacFlim Player supports all current Macs, from the 128K to the SE/30, including the Mac XL, or the brand new Macintosh Portable.</p>
+    </li> -->
+
+    <li>
+        <img class="screenshot" src="assets/bullet-demo.gif"></img>
+        <p>What are you waiting for?</p>
+        <p></p>
+    </li>
+</ul>
 
 <p class="notice"><i>There are no flim about cyclimse. This is as expected.</i></p>
 

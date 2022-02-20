@@ -184,7 +184,8 @@ cd -
 
 # encode Gangnan_Style.mp4        23-GANG se30 0:3:42 00:00:08 0 1 00:00:4 "--filters k6w10g1.6sc"
 # encode SinCity.mp4              24-SIN se30 02:10 15 0 1 00:00:04.672 "--filters k5w30g1.6sc --dither error"
-encode 300.mp4                  25-300 se30 00:12:35.500 14.3 0 1 00:00:09.802 "--srt sample/source/300-macflim.srt"
+# 300 WITH THE MACFLIM SUBTITLES
+# encode 300.mp4                  25-300 se30 00:12:35.500 14.3 0 1 00:00:09.802 "--srt sample/source/300-macflim.srt"
 # encode Bad_Apple.mp4            26-BAD se30 1:11 21.5 0 1 00:00:04.171 "--filters k20w20g1sc"
 
 # encode Bad_Apple.mp4            28-BAD se 1:11 21.5 0 1 00:00:04.171 "--filters k20w20g1sc"
@@ -257,4 +258,16 @@ encode 300.mp4                  25-300 se30 00:12:35.500 14.3 0 1 00:00:09.802 "
 # encode Amiga_Ball.mp4           YT-61-AMIGA xl 0:29 10 0 1 00:00:00.434 "--filters gq5"
 
 # encode FredTest.mp4            00-SAMPLE plus 8 3 8 3 8 "--filters g1.2w60k5ZZZc --error-bleed 0.95 --dither error"
+
+
+# TESTS FOR XL VERSIONS
+# encode Matrix.mp4               Matrix xl   01:46:15 00:00:43.280 01:46:30.200 10 00:00:41 "--filters gbbszq15c --byterate 580 --srt sample/source/Matrix.eng.srt"
+# encode Matrix.mp4               Matrix 512k   01:46:15 00:00:43.280 01:46:30.200 10 00:00:41 "--filters gbbszq15c --byterate 480 --srt sample/source/Matrix.eng.srt"
+# encode Matrix.mp4               Matrix 128k   01:46:25.500 00:00:17 01:46:30.200 10 00:00:07.427 "--filters gbbszq15c --byterate 380 --srt sample/source/Matrix.eng.srt"
+# encode StarWars.mp4             StarWars-Intro xl 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc --byterate 580"
+# encode StarWars.mp4             StarWars-Intro 512k 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc --byterate 480"
+# encode StarWars.mp4             StarWars-Intro 128k 00:02:01 19.5 00:02:11 5 00:00:25.77 "--filters k10g1sc --byterate 380"
+encode StarWars.mp4             StarWars-Intro se30 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc"
+encode StarWars.mp4             StarWars-Intro se 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc"
+encode StarWars.mp4             StarWars-Intro plus 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc"
 
