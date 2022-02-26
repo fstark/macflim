@@ -137,8 +137,11 @@ class vertical_compressor : public compressor
 
     const ruler<T> &ruler_;
 
+        /// Width in bytes
+    size_t get_bytes_width() const { return W_/8; }
+
         /// Width in underlying type
-    size_t get_T_width() const { return W_/8/sizeof(T); }
+    size_t get_T_width() const { return get_bytes_width()/sizeof(T); }
 
         /// Number of element of type for the whole screen
     size_t get_T_size() const { return get_T_width()*H_; }
@@ -215,12 +218,12 @@ size_t vertical_from_horizontal( size_t h ) const
 
     assert( h<get_T_size() );
 
-    size_t scr_x = offset%64;
-    size_t scr_y = offset/64;
+    size_t scr_x = offset%get_bytes_width();
+    size_t scr_y = offset/get_bytes_width();
 
     scr_x /= sizeof(T);
 
-    offset = scr_x * 342 + scr_y;
+    offset = scr_x * H_ + scr_y;
 
     return offset;
 }
@@ -281,7 +284,7 @@ size_t vertical_from_horizontal( size_t h ) const
         for (auto &run:runs)
         {
                 //  #### : FIXME 32 words on screen
-            auto rs = run.split( max_run_len, 64/sizeof(T) );
+            auto rs = run.split( max_run_len, get_T_width() );
 
             for (auto &run2:rs)
                 if (run2.offset>=get_T_size())
@@ -401,8 +404,8 @@ size_t vertical_from_horizontal( size_t h ) const
 
             assert( run.offset<get_T_size() );
 
-            size_t scr_x = offset%64;
-            size_t scr_y = offset/64;
+            size_t scr_x = offset%get_bytes_width();
+            size_t scr_y = offset/get_bytes_width();
 
             scr_x /= sizeof(T);
 
