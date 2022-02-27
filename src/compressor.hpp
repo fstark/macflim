@@ -26,7 +26,13 @@ inline bool bool_from( const std::string &v )
 class compressor
 {
 protected:
+    size_t W_;
+    size_t H_;
+
     mutable bool verbose_ = false;
+
+        /// Width in bytes
+    size_t get_bytes_width() const { return W_/8; }
 
     static size_t size_t_from( const std::string &v )
     {
@@ -34,6 +40,8 @@ protected:
     }
 
 public:
+    compressor( size_t width, size_t height ) : W_{width}, H_{height} {}
+
     virtual ~compressor() {}
     virtual std::vector<uint8_t> compress( framebuffer &current, const framebuffer &target, /* weigths, */ size_t budget ) const = 0;
 
@@ -56,6 +64,9 @@ class null_compressor : public compressor
 {
     virtual std::string name() const { return "null"; };
 public:
+
+    null_compressor( size_t width, size_t height ) : compressor{ width, height } {}
+
     virtual std::vector<uint8_t> compress( framebuffer &current, const framebuffer &target, /* weigths, */ size_t budget ) const
     {
         return {};
@@ -66,6 +77,9 @@ class invert_compressor : public compressor
 {
     virtual std::string name() const { return "invert"; };
 public:
+
+    invert_compressor( size_t width, size_t height ) : compressor{ width, height } {}
+
     virtual std::vector<uint8_t> compress( framebuffer &current, const framebuffer &target, /* weigths, */ size_t budget ) const
     {
         current = current.inverted();
@@ -91,7 +105,7 @@ class copy_line_compressor : public compressor
         size_t line_start = 0;
         size_t line_count = 0;
 
-        size_t target_count = budget / 64;  //  est. 64 bytes per line
+        size_t target_count = budget / get_bytes_width();  //  est. 64 bytes per line
 
 // std::clog << "Lines: " << budget << " bytes " << target_count << " lines \n";
 
@@ -110,18 +124,25 @@ class copy_line_compressor : public compressor
                 line_count = lc;
             }
         }
-        current = result;
+
+// std::clog << "COPY LINES : line_count == " << line_count << "  line_count " << line_count << "\n";
+// std::clog << "COPY LINES : bytes_count == " << line_count*get_bytes_width() << "  offset " << line_start*get_bytes_width() << "\n";
+
+        current = result;       //  #### THIS SEEMS VERY WRONG! WE SHOULD APPLY THE LINES TO CURRENT OR RETURN THE BEST FB FROM ABOVE LOOP
 
         std::vector<uint8_t> data;
         auto out = std::back_inserter( data );
 
-        write2( out, line_count*64 );
-        write2( out, line_start*64 );
+        write2( out, line_count*get_bytes_width() );
+        write2( out, line_start*get_bytes_width() );
 
-        target.extract( out, 0, line_start, line_count*64 );
+        target.extract( out, 0, line_start, line_count*get_bytes_width() );
 
         return data;
     }
+
+    public:
+        copy_line_compressor( size_t width, size_t height ) : compressor{ width, height } {}
 };
 
 /**
@@ -132,13 +153,7 @@ class vertical_compressor : public compressor
 {
     virtual std::string name() const { char buffer[1024]; sprintf( buffer, "z%lu", sizeof(T)*8 ); return buffer; }
 
-    size_t W_;
-    size_t H_;
-
     const ruler<T> &ruler_;
-
-        /// Width in bytes
-    size_t get_bytes_width() const { return W_/8; }
 
         /// Width in underlying type
     size_t get_T_width() const { return get_bytes_width()/sizeof(T); }
@@ -208,7 +223,7 @@ class vertical_compressor : public compressor
     }
 
 public:
-    vertical_compressor( size_t W, size_t H, const ruler<T> &ruler ) :  W_{W}, H_{H}, ruler_{ruler}
+    vertical_compressor( size_t W, size_t H, const ruler<T> &ruler ) :  compressor{ W_, H_ }, ruler_{ruler}
     {
     }
 

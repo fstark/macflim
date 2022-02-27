@@ -265,7 +265,7 @@ try
     codecs.push_back( {} );
     codecs.back().signature = 0x00;
     codecs.back().penality = 1;
-    codecs.back().coder = std::make_shared<null_compressor>();
+    codecs.back().coder = std::make_shared<null_compressor>( 0, 0 );    //  Unsure if this makes sense any more.
 
     std::string comment = "FLIM\n";
     

@@ -96,7 +96,7 @@ public:
         codec_spec spec;
         spec.signature = 0x00;
         spec.penality = 1;
-        spec.coder = std::make_shared<null_compressor>();
+        spec.coder = std::make_shared<null_compressor>( W, H );
 
         if (name=="z16")
         {
@@ -121,19 +121,19 @@ public:
         {
             spec.signature = 0x03;
             spec.penality = 1.00;
-            spec.coder = std::make_shared<invert_compressor>();
+            spec.coder = std::make_shared<invert_compressor>( W, H );
         }
         else if (name=="lines")
         {   
             spec.signature = 0x04;
             spec.penality = 1.00;
-            spec.coder = std::make_shared<copy_line_compressor>();
+            spec.coder = std::make_shared<copy_line_compressor>( W, H );
         }
         else if (name=="null")
         {   
             spec.signature = 0x00;
             spec.penality = 1.00;
-            spec.coder = std::make_shared<null_compressor>();
+            spec.coder = std::make_shared<null_compressor>( W, H );
         }
         else
         {
