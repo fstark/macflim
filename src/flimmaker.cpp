@@ -283,11 +283,12 @@ try
 
 size_t width = 512;
 size_t height = 342;
+std::string profile_name = "se30";
 
     encoding_profile custom_profile;
-    if (!encoding_profile::profile_named( "se30", width, height, custom_profile ))
+    if (!encoding_profile::profile_named( profile_name, width, height, custom_profile ))
     {
-        std::cerr << "Cannot find default profile 'se30'\n";
+        std::cerr << "Cannot find default profile '"<< profile_name << "'\n";
         ::exit( EXIT_FAILURE );
     }
 
@@ -350,7 +351,8 @@ size_t height = 342;
         {
             argc--;
             argv++;
-            if (!encoding_profile::profile_named( *argv, width, height, custom_profile ))
+            profile_name = *argv;
+            if (!encoding_profile::profile_named( profile_name, width, height, custom_profile ))
             {
                 std::cerr << "Cannot find encoding profile '" << *argv << "'\n";
                 ::exit( EXIT_FAILURE );
@@ -363,11 +365,10 @@ size_t height = 342;
             argv++;
             if (profile_set)
             {
-                std::cerr << "Cannot change width after setting profile '" << *argv << "'\n";
-                ::exit( EXIT_FAILURE );
+                std::cerr << "Changing width will reset setting profile to '" << profile_name << "'\n";
             }
             width = atoi( *argv );
-            encoding_profile::profile_named( "se30", width, height, custom_profile );
+            encoding_profile::profile_named( profile_name, width, height, custom_profile );
         }
         else if (!strcmp(*argv,"--height"))
         {
@@ -375,11 +376,10 @@ size_t height = 342;
             argv++;
             if (profile_set)
             {
-                std::cerr << "Cannot change height after setting profile '" << *argv << "'\n";
-                ::exit( EXIT_FAILURE );
+                std::cerr << "Changing height will reset setting profile to '" << profile_name << "'\n";
             }
             height = atoi( *argv );
-            encoding_profile::profile_named( "se30", width, height, custom_profile );
+            encoding_profile::profile_named( profile_name, width, height, custom_profile );
         }
         else if (!strcmp(*argv,"--byterate"))
         {

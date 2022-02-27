@@ -267,7 +267,8 @@ cd -
 # encode StarWars.mp4             StarWars-Intro xl 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc --byterate 580"
 # encode StarWars.mp4             StarWars-Intro 512k 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc --byterate 480"
 # encode StarWars.mp4             StarWars-Intro 128k 00:02:01 19.5 00:02:11 5 00:00:25.77 "--filters k10g1sc --byterate 380"
-encode StarWars.mp4             StarWars-Intro se30 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc"
-encode StarWars.mp4             StarWars-Intro se 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc"
-encode StarWars.mp4             StarWars-Intro plus 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc"
+# encode StarWars.mp4             StarWars-Intro se30 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc"
+# encode StarWars.mp4             StarWars-Intro se 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc"
+# encode StarWars.mp4             StarWars-Intro plus 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc"
 
+encode StarWars.mp4             StarWars-Intro xl 00:02:01 38 00:02:11 5 00:00:25.77 "--width 704 --height 364 --filters k10g1sc --byterate 580 "
