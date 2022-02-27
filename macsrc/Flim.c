@@ -398,14 +398,14 @@ Boolean FlimGetIsSilent( FlimPtr flim )
 	return flim->info.silent;
 }
 
-#ifndef MINI_PLAYER
-
 //	-------------------------------------------------------------------
 
 struct FlimInfo *FlimGetInfo( FlimPtr flim )
 {
 	return &flim->info;
 }
+
+#ifndef MINI_PLAYER
 
 //	-------------------------------------------------------------------
 

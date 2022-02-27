@@ -648,7 +648,8 @@ static eIterateChoice ApplyPlay( LibraryPtr lib, int index, Str255 fName, short 
 			HideCursor();
 			//	fall through
 		case kError:
-		case kFileError:
+		case kFileError:		//	#### We should display proper error
+		case kCodecError:
 		case kAbort:
 			result = kStop;
 			break;

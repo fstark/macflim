@@ -326,26 +326,48 @@ void ScreenLog( ScreenPtr screen, const char *format, ... )
 //	Fills scrn with information to display on the physical screen
 //	-------------------------------------------------------------------
 
-ScreenPtr ScreenInit( ScreenPtr scrn, short rowbytes )
+ScreenPtr ScreenInit( ScreenPtr scrn )
 {
-	int i;
-
 	int w = screenBits.bounds.right-screenBits.bounds.left;
 	int h = screenBits.bounds.bottom-screenBits.bounds.top;
 
 	assert( scrn!=NULL, "Screen not created" );
 
-	assert( rowbytes==64, "Flim not supported" );
-
 	scrn->physAddr = screenBits.baseAddr;
+	scrn->width = w;
 	scrn->height = h;
 
 	scrn->rowBytes = screenBits.rowBytes;
 
-	scrn->stride4 = (scrn->rowBytes-64)/4;
+	scrn->ready = FALSE;
 
-	scrn->baseAddr = scrn->physAddr + ((w-512)/2)/8;
-	scrn->baseAddr += ((long)scrn->rowBytes)*((h-342)/2);
+	return scrn;
+
+}
+
+//	-------------------------------------------------------------------
+//	Prepares for video playback
+//	width of the input (pixels)
+//	height of the input (pixels)
+//	Returns TRUE if flim can play, FALSE if flim is not playable
+//	-------------------------------------------------------------------
+
+extern long *gOffsets;//####hack from codec.c
+
+Boolean ScreenVideoPrepare( ScreenPtr scrn, short width, short height )
+{
+	int i;
+	short rowbytes = width/8;
+
+	scrn->ready = FALSE;
+
+	scrn->flim_width = width;
+	scrn->flim_height = height;
+
+	scrn->stride4 = (scrn->rowBytes-rowbytes)/4;
+
+	scrn->baseAddr = scrn->physAddr + ((scrn->width-width)/2)/8;
+	scrn->baseAddr += ((long)scrn->rowBytes)*((scrn->height-height)/2);
 
 //	Make sure the address is not odd
 //	(for instance on a Lisa, the screen is 90 bytes wide, so there is a 13 bytes offset)
@@ -353,11 +375,16 @@ ScreenPtr ScreenInit( ScreenPtr scrn, short rowbytes )
 
 	for (i=0;i!=kCodecCount;i++)
 	{
-		scrn->procs[i] = CodecGetProc( i, 512, scrn->rowBytes*8, CODEC_TYPE );
-		assert( scrn->procs[i]!=NULL, "Codec Not Found" );
-	}
+		scrn->procs[i] = CodecGetProc( i, width, scrn->rowBytes*8, CODEC_TYPE );
+		if (!scrn->procs[i])
+			return FALSE;
+	}	
 
-	return scrn;
+	CreateOffsetTable( &gOffsets, scrn->baseAddr, scrn->flim_width, scrn->flim_height, scrn->rowBytes*8 );
+
+	scrn->ready = TRUE;
+
+	return TRUE;
 }
 
 //	-------------------------------------------------------------------
@@ -403,6 +430,10 @@ void ScreenFlash( ScreenPtr scrn, short from, short lines )
 void ScreenUncompressFrame( ScreenPtr scrn, char *source )
 {
 	char codec = source[3];
+	
+	if (!scrn->ready)
+		return;
+	
 	if (codec<0 || codec>=kCodecCount)
 		ExitToShell();
 
@@ -411,6 +442,6 @@ void ScreenUncompressFrame( ScreenPtr scrn, char *source )
 #endif
 
 //	printf( "[%d/%lx/%d]", (int)codec, (long)scrn->baseAddr, (int)scrn->rowBytes );
-	(scrn->procs[codec])( scrn->baseAddr, source+4, scrn->rowBytes );
+	(scrn->procs[codec])( scrn->baseAddr, source+4, scrn->rowBytes, scrn->flim_width );
 }
 

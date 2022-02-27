@@ -31,7 +31,19 @@ void CodecInit( void );
 //	Return function to display specific codec's data
 //	-------------------------------------------------------------------
 
-typedef void (*DisplayProc)( char *dest, char *source, int rowBytes );
+typedef void (*DisplayProc)( char *dest, char *source, int rowBytes, short input_width );
 DisplayProc CodecGetProc( int codec, int inputWidth, int outputWidth, int type );
+
+//	-------------------------------------------------------------------
+//	-------------------------------------------------------------------
+
+//	Usure if right place
+Boolean CreateOffsetTable(
+	long **offsets,
+	char *base_addr,
+	unsigned short input_width,
+	unsigned short input_height,
+	unsigned short output_width
+	);
 
 #endif

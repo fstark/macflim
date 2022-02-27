@@ -30,7 +30,7 @@ int main()
 		/* User may be asked to increase the MultiFinder partition */
 		MaxApplZone();
 		saveScreen = TRUE;
-		reservedSpace = 30000L + GetScreenSaveSize();
+		reservedSpace = 30000L + GetScreenSaveSize() + 30000L /* in case of codec mapping table */;
 	}
 
 	PreferenceLoad();
@@ -50,7 +50,7 @@ int main()
 
 	//	The fancy version
 	//	Set up screen
-	gScreen = ScreenInit( gScreen, 64 );
+	gScreen = ScreenInit( gScreen );
 
 	if (saveScreen)
 		SaveScreen( &savePtr );

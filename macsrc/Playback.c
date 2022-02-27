@@ -279,9 +279,14 @@ ePlayResult PlayFlim( FlimPtr flim, Boolean silent )
 	long tick = 0;
 	ePlayResult theResult;
 	int index;
+	struct FlimInfo *flimInfo;
 
 	if (!MachineIsBlackAndWhite())
 		return kScreenError;
+
+	flimInfo = FlimGetInfo( flim );
+	if (!ScreenVideoPrepare( gScreen, flimInfo->width, flimInfo->height ))
+		return kCodecError;
 
 	//	Hack to check the buffer size
 	{

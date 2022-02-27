@@ -12,6 +12,8 @@ TODO:
 
 A974 : Button
 
+* Play multiple selection is broken
+
 * Manage play commands (at least) abort (Button) from VBL
 * Mouse selection is a bit off (click on right border of polaroid)
 * Check all resource IDs in Resources.h

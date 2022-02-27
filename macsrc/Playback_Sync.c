@@ -7,6 +7,9 @@
 //	-------------------------------------------------------------------
 
 #include "Config.h"
+
+#ifdef SYNCPLAY
+
 #include "Machine.h"
 #include "Flim.h"
 #include "Screen.h"
@@ -29,8 +32,13 @@ ePlayResult FlimSyncPlay( FlimPtr flim )
 	OSErr err;
 	BlockPtr blk;
 	ePlayResult theResult = kDone;
-//	flim = FlimOpen( fRefNum, BufferGetSize()-sizeof( struct BlockRecord ) );
+	struct FlimInfo *flimInfo;
+
 	blk = FlimInitBlock( flim, BufferGet( 0 ) );
+
+	flimInfo = FlimGetInfo( flim );
+	if (!ScreenVideoPrepare( gScreen, flimInfo->width, flimInfo->height ))
+		return kCodecError;
 
 	ScreenClear( gScreen );
 
@@ -44,6 +52,7 @@ ePlayResult FlimSyncPlay( FlimPtr flim )
 
 		while (theResult==kDone && blk->frames_left>0)
 		{
+#ifndef MINI_PLAYER
 			CheckKeys();
 
 			if (gEscape)
@@ -64,6 +73,7 @@ ePlayResult FlimSyncPlay( FlimPtr flim )
 			{
 				ScreenLog( gScreen, "%c DBG %ld/%ld BUF=%ld", (MachineIsMinimal()?'M':' '), FreeMem(), MachineGetMemory(), BufferGetSize() );
 			}
+#endif
 
 			ScreenUncompressFrame( gScreen, (char *)blk->video->data );
 			blk->sound = NextDataPtrS( blk->video );
@@ -83,3 +93,4 @@ end:
 }
 
 
+#endif

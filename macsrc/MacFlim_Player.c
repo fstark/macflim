@@ -73,7 +73,7 @@ static Boolean AutoPlayFlims( void )
 			//	(note: this means that a bad file will abort the looping too)
 			
 			theResult = PlayFlimFile( theAppFile.fName, theAppFile.vRefNum, kNoDirID, kHFS, FALSE );
-			if (theResult==kError || theResult==kFileError || theResult==kScreenError)
+			if (theResult==kError || theResult==kFileError || theResult==kScreenError || theResult==kCodecError)
 				continue;
 			played = TRUE;
 			if (theResult==kAbort)
@@ -224,8 +224,8 @@ int main()
 //	HideCursor();
 
 	//	Set up screen
-	gScreen = ScreenInit( gScreen, 64 );
-
+	gScreen = ScreenInit( gScreen );
+//	ScreenVideoPrepare( gScreen, 512, 342 );
 
 	if (!MachineIsBlackAndWhite())
 	{

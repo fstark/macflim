@@ -9,13 +9,21 @@
 
 struct ScreenRecord
 {
+		//	Screen-dependant data
 	char *physAddr;		//	Real physical top of screen
-	short height;		//	Number of lines
-
+	short width;		//	Width in pixels
+	short height;		//	Height in pixels
 	char *baseAddr;		//	Base addr of start of image (may be in the middle of the physical screen)
-	short rowBytes;	//	Number of bytes between a line and the next
+	short rowBytes;		//	Number of bytes between a line and the next
+
+		//	Flim dependent data
+	Boolean ready;		//	Ready to decode a flim
+
+	short flim_width;
+	short flim_height;
+
 	short stride4;		//	Number of longs from the end of a line to the beginning of the next
-						//	stride4*4+64 == rowBytes
+						//	stride4*4+[flim width] == rowBytes
 
 						//	The codecs implementation to use
 	DisplayProc procs[kCodecCount];
@@ -59,11 +67,9 @@ void KillScreen( ScreenPtr scrn, short killcode );
 
 //	-------------------------------------------------------------------
 //	Initialize a screen structure for playing on the current screen
-//	If silent, will use the silent routines
-//	Rowbytes are the rowbytes of the original flim (64 bytes)
 //	-------------------------------------------------------------------
 
-ScreenPtr ScreenInit( ScreenPtr scrn, short rowbytes );
+ScreenPtr ScreenInit( ScreenPtr scrn );
 
 //	-------------------------------------------------------------------
 //	Clears screen to black
@@ -76,6 +82,15 @@ void ScreenClear( ScreenPtr scrn );
 //	-------------------------------------------------------------------
 
 void ScreenFlash( ScreenPtr scrn, short from, short lines );
+
+//	-------------------------------------------------------------------
+//	Prepares for video playback
+//	width of the input (pixels)
+//	height of the input (pixels)
+//	Returns TRUE if flim can play, FALSE if flim is not playable
+//	-------------------------------------------------------------------
+
+Boolean ScreenVideoPrepare( ScreenPtr scrn, short width, short height );
 
 //	-------------------------------------------------------------------
 //	Uncompress a video frame of data

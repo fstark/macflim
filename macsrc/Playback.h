@@ -74,7 +74,8 @@ typedef enum
 	kPrevious,
 	kRestart,
 	kFileError,		//	File was not a FLIM
-	kScreenError	//	Cannot find a B&W screen to play
+	kScreenError,	//	Cannot find a B&W screen to play
+	kCodecError		//	Don't know how to decode the flim
 }	ePlayResult;
 
 extern BlockPtr gPlaybackBlock;
