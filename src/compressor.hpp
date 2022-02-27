@@ -223,7 +223,7 @@ class vertical_compressor : public compressor
     }
 
 public:
-    vertical_compressor( size_t W, size_t H, const ruler<T> &ruler ) :  compressor{ W_, H_ }, ruler_{ruler}
+    vertical_compressor( size_t W, size_t H, const ruler<T> &ruler ) :  compressor{ W, H }, ruler_{ruler}
     {
     }
 
