@@ -142,9 +142,10 @@ Specifies the encoding/playback profile you want to use.
 
 * xl : The xl profile generates flim that can be played on a 5MHz Lisa 2/10, running Mac Works XL 3.0, from the internal widget. Flims have no sound, and are encoded at a very low framerate (divided by 4) and low byterate (580 bytes per ticks).
 
-* 512 : This profile generates a flim that can be played on a Macintosh 512, from the slow floppy-based HD20 hard drive. The framerate is divided by 4, the byterate is 480 bytes per ticks, and there is no sound.
+* 512k : This profile generates a flim that can be played on a Macintosh 512, from the slow floppy-based HD20 hard drive. The framerate is divided by 4, the byterate is 480 bytes per ticks, and there is no sound.
 
-[todo: do we want a 128k profile?]
+* 128k : The profile for playing on a Macintosh 128, from the floppy disk. Identical to the 512k, but with a byterateof 380 bytes. Make sure flim files are less than 400Kb (in general around 20 seconds) !
+
 
 Examples:
 
@@ -196,6 +197,14 @@ When specifiying a set of pgm files as input, the audio must be provided using a
 ### --silent **boolean**
 
 If true, the generated flim will not contain any audio, and will be smaller by 22KB/s. This is useful for encoding silent movies, or if you don't need sound and want to get the best image possible for a background display.
+
+### --width **pixels**
+
+The width of the generated flim, in pixels. Width must be a multiple of 32, and width * height must be less than 65536 (#### or 32768 -- check). Default width is 512.
+
+### --height **pixels**
+
+The height of the generated flim, in pixels. Width * height must be less than 65536 (#### or 32768 -- check). Default height is 342.
 
 ## Moar options!
 
