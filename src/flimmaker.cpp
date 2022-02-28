@@ -206,7 +206,7 @@ void usage( const std::string name )
         // else if (!strcmp(*argv,"--comment"))
 
     std::cerr << "\nList of profiles names for the --profile option (default 'se30'):\n";
-    for (auto n:{ "128k", "512k", "xl", "plus", "se", "se30", "perfect" })
+    for (auto n:{ "128k", "512k", "xl", "plus", "se", "portable", "se30", "perfect" })
     {
         encoding_profile p;
         encoding_profile::profile_named( n, 512, 342, p );
@@ -352,6 +352,18 @@ std::string profile_name = "se30";
             argc--;
             argv++;
             profile_name = *argv;
+            if (profile_name=="xl") //  ####KLUDGE!
+            {
+                width = (720/32)*32;
+                height = 364;
+                std::cerr << "xl -- setting resolution to " << width << "x" << height << "\n";
+            }
+            if (profile_name=="portable")
+            {
+                width = (640/32)*32;
+                height = 400;
+                std::cerr << "portable -- setting resolution to " << width << "x" << height << "\n";
+            }
             if (!encoding_profile::profile_named( profile_name, width, height, custom_profile ))
             {
                 std::cerr << "Cannot find encoding profile '" << *argv << "'\n";
@@ -368,6 +380,11 @@ std::string profile_name = "se30";
                 std::cerr << "Changing width will reset setting profile to '" << profile_name << "'\n";
             }
             width = atoi( *argv );
+            if ((width%32)!=0)
+            {
+                width = (width/32)*32;
+                std::cerr << "Width must be multiple of 32, rouding it down to '" << width << "'\n";
+            }
             encoding_profile::profile_named( profile_name, width, height, custom_profile );
         }
         else if (!strcmp(*argv,"--height"))

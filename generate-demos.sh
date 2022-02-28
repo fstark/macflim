@@ -261,19 +261,20 @@ cd -
 
 
 # TESTS FOR XL VERSIONS
-# encode Matrix.mp4               Matrix xl   01:46:15 00:00:43.280 01:46:30.200 10 00:00:41 "--filters gbbszq15c --byterate 580 --srt sample/source/Matrix.eng.srt"
+encode Matrix.mp4               Matrix xl   01:46:15 00:00:43.280 01:46:30.200 10 00:00:41 "--filters gbbsq15c --srt sample/source/Matrix.eng.srt"
 # encode Matrix.mp4               Matrix 512k   01:46:15 00:00:43.280 01:46:30.200 10 00:00:41 "--filters gbbszq15c --byterate 480 --srt sample/source/Matrix.eng.srt"
 # encode Matrix.mp4               Matrix 128k   01:46:25.500 00:00:17 01:46:30.200 10 00:00:07.427 "--filters gbbszq15c --byterate 380 --srt sample/source/Matrix.eng.srt"
-# encode StarWars.mp4             StarWars-Intro xl 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc --byterate 580"
 # encode StarWars.mp4             StarWars-Intro 512k 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc --byterate 480"
 # encode StarWars.mp4             StarWars-Intro 128k 00:02:01 19.5 00:02:11 5 00:00:25.77 "--filters k10g1sc --byterate 380"
 # encode StarWars.mp4             StarWars-Intro se30 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc"
+# encode StarWars.mp4             StarWars-Intro portable 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc"
 # encode StarWars.mp4             StarWars-Intro se 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc"
 # encode StarWars.mp4             StarWars-Intro plus 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc"
 
+encode Matrix.mp4               Matrix portable   01:46:15 00:00:43.280 01:46:30.200 10 00:00:41 "--filters gbbsq15c --srt sample/source/Matrix.eng.srt"
 
-# encode StarWars.mp4             StarWars-Intro xl 00:02:01 38 00:02:11 5 00:00:25.77 "--width 704 --height 364 --filters k10g1sc --byterate 580 "
-#encode StarWars.mp4             Model200 xl 00:02:01 38 00:02:11 5 00:00:25.77 "--width 224 --height 128 --filters k10g1s --byterate 580 --bars none --group false"
-#encode StarWars.mp4             GameBoy xl 00:02:01 38 00:02:11 5 00:00:25.77 "--width 160 --height 144 --filters k10g1s --byterate 580 --bars none --group false"
-encode StarWars.mp4             PlayDate xl 00:02:01 38 00:02:11 5 00:00:25.77 "--width 384 --height 240 --filters k10g1s --byterate 1200 --bars none --group false"
+
+# encode StarWars.mp4             Model200 xl 00:02:01 38 00:02:11 5 00:00:25.77 "--width 224 --height 128 --filters k10g1s --byterate 580 --bars none --group false"
+# encode StarWars.mp4             GameBoy xl 00:02:01 38 00:02:11 5 00:00:25.77 "--width 160 --height 144 --filters k10g1s --byterate 580 --bars none --group false"
+# encode StarWars.mp4             PlayDate xl 00:02:01 38 00:02:11 5 00:00:25.77 "--width 384 --height 240 --filters k10g1s --byterate 1200 --bars none --group false"
 

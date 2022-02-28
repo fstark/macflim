@@ -140,7 +140,7 @@ public:
         if (name=="xl"s)
         {
             result.set_byterate( 580 );
-            result.set_filters( "g1.6bbscz" );
+            result.set_filters( "g1.6bbsc" );
             result.set_fps_ratio( 4 );
             result.set_group( true );
             result.set_stability( 0.5 );
@@ -173,6 +173,26 @@ public:
             result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "lines:count=30", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
+            result.set_silent( false );
+            return true;
+        }
+        if (name=="portable"s)
+        {
+            result.set_byterate( 2500 );
+            result.set_filters( "g1.6bsc" );
+            result.set_fps_ratio( 2 );
+            result.set_group( false );
+            result.set_stability( 0.5 );
+            result.set_bars( true );
+            result.set_dither( "error" );
+            result.set_error_algorithm( "floyd" );
+            result.set_error_bidi( true );
+            result.set_error_bleed( 0.98 );
+            result.codecs_.clear();
+            result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "lines:count=50", result.W_, result.H_ ) );
             result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
             result.set_silent( false );
             return true;

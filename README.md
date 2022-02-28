@@ -128,7 +128,7 @@ Creates an animated gif file version of the flim. The animated gif is at 20 fram
 
 To avoid downloading the same file multiple times, the ``--cache`` argument can be used to specify a destination to download the file to if it doesn't already exist. ``flimmaker`` will use this file if it exists, or download it there otherwise. This is only used with URL specifiers.
 
-### --profile **plus**|**se**|**se30**|**perfect**|**xl**|**512**
+### --profile **plus**|**se**|**se30**|**perfect**|**portable**|**xl**|**512k**|**128k**
 
 Specifies the encoding/playback profile you want to use.
 
@@ -138,7 +138,9 @@ Specifies the encoding/playback profile you want to use.
 
 * se30 : Targets the SE/30, the most powerful Macintosh. Encoding can use 4 times more space, doesn't skip frames, and limits leakage from a frame to the next. se30 movies are in general correct, in the sense that mostly anything can be faithfully encoded, with a few artifacts.
 
-* perfect : this profile aims at a "perfect" playback. The resulting files can be played on an upgraded computer. For instance, playing from a se30 with a ram disk allows those "perfect" flims to be played.
+* perfect : This profile aims at a "perfect" playback. The resulting files can be played on an upgraded computer. For instance, playing from a se30 with a ram disk allows those "perfect" flims to be played.
+
+* portable : Targets the original Macintosh Portable, _full screen_ (if you want 512x342 flims, just use the *se* profile). Encoding is the same as the se, however, as there are more pixles to draw, the result has more artifacts.
 
 * xl : The xl profile generates flim that can be played on a 5MHz Lisa 2/10, running Mac Works XL 3.0, from the internal widget. Flims have no sound, and are encoded at a very low framerate (divided by 4) and low byterate (580 bytes per ticks).
 

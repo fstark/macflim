@@ -61,6 +61,11 @@ ul.se li div.download-link a
 {
     background: url(assets/download-se.gif) no-repeat left center;
 }
+ul.portable li div.download-link a
+{
+    background: url(assets/download-portable.gif) no-repeat left center;
+    padding-left: 51px;
+}
 ul.plus li div.download-link a
 {
     background: url(assets/download-plus.gif) no-repeat left center;
@@ -86,6 +91,12 @@ img.maclist
 }
 
 img.maclist.xl
+{
+    display: inline-block;
+    padding-left: 0px;
+}
+
+img.maclist.portable
 {
     display: inline-block;
     padding-left: 0px;
@@ -186,9 +197,9 @@ So, what are you waiting for?
 <h2>How to install MacFlim Player</h2>
 
 <p>Beware, flim files can still be quite big. How big? Well, it depends on the desired quality. You are looking at around 100Kb/seconds for Mac Plus quality, 150 for SE and more than 300 for SE30.</p>
-<p>You need a <a href="https://store.inertialcomputing.com/SCSI2SD-s/100.htm">SCSI2SD</a> (if you can make sense of the different models), or a <a href="https://www.tindie.com/products/landogriffin/rascsi-macintosh-version/">RaSCSI</a> (if you like soldering), or a <a href="https://gumroad.com/l/bluescsi-1b">BlueSCSI</a> (if you don't live in the EU) to store them. There is also the <a href="http://macsd.com/">MacSD</a> which I know nothing about, but it does look neat.</p>
+<p>For the plus and above, you'll need an internal SCSI drive, or <a href="https://store.inertialcomputing.com/SCSI2SD-s/100.htm">SCSI2SD</a> (if you can make sense of the different models), or a <a href="https://www.tindie.com/products/landogriffin/rascsi-macintosh-version/">RaSCSI</a> (if you like soldering), or a <a href="https://gumroad.com/l/bluescsi-1b">BlueSCSI</a> (if you don't live in the EU) to store them. There is also the <a href="http://macsd.com/">MacSD</a> which I know nothing about, but it does look neat.</p>
 
-<p>Download the app, <a href="releases/Mac Flim 2.0.1.dsk">version 2.0.1 as a 800K .dsk file</a></p>
+<p><b><a href="releases/Mac Flim 2.0.1.dsk">Download the app, version 2.0.1 as a 800K .dsk file</a></b></p>
 
 <p>Flims are available as ``.flim`` files. Just download the ones you want, move them to your mac and add them to you MacFlim Library</p>
 
@@ -204,6 +215,9 @@ So, what are you waiting for?
     </li>
     <li>
         <a href="#se"><img class="maclist" src="assets/download-se.gif"></img>Flims for your Macintosh SE</a>
+    </li>
+    <li>
+        <a href="#portable"><img class="maclist portable" src="assets/download-portable.gif"></img>Flims for your Macintosh Portable, full screen!</a>
     </li>
     <li>
         <a href="#plus"><img class="maclist" src="assets/download-plus.gif"></img>Flims for your Macintosh Plus</a>
@@ -507,8 +521,38 @@ So, what are you waiting for?
 </li>
 
 
-    
 </ul>
+
+<hr>
+
+<h3 id="portable">Full screen flims for you Macintosh Portable</h3>
+
+<p>A large screen that you could get with you anywhere, for just a little over 7Kg (16 lb). The machine is roughly a Mac SE, but the flims are full screen!</p>
+
+<ul class="portable">
+    <li>
+        <h4>Matrix</h4>
+        <a href="samples/Matrix-portable.mp4" target="_blank">
+            <img class="screenshot" src="samples/Matrix-portable.gif"></img>
+        </a>
+        <p>Neo took the black pill</p>
+        <div class="download-link">
+        <a href="samples/Matrix-portable.flim">6 Mb flim file</a>
+        </div>
+    </li>
+
+    <li>
+        <h4>Star Wars Intro</h4>
+        <a href="samples/StarWars-Intro-portable.mp4" target="_blank">
+            <img class="screenshot" src="samples/StarWars-Intro-portable.gif"></img>
+        </a>
+        <p>The rebels are trying to escape with the blueprints of the Macintosh!</p>
+        <div class="download-link">
+        <a href="samples/StarWars-Intro-portable.flim">4.2 Mb flim file</a>
+        </div>
+    </li>
+</ul>
+
 
 <hr>
 
@@ -601,7 +645,7 @@ So, what are you waiting for?
         </a>
         <p>Neo took the black pill</p>
         <div class="download-link">
-        <a href="samples/Matrix-xl.flim">1.2 Mb flim file</a>
+        <a href="samples/Matrix-xl.flim">1.5 Mb flim file</a>
         </div>
     </li>
 
