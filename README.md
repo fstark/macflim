@@ -6,7 +6,7 @@ MacFlim is a video encoder and player for black and white vintage Macintoshes, n
 
 _The iPod introduction should have waited for MacFlim to be available_
 
-MacFlim brings movie playing abilities to the most popular members of the Macintosh familiy, namely the Macintosh XL, Macintosh 128K, Macintosh 512K, Mac Plus, Mac SE, Mac SE/30 and the Macintosh Portable, on their beautiful internal back and white 512x342 display (or in a part of it for the Mac XL and the Portable).
+MacFlim brings movie playing abilities to the most popular members of the Macintosh familiy, namely the Macintosh XL, Macintosh 128K, Macintosh 512K, Mac Plus, Mac SE, Mac SE/30 and the Macintosh Portable, on their beautiful internal back and white 512x342 display (or even larger, for the Mac XL and the Portable!).
 
 ## What is in the repository?
 
