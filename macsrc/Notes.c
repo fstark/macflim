@@ -12,7 +12,7 @@ TODO:
 
 A974 : Button
 
-* Play multiple selection is broken
+* Probably crashes when displaying larger flims on smaller screens
 
 * Manage play commands (at least) abort (Button) from VBL
 * Mouse selection is a bit off (click on right border of polaroid)
@@ -27,6 +27,7 @@ A974 : Button
 * Changing flim types should not remove auto play
 * Empty state for Library	
 
+* [DONE] Play multiple selection is broken
 * [DONE] Play commands (restart/prev/next/etc) in ApplyPlay
 * [DONE] Remove VBL from preferences
 * [DONE] Adds for type/creator when opening flim files

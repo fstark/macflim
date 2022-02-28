@@ -10,14 +10,17 @@
 struct ScreenRecord
 {
 		//	Screen-dependant data
-	char *physAddr;		//	Real physical top of screen
+	unsigned char *physAddr;		//	Real physical top of screen
 	short width;		//	Width in pixels
 	short height;		//	Height in pixels
-	char *baseAddr;		//	Base addr of start of image (may be in the middle of the physical screen)
+	unsigned char *baseAddr;		//	Base addr of start of image (may be in the middle of the physical screen)
 	short rowBytes;		//	Number of bytes between a line and the next
 
 		//	Flim dependent data
 	Boolean ready;		//	Ready to decode a flim
+
+						//	The codec control block
+	struct CodecControlBlock ccb;
 
 	short flim_width;
 	short flim_height;

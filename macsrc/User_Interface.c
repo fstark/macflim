@@ -627,7 +627,7 @@ static Rect sZoomedRect;	//	From which rect did we "zoom-in" (for the zoom-out) 
 static eIterateChoice ApplyPlay( LibraryPtr lib, int index, Str255 fName, short vRefNum, long dirID )
 {
 	FlimPtr flim = LibraryOpenFlim( lib, index );
-	eIterateChoice result = kStop;
+	eIterateChoice result = kNext;
 	Rect fromRect;
 
 	if (!flim)

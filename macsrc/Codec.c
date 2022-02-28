@@ -22,63 +22,11 @@
 //	On-disk format: empty
 //	-------------------------------------------------------------------
 
-static void Null_ref( char *dest, char *source, int rowbytes, short input_width )
+static void Null_ref( char *source, struct CodecControlBlock *ccb )
 {
 }
 
-//	-------------------------------------------------------------------
-//	Codec 0x01 : z16
-//	  Copies series of vertical variable height 16 pixels information
-//	On-disk format:
-//	  list of chunks:
-//	  2 byte header : (0x0000 to end)
-//		9 bits offset in bytes from precedent chunk (starts top-left)
-//		7 bits count of data
-//	  count words   : data to be copied at vertical 16 pixels line
-//	-------------------------------------------------------------------
-
-static void UnpackZ16_ref( char *dest, char *source, int rowbytes, short input_width )
-{
-	register unsigned char *d = (unsigned char *)dest;
-	register unsigned char *dmax = d+64;
-
-	register unsigned short *s = (unsigned short *)source;
-	register unsigned short header;
-	register unsigned short rowshorts = rowbytes/2;
-
-	while (header=*s++)
-	{
-		register unsigned short offset;
-		register int count = 0;
-		register unsigned short *adrs;
-
-		offset = header>>7;
-		
-		d += offset;
-
-			//	Adjust for screen larger than 512 pixels
-		while (d>dmax)
-		{
-			d += rowbytes-64;
-			dmax += rowbytes;
-		}
-		
-		count = header&0x7f;
-
-		adrs = (unsigned short*)d;
-
-		while (count--)
-		{
-			*adrs = *s++;
-			adrs += rowshorts;
-		}
-	}
-}
-
-//	-------------------------------------------------------------------
-//	Assembly version for 512 pixels source, and 512 pixels destinations
-//	-------------------------------------------------------------------
-
+/*
 static void UnpackZ16_64( char *dest, char *source, int rowbytes, short input_width )
 {
 
@@ -147,10 +95,7 @@ loop:
         movem.l   (A7)+,D5-D7/A2-A4
 	}
 }
-
-static void UnpackZ16_any_any( char *dest, char *source, int rowbytes, short input_width )
-{
-}
+*/
 
 //	-------------------------------------------------------------------
 //	Codec 0x02 : z32
@@ -163,12 +108,12 @@ static void UnpackZ16_any_any( char *dest, char *source, int rowbytes, short inp
 //	  count quads   : data to be copied at vertical 32 pixels line
 //	-------------------------------------------------------------------
 
-static void UnpackZ32_ref( char *dest, char *source, int rowbytes, short input_width )
+static void UnpackZ32_ref( char *source, struct CodecControlBlock *ccb )
 {
-	register unsigned long *base = (unsigned long *)dest;
+	register unsigned long **offsets = (unsigned long **)ccb->offsets32;
 	register unsigned long *s = (unsigned long *)source;
 	register long header;
-	register long rowlongs = rowbytes/4;
+	register long rowlongs = ccb->output_width32;
 
 	while (header=*s++)
 	{
@@ -176,27 +121,14 @@ static void UnpackZ32_ref( char *dest, char *source, int rowbytes, short input_w
 		register unsigned int copy;
 		register unsigned long *d;
 		
+			//	This is the "source" offset on the original screen
 		offset = (header&0xffff)/4-1;
-		
-#ifdef REFERENCE_ASSERTS
-		if (offset>=21888/4)
-			assert( false, "Bad Z32 Offset" );
-#endif
-		
-		offset = (offset/16)*rowlongs+(offset%16);
-		
+	
+			//	We convert it to the "destination" offset
+		d = offsets[offset];
+
+			//	The number of bytes to copy		
 		copy = (header>>16)+1;
-#ifdef REFERENCE_ASSERTS
-		assert( copy>0, "Bad Z32 count (neg)" );
-		assert( copy<=342, "Bad Z32 count" );
-#endif
-
-#ifdef REFERENCE_ASSERTS
-		if (offset<0 || offset>=7524) // Lisa Hack
-			printf( "BAD OFFSET %d HEADER %lx\n", (int)offset, (int)header );
-#endif
-
-		d = base+offset;
 
 		while (copy--)
 		{
@@ -210,8 +142,9 @@ static void UnpackZ32_ref( char *dest, char *source, int rowbytes, short input_w
 //	Assembly 512 pixels => 512
 //	-------------------------------------------------------------------
 
-static void UnpackZ32_64( char *dest, char *source, int rowbytes, short input_width )
+static void UnpackZ32_64( char *source, struct CodecControlBlock *ccb )
 {
+	register unsigned long *dest = (unsigned long *)ccb->offsets32[0];
 	asm
 	{
 			;	Save registers
@@ -248,8 +181,9 @@ static void UnpackZ32_64( char *dest, char *source, int rowbytes, short input_wi
 //	Assembly 512 => 640 (Macintosh Portable)
 //	-------------------------------------------------------------------
 
-static void UnpackZ32_80( char *dest, char *source, int rowbytes, short input_width )
+static void UnpackZ32_80( char *source, struct CodecControlBlock *ccb )
 {
+	register unsigned long *dest = (unsigned long *)ccb->offsets32[0];
 	asm
 	{
 			;	Save registers
@@ -300,8 +234,11 @@ static void UnpackZ32_80( char *dest, char *source, int rowbytes, short input_wi
 //	Assembky 512 => any
 //	-------------------------------------------------------------------
 
-static void UnpackZ32_asm( char *dest, char *source, int rowbytes, short input_width )
+static void UnpackZ32_asm( char *source, struct CodecControlBlock *ccb )
 {
+	register unsigned long *dest = (unsigned long *)ccb->offsets32[0];
+	register unsigned short rowbytes = ccb->output_width8;
+
 	asm
 	{
 			;	Save registers
@@ -355,8 +292,8 @@ static void UnpackZ32_asm( char *dest, char *source, int rowbytes, short input_w
 long *gOffsets;
 
 Boolean CreateOffsetTable(
-	long **offsets,
-	char *base_addr,
+	unsigned char ***offsets,
+	unsigned char *base_addr,
 	unsigned short input_width,
 	unsigned short input_height,
 	unsigned short output_width
@@ -367,24 +304,24 @@ Boolean CreateOffsetTable(
 		//	How many offset entries do we need?
 		//	(number of source pixels/32)
 	long total_offset_count = input_width_long*(long)input_height;
-	long *p;
+	unsigned char **p;
 	int x,y;
 	int i;
 
 	if (*offsets)
 		DisposPtr( *offsets );
 
-	*offsets = (long *)NewPtr( total_offset_count*sizeof(long) );
+	*offsets = (unsigned char **)NewPtr( total_offset_count*sizeof(long) );
 	if (!*offsets)
 		return FALSE;
 
 	for (i=0;i!=total_offset_count;i++)
-		(*offsets)[i] = (long)base_addr;
+		(*offsets)[i] = base_addr;
 
 	p = *offsets;
 	for (y=0;y!=input_height;y++)
 	{
-		long line_start = (long)base_addr+y*(long)output_row_bytes;
+		unsigned char *line_start = base_addr+y*(long)output_row_bytes;
 
 		for (x=0;x!=input_width_long;x++)
 		{
@@ -396,18 +333,20 @@ Boolean CreateOffsetTable(
 	return TRUE;
 }
 
-static void UnpackZ32_any_any_asm( char *dest, char *source, int rowbytes, short input_width )
+static void UnpackZ32_any_any_asm( char *source, struct CodecControlBlock *ccb )
 {
+	register unsigned short rowbytes = ccb->output_width8;
+	register unsigned long *offsets = (unsigned long *)ccb->offsets32;
+
 	asm
 	{
 			;	Save registers
-		movem.l D5-D7/A2-A5,-(A7)
+		movem.l D5-D7/A1-A4,-(A7)
 
 			;	Get parameters
-		movea.l dest,a4				;	a4 == screenBase
+		movea.l offsets,a4			;	a4 == offsets table
 		movea.l source,a3			;	a3 == source data
-		move.w rowbytes,d1			;	d1 == rowbytes
-		movea.l gOffsets,a5			;	flim to screen offset conversion
+		move.w 	rowbytes,d1			;	d1 == rowbytes
 
 @loop:
 		move.l	(a3)+,d7			;	header
@@ -415,21 +354,8 @@ static void UnpackZ32_any_any_asm( char *dest, char *source, int rowbytes, short
 
 		movea.l	a4,a2				;	Screen base
 		subq.w #4,d7				;	offsets are +4
-
-/*
-		move.w d7,d0
-		and.w #0x3f,d0
-		add.w d0,a2
-		lsr.w #6,d7
-
-				;	d0 = d7*rowbytes
-		move.w d7,d0
-		mulu d1,d0
-		add.l d0,a2					;	".l" so we can add offsets > 32767
-*/
-		move.l a5,a2
-		add d7,a2
-		move.l (a2), a2
+		add d7,a2					;	entry in the offset table
+		move.l (a2), a2				;	offset for the output
 
 		swap	d7
 
@@ -442,7 +368,7 @@ static void UnpackZ32_any_any_asm( char *dest, char *source, int rowbytes, short
 
 			;	Done
 @exit:
-        movem.l   (A7)+,D5-D7/A2-A5
+        movem.l   (A7)+,D5-D7/A1-A4
 	}
 }
 
@@ -492,18 +418,19 @@ static void UnpackZ32_any_any_xxx( char *dest, char *source, int rowbytes, short
 //		(no data)
 //	-------------------------------------------------------------------
 
-static void Invert_ref( char *dest, char *source, int rowbytes, short input_width )
+static void Invert_ref( char *source, struct CodecControlBlock *ccb )
 {
-	int stride = (rowbytes-64)/4;
-	register long *p = (long *)dest;
+	register int stride32 = ccb->output_width32-ccb->source_width32;
+	register unsigned long *p = (unsigned long *)ccb->offsets32[0];
+	register int source_width32_1 = ccb->source_width32 + 1;
 
-	register int y = 343;
+	register int y = ccb->source_height;
 	while (--y)
 	{
-		register int x = 17;
+		register int x = source_width32_1;
 		while (--x)
 			*p++ ^= 0xffffffffL;
-		p += stride;
+		p += stride32;
 	}
 }
 
@@ -511,11 +438,11 @@ static void Invert_ref( char *dest, char *source, int rowbytes, short input_widt
 //	Assembly 512 pixels => 512
 //	-------------------------------------------------------------------
 
-static void Invert_64( char *dest, char *source, int rowbytes, short input_width )
+static void Invert_64( char *source, struct CodecControlBlock *ccb )
 {
-	register long *p = (long *)dest;
+	register unsigned long *p = (unsigned long *)ccb->offsets32[0];
 
-	register int y = 343;
+	register int y = ccb->source_height;
 	while (--y)
 	{
 		register int x = 17;
@@ -524,13 +451,14 @@ static void Invert_64( char *dest, char *source, int rowbytes, short input_width
 	}
 }
 
-static void Invert_any_any( char *dest, char *source, int rowbytes, short input_width )
+static void Invert_any_any( char *source, struct CodecControlBlock *ccb )
 {
-	register long *p = (long *)dest;
-	register int input_width_long = (input_width/32)+1;
-	register int row_bytes_offset_long = rowbytes/4 - input_width_long + 1;
+	register unsigned long *p = (unsigned long *)ccb->offsets32[0];
+	register int input_width_long = (ccb->source_width32)+1;
+	register int row_bytes_offset_long = ccb->output_width32 - ccb->source_width32;
 
-	register int y = 343;	//	#### NEED TO HAVE THE input_height
+	register int y = ccb->source_height+1;
+
 	while (--y)
 	{
 		register int x = input_width_long;
@@ -545,37 +473,31 @@ static void Invert_any_any( char *dest, char *source, int rowbytes, short input_
 //	Copies a serie of horizontal lines
 //	On-disk data:
 //		2 bytes     : count of bytes to copy
-//		2 bytes     : offset to copy to (multiple of 64)
-//		count bytes : data to copy (multiple of 64)
+//		2 bytes     : offset to copy to
+//		count bytes : data to copy
 //	-------------------------------------------------------------------
 
-static void CopyLines_ref( char *dest, char *source, int rowbytes, short input_width )
+static void CopyLines_ref( char *source, struct CodecControlBlock *ccb )
 {
-	unsigned short len = ((unsigned short*)source)[0];
-	unsigned long offset = ((unsigned short*)source)[1];	//	Long in case where the fb size is > 65536
+	register unsigned long **offsets = (unsigned long **)ccb->offsets32;
+	register unsigned short input_rowbytes = ccb->source_width8;
+	register unsigned short output_rowbytes = ccb->output_width8;
+	register unsigned char *dest;
 
-	if (offset<0 || offset>=21888)
-		ExitToShell();
-	if (len<0 || len>21888)
-		ExitToShell();
-	if ((len%64)!=0)
-		ExitToShell();
-	if (offset+len>21888)
-		ExitToShell();
+	unsigned short len = ((unsigned short*)source)[0];
+	unsigned short offset = ((unsigned short*)source)[1];
 
 	source += 4;
 
-//	offset = (offset/16)*(rowbytes/4)+(offset%16);
-	offset = (offset/16)*(rowbytes/2)+(offset%16);	//	Fix for Lisa, rowbytes is not mult of 4
-	offset>>=1;										//	Fix for Lisa, we are back to normal
+	dest = (unsigned char *)offsets[offset/4];
 
-	dest += offset;
 	while (len)
 	{
-		BlockMove( source, dest, 64 );
-		source += 64;
-		dest += rowbytes;
-		len -= 64;
+		BlockMove( source, dest, input_rowbytes );
+		source += input_rowbytes;
+		dest += output_rowbytes;
+
+		len -= input_rowbytes;
 	}
 }
 
@@ -583,28 +505,31 @@ static void CopyLines_ref( char *dest, char *source, int rowbytes, short input_w
 //	512 = > 512
 //	-------------------------------------------------------------------
 
-static void CopyLines_64( char *dest, char *source, int rowbytes, short input_width )
+static void CopyLines_64( char *source, struct CodecControlBlock *ccb )
 {
+	register unsigned long *dest = (unsigned long *)ccb->offsets32[0];
+
 	short len = ((short*)source)[0];
 	short offset = ((short*)source)[1];
 
 	BlockMove( source+4, dest+offset, len );
 }
 
-static void CopyLines_any_any( char *dest, char *source, int rowbytes, short input_width )
+static void CopyLines_any_any( char *source, struct CodecControlBlock *ccb )
 {
-	int width = input_width/8;
+	register unsigned char *dest = ccb->offsets32[0];
+	register unsigned short rowbytes = ccb->output_width8;
+	int width = ccb->source_width8;
 
 	unsigned short len = ((unsigned short*)source)[0];
 	unsigned long offset = ((unsigned short*)source)[1];	//	Long in case where the fb size is > 65536
 
 	int x = 0;
-	unsigned short y = offset/width;	//	Line to start
 
-	offset = y*rowbytes;
 	source += 4;
 
-	dest += offset;
+	dest = ccb->offsets32[offset/4];
+
 	while (len)
 	{
 		BlockMove( source, dest, width );
@@ -658,29 +583,27 @@ static void CodecAdd( DisplayProc dp, int codec, int inputWidth, int outputWidth
 
 void CodecInit( void )
 {
-	CodecAdd( Null_ref, 				0x00, -1, -1, 0 );
+	CodecAdd( Null_ref, 				kNull,		-1, -1, 0 );
 
-	CodecAdd( UnpackZ16_ref, 			0x01, 512, -1, 0 );
-	CodecAdd( UnpackZ16_64, 			0x01, 512, 64, 1 );
+		//	Z16 is not supported anymore
+	CodecAdd( Null_ref, 				kZ16,		-1, -1, 0 );
 
-	CodecAdd( UnpackZ16_any_any, 		0x01, -1, -1,  1 );
+	CodecAdd( UnpackZ32_ref, 			kZ32,		-1, -1, 0 );
+	CodecAdd( UnpackZ32_64, 			kZ32,		512, 64, 1 );
+	CodecAdd( UnpackZ32_80, 			kZ32,		512, 80, 1 );
+	CodecAdd( UnpackZ32_asm, 			kZ32,		512, -1, 1 );
 
-	CodecAdd( UnpackZ32_ref, 			0x02, 512, -1, 0 );
-	CodecAdd( UnpackZ32_64, 			0x02, 512, 64, 1 );
-	CodecAdd( UnpackZ32_80, 			0x02, 512, 80, 1 );
-	CodecAdd( UnpackZ32_asm, 			0x02, 512, -1, 1 );
-
-	CodecAdd( UnpackZ32_any_any_asm,	0x02, -1, -1, 1 );
+	CodecAdd( UnpackZ32_any_any_asm,	kZ32,		-1, -1, 1 );
 	
-	CodecAdd( Invert_ref,				0x03, 512, -1, 0 );
-	CodecAdd( Invert_64, 				0x03, 512, 64, 1 );
+	CodecAdd( Invert_ref,				kInvert,	-1, -1, 0 );
+	CodecAdd( Invert_64, 				kInvert,	512, 64, 1 );
 
-	CodecAdd( Invert_any_any, 			0x03, -1, -1,  1 );
+	CodecAdd( Invert_any_any, 			kInvert,	-1, -1,  1 );
 
-	CodecAdd( CopyLines_ref,			0x04, 512, -1, 0 );
-	CodecAdd( CopyLines_64, 			0x04, 512, 64, 1 );
+	CodecAdd( CopyLines_ref,			kCopy,		-1, -1, 0 );
+	CodecAdd( CopyLines_64, 			kCopy,		512, 64, 1 );
 
-	CodecAdd( CopyLines_any_any, 		0x04, -1, -1,  1 );
+	CodecAdd( CopyLines_any_any, 		kCopy,		-1, -1,  1 );
 }
 
 //	-------------------------------------------------------------------

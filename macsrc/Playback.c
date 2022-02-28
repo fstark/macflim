@@ -281,6 +281,10 @@ ePlayResult PlayFlim( FlimPtr flim, Boolean silent )
 	int index;
 	struct FlimInfo *flimInfo;
 
+#ifdef SYNCPLAY
+	return FlimSyncPlay( flim );
+#endif
+
 	if (!MachineIsBlackAndWhite())
 		return kScreenError;
 

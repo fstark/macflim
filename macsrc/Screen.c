@@ -205,7 +205,7 @@ static int logy =0;
 //	Logs a single char
 //	-------------------------------------------------------------------
 
-static void InternalDrawChar( char c, char *p, short rowBytes )
+static void InternalDrawChar( char c, unsigned char *p, short rowBytes )
 {
 	int i;
 	
@@ -226,7 +226,7 @@ static void InternalDrawChar( char c, char *p, short rowBytes )
 //	Logs a string
 //	-------------------------------------------------------------------
 
-static void ScreenPrint( ScreenPtr screen, char *p, const char *s )
+static void ScreenPrint( ScreenPtr screen, unsigned char *p, const char *s )
 {
 	char c;
 	while (c=*s++)
@@ -258,7 +258,7 @@ static void ScreenPrint( ScreenPtr screen, char *p, const char *s )
 //	Finds current start of line
 //	-------------------------------------------------------------------
 
-static char *LogPtr( ScreenPtr screen )
+static unsigned char *LogPtr( ScreenPtr screen )
 {
 	return screen->physAddr + (logy<<3)*screen->rowBytes;
 }
@@ -333,7 +333,7 @@ ScreenPtr ScreenInit( ScreenPtr scrn )
 
 	assert( scrn!=NULL, "Screen not created" );
 
-	scrn->physAddr = screenBits.baseAddr;
+	scrn->physAddr = (unsigned char *)screenBits.baseAddr;
 	scrn->width = w;
 	scrn->height = h;
 
@@ -343,48 +343,6 @@ ScreenPtr ScreenInit( ScreenPtr scrn )
 
 	return scrn;
 
-}
-
-//	-------------------------------------------------------------------
-//	Prepares for video playback
-//	width of the input (pixels)
-//	height of the input (pixels)
-//	Returns TRUE if flim can play, FALSE if flim is not playable
-//	-------------------------------------------------------------------
-
-extern long *gOffsets;//####hack from codec.c
-
-Boolean ScreenVideoPrepare( ScreenPtr scrn, short width, short height )
-{
-	int i;
-	short rowbytes = width/8;
-
-	scrn->ready = FALSE;
-
-	scrn->flim_width = width;
-	scrn->flim_height = height;
-
-	scrn->stride4 = (scrn->rowBytes-rowbytes)/4;
-
-	scrn->baseAddr = scrn->physAddr + ((scrn->width-width)/2)/8;
-	scrn->baseAddr += ((long)scrn->rowBytes)*((scrn->height-height)/2);
-
-//	Make sure the address is not odd
-//	(for instance on a Lisa, the screen is 90 bytes wide, so there is a 13 bytes offset)
-	scrn->baseAddr = (char *)(((long)(scrn->baseAddr))&0xfffffffeL);
-
-	for (i=0;i!=kCodecCount;i++)
-	{
-		scrn->procs[i] = CodecGetProc( i, width, scrn->rowBytes*8, CODEC_TYPE );
-		if (!scrn->procs[i])
-			return FALSE;
-	}	
-
-	CreateOffsetTable( &gOffsets, scrn->baseAddr, scrn->flim_width, scrn->flim_height, scrn->rowBytes*8 );
-
-	scrn->ready = TRUE;
-
-	return TRUE;
 }
 
 //	-------------------------------------------------------------------
@@ -424,6 +382,58 @@ void ScreenFlash( ScreenPtr scrn, short from, short lines )
 }
 
 //	-------------------------------------------------------------------
+//	Prepares for video playback
+//	width of the input (pixels)
+//	height of the input (pixels)
+//	Returns TRUE if flim can play, FALSE if flim is not playable
+//	-------------------------------------------------------------------
+
+extern long *gOffsets;//####hack from codec.c
+
+Boolean ScreenVideoPrepare( ScreenPtr scrn, short width, short height )
+{
+	int i;
+	short rowbytes = width/8;
+
+	scrn->ready = FALSE;
+
+	scrn->ccb.source_width = width;
+	scrn->ccb.source_width8 = width/8;
+	scrn->ccb.source_width32 = width/32;
+	scrn->ccb.source_height = height;
+	scrn->ccb.output_width8 = scrn->rowBytes;
+	scrn->ccb.output_width32 = scrn->rowBytes/4;//	####
+
+
+		// to be removed
+
+	scrn->flim_width = width;
+	scrn->flim_height = height;
+	scrn->stride4 = (scrn->rowBytes-rowbytes)/4;
+
+
+	scrn->baseAddr = scrn->physAddr + ((scrn->width-width)/2)/8;
+	scrn->baseAddr += ((long)scrn->rowBytes)*((scrn->height-height)/2);
+
+//	Make sure the address is not odd
+//	(for instance on a Lisa, the screen is 90 bytes wide, so there is a 13 bytes offset)
+	scrn->baseAddr = (unsigned char *)(((long)(scrn->baseAddr))&0xfffffffeL);
+
+	for (i=0;i!=kCodecCount;i++)
+	{
+		scrn->procs[i] = CodecGetProc( i, width, scrn->rowBytes*8, CODEC_TYPE );
+		if (!scrn->procs[i])
+			return FALSE;
+	}	
+
+	CreateOffsetTable( &scrn->ccb.offsets32, scrn->baseAddr, scrn->flim_width, scrn->flim_height, scrn->rowBytes*8 );
+
+	scrn->ready = TRUE;
+
+	return TRUE;
+}
+
+//	-------------------------------------------------------------------
 //	Uncompress a frame on the screen
 //	-------------------------------------------------------------------
 
@@ -442,6 +452,6 @@ void ScreenUncompressFrame( ScreenPtr scrn, char *source )
 #endif
 
 //	printf( "[%d/%lx/%d]", (int)codec, (long)scrn->baseAddr, (int)scrn->rowBytes );
-	(scrn->procs[codec])( scrn->baseAddr, source+4, scrn->rowBytes, scrn->flim_width );
+	(scrn->procs[codec])( source+4, &scrn->ccb );
 }
 

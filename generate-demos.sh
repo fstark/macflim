@@ -271,4 +271,9 @@ cd -
 # encode StarWars.mp4             StarWars-Intro se 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc"
 # encode StarWars.mp4             StarWars-Intro plus 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc"
 
-encode StarWars.mp4             StarWars-Intro xl 00:02:01 38 00:02:11 5 00:00:25.77 "--width 704 --height 364 --filters k10g1sc --byterate 580 "
+
+# encode StarWars.mp4             StarWars-Intro xl 00:02:01 38 00:02:11 5 00:00:25.77 "--width 704 --height 364 --filters k10g1sc --byterate 580 "
+#encode StarWars.mp4             Model200 xl 00:02:01 38 00:02:11 5 00:00:25.77 "--width 224 --height 128 --filters k10g1s --byterate 580 --bars none --group false"
+#encode StarWars.mp4             GameBoy xl 00:02:01 38 00:02:11 5 00:00:25.77 "--width 160 --height 144 --filters k10g1s --byterate 580 --bars none --group false"
+encode StarWars.mp4             PlayDate xl 00:02:01 38 00:02:11 5 00:00:25.77 "--width 384 --height 240 --filters k10g1s --byterate 1200 --bars none --group false"
+
