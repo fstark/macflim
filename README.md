@@ -142,7 +142,7 @@ Specifies the encoding/playback profile you want to use.
 
 * portable : Targets the original Macintosh Portable, _full screen_ (if you want 512x342 flims, just use the *se* profile). Encoding is the same as the se, however, as there are more pixles to draw, the result has more artifacts.
 
-* xl : The xl profile generates flim that can be played on a 5MHz Lisa 2/10, running Mac Works XL 3.0, from the internal widget. Flims have no sound, and are encoded at a very low framerate (divided by 4) and low byterate (580 bytes per ticks).
+* xl : The xl profile generates flim that can be played _full scree_ on a 5MHz Lisa 2/10, running Mac Works XL 3.0, from the internal widget. Flims have no sound, and are encoded at a very low framerate (divided by 4) and low byterate (580 bytes per ticks). The default resolution is 704x364. Use ``--profile xl --width 608 --height 432`` if you have the screen mod installed (and report here to confirm it worked).
 
 * 512k : This profile generates a flim that can be played on a Macintosh 512, from the slow floppy-based HD20 hard drive. The framerate is divided by 4, the byterate is 480 bytes per ticks, and there is no sound.
 
