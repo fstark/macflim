@@ -99,7 +99,7 @@ void FlimSeekStart( FlimPtr flim )
 
 //	-------------------------------------------------------------------
 
-static void FlimReadStream( FlimPtr flim, void *dest, int index )
+static int FlimReadStream( FlimPtr flim, void *dest, int index )
 {
 	struct FlimStream *s = flim->streams+index;
 	Size readSize;
@@ -109,6 +109,8 @@ static void FlimReadStream( FlimPtr flim, void *dest, int index )
 	FSRead( flim->fRefNum, &readSize, dest );
 	if (readSize!=s->size)
 		Abort( "\pBad flim stream" );
+
+	return readSize;
 }
 
 //	-------------------------------------------------------------------
@@ -202,7 +204,15 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 	flim->streamOffset = 1024 + 2 + 2 + read_size;
 
 		//	Read info
-	FlimReadStream( flim, &flim->info, kFlimStreamInfo );
+	{
+		int res = FlimReadStream( flim, &flim->info, kFlimStreamInfo );
+
+			//	Old flims don't have the codec list, so we force it to "all reasonable"
+		if (res==16)
+		{	//	1c = 11100 => Copy + Invert + Z32, no Z16, no NULL
+			flim->info.codecs = 0x0000001CL;
+		}
+	}
 
 	{
 		short *toc;

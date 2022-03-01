@@ -22,10 +22,8 @@ typedef enum
 }	eCodec;
 
 //	-------------------------------------------------------------------
-//	Initialize registry of codecs
+//	Passed to the codec for display
 //	-------------------------------------------------------------------
-
-void CodecInit( void );
 
 struct CodecControlBlock
 {
@@ -41,14 +39,19 @@ struct CodecControlBlock
 	
 		//	#### Warning: code smell: does not work on Lisa
 	unsigned short output_width32;	//	Width of the output in long
+	
+	unsigned char *baseAddr;		//	Address of the top-left of the screen
 };
 
 //	-------------------------------------------------------------------
 //	Return function to display specific codec's data
+//	codec is the codec
+//	if same if TRUE, codec will directly copy data and won't use the offsets from the ccb
+//	if ref is TRUE, the implementation will be the reference C implementation
 //	-------------------------------------------------------------------
 
 typedef void (*DisplayProc)( char *source, struct CodecControlBlock *ccb );
-DisplayProc CodecGetProc( int codec, int inputWidth, int outputWidth, int type );
+DisplayProc CodecGetProc( eCodec codec, Boolean same, Boolean ref );
 
 //	-------------------------------------------------------------------
 

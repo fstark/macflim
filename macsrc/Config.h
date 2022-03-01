@@ -13,7 +13,7 @@
 
 #define noVERBOSE			//	Enables verbose logs
 #define noSYNCPLAY			//	Just execute the display code in synchronous mode for decoding debugging
-#define CODEC_TYPE 1		//	0 => Forces use of reference codec implementation
+#define CODEC_TYPE 0		//	1 => Forces use of reference codec implementation
 #define noREFERENCE_ASSERTS	//	Adds debug asserts in reference codecs
 #define noDISPLAY_STATS		//	Displays playback stats at the end
 #define noFORCE_MINIMAL		//	Forces the machine to be the minimal version for testing

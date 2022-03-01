@@ -13,6 +13,9 @@ TODO:
 A974 : Button
 
 * Probably crashes when displaying larger flims on smaller screens
+* Add codecs used to flim to be future proof on the removal of a codec
+* Restore playback on 128 (no allocation of offset table is not needed)
+* Wrong width of flims for portable
 
 * Manage play commands (at least) abort (Button) from VBL
 * Mouse selection is a bit off (click on right border of polaroid)
@@ -27,7 +30,10 @@ A974 : Button
 * Changing flim types should not remove auto play
 * Empty state for Library	
 
+* [DONE] Clean up codec code (does not need that many different ways anymore, just "same size/different size and ref/asm")
+2.0.1
 * [DONE] Play multiple selection is broken
+2.0.0
 * [DONE] Play commands (restart/prev/next/etc) in ApplyPlay
 * [DONE] Remove VBL from preferences
 * [DONE] Adds for type/creator when opening flim files
@@ -119,3 +125,132 @@ Attention: some call have "dirID" that reference the dirID of the object,
 in case it is a directory, so you have to use the parID (parent ID).
 
 #endif
+
+
+
+
+
+
+
+/*
+----- obsolete code
+
+static void UnpackZ16_64( char *dest, char *source, int rowbytes, short input_width )
+{
+
+	asm
+	{
+			;	Save registers
+		movem.l D5-D7/A2-A4,-(A7)
+
+			;	Get parameters
+		movea.l dest,a4				;	a4 == screen address
+		movea.l source,a3			;	a3 == source data
+
+@chunk:
+		move.w	(a3)+,d7			;	header
+		beq.s	@exit				;	0x0000 => end of frame
+									
+		move.w	d7,d6
+		lsr.w	#7,d6				;	High 9 bits of header is offset
+		add		d6,a4				;	new screen address
+
+		movea.l	a4,a2				
+
+		and.w	#0x7f,d7
+		beq 	@chunk
+
+        move.w	(a3)+,(a2)
+        add 	#64,a2		;	Take stride into account
+		cmp 	#1,d7
+		beq 	@chunk
+
+        move.w	(a3)+,(a2)
+        add 	#64,a2		;	Take stride into account
+		cmp 	#2,d7
+		beq 	@chunk
+
+        move.w	(a3)+,(a2)
+        add 	#64,a2		;	Take stride into account
+		cmp 	#3,d7
+		beq 	@chunk
+
+        move.w	(a3)+,(a2)
+        add 	#64,a2		;	Take stride into account
+		cmp 	#4,d7
+		beq 	@chunk
+
+        move.w	(a3)+,(a2)
+        add 	#64,a2		;	Take stride into account
+		cmp 	#5,d7
+		beq 	@chunk
+
+        move.w	(a3)+,(a2)
+        add 	#64,a2		;	Take stride into account
+		cmp 	#6,d7
+		beq 	@chunk
+
+		sub 	#7,d7
+loop:
+        move.w	(a3)+,(a2)
+        add 	#64,a2		;	Take stride into account
+@endloop:
+		dbra d7,@loop
+		bra @chunk
+
+			;	Done
+@exit:
+        movem.l   (A7)+,D5-D7/A2-A4
+	}
+}
+
+
+//	-------------------------------------------------------------------
+
+static void UnpackZ32_asm( char *source, struct CodecControlBlock *ccb )
+{
+	register unsigned long *dest = (unsigned long *)ccb->baseAddr;
+	register unsigned short rowbytes = ccb->output_width8;
+
+	asm
+	{
+			;	Save registers
+		movem.l D5-D7/A2-A4,-(A7)
+
+			;	Get parameters
+		movea.l dest,a4				;	a4 == screenBase
+		movea.l source,a3			;	a3 == source data
+		move.w rowbytes,d1			;	d1 == rowbytes
+
+@loop:
+		move.l	(a3)+,d7			;	header
+		beq.s	@exit				;	0x00000000 => end of frame
+
+		movea.l	a4,a2				;	Screen base
+		subq.w #4,d7				;	offsets are +4
+		move.w d7,d0
+		and.w #0x3f,d0
+		add.w d0,a2
+		lsr.w #6,d7
+
+				;	d0 = d7*rowbytes
+		move.w d7,d0
+		mulu d1,d0
+		add.l d0,a2					;	".l" so we can add offsets > 32767
+
+		swap	d7
+
+@loop2:
+        move.l	(a3)+,(a2)			;	Transfer data
+        add 	d1,a2				;	Take stride into account
+		dbra.w	d7,@loop2
+
+        bra.s     @loop
+
+			;	Done
+@exit:
+        movem.l   (A7)+,D5-D7/A2-A4
+	}
+}
+*/
+

@@ -90,10 +90,11 @@ void ScreenFlash( ScreenPtr scrn, short from, short lines );
 //	Prepares for video playback
 //	width of the input (pixels)
 //	height of the input (pixels)
+//	codecs is the sets of codecs used by the flim
 //	Returns TRUE if flim can play, FALSE if flim is not playable
 //	-------------------------------------------------------------------
 
-Boolean ScreenVideoPrepare( ScreenPtr scrn, short width, short height );
+Boolean ScreenVideoPrepare( ScreenPtr scrn, short width, short height, unsigned long codecs );
 
 //	-------------------------------------------------------------------
 //	Uncompress a video frame of data

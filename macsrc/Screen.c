@@ -390,20 +390,12 @@ void ScreenFlash( ScreenPtr scrn, short from, short lines )
 
 extern long *gOffsets;//####hack from codec.c
 
-Boolean ScreenVideoPrepare( ScreenPtr scrn, short width, short height )
+Boolean ScreenVideoPrepare( ScreenPtr scrn, short width, short height, unsigned long codecs )
 {
 	int i;
 	short rowbytes = width/8;
 
 	scrn->ready = FALSE;
-
-	scrn->ccb.source_width = width;
-	scrn->ccb.source_width8 = width/8;
-	scrn->ccb.source_width32 = width/32;
-	scrn->ccb.source_height = height;
-	scrn->ccb.output_width8 = scrn->rowBytes;
-	scrn->ccb.output_width32 = scrn->rowBytes/4;//	####
-
 
 		// to be removed
 
@@ -421,12 +413,28 @@ Boolean ScreenVideoPrepare( ScreenPtr scrn, short width, short height )
 
 	for (i=0;i!=kCodecCount;i++)
 	{
-		scrn->procs[i] = CodecGetProc( i, width, scrn->rowBytes*8, CODEC_TYPE );
+		scrn->procs[i] = CodecGetProc( i, width==scrn->rowBytes*8, CODEC_TYPE );
 		if (!scrn->procs[i])
 			return FALSE;
 	}	
 
-	CreateOffsetTable( &scrn->ccb.offsets32, scrn->baseAddr, scrn->flim_width, scrn->flim_height, scrn->rowBytes*8 );
+	scrn->ccb.source_width = width;
+	scrn->ccb.source_width8 = width/8;
+	scrn->ccb.source_width32 = width/32;
+	scrn->ccb.source_height = height;
+	scrn->ccb.output_width8 = scrn->rowBytes;
+	scrn->ccb.output_width32 = scrn->rowBytes/4;//	####
+	scrn->ccb.baseAddr = scrn->baseAddr;
+	
+		//	We could optimize that and reuse for a play session
+	if (scrn->ccb.offsets32)
+	{
+		DisposPtr( scrn->ccb.offsets32 );
+		scrn->ccb.offsets32 = NULL;
+	}
+		//	Create the offset table if we have different sizes
+	if (scrn->ccb.source_width8!=scrn->ccb.output_width8)
+		CreateOffsetTable( &scrn->ccb.offsets32, scrn->baseAddr, scrn->flim_width, scrn->flim_height, scrn->rowBytes*8 );
 
 	scrn->ready = TRUE;
 

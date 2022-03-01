@@ -214,8 +214,6 @@ int main()
 		sprintf( buffer, "%d", 42 );
 	}
 
-	CodecInit();
-
 		//	Log subsystem
 	dinit_log();
 

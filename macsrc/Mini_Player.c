@@ -44,7 +44,6 @@ int main()
 	InitUtilities();
 	BufferInit( PreferenceGetMaxBufferSize(), reservedSpace );
 	InitCursor();
-	CodecInit();
 
 	HideCursor();
 

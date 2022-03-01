@@ -128,6 +128,7 @@ struct FlimInfo
 	Size frameCount;
 	Size ticks;
 	short byterate;
+	unsigned long codecs;	//	Bitmap of used codecs
 };
 
 struct FlimInfo *FlimGetInfo( FlimPtr flim );
