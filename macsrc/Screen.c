@@ -429,7 +429,7 @@ Boolean ScreenVideoPrepare( ScreenPtr scrn, short width, short height, unsigned 
 		//	We could optimize that and reuse for a play session
 	if (scrn->ccb.offsets32)
 	{
-		DisposPtr( scrn->ccb.offsets32 );
+		MyDisposPtr( scrn->ccb.offsets32 );
 		scrn->ccb.offsets32 = NULL;
 	}
 		//	Create the offset table if we have different sizes

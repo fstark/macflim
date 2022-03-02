@@ -36,9 +36,9 @@ Boolean CreateOffsetTable(
 	int i;
 
 	if (*offsets)
-		DisposPtr( *offsets );
+		MyDisposPtr( *offsets );
 
-	*offsets = (unsigned char **)NewPtr( total_offset_count*sizeof(long) );
+	*offsets = (unsigned char **)MyNewPtr( total_offset_count*sizeof(long) );
 	if (!*offsets)
 		return FALSE;
 

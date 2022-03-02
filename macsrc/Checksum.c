@@ -214,7 +214,7 @@ static Boolean ChecksumFlimPerformDialog( Str255 fName, short vRefNum, long dirI
 	DrawDialog( theProgress );
 
 	//	Allocate late, to reduce memory fragmentation
-	theBuffer = (unsigned short *)NewPtr( BUFFER_SIZE );
+	theBuffer = (unsigned short *)MyNewPtr( BUFFER_SIZE );
 
 	while (1)
 	{
@@ -255,7 +255,7 @@ static Boolean ChecksumFlimPerformDialog( Str255 fName, short vRefNum, long dirI
 done:
 	FSClose( fRefNum );
 
-	if (theBuffer) DisposPtr( theBuffer );
+	if (theBuffer) MyDisposPtr( theBuffer );
 
 	if (theProgress) DisposDialog( theProgress );
 

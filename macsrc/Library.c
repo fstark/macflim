@@ -134,7 +134,7 @@ static void LibraryOffscreenInit()
 	RectRgn( sOffscreen.clipRgn, &r );
 	RectRgn( sOffscreen.visRgn, &r );
 	sOffscreen.portBits.rowBytes = (POLAROID_WIDTH+15)/16*2;
-	sOffscreen.portBits.baseAddr = NewPtr( sOffscreen.portBits.rowBytes*(long)POLAROID_HEIGHT );
+	sOffscreen.portBits.baseAddr = MyNewPtr( sOffscreen.portBits.rowBytes*(long)POLAROID_HEIGHT );
 	assert( sOffscreen.portBits.baseAddr!=NULL, "LibraryOffscreenInit" );
 	EraseRect( &r );
 }
@@ -143,7 +143,7 @@ static void LibraryOffscreenInit()
 static void LibraryOffscreenDispos()
 {
 	ClosePort( &sOffscreen );
-	DisposPtr( sOffscreen.portBits.baseAddr );
+	MyDisposPtr( sOffscreen.portBits.baseAddr );
 }
 
 static Size LibraryGetMemorySize( short count )
@@ -156,7 +156,7 @@ static void UtilRealloc( Ptr *p, Size s )
 	SetPtrSize( *p, s );
 	if (MemError())
 	{
-		Ptr n = NewPtr( s );
+		Ptr n = MyNewPtr( s );
 		if (!n)
 			Abort( "\pOut of memory" );
 		BlockMove( *p, n, GetPtrSize( *p ) );
@@ -320,7 +320,7 @@ LibraryPtr LibraryOpenDefault( void )
 		//	Size in-memory library
 	count = Count1Resources('FLIM');
 
-	lib = (LibraryPtr)NewPtr( LibraryGetMemorySize( count ) );
+	lib = (LibraryPtr)MyNewPtr( LibraryGetMemorySize( count ) );
 	lib->count = count;
 	lib->resFile = resFile;
 
@@ -372,7 +372,7 @@ void LibraryDispos( LibraryPtr lib )
 {
 	DisposeControl( lib->scroll );
 	DisposeWindow( lib->window );
-	DisposPtr( lib );
+	MyDisposPtr( lib );
 }
 
 static void LibraryLoadEntry( LibraryPtr lib, short index )

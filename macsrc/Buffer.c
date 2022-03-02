@@ -55,8 +55,8 @@ void BufferInit( Size maxSize, Size leftBytes )
 		sBufferSize = maxSize;
 
 		//	Allocate
-	sBuffer[0] = NewPtr( sBufferSize );
-	sBuffer[1] = NewPtr( sBufferSize );
+	sBuffer[0] = MyNewPtr( sBufferSize );
+	sBuffer[1] = MyNewPtr( sBufferSize );
 
 	if (sBuffer[0]==NULL || sBuffer[1]==NULL)
 	{
@@ -71,8 +71,8 @@ void BufferInit( Size maxSize, Size leftBytes )
 
 void BufferDispos( void )
 {
-	if (sBuffer[0]) DisposPtr( sBuffer[0] );
-	if (sBuffer[1]) DisposPtr( sBuffer[1] );
+	if (sBuffer[0]) MyDisposPtr( sBuffer[0] );
+	if (sBuffer[1]) MyDisposPtr( sBuffer[1] );
 	sBuffer[0] = sBuffer[1] = NULL;
 	sBufferSize = 0;
 }

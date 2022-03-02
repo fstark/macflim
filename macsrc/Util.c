@@ -120,6 +120,45 @@ void Abort( Str255 s )
 
 //	-------------------------------------------------------------------
 
+struct PtrHeader
+{
+	Size size;
+};
+
+static unsigned long totalAllocated = 0;
+
+Ptr MyNewPtr( Size aSize )
+{
+	struct PtrHeader *p = (struct PtrHeader *)NewPtr( sizeof( struct PtrHeader ) + aSize );
+
+//if (aSize==108)
+//	Debugger();
+
+	p->size = aSize;
+	totalAllocated += aSize;
+
+//printf( "+%lld=%lld ", p->size, totalAllocated );
+//fflush( stdout );
+
+	return (Ptr)(p+1);
+}
+
+//	-------------------------------------------------------------------
+
+void MyDisposPtr( void *aPtr )
+{
+	struct PtrHeader *p = aPtr;
+
+	totalAllocated -= p[-1].size;
+
+//printf( "-%lld=%lld ", p[-1].size, totalAllocated );
+//fflush( stdout );
+
+	DisposPtr( p-1 );
+}
+
+//	-------------------------------------------------------------------
+
 Ptr NewPtrNoFail( Size aSize )
 {
 	Ptr theResult;
@@ -128,7 +167,7 @@ Ptr NewPtrNoFail( Size aSize )
 	printf( "ALLOCATING %ld BYTES\n", aSize );
 #endif
 
-	theResult = NewPtr( aSize );
+	theResult = MyNewPtr( aSize );
 	if (theResult==NULL)
 		Abort( "\pFailed to allocate memory. Maybe you need to increase the memory allocated to MacFlim in the Finder" );
 
@@ -247,7 +286,7 @@ void SaveScreen( Ptr *ptr )
 {
 	Size count = GetScreenSaveSize();
 
-	*ptr = NewPtr( count );
+	*ptr = MyNewPtr( count );
 
 	if (*ptr)
 		BlockMove( screenBits.baseAddr, *ptr, count );
@@ -261,7 +300,7 @@ void RestoreScreen( Ptr *ptr )
 	{
 		long count = ((long)screenBits.rowBytes)*RectHeight(screenBits.bounds);
 		BlockMove( *ptr, screenBits.baseAddr, count );
-		DisposPtr( *ptr );
+		MyDisposPtr( *ptr );
 		*ptr = NULL;
 	}
 	else

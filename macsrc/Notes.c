@@ -15,7 +15,7 @@ A974 : Button
 * Probably crashes when displaying larger flims on smaller screens
 * Add codecs used to flim to be future proof on the removal of a codec
 * Restore playback on 128 (no allocation of offset table is not needed)
-* Wrong width of flims for portable
+* Wrong width of flims for portable (?)
 
 * Manage play commands (at least) abort (Button) from VBL
 * Mouse selection is a bit off (click on right border of polaroid)
@@ -30,10 +30,13 @@ A974 : Button
 * Changing flim types should not remove auto play
 * Empty state for Library	
 
+2.0.3:
+* Memory Leak [XOR ZOOM animation]
+2.0.2:
 * [DONE] Clean up codec code (does not need that many different ways anymore, just "same size/different size and ref/asm")
-2.0.1
+2.0.1:
 * [DONE] Play multiple selection is broken
-2.0.0
+2.0.0:
 * [DONE] Play commands (restart/prev/next/etc) in ApplyPlay
 * [DONE] Remove VBL from preferences
 * [DONE] Adds for type/creator when opening flim files

@@ -24,7 +24,7 @@ static char *dlog_end;
 
 void dinit_log( void )
 {
-	dlog_buffer = (char *)NewPtr( 50000 );
+	dlog_buffer = (char *)MyNewPtr( 50000 );
 	if (dlog_buffer==NULL)
 	{
 		ExitToShell();

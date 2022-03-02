@@ -217,7 +217,8 @@ static void Init( void )
 	int k = 1;
 
 	assert( silence==NULL, "Silence already allocated" );
-	silence = (FFSynthPtr)NewPtr(2+4+370*12);
+	silence = (FFSynthPtr)MyNewPtr(2+4+370*12);
+//	#### Is this still useful?
 	assert( silence!=NULL, "Silence allocation failed" );
 	silence->mode = ffMode;
 	silence->count = FixRatio(1,1);
@@ -246,7 +247,7 @@ static void Resume( void )
 static void Dispos( void )
 {
 	assert( silence!=NULL, "Silence unallocated1" );
-	DisposPtr( (Ptr)silence );
+	MyDisposPtr( silence );
 	silence = NULL;
 }
 

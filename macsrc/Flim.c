@@ -118,7 +118,7 @@ static int FlimReadStream( FlimPtr flim, void *dest, int index )
 static Ptr FlimReadStreamNewPtr( FlimPtr flim, int index )
 {
 	Size s = flim->streams[index].size;
-	Ptr p = NewPtr( s );
+	Ptr p = MyNewPtr( s );
 	assert( p!=NULL, "Not Enough Memory or bad file" );
 	FlimReadStream( flim, p, index );
 	return p;
@@ -164,7 +164,7 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 	FSRead( fRefNum, &read_size, &flim->fletcher16 );
 	if (read_size==0)
 	{	//	Empty file, exit
-		DisposPtr( flim );
+		MyDisposPtr( flim );
 		return NULL;
 	}
 
@@ -173,7 +173,7 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 	{
 		ParamText( "\pError", "\pFile corrupted or wrong version (expected version 1)", "", "" );
 		UtilDialog( kALRTErrorNonFatal );
-		DisposPtr( flim );
+		MyDisposPtr( flim );
 		return NULL;
 	}
 
@@ -182,7 +182,7 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 	{
 		ParamText( "\pError", "\pFile has too many streams (max 10)", "", "" );
 		UtilDialog( kALRTErrorNonFatal );
-		DisposPtr( flim );
+		MyDisposPtr( flim );
 		return NULL;
 	}
 
@@ -196,7 +196,7 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 		{
 			ParamText( "\pError", "\pFile streams are not ordered correctly", "", "" );
 			UtilDialog( kALRTErrorNonFatal );
-			DisposPtr( flim );
+			MyDisposPtr( flim );
 			return NULL;
 		}
 
@@ -263,8 +263,8 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 			{
 				ParamText( "\pError", "\pBuffer size is too small to load this flim. Please change buffer size in Preferences.", "", "" );
 				UtilDialog( kALRTErrorNonFatal );
-				DisposPtr( (Ptr)toc );
-				DisposPtr( flim );
+				MyDisposPtr( (Ptr)toc );
+				MyDisposPtr( flim );
 				return NULL;
 			}
 			flim->accessTable[blockIndex].blockSize = currentSize;
@@ -274,7 +274,7 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 		
 //		flim->maxBlockSize = maxBlockSize;
 
-		DisposPtr( (Ptr)toc );
+		MyDisposPtr( (Ptr)toc );
 	}
 
 	//	Give back the extra memory
@@ -365,11 +365,11 @@ void FlimDispos( FlimPtr flim )
 
 //	printf( "CLOSE: TOTAL OPEN FLIM:%d\n", sTotalOpen );
 	
-	DisposPtr( (Ptr)(flim->accessTable) );
+	MyDisposPtr( (Ptr)(flim->accessTable) );
 	DisposHandle( flim->poster );
 	FSClose( flim->fRefNum );
 
-	DisposPtr( (Ptr)flim );
+	MyDisposPtr( (Ptr)flim );
 	MaxMem( &growBytes );
 }
 
@@ -442,7 +442,7 @@ PicHandle FlimCreatePoster( FlimPtr flim )
 	SetClip( saveClip );
 	DisposeRgn( saveClip );
 
-	DisposPtr( poster );
+	MyDisposPtr( poster );
 	
 	return posterHandle;
 }

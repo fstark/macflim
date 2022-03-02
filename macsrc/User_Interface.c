@@ -557,7 +557,7 @@ static void XorZoom( Rect *fromRectPtr, int ticks, Boolean open )
 
 	GetPort( &savePort );
 
-	directPort = (GrafPtr)NewPtr( sizeof( GrafPort ) );
+	directPort = (GrafPtr)MyNewPtr( sizeof( GrafPort ) );
 	OpenPort( directPort );
 //	visRgn =copy GrayRgn
 //	portRect = GrayRgn->rgnBBox;
@@ -607,6 +607,8 @@ static void XorZoom( Rect *fromRectPtr, int ticks, Boolean open )
 		XorRect( &fromRect, &toRect, 1 );
 
 	ClosePort( directPort );
+
+	MyDisposPtr( directPort );
 
 	SetPort( savePort );
 }
