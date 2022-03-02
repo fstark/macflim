@@ -97,13 +97,14 @@ enum {	kMenuItemAddFlimID = 1,
 //	-------------------------------------------------------------------
 
 #define kPolaroidBadgesID				129
-
-#define kPolaroidSoundBadgeID			136
-#define kPolaroidSilentBadgeID			137	//	Needs to be consecutive
+//	up to 136
 
 #define kPICTGrowZone					138
 
 #define kPICTPolaroidSelfPlayBadge		139
+
+#define kPolaroidSoundBadgeID			140
+#define kPolaroidSilentBadgeID			141	//	Needs to be consecutive
 
 //	-------------------------------------------------------------------
 //	DLOG

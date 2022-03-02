@@ -30,6 +30,9 @@ A974 : Button
 * Changing flim types should not remove auto play
 * Empty state for Library	
 
+2.0.4:
+* Crash when adding flim
+* Proper display for Portable flims
 2.0.3:
 * Memory Leak [XOR ZOOM animation]
 2.0.2:

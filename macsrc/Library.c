@@ -46,27 +46,45 @@ typedef enum
 	kQualityPlus,
 	kQualitySE,
 	kQualitySE30,
-	kQualityPerfect
+	kQualityPortable,
+	kQualityUnknown
 }	eQuality;
 
 static short LibraryEnryFlimGetQualityIndex( struct LibraryEntryFlim *e )
 {
+	Boolean fitsCompact = e->width<=512 && e->height<=342;
+	Boolean fitsPortable = e->width<=640 && e->height<=400;
+	Boolean fitsXL	 = e->width<=704 && e->height<=364;
+
 	if (e->silent)
 	{
-		if (e->byterate<=500)
+			//	Can't be 128, 512 or XL if not silent
+		if (fitsCompact && e->byterate<=500)
 			return kQuality128;	//	#### NEEDS TO CHECK FILE SIZE TOO <400Kb
-		if (e->byterate<=600)
+		if (fitsXL && e->byterate<=600)
 			return kQualityMacXL;
-		if (e->byterate<=480+400)
+		if (fitsCompact && e->byterate<=480+400)
 			return kQuality512;
 	}
-	if (e->byterate<=1500+400)
+
+		//	Plus
+	if (fitsCompact && e->byterate<=1500+400)
 		return kQualityPlus;
+
+		//	Portable and SE differs in size
 	if (e->byterate<=2500+400)
-		return kQualitySE;
-	if (e->byterate<=6000+400)
+		if (fitsPortable)
+			return kQualityPortable;
+		else
+			if (fitsCompact)
+				return kQualitySE;
+
+		//	Se30
+	if (fitsCompact && e->byterate<=6000+400)
 		return kQualitySE30;
-	return kQualityPerfect;
+
+		//	Rest, we don't know
+	return kQualityUnknown;
 }
 
 struct LibraryEntry

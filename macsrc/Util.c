@@ -120,6 +120,9 @@ void Abort( Str255 s )
 
 //	-------------------------------------------------------------------
 
+#define noDBGMEM
+
+#ifdef DBGMEM
 struct PtrHeader
 {
 	Size size;
@@ -156,6 +159,13 @@ void MyDisposPtr( void *aPtr )
 
 	DisposPtr( p-1 );
 }
+
+#else
+
+Ptr MyNewPtr( Size aSize ) { return NewPtr( aSize ); }
+void MyDisposPtr( void *aPtr ) { DisposPtr( aPtr ); }
+
+#endif
 
 //	-------------------------------------------------------------------
 
