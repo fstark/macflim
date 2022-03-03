@@ -12,14 +12,11 @@ TODO:
 
 A974 : Button
 
-* Probably crashes when displaying larger flims on smaller screens
-* Add codecs used to flim to be future proof on the removal of a codec
-* Restore playback on 128 (no allocation of offset table is not needed)
+* Re-factor the whole error management and user display
+* Add codecs used to flim to be future proof on the removal of a codec (player done, needs encoder)
 * Wrong width of flims for portable (?)
-
 * Manage play commands (at least) abort (Button) from VBL
 * Mouse selection is a bit off (click on right border of polaroid)
-* Check all resource IDs in Resources.h
 * Don't add duplicate
 * Do not show flim already in the Library in SFPGetFile
 * Sort flims
@@ -30,13 +27,21 @@ A974 : Button
 * Changing flim types should not remove auto play
 * Empty state for Library	
 
+2.0.5:
+* [DONE] SE Flims are mis-labelled as PORTABLE
+* [DONE] Lines codec on same screen size is buggy
+* [DONE] Fixed crash on playback due to resource moving
+* [DONE] Don't display large flims on small screens
+* [DONE] Fixed infinite loop
+* [DONE] Reordered DLOG resources
 2.0.4:
-* Crash when adding flim
-* Proper display for Portable flims
+* [DONE] Crash when adding flim
+* [DONE] Proper display for Portable flims
 2.0.3:
-* Memory Leak [XOR ZOOM animation]
+* [DONE] Memory Leak [XOR ZOOM animation]
 2.0.2:
 * [DONE] Clean up codec code (does not need that many different ways anymore, just "same size/different size and ref/asm")
+* [DONE] Restore playback on 128 (no allocation of offset table is not needed)
 2.0.1:
 * [DONE] Play multiple selection is broken
 2.0.0:

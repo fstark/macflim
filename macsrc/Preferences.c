@@ -90,7 +90,7 @@ void PreferenceLoad( void )
 		return ;
 	}
 
-	sPrefHdl = Get1Resource( 'PREF', kPreferenceID );
+	sPrefHdl = Get1Resource( 'PREF', kPREFResourceID );
 
 	//	File does not contain the right resource, we'll do everything from memory
 	if (!sPrefHdl)
@@ -195,7 +195,7 @@ void PreferenceInit( void )
 		if (sRefNum!=-1)
 		{
 			PreferenceDefaultInMemory();
-			AddResource( sPrefHdl, 'PREF', kPreferenceID, "\pPreferences" );
+			AddResource( sPrefHdl, 'PREF', kPREFResourceID, "\pPreferences" );
 			PreferenceSave();
 		}
 	}
@@ -327,7 +327,7 @@ void PreferenceDialog( void )
 	Ptr savePtr = NULL;
 
 		//	Getthe dialog and fill it
-	preferences = GetNewDialog( kDialogPreferenceID, NULL, (WindowPtr)-1 );
+	preferences = GetNewDialog( kDLOGPreferenceID, NULL, (WindowPtr)-1 );
 	GetDItem( preferences, kPreferenceShowAll, &iType, &iCheckShowAll, &iRect );
 	SetCtlValue( iCheckShowAll, PreferenceGetShowAll() );
 	GetDItem( preferences, kPreferenceSetTypeCreator, &iType, &iCheckSetTypeCreator, &iRect );

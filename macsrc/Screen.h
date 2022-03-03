@@ -87,14 +87,21 @@ void ScreenClear( ScreenPtr scrn );
 void ScreenFlash( ScreenPtr scrn, short from, short lines );
 
 //	-------------------------------------------------------------------
+//	Returns TRUE if screen is usable for playback
+//	-------------------------------------------------------------------
+
+Boolean ScreenVideoPlayable( ScreenPtr scrn, short width, short height );
+
+//	-------------------------------------------------------------------
 //	Prepares for video playback
 //	width of the input (pixels)
 //	height of the input (pixels)
 //	codecs is the sets of codecs used by the flim
+//	#### name is only passed to be displayed in errors. Errors should not be displayed this deep. Pascal string
 //	Returns TRUE if flim can play, FALSE if flim is not playable
 //	-------------------------------------------------------------------
 
-Boolean ScreenVideoPrepare( ScreenPtr scrn, short width, short height, unsigned long codecs );
+Boolean ScreenVideoPrepare( ScreenPtr scrn, short width, short height, unsigned long codecs, const char *name );
 
 //	-------------------------------------------------------------------
 //	Uncompress a video frame of data

@@ -287,7 +287,7 @@ static void Invert_all_ref( char *source, struct CodecControlBlock *ccb )
 
 static void CopyLines_same_ref( char *source, struct CodecControlBlock *ccb )
 {
-	register unsigned long *dest = (unsigned long *)ccb->baseAddr;
+	register unsigned char *dest = (unsigned char *)ccb->baseAddr;
 
 	short len = ((short*)source)[0];
 	short offset = ((short*)source)[1];

@@ -156,7 +156,7 @@ static Boolean SetFlimTypeCreatorIfNeeded( Str255 fName, short vRefNum, long dir
 	}
 
 	ParamText( fName, "", "", "" );
-	theSetTypeDialog = GetNewDialog( kDialogSetTypeID, NULL, (WindowPtr)-1 );
+	theSetTypeDialog = GetNewDialog( kDLOGSetTypeID, NULL, (WindowPtr)-1 );
 	ShowWindow( theSetTypeDialog );
 	ModalDialog( NULL, &itemHit );
 	DisposDialog( theSetTypeDialog );	
@@ -397,7 +397,7 @@ static Boolean UserInterfaceSFGetFlim( Boolean option, Str255 fName, short *vRef
 
 void UserInterfaceInit()
 {
-	gMenuBar = GetNewMBar( kMenuBarID );
+	gMenuBar = GetNewMBar( kMENUBarID );
 
 	if (!gMenuBar)
 	{
@@ -406,9 +406,9 @@ void UserInterfaceInit()
 
 	SetMenuBar( gMenuBar );
 
-	gAppleMenu = GetMHandle( kMenuAppleID );
-	gFileMenu = GetMHandle( kMenuFileID );
-	gLibraryMenu = GetMHandle( kMENULibrary );
+	gAppleMenu = GetMHandle( kMENUAppleID );
+	gFileMenu = GetMHandle( kMENUFileID );
+	gLibraryMenu = GetMHandle( kMENULibraryID );
 
 	AddResMenu( gAppleMenu, 'DRVR' );
 
@@ -419,8 +419,8 @@ static void DoAboutMenuItem( Boolean option )
 {
 	short itemHit;
 
-	DialogPtr theDialog = GetNewDialog( kDLOGAbout, NULL, (WindowPtr)-1 );
-	CheckPtr( theDialog, "kDLOGAbout" );
+	DialogPtr theDialog = GetNewDialog( kDLOGAboutID, NULL, (WindowPtr)-1 );
+	CheckPtr( theDialog, "kDLOGAboutID" );
 
 	ParamText( VERSION_STRING, "", "", "" );
 	UtilPlaceWindow( theDialog, 0.2 );
@@ -435,7 +435,7 @@ static void DoAboutMenuItem( Boolean option )
 		NumToString( MachineGetBogoMips(), bogoStr );
 		ParamText( bogoStr, "", "", "" );
 
-		theDialog = GetNewDialog( kDLOGThx, NULL, (WindowPtr)-1 );
+		theDialog = GetNewDialog( kDLOGThxID, NULL, (WindowPtr)-1 );
 		CheckPtr( theDialog, "kDLOGThx" );
 		UtilPlaceWindow( theDialog, 0.2 );
 		ShowWindow( theDialog );
@@ -446,7 +446,7 @@ static void DoAboutMenuItem( Boolean option )
 
 static void UserInterfaceDoAppleMenu( short aMenuItem, Boolean option )
 {
-	if (aMenuItem==kMenuItemAboutID)
+	if (aMenuItem==kMENUItemAboutID)
 		DoAboutMenuItem( option );
 	else
 	{	
@@ -492,7 +492,7 @@ static void UserInterfaceDoFileMenu( short aMenuItem, Boolean thefOption )
 		case kMENUItemPreferences:
 			PreferenceDialog();
 			break;
-		case kMenuItemQuitID:
+		case kMENUItemQuitID:
 			sFinished = TRUE;
 			break;
 	}
@@ -632,8 +632,9 @@ static eIterateChoice ApplyPlay( LibraryPtr lib, int index, Str255 fName, short 
 	eIterateChoice result = kNext;
 	Rect fromRect;
 
+		//	We failed to open, we abort
 	if (!flim)
-		return result;
+		return kStop;
 
 	if (!sZoomed)
 	{
@@ -646,12 +647,18 @@ static eIterateChoice ApplyPlay( LibraryPtr lib, int index, Str255 fName, short 
 	{
 		case kScreenError:
 			ShowCursor();
-			Alert( kALRTErrorNoBWScreen, NULL );
+			Alert( kALRTErrorNoBWScreenID, NULL );
 			HideCursor();
 			//	fall through
 		case kError:
 		case kFileError:		//	#### We should display proper error
+		{
+//			Str32 name;
+//			ErrorFlim( "\pCannot play flim", "\pFile error", FlimGetName( flim, name ) );
+		}
 		case kCodecError:
+//			Error( "\pCannot play flim", "\pScreen too small" );
+//			break;
 		case kAbort:
 			result = kStop;
 			break;
@@ -797,7 +804,7 @@ static void UserInterfaceAutoPlaySelected( LibraryPtr lib )
 	
 	NumToString( LibraryGetSelectionCount( lib ), selectedCount );
 	ParamText( selectedCount, "", "", "" );
-	NoteAlert( kALRTConfirmAutoplay, NULL );
+	NoteAlert( kALRTConfirmAutoplayID, NULL );
 	LibraryAutostartSelectedFlims( lib );
 }
 
@@ -805,25 +812,25 @@ static void UserInterfaceEnableDisableMenus()
 {
 	if (!LibraryIsSelectionEmpty( sLibrary ))
 	{
-		EnableItem( gLibraryMenu, kMENUItemPlay );
-		EnableItem( gLibraryMenu, kMENUItemRemove );
-		EnableItem( gLibraryMenu, kMENUItemCheckIntegrity );
-		EnableItem( gLibraryMenu, kMENUItemAutostart );
+		EnableItem( gLibraryMenu, kMENUItemPlayID );
+		EnableItem( gLibraryMenu, kMENUItemRemoveID );
+		EnableItem( gLibraryMenu, kMENUItemCheckIntegrityID );
+		EnableItem( gLibraryMenu, kMENUItemAutostartID );
 	}
 	else
 	{
-		DisableItem( gLibraryMenu, kMENUItemPlay );
-		DisableItem( gLibraryMenu, kMENUItemRemove );
-		DisableItem( gLibraryMenu, kMENUItemCheckIntegrity );
-		DisableItem( gLibraryMenu, kMENUItemAutostart );
+		DisableItem( gLibraryMenu, kMENUItemPlayID );
+		DisableItem( gLibraryMenu, kMENUItemRemoveID );
+		DisableItem( gLibraryMenu, kMENUItemCheckIntegrityID );
+		DisableItem( gLibraryMenu, kMENUItemAutostartID );
 	}
 
 		//	Special case 'play all flims'
 	if (LibraryIsSelectionEmpty( sLibrary ) && LibraryGetCount( sLibrary )>0)
-		EnableItem( gLibraryMenu, kMENUItemPlay );
+		EnableItem( gLibraryMenu, kMENUItemPlayID );
 
-	CheckItem( gLibraryMenu, kMENUItemLoopCheck, PreferenceGetLoop() );
-	CheckItem( gLibraryMenu, kMENUItemSilentCheck, PreferenceGetIsPlaybackVBL() );
+	CheckItem( gLibraryMenu, kMENUItemLoopCheckID, PreferenceGetLoop() );
+	CheckItem( gLibraryMenu, kMENUItemSilentCheckID, PreferenceGetIsPlaybackVBL() );
 }
 
 
@@ -831,7 +838,7 @@ static void UserInterfaceDoLibraryMenu( short item, Boolean option )
 {
 	switch (item)
 	{
-		case kMenuItemAddFlimID:
+		case kMENUItemAddFlimID:
 		{
 			Str255 fName;
 			short vRefNum;
@@ -871,23 +878,23 @@ static void UserInterfaceDoLibraryMenu( short item, Boolean option )
 			break;
 		}
 
-		case kMENUItemPlay:
+		case kMENUItemPlayID:
 			UserInterfacePlaySelected( sLibrary );
 			break;
-		case kMENUItemRemove:
+		case kMENUItemRemoveID:
 			UserInterfaceRemoveSelected( sLibrary );
 			break;
-		case kMENUItemCheckIntegrity:
+		case kMENUItemCheckIntegrityID:
 			UserInterfaceIterateSelection( sLibrary, ApplyCheckIntegrity, FALSE );
 			break;
-		case kMENUItemAutostart:
+		case kMENUItemAutostartID:
 			UserInterfaceAutoPlaySelected( sLibrary );
 			break;
-		case kMENUItemLoopCheck:
+		case kMENUItemLoopCheckID:
 			PreferenceSetLoop( !PreferenceGetLoop() );
 			PreferenceSave();
 			break;
-		case kMENUItemSilentCheck:
+		case kMENUItemSilentCheckID:
 			PreferenceSetIsPlaybackVBL( !PreferenceGetIsPlaybackVBL() );
 			PreferenceSave();
 			break;
@@ -898,16 +905,16 @@ static void UserInterfaceDoCommand( short aMenu, short aMenuItem, Boolean option
 {
 	switch (aMenu)
 	{
-		case kMenuAppleID:
+		case kMENUAppleID:
 			UserInterfaceDoAppleMenu( aMenuItem, option );
 			break;
-		case kMenuFileID:
+		case kMENUFileID:
 			UserInterfaceDoFileMenu( aMenuItem, option );
 			break;
-		case kMenuEditID:
+		case kMENUEditID:
 			UserInterfaceDoEditMenu( aMenuItem, option );
 			break;
-		case kMENULibrary:
+		case kMENULibraryID:
 			UserInterfaceDoLibraryMenu( aMenuItem, option );
 			break;
 	}
@@ -1028,11 +1035,11 @@ static void UserInterfaceDoMenuBar( Point aPoint, Boolean thefOption )
 
 	if (LibraryIsSelectionEmpty( sLibrary ) && LibraryGetCount( sLibrary)>0)
 	{
-		SetItem( gLibraryMenu, kMENUItemPlay, "\pPlay All Flims" );	//	#### Localization
+		SetItem( gLibraryMenu, kMENUItemPlayID, "\pPlay All Flims" );	//	#### Localization
 	}
 	else
 	{
-		SetItem( gLibraryMenu, kMENUItemPlay, "\pPlay Selected Flims" );	//	#### Localization
+		SetItem( gLibraryMenu, kMENUItemPlayID, "\pPlay Selected Flims" );	//	#### Localization
 	}
 
 	UserInterfaceEnableDisableMenus();

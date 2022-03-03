@@ -2,15 +2,12 @@
 #include "Tips.h"
 #include "Preferences.h"
 #include "Util.h"
+#include "Resources.h"
 
 #include <Dialogs.h>
 #include <ToolUtils.h>
 
 DialogPtr gTipsDialog;
-#define kTipsDlogID 	141
-#define kNextTipItemID		1
-#define kTipItemID			2
-#define kShowTipItemID			3
 
 static void DisplayNextTip()
 {
@@ -79,7 +76,7 @@ void ToggleTips()
 		Handle theItem;
 		Rect theRect;
 
-		gTipsDialog = GetNewDialog( kTipsDlogID, NULL, (WindowPtr)-1 );
+		gTipsDialog = GetNewDialog( kDLOGTipsID, NULL, (WindowPtr)-1 );
 
 		assert( !!gTipsDialog, "Tips dialog not found" );
 

@@ -6,7 +6,7 @@
 #include "Resources.h"
 #include "Flim.h"
 #include "buffer.h"
-#include "buffer.h"
+#include "Errors.h"
 #include "Self Player.h"
 
 #include <stdio.h>
@@ -73,11 +73,11 @@ static short LibraryEnryFlimGetQualityIndex( struct LibraryEntryFlim *e )
 
 		//	Portable and SE differs in size
 	if (e->byterate<=2500+400)
-		if (fitsPortable)
-			return kQualityPortable;
+		if (fitsCompact)
+			return kQualitySE;
 		else
-			if (fitsCompact)
-				return kQualitySE;
+			if (fitsPortable)
+				return kQualityPortable;
 
 		//	Se30
 	if (fitsCompact && e->byterate<=6000+400)
@@ -171,13 +171,13 @@ static Size LibraryGetMemorySize( short count )
 
 static void UtilRealloc( Ptr *p, Size s )
 {
-	SetPtrSize( *p, s );
+	MySetPtrSize( *p, s );
 	if (MemError())
 	{
 		Ptr n = MyNewPtr( s );
 		if (!n)
 			Abort( "\pOut of memory" );
-		BlockMove( *p, n, GetPtrSize( *p ) );
+		BlockMove( *p, n, MyGetPtrSize( *p ) );
 		*p = n;
 	}
 }
@@ -367,7 +367,7 @@ LibraryPtr LibraryOpenDefault( void )
 	lib->offsetHeight = 0;
 	LibrarySetColumnCount( lib, LIBRARY_COLUMNS );
 
-	lib->window = GetNewWindow( kWindowLibraryID, NULL, (WindowPtr)-1 );
+	lib->window = GetNewWindow( kWINDLibraryID, NULL, (WindowPtr)-1 );
 	
 	SizeWindow( lib->window, lib->contentWidth, lib->visibleHeight, FALSE );
 	UtilPlaceWindow( lib->window, 0.5 );
@@ -403,12 +403,22 @@ static void LibraryLoadEntry( LibraryPtr lib, short index )
 		e->flim = GetResource( 'FLIM', e->resID );
 		assert( e->flim!=NULL, "no such flim" );
 	}
+
+	HLock( e->flim );
 	
 	if (e->pict==NULL)
 	{
 		e->pict = GetResource( 'PICT', e->resID );
 		assert( e->pict!=NULL, "no picture" );
 	}
+}
+
+static void LibraryUnloadEntry( LibraryPtr lib, short index )
+{
+	struct LibraryEntry *e = lib->entries+index;
+
+	if (e->flim!=NULL)
+		HUnlock( e->flim );
 }
 
 static void LibraryGetName( LibraryPtr lib, Str255 name, short index )
@@ -420,6 +430,8 @@ static void LibraryGetName( LibraryPtr lib, Str255 name, short index )
 	lef = (struct LibraryEntryFlim *)*(lib->entries[index].flim);
 	
 	StrCpyPP( name, (void*)lef->name );
+	
+	LibraryUnloadEntry( lib, index );
 }
 
 static void LibraryGetFlimName( LibraryPtr lib, Str255 name, short index )
@@ -431,11 +443,14 @@ static void LibraryGetFlimName( LibraryPtr lib, Str255 name, short index )
 	lef = (struct LibraryEntryFlim *)*(lib->entries[index].flim);
 
 	StrCpyPP( name, (void*)lef->fName );
+
+	LibraryUnloadEntry( lib, index );
 }
 
 static Handle LibraryGetPICT( LibraryPtr lib, short index )
 {
 	LibraryLoadEntry( lib, index );
+	LibraryUnloadEntry( lib, index );
 	return lib->entries[index].pict;
 }
 
@@ -563,7 +578,7 @@ static void LibraryPolaroidRender( LibraryPtr lib, struct LibraryEntry *entry )
 		DrawString( buffer );
 		
 		//	Sound badge
-		badge = GetPicture( kPolaroidSoundBadgeID+(*lef)->silent );
+		badge = GetPicture( kPICTPolaroidSoundBadgeID+(*lef)->silent );
 		assert( badge!=NULL, "GetPicture sound badge" );
 		badgeRect = (*badge)->picFrame;
 		OffsetRect( &badgeRect, -badgeRect.left, -badgeRect.top );
@@ -571,7 +586,7 @@ static void LibraryPolaroidRender( LibraryPtr lib, struct LibraryEntry *entry )
 		DrawPicture( badge, &badgeRect );
 
 		//	Quality Badge
-		badge = GetPicture( kPolaroidBadgesID+LibraryEnryFlimGetQualityIndex( *lef ) );
+		badge = GetPicture( kPICTPolaroidBadgesID+LibraryEnryFlimGetQualityIndex( *lef ) );
 		assert( badge!=NULL, "GetPicture badge" );
 		badgeRect = (*badge)->picFrame;
 		OffsetRect( &badgeRect, -badgeRect.left, -badgeRect.top );
@@ -590,6 +605,7 @@ static void LibraryPolaroidRender( LibraryPtr lib, struct LibraryEntry *entry )
 			DrawPicture( badge, &badgeRect );
 		}
 */
+		LibraryUnloadEntry( lib, entry-lib->entries );
 	}
 	
 	SetPort( savePort );
@@ -829,6 +845,7 @@ static Boolean LibraryRemoveFlim( LibraryPtr lib, int index )
 	int i;
 
 	LibraryLoadEntry( lib, index );
+	LibraryUnloadEntry( lib, index );
 
 	entry = lib->entries+index;
 
@@ -841,6 +858,7 @@ static Boolean LibraryRemoveFlim( LibraryPtr lib, int index )
 		lib->entries[i] = lib->entries[i+1];
 
 	lib->count--;
+	LibraryUnloadEntry( lib, index );
 
 	return TRUE;
 }
@@ -873,6 +891,7 @@ void LibraryAutostartSelectedFlims( LibraryPtr lib )
 		{
 			struct LibraryEntryFlim *lef = GetLEF( lib, i );
 			SelfInstallPlayer( (void *)lef->name, lef->vRefNum, lef->dirID );
+			LibraryUnloadEntry( lib, i );
 		}
 }
 
@@ -986,25 +1005,21 @@ FlimPtr LibraryOpenFlim( LibraryPtr lib, int index )
 {
 	FlimPtr flim;
 	struct LibraryEntryFlim *lef = GetLEF( lib, index );
+	Str255 name;
+
+//xxx this is wrong, because lef is not HLocked
 
 	//	#### if volumes have been re-ordered, this may be slow and even do floppy access...
 	//	We could get the vRefNum back from the flim and update the library
 	flim = FlimOpenByNameAnyVolumes( (void*)lef->fName, lef->vRefNum, lef->dirID, kHFS );
 	if (!flim)
 	{
-		Str255 errStr;
-		Str255 vRefNumStr;
-		Str255 dirIDStr;
-		
-		NumToString( FlimError(), errStr );
-		NumToString( lef->vRefNum, vRefNumStr );
-		NumToString( lef->dirID, dirIDStr );
-		
-		ParamText( lef->fName, errStr, vRefNumStr, dirIDStr );
-		
-		UtilDialog( kDLOGOpenFlimError );
+		ErrorCannotOpenFlimFile( FlimError(), lef->fName, lef->vRefNum, lef->dirID );
+		LibraryUnloadEntry( lib, index );
 		return NULL;
 	}
+	
+	LibraryUnloadEntry( lib, index );
 	return flim;
 }
 
@@ -1161,4 +1176,5 @@ void LibraryGet( LibraryPtr lib, int index, Str255 fName, short *vRefNum, long *
 	StrCpyPP( fName, (void*)lef->fName );
 	*vRefNum = lef->vRefNum;
 	*dirID = lef->dirID;
+	LibraryUnloadEntry( lib, index );
 }

@@ -160,10 +160,28 @@ void MyDisposPtr( void *aPtr )
 	DisposPtr( p-1 );
 }
 
+//	-------------------------------------------------------------------
+
+Size MyGetPtrSize( void *aPtr )
+{
+	struct PtrHeader *p = aPtr;
+	return GetPtrSize( p-1 ) - sizeof( struct PtrHeader );
+}
+
+//	-------------------------------------------------------------------
+
+void MySetPtrSize( void *aPtr, Size aSize )
+{
+	struct PtrHeader *p = aPtr;
+	SetPtrSize( p-1, sizeof( struct PtrHeader ) + aSize );
+}
+
 #else
 
 Ptr MyNewPtr( Size aSize ) { return NewPtr( aSize ); }
 void MyDisposPtr( void *aPtr ) { DisposPtr( aPtr ); }
+Size MyGetPtrSize( void *aPtr ) { return GetPtrSize( aPtr ); }
+void MySetPtrSize( void *aPtr, Size aSize ) { SetPtrSize( aPtr, aSize ); }
 
 #endif
 
@@ -221,7 +239,7 @@ void Error( Str255 s, short err )
 	
 	NumToString( err, errStr );
 	ParamText( s, errStr, "", "" );
-	UtilDialog( kALRTErrorNonFatal );
+	UtilDialog( kDLOGErrorNonFatal );
 }
 
 void CheckPtr( void *p, const char *msg )

@@ -79,6 +79,8 @@ struct FlimRec
 	struct AccessItem *accessTable;
 	
 	PicHandle poster;
+	
+	Str32 name;
 };
 
 //	-------------------------------------------------------------------
@@ -136,12 +138,13 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 	if (maxBlockSize<=0)
 	{
 		ParamText( "\pError", "\pBuffer size are too small to play flims. Please correct in preferences.", "", "" );
-		UtilDialog( kALRTErrorNonFatal );
+		UtilDialog( kDLOGErrorNonFatal );
 		return NULL;
 	}
 
 	flim->fRefNum = fRefNum;
 	flim->blockSize = maxBlockSize;
+	flim->name[0] = 0;
 
 /*	flim->fletcher16 = -1;
 	flim->version = -1;
@@ -172,7 +175,7 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 	if (flim->version!=1)
 	{
 		ParamText( "\pError", "\pFile corrupted or wrong version (expected version 1)", "", "" );
-		UtilDialog( kALRTErrorNonFatal );
+		UtilDialog( kDLOGErrorNonFatal );
 		MyDisposPtr( flim );
 		return NULL;
 	}
@@ -181,7 +184,7 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 	if (flim->streamCount>MAX_STREAMS)
 	{
 		ParamText( "\pError", "\pFile has too many streams (max 10)", "", "" );
-		UtilDialog( kALRTErrorNonFatal );
+		UtilDialog( kDLOGErrorNonFatal );
 		MyDisposPtr( flim );
 		return NULL;
 	}
@@ -195,7 +198,7 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 		if (flim->streams[i].type!=i)
 		{
 			ParamText( "\pError", "\pFile streams are not ordered correctly", "", "" );
-			UtilDialog( kALRTErrorNonFatal );
+			UtilDialog( kDLOGErrorNonFatal );
 			MyDisposPtr( flim );
 			return NULL;
 		}
@@ -238,7 +241,7 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 				blockIndex++;
 				if (blockIndex==maxAccessEntries)
 				{
-					SetPtrSize( flim->accessTable, sizeof(struct AccessItem)*(maxAccessEntries+1024) );
+					MySetPtrSize( flim->accessTable, sizeof(struct AccessItem)*(maxAccessEntries+1024) );
 					if (MemError())
 						Abort( "\pNot enough access entries to load TOC" );
 					maxAccessEntries += 1024;
@@ -262,7 +265,7 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 			if (currentSize>flim->blockSize)
 			{
 				ParamText( "\pError", "\pBuffer size is too small to load this flim. Please change buffer size in Preferences.", "", "" );
-				UtilDialog( kALRTErrorNonFatal );
+				UtilDialog( kDLOGErrorNonFatal );
 				MyDisposPtr( (Ptr)toc );
 				MyDisposPtr( flim );
 				return NULL;
@@ -278,7 +281,7 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 	}
 
 	//	Give back the extra memory
-	SetPtrSize( flim->accessTable, flim->blockCount*sizeof(struct AccessItem) );
+	MySetPtrSize( flim->accessTable, flim->blockCount*sizeof(struct AccessItem) );
 
 	flim->poster = NULL;
 
@@ -304,6 +307,8 @@ FlimPtr FlimOpenByName( Str255 fName, short vRefNum, long dirID, eFileAPI api )
 		//	Open flim (MFS/HFS fashion)
 	OSErr err;
 	short fRefNum;
+
+	FlimPtr flim = NULL;
 
 	if (api==kMFS)
 	{		//	MFS
@@ -352,7 +357,14 @@ FlimPtr FlimOpenByName( Str255 fName, short vRefNum, long dirID, eFileAPI api )
 
 //	printf( "OPEN:  TOTAL OPEN FLIM:%d\n", sTotalOpen );
 
-	return FlimOpen( fRefNum, maxBlockSize );
+	flim = FlimOpen( fRefNum, maxBlockSize );
+#ifndef MINI_PLAYER
+	StrCpyPP( flim->name, fName );
+#else
+	flim->name[0] = 0;
+#endif
+
+	return flim;
 }
 
 //	-------------------------------------------------------------------
@@ -458,6 +470,13 @@ PicHandle FlimGetPoster( FlimPtr flim )
 
 //	-------------------------------------------------------------------
 
+const char *FlimGetName( FlimPtr flim )
+{
+	return (const char *)flim->name;
+}
+
+//	-------------------------------------------------------------------
+
 FlimPtr FlimOpenByNameAnyVolumes( Str255 fName, short vRefNum, long dirID, eFileAPI api )
 {
 	FlimPtr flim = NULL;
@@ -487,6 +506,10 @@ FlimPtr FlimOpenByNameAnyVolumes( Str255 fName, short vRefNum, long dirID, eFile
 	}
 	return flim;
 }
+
+#else
+
+const char *FlimGetName( FlimPtr flim ) { return ""; }
 
 #endif
 

@@ -169,7 +169,7 @@ int main()
 //	It is part of the "Pascal Toolbox interface" (OSIntf)
 //		(TODO: find old mac dev env. compile MaxApplZone. disass)
 //	It doesn't look to be in 64K ROM
-//	It is in the å128K ROM
+//	It is in the 128K ROM
 //	Its trap# is A063
 //	However, A063 is something else in old trap lists (_InitUtil in MDS1.1)
 
@@ -227,7 +227,7 @@ int main()
 
 	if (!MachineIsBlackAndWhite())
 	{
-		Alert( kALRTErrorNoBWScreen, NULL );
+		Alert( kALRTErrorNoBWScreenID, NULL );
 		return 0;
 	}
 

@@ -119,6 +119,12 @@ PicHandle FlimCreatePoster( FlimPtr flim );
 
 PicHandle FlimGetPoster( FlimPtr flim );
 
+//	-------------------------------------------------------------------
+//	Returns the flim name
+//	-------------------------------------------------------------------
+
+const char *FlimGetName( FlimPtr flim );
+
 struct FlimInfo
 {
 	short width;	//	yet unused in playback

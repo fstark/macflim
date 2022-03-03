@@ -5,109 +5,110 @@
 //	Windows
 //	-------------------------------------------------------------------
 
-#define kWindowLibraryID				128
+#define kWINDLibraryID					128
 
 //	-------------------------------------------------------------------
 //	Menus
 //	-------------------------------------------------------------------
 
-#define kMenuBarID	0
+#define kMENUBarID						0
 
-#define kMenuAppleID					128
-enum {	kMenuItemAboutID = 1 };
+#define kMENUAppleID					128
+enum {	kMENUItemAboutID = 1 };
 
-#define	kMenuFileID						129
+#define	kMENUFileID						129
 enum {	kMENUItemShowTips = 1,
 		kskip00,
 		kMENUItemPreferences,
 		kskip01,
-		kMenuItemQuitID };
+		kMENUItemQuitID };
 
-#define kMenuEditID						130
+#define kMENUEditID						130
 enum {	kMENUItemSelectAll = 7 };
 
-#define kMENULibrary					131
-enum {	kMenuItemAddFlimID = 1,
+#define kMENULibraryID					131
+enum {	kMENUItemAddFlimID = 1,
 		kSkip20,
-		kMENUItemPlay,
-		kMENUItemRemove,
-		kMENUItemCheckIntegrity,
-		kMENUItemAutostart,
+		kMENUItemPlayID,
+		kMENUItemRemoveID,
+		kMENUItemCheckIntegrityID,
+		kMENUItemAutostartID,
 		kSkip21,
-		kMENUItemLoopCheck,
-		kMENUItemSilentCheck };
+		kMENUItemLoopCheckID,
+		kMENUItemSilentCheckID };
 
 
 //	-------------------------------------------------------------------
 //	Preferences
 //	-------------------------------------------------------------------
 
-#define kPreferenceID					128
+#define kPREFResourceID					128
 
 //	-------------------------------------------------------------------
 //	ALRT
 //	-------------------------------------------------------------------
 
-#define kALRTErrorNonFatal				140
-#define kALRTErrorNoBWScreen			142		//	No BW screen present
+#define kALRTCorruptedID				200
+#define kALRTConfirmAutoplayID			201
+#define kALRTErrorNoBWScreenID			202		//	No BW screen present
 
 //	-------------------------------------------------------------------
-//	Dialogs
+//	DLOGs
 //	-------------------------------------------------------------------
 
-#define kDialogHelpID 					128
+#define kDLOGScreenTooSmallErrorID		128
 
-#define kDLOGCheckProgress 				129
+#define kDLOGCheckProgressID			129
 	#define kProgressItem 				1
 
-#define kDialogSetTypeID				130
+#define kDLOGSetTypeID					130
 	#define kSetTypeButtonOk			1
 
-#define kDialogCheckIntegrityID			131
+#define kDLOGCheckIntegrityID			131
 	#define kCheckIntegrityButtonOk		2
 
-#define kDLOGAbout 						134
-#define kDLOGThx 						132
+#define kDLOGThxID 						132
 
-#define kDialogPreferenceID 			135
+#define kDLOGNoChecksumID				133
+
+#define kDLOGAboutID					134
+
+#define kDLOGPreferenceID 				135
 	#define kPreferenceButtonOk			1
 	#define kPreferenceShowAll			2
 	#define kPreferenceSetTypeCreator	3
 	#define kPreferenceMaxBufferSize	4
 
-#define kDLOGFatal						136
+#define kDLOGFatalID					136		//	Not used, for reference
 
-#define kDLOGOpenFlimError	 			137
+#define kDLOGOpenFlimErrorID 			137
+
+#define kDLOGErrorNonFatal				140
+
+#define kDLOGTipsID 					141
+	#define kNextTipItemID				1
+	#define kTipItemID					2
+	#define kShowTipItemID				3
 
 #define kDLOGPreferencesRestart			143
 #define kDLOGProgress					144
 
 //	-------------------------------------------------------------------
-//	Alerts
+//	PICTs
 //	-------------------------------------------------------------------
 
-#define kAlertNoChecksumID				133
-
-#define kAlertCorruptedID				131
-
-#define kALRTConfirmAutoplay			139
-
-//	-------------------------------------------------------------------
-//	PICT
-//	-------------------------------------------------------------------
-
-#define kPolaroidBadgesID				129
+#define kPICTPolaroidBadgesID			129
 //	up to 136
 
 #define kPICTGrowZone					138
 
 #define kPICTPolaroidSelfPlayBadge		139
 
-#define kPolaroidSoundBadgeID			140
-#define kPolaroidSilentBadgeID			141	//	Needs to be consecutive
+#define kPICTPolaroidSoundBadgeID			140
+#define kPICTPolaroidSilentBadgeID			141	//	Needs to be consecutive
 
 //	-------------------------------------------------------------------
-//	DLOG
+//	SF DLOGs
 //	-------------------------------------------------------------------
 
 #define kSFAddFolderDialogID				2001

@@ -207,7 +207,7 @@ static Boolean ChecksumFlimPerformDialog( Str255 fName, short vRefNum, long dirI
 
 	ParamText( fName, "", "", "" );
 
-	theProgress = GetNewDialog( kDLOGCheckProgress, NULL, (WindowPtr)-1 );
+	theProgress = GetNewDialog( kDLOGCheckProgressID, NULL, (WindowPtr)-1 );
 	GetDItem( theProgress, kProgressItem, &dummy0, &thePercentText, &dummy1 );
 	SetIText( thePercentText, "" );
 	ShowWindow( theProgress );
@@ -265,14 +265,14 @@ done:
 		{
 			ShowCursor();
 			ParamText( "\pFlim have no checksum", "", "", "" );
-			UtilDialog( kAlertNoChecksumID );
+			UtilDialog( kDLOGNoChecksumID );
 			HideCursor();
 		}
 		else if (fletcher!=fletcher_ref)
 		{
 			ShowCursor();
 			ParamText( "\pFlim is corrupted", "", "", "" );
-			StopAlert( kAlertCorruptedID, NULL );
+			StopAlert( kALRTCorruptedID, NULL );
 			HideCursor();
 	
 			return FALSE;
@@ -296,7 +296,7 @@ Boolean ChecksumFlimIfNeeded( Str255 fName, short vRefNum, long dirID, Boolean i
 
 		if (interactive)
 		{
-			theCheckDialog = GetNewDialog( kDialogCheckIntegrityID, NULL, (WindowPtr)-1 );
+			theCheckDialog = GetNewDialog( kDLOGCheckIntegrityID, NULL, (WindowPtr)-1 );
 			ShowWindow( theCheckDialog );
 			ModalDialog( NULL, &itemHit );
 			DisposDialog( theCheckDialog );

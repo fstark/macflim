@@ -289,7 +289,7 @@ ePlayResult PlayFlim( FlimPtr flim, Boolean silent )
 		return kScreenError;
 
 	flimInfo = FlimGetInfo( flim );
-	if (!ScreenVideoPrepare( gScreen, flimInfo->width, flimInfo->height, flimInfo->codecs ))
+	if (!ScreenVideoPrepare( gScreen, flimInfo->width, flimInfo->height, flimInfo->codecs, FlimGetName( flim ) ))
 		return kCodecError;
 
 	//	Hack to check the buffer size

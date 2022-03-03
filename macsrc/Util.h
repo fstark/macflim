@@ -53,11 +53,13 @@ void Abort( Str255 s );
 void Error( Str255 s, short err );
 
 //	-------------------------------------------------------------------
-//	Allocation/Deallocation wrappers
+//	MemoryManager wrappers
 //	-------------------------------------------------------------------
 
 Ptr MyNewPtr( Size aSize );
 void MyDisposPtr( void *aPtr );
+Size MyGetPtrSize( void *aPtr );
+void MySetPtrSize( void *aPtr, Size aSize );
 
 //	-------------------------------------------------------------------
 //	Allocation without fail

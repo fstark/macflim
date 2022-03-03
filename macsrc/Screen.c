@@ -11,6 +11,8 @@
 
 #ifndef MINI_PLAYER
 
+#include "Errors.h"
+
 //	-------------------------------------------------------------------
 
 void KillScreen( ScreenPtr scrn, short killcode )
@@ -390,12 +392,27 @@ void ScreenFlash( ScreenPtr scrn, short from, short lines )
 
 extern long *gOffsets;//####hack from codec.c
 
-Boolean ScreenVideoPrepare( ScreenPtr scrn, short width, short height, unsigned long codecs )
+Boolean ScreenVideoPlayable( ScreenPtr scrn, short width, short height )
+{
+	return scrn->width>=width && scrn->height>=height;
+//	return width<=512;
+}
+
+Boolean ScreenVideoPrepare( ScreenPtr scrn, short width, short height, unsigned long codecs, const char *name )
 {
 	int i;
 	short rowbytes = width/8;
 
 	scrn->ready = FALSE;
+
+		//	Flim is larger than screen, nothing we can do.
+	if (!ScreenVideoPlayable( scrn, width, height))
+	{
+#ifndef MINI_PLAYER
+		ErrorScreenTooSmall( name, width, height, scrn->width, scrn->height );
+#endif
+		return FALSE;
+	}
 
 		// to be removed
 
