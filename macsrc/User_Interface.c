@@ -22,6 +22,7 @@ Boolean sFinished = FALSE;		//	Set to true if we want to exit
 #include "Preferences.h"
 #include "Machine.h"
 #include "Tips.h"
+#include "Debug.h"
 
 LibraryPtr sLibrary;
 
@@ -411,6 +412,8 @@ void UserInterfaceInit()
 	gLibraryMenu = GetMHandle( kMENULibraryID );
 
 	AddResMenu( gAppleMenu, 'DRVR' );
+
+	DebugAddMenu();
 
 	DrawMenuBar();
 }
@@ -917,6 +920,9 @@ static void UserInterfaceDoCommand( short aMenu, short aMenuItem, Boolean option
 		case kMENULibraryID:
 			UserInterfaceDoLibraryMenu( aMenuItem, option );
 			break;
+		case kMENUDebugID:
+			DebugOnOff();
+			break;
 	}
 }
 
@@ -1282,6 +1288,8 @@ void UserInterfaceLoop()
 		if (!GetNextEvent( everyEvent, &theEvent ))
 			;
 //			DoUpdateMovie();
+
+		DebugUpdate();
 
 		if (IsDialogEvent( &theEvent ))
 		{

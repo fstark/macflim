@@ -415,7 +415,6 @@ void UtilDialog( short dlogID )
 	DrawDialog( dialog );
 	ShowCursor();
 	ModalDialog( NULL, &itemHit );
-	HideCursor();
 	DisposDialog( dialog );
 }
 

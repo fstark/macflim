@@ -2,7 +2,7 @@
 
 //	-------------------------------------------------------------------
 //	INCLUDES
-//	-------------------------------------------------------------------invert
+//	-------------------------------------------------------------------
 
 
 #include "Util.h"
@@ -10,7 +10,7 @@
 #include <stdio.h>
 
 //	-------------------------------------------------------------------
-//	To display when the video is different form the actual screen,
+//	In order to display when the video resolution is different from the screen,
 //	we use an offset table, that is exactly like a video buffer that
 //	contains a pointer to the corresponding physical screen
 //	-------------------------------------------------------------------

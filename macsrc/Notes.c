@@ -12,6 +12,9 @@ TODO:
 
 A974 : Button
 
+* Continue Debug Support
+* Play in BitMap support
+* WaitNextEvent (MultiFinder support)?
 * Re-factor the whole error management and user display
 * Add codecs used to flim to be future proof on the removal of a codec (player done, needs encoder)
 * Wrong width of flims for portable (?)
@@ -24,9 +27,17 @@ A974 : Button
 * When selected, play should indicates the number of selected flims
 * When a single one, play indicates the name in the Play Menu
 * Add a "Restore Default" in preference dialog.
-* Changing flim types should not remove auto play
-* Empty state for Library	
+* Changing flim types should not remove auto play [? what did I meant]
+* Empty state for Library
+* Better handling of mute (via scaling of silence, asd it is now limited to the length of the silence buffer)
+* Help
+* Panel for success of creating autoplay flims
+* A way to remove autoplay?
+* Specific autoplay icon?
 
+2.0.6:
+* [DONE] Color quickdraw check was wrong
+* [DONE] When failing to read flim format, flims files are still open
 2.0.5:
 * [DONE] SE Flims are mis-labelled as PORTABLE
 * [DONE] Lines codec on same screen size is buggy

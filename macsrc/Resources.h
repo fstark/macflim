@@ -37,6 +37,8 @@ enum {	kMENUItemAddFlimID = 1,
 		kMENUItemLoopCheckID,
 		kMENUItemSilentCheckID };
 
+#define kMENUDebugID					999
+enum {	kMENUItemDebugID = 1 };
 
 //	-------------------------------------------------------------------
 //	Preferences

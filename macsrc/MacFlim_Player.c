@@ -227,7 +227,8 @@ int main()
 
 	if (!MachineIsBlackAndWhite())
 	{
-		Alert( kALRTErrorNoBWScreenID, NULL );
+		UtilDialog( kALRTErrorNoBWScreenID
+		 );
 		return 0;
 	}
 

@@ -47,6 +47,12 @@ int main()
 
 	HideCursor();
 
+	if (!MachineIsBlackAndWhite())
+	{
+		//	Not a BW screen
+		return 0;
+	}
+
 	//	The fancy version
 	//	Set up screen
 	gScreen = ScreenInit( gScreen );

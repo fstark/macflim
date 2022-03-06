@@ -135,16 +135,13 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 	Size maxAccessEntries;
 	int i;
 
-	if (maxBlockSize<=0)
-	{
-		ParamText( "\pError", "\pBuffer size are too small to play flims. Please correct in preferences.", "", "" );
-		UtilDialog( kDLOGErrorNonFatal );
-		return NULL;
-	}
-
 	flim->fRefNum = fRefNum;
 	flim->blockSize = maxBlockSize;
 	flim->name[0] = 0;
+
+	flim->accessTable = NULL;
+	flim->poster = NULL;
+
 
 /*	flim->fletcher16 = -1;
 	flim->version = -1;
@@ -154,6 +151,14 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 	flim->accessTable = NULL;
 	flim->poster = NULL;
 */
+
+	if (maxBlockSize<=0)
+	{
+		ParamText( "\pError", "\pBuffer size are too small to play flims. Please correct in preferences.", "", "" );
+		UtilDialog( kDLOGErrorNonFatal );
+		FlimDispos( flim );
+		return NULL;
+	}
 
 		//	Note: this could be made completely dynamic with a bit of work
 	if (MachineIsMinimal())
@@ -167,7 +172,7 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 	FSRead( fRefNum, &read_size, &flim->fletcher16 );
 	if (read_size==0)
 	{	//	Empty file, exit
-		MyDisposPtr( flim );
+		FlimDispos( flim );
 		return NULL;
 	}
 
@@ -176,7 +181,7 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 	{
 		ParamText( "\pError", "\pFile corrupted or wrong version (expected version 1)", "", "" );
 		UtilDialog( kDLOGErrorNonFatal );
-		MyDisposPtr( flim );
+		FlimDispos( flim );
 		return NULL;
 	}
 
@@ -185,7 +190,7 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 	{
 		ParamText( "\pError", "\pFile has too many streams (max 10)", "", "" );
 		UtilDialog( kDLOGErrorNonFatal );
-		MyDisposPtr( flim );
+		FlimDispos( flim );
 		return NULL;
 	}
 
@@ -199,7 +204,7 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 		{
 			ParamText( "\pError", "\pFile streams are not ordered correctly", "", "" );
 			UtilDialog( kDLOGErrorNonFatal );
-			MyDisposPtr( flim );
+			FlimDispos( flim );
 			return NULL;
 		}
 
@@ -267,7 +272,7 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 				ParamText( "\pError", "\pBuffer size is too small to load this flim. Please change buffer size in Preferences.", "", "" );
 				UtilDialog( kDLOGErrorNonFatal );
 				MyDisposPtr( (Ptr)toc );
-				MyDisposPtr( flim );
+				FlimDispos( flim );
 				return NULL;
 			}
 			flim->accessTable[blockIndex].blockSize = currentSize;
@@ -358,6 +363,12 @@ FlimPtr FlimOpenByName( Str255 fName, short vRefNum, long dirID, eFileAPI api )
 //	printf( "OPEN:  TOTAL OPEN FLIM:%d\n", sTotalOpen );
 
 	flim = FlimOpen( fRefNum, maxBlockSize );
+	
+	if (!flim)
+	{
+		return NULL;
+	}
+
 #ifndef MINI_PLAYER
 	StrCpyPP( flim->name, fName );
 #else
@@ -377,8 +388,8 @@ void FlimDispos( FlimPtr flim )
 
 //	printf( "CLOSE: TOTAL OPEN FLIM:%d\n", sTotalOpen );
 	
-	MyDisposPtr( (Ptr)(flim->accessTable) );
-	DisposHandle( flim->poster );
+	if (flim->accessTable) MyDisposPtr( (Ptr)(flim->accessTable) );
+	if (flim->poster) DisposHandle( flim->poster );
 	FSClose( flim->fRefNum );
 
 	MyDisposPtr( (Ptr)flim );

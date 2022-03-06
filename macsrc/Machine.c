@@ -106,7 +106,7 @@ void MachineInit()
 
 		err = SysEnvirons( 1, &theEnvRec );
 
-		if (err!=noErr)
+		if (err==noErr)
 		{
 	/*
 			printf( "version = %d\n", theEnvRec.environsVersion );

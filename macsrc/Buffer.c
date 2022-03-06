@@ -42,7 +42,10 @@ void BufferInit( Size maxSize, Size leftBytes )
 		//	There are very few allocations in the code
 		//	and it should be graceful when failing to allocate
 		//	The biggest need is to load the TOC of flims (up to 2 bytes per frame)
-		//	aka 7.2Kb/mins, and the data for the "access" data structure (<TOC)
+		//	aka 7.2Kb/mins, the data for the "access" data structure (<TOC)
+		//	and the (optional) offsets table (but this only exists for flim played
+		//	on the "wrong resolution", so it doesn't impact low-memory macs trying to
+		//	play a 512x342 stream
 
 		//	How much we can use for buffers
 	mem = mem-leftBytes;
