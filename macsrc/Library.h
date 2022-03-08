@@ -20,7 +20,7 @@ void LibraryDrawWindow( LibraryPtr lib );
 
 Boolean LibraryAddFlim( LibraryPtr *lib, Str255 fName, short vRefNum, long dirID );
 void LibraryRemoveSelectedFlims( LibraryPtr lib );
-void LibraryAutostartSelectedFlims( LibraryPtr lib );
+Boolean LibraryAutostartSelectedFlims( LibraryPtr lib );
 
 int LibraryGetFlimUnder( LibraryPtr lib, Point pt );
 void LibraryDrawFlim( LibraryPtr lib, int index );

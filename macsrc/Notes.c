@@ -12,17 +12,19 @@ TODO:
 
 A974 : Button
 
-* Continue Debug Support
+* Manage play commands (at least) abort (Button) from VBL
+
+* Zoom box for Library
+* Fix debug menu label (show/hide memory)
 * Play in BitMap support
 * WaitNextEvent (MultiFinder support)?
 * Re-factor the whole error management and user display
 * Add codecs used to flim to be future proof on the removal of a codec (player done, needs encoder)
-* Wrong width of flims for portable (?)
-* Manage play commands (at least) abort (Button) from VBL
 * Mouse selection is a bit off (click on right border of polaroid)
 * Don't add duplicate
-* Do not show flim already in the Library in SFPGetFile
+* Do not show flim already in the Library in SFPGetFile (or gray it out?)
 * Sort flims
+* Keyboard should select next flim with that letter
 * Drag/drop reorder
 * When selected, play should indicates the number of selected flims
 * When a single one, play indicates the name in the Play Menu
@@ -31,10 +33,19 @@ A974 : Button
 * Empty state for Library
 * Better handling of mute (via scaling of silence, asd it is now limited to the length of the silence buffer)
 * Help
-* Panel for success of creating autoplay flims
 * A way to remove autoplay?
 * Specific autoplay icon?
 
+* Correctly center CheckSum progress panel
+* Correctly center autoplay validation panel
+
+2.0.7
+* [DONE] Debug preferences and debug menu
+* [DONE] Clean up names when adding
+* [DONE] Add version in flim resource
+* [DONE] Correctly identify 128K flims
+* [DONE] Panel for success of creating autoplay flims
+* [DONE] Panel for success for checking flims
 2.0.6:
 * [DONE] Color quickdraw check was wrong
 * [DONE] When failing to read flim format, flims files are still open

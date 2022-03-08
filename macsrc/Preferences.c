@@ -10,12 +10,13 @@
 #include "Util.h"
 #include "Screen.h"
 #include "Resources.h"
+#include "Debug.h"
 
 //	-------------------------------------------------------------------
 //	The preference data structure
 //	-------------------------------------------------------------------
 
-#define kPrefVersion 0x03 //	Bumped at every incompatible change of data structure
+#define kPrefVersion 0x04 //	Bumped at every incompatible change of data structure
 
 typedef struct
 {
@@ -26,6 +27,7 @@ typedef struct
 	Boolean setTypeCreator;
 	Boolean showTipsStartup;
 	Boolean loop;
+	Boolean debugMenu;
 
 	char filler1;
 
@@ -311,23 +313,39 @@ void PreferencesSetShowTipsStartup( Boolean showTipsStartup )
 	sPreferences->showTipsStartup = showTipsStartup;
 }
 
+Boolean PreferencesGetDebugMenu( void )
+{
+	return sPreferences->debugMenu;
+}
+
+Boolean PreferencesSetDebugMenu( Boolean debugMenu )
+{
+	sPreferences->debugMenu = debugMenu;
+}
 
 #include "Resources.h"
 
-void PreferenceDialog( void )
+void PreferenceDialog( Boolean option )
 {
 	DialogPtr preferences;
 	short itemHit;
 	Handle iCheckShowAll;
 	Handle iCheckSetTypeCreator;
 	Handle iMaxBufferSize;
+	Handle iDebugMenu;
 	short iType;
 	short iRect;
 	Str255 iText;
 	Ptr savePtr = NULL;
 
-		//	Getthe dialog and fill it
+		//	Get the dialog and fill it
 	preferences = GetNewDialog( kDLOGPreferenceID, NULL, (WindowPtr)-1 );
+
+	if (!option && !PreferencesGetDebugMenu())
+	{
+		HideDItem( preferences, kPreferenceDebugMenu );
+	}
+
 	GetDItem( preferences, kPreferenceShowAll, &iType, &iCheckShowAll, &iRect );
 	SetCtlValue( iCheckShowAll, PreferenceGetShowAll() );
 	GetDItem( preferences, kPreferenceSetTypeCreator, &iType, &iCheckSetTypeCreator, &iRect );
@@ -341,6 +359,10 @@ void PreferenceDialog( void )
 	SetIText( iMaxBufferSize, iText );
 
 	HiliteControl( iCheckSetTypeCreator, PreferenceGetShowAll()?0:255 );
+
+
+	GetDItem( preferences, kPreferenceDebugMenu, &iType, &iDebugMenu, &iRect );
+	SetCtlValue( iDebugMenu, PreferencesGetDebugMenu() );
 
 	UtilPlaceWindow( preferences, 0.2 );
 	ShowWindow( preferences );
@@ -359,6 +381,11 @@ void PreferenceDialog( void )
 			PreferenceSetSetTypeCreator( !PreferenceGetSetTypeCreator() );
 			SetCtlValue( iCheckSetTypeCreator, PreferenceGetSetTypeCreator() );
 		}
+		if (itemHit==kPreferenceDebugMenu)
+		{
+			PreferencesSetDebugMenu( !PreferencesGetDebugMenu() );
+			SetCtlValue( iDebugMenu, PreferencesGetDebugMenu() );
+		}
 	}	while (itemHit!=kPreferenceButtonOk);
 
 		//	Max buffer size
@@ -374,6 +401,9 @@ void PreferenceDialog( void )
 			PreferenceSetMaxBufferSize( maxBufferSize );
 		}
 	}
+
+	DebugSetMenuEnabled( PreferencesGetDebugMenu() );
+	DrawMenuBar();
 
 	PreferenceSave();
 	DisposDialog( preferences );

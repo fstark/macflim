@@ -1,3 +1,5 @@
+
+
 //	#### TODO: cleanup to use GetLEF everywhere
 //	#### TODO: make sure index is 2 parameter (and not 3rd)
 
@@ -14,9 +16,12 @@
 
 #define LIBRARY_COLUMNS	3
 
+//	This is the structure stored in the 'FLIM' resource
 struct LibraryEntryFlim
 {
-//	The data saved on disk
+	char reservedZero;	//	HBYT	If non 0, we have an old library
+	char version;		//	HBYT
+	long fileSize;		//	DLNG
 	char name[32];		//	P01F
 	short vRefNum;		//	DWRD
 	short dirID;		//	DWRD
@@ -60,7 +65,8 @@ static short LibraryEnryFlimGetQualityIndex( struct LibraryEntryFlim *e )
 	{
 			//	Can't be 128, 512 or XL if not silent
 		if (fitsCompact && e->byterate<=500)
-			return kQuality128;	//	#### NEEDS TO CHECK FILE SIZE TOO <400Kb
+			if (e->fileSize!=-1 && e->fileSize<400000)
+				return kQuality128;
 		if (fitsXL && e->byterate<=600)
 			return kQualityMacXL;
 		if (fitsCompact && e->byterate<=480+400)
@@ -313,6 +319,32 @@ static void GetScrollBarRect( LibraryPtr lib, Rect *r )
 		lib->window->portRect.bottom-14 );
 }
 
+//	-------------------------------------------------------------------
+//	Updates the on-disk version of a flim resource to current version
+//	-------------------------------------------------------------------
+
+static void LibraryEntryUpdate( Handle flimResource )
+{
+	struct LibraryEntryFlim *lef;
+
+	lef = (struct LibraryEntryFlim *)*(flimResource);
+	if (lef->reservedZero!=0)
+	{
+		Size resSize = GetHandleSize( flimResource );
+		//	Update resource
+		//	6 comes from 1 (0x00) + 1 (version) + 4 (file size)
+		SetHandleSize( flimResource, resSize+6 );
+
+		BlockMove( *flimResource, *flimResource+6, resSize );
+
+		lef = (struct LibraryEntryFlim *)*(flimResource);
+		lef->reservedZero = 0;
+		lef->version = 0x01;
+		lef->fileSize = -1;
+		ChangedResource( flimResource );
+	}
+}
+
 LibraryPtr LibraryOpenDefault( void )
 {
 	LibraryPtr lib;
@@ -353,10 +385,11 @@ LibraryPtr LibraryOpenDefault( void )
 		Handle h = Get1IndResource( 'FLIM', i+1 );
 
 		GetResInfo( h, &resID, &dummy0, dummy1 );
-//		DisposHandle( h );			//	Could keep it in .flim...
+
+		LibraryEntryUpdate( h );
+
 		lib->entries[i].resID = resID;
 //		lib->entries[i].index = i;
-//		lib->entries[i].flim = NULL;
 		lib->entries[i].flim = h;
 		lib->entries[i].pict = NULL;
 		lib->entries[i].selected = FALSE;
@@ -399,6 +432,7 @@ static void LibraryLoadEntry( LibraryPtr lib, short index )
 
 	if (e->flim==NULL)
 	{
+
 		UseResFile( lib->resFile );
 		e->flim = GetResource( 'FLIM', e->resID );
 		assert( e->flim!=NULL, "no such flim" );
@@ -788,6 +822,75 @@ void LibraryDrawWindow( LibraryPtr lib )
 //	printf( "---\n" );
 }
 
+//	-------------------------------------------------------------------
+
+static void LibraryRemoveExtension( Str255 name, Str255 extension )
+{
+	if (name[0]>extension[0])
+	{
+		int i;
+		for (i=0;i!=extension[0];i++)
+			if (name[name[0]-extension[0]+i+1]!=extension[i+1])
+				return ;
+		name[0] -= extension[0];
+	}
+}
+
+//	-------------------------------------------------------------------
+
+static void LibraryReplaceChar( Str255 name, char from, char to )
+{
+	int i;
+	for (i=1;i<=name[0];i++)
+		if (name[i]==from)
+			name[i] = to;
+}
+
+//	-------------------------------------------------------------------
+
+static void LibraryCleanName( Str255 name )
+{
+
+	//	Remove '.flim' at the end of the name
+	LibraryRemoveExtension( name, "\p.flim" );
+
+	//	Remove standard designation from www.macflim.com
+	LibraryRemoveExtension( name, "\p-128k" );
+	LibraryRemoveExtension( name, "\p-512k" );
+	LibraryRemoveExtension( name, "\p-plus" );
+	LibraryRemoveExtension( name, "\p-portable" );
+	LibraryRemoveExtension( name, "\p-se30" );
+	LibraryRemoveExtension( name, "\p-se" );
+	LibraryRemoveExtension( name, "\p-xl" );
+
+	//	Replace '_' by spaces
+	LibraryReplaceChar( name, '_', ' ' );
+	LibraryReplaceChar( name, '-', ' ' );
+}
+
+//	-------------------------------------------------------------------
+
+static Size LibraryGetFileSize( Str255 fName, short vRefNum, long dirID )
+{
+	HParamBlockRec pb;
+	OSErr err;
+
+	pb.fileParam.ioCompletion = NULL;
+	pb.fileParam.ioNamePtr = fName;
+	pb.fileParam.ioVRefNum = vRefNum;
+	pb.fileParam.ioFVersNum = 0;
+	pb.fileParam.ioFDirIndex = 0;
+	pb.fileParam.ioDirID = dirID;
+	
+	err = PBHGetFInfo( &pb, FALSE );
+	if (err!=noErr)
+		return -1;
+	
+	return pb.fileParam.ioFlLgLen;
+}
+
+//	-------------------------------------------------------------------
+
 Boolean LibraryAddFlim( LibraryPtr *lib, Str255 fName, short vRefNum, long dirID )
 {
 	struct LibraryEntry *e;
@@ -805,6 +908,10 @@ Boolean LibraryAddFlim( LibraryPtr *lib, Str255 fName, short vRefNum, long dirID
 	HLock( e->flim );
 	lef = (struct LibraryEntryFlim *)*(e->flim);
 
+	lef->reservedZero = 0x00;
+	lef->version = 0x01;
+	lef->fileSize = LibraryGetFileSize( fName, vRefNum, dirID );
+
 	lef->vRefNum = vRefNum;
 	lef->dirID = dirID;
 	{
@@ -818,6 +925,7 @@ Boolean LibraryAddFlim( LibraryPtr *lib, Str255 fName, short vRefNum, long dirID
 	}
 
 	StrCpyPP( (void *)(lef->name), fName );
+	LibraryCleanName( (void*)lef->name );
 	StrCpyPP( (void *)(lef->fName), fName );
 	SetHandleSize( e->flim, sizeof(struct LibraryEntryFlim)+fName[0]-1 );
 	e->pict = (Handle)FlimCreatePoster( flim );
@@ -880,9 +988,10 @@ static struct LibraryEntryFlim *GetLEF( LibraryPtr lib, int index )
 	return (struct LibraryEntryFlim *)*(lib->entries[index].flim);
 }
 
-void LibraryAutostartSelectedFlims( LibraryPtr lib )
+Boolean LibraryAutostartSelectedFlims( LibraryPtr lib )
 {
 	int i;
+	Boolean result = FALSE;
 
 	SelfGetMiniPlayer();
 
@@ -892,7 +1001,10 @@ void LibraryAutostartSelectedFlims( LibraryPtr lib )
 			struct LibraryEntryFlim *lef = GetLEF( lib, i );
 			SelfInstallPlayer( (void *)lef->name, lef->vRefNum, lef->dirID );
 			LibraryUnloadEntry( lib, i );
+			result = TRUE;
 		}
+
+	return result;
 }
 
 void LibraryFlipSelection( LibraryPtr lib, int index )

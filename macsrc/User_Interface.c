@@ -23,6 +23,7 @@ Boolean sFinished = FALSE;		//	Set to true if we want to exit
 #include "Machine.h"
 #include "Tips.h"
 #include "Debug.h"
+#include "Errors.h"
 
 LibraryPtr sLibrary;
 
@@ -413,7 +414,7 @@ void UserInterfaceInit()
 
 	AddResMenu( gAppleMenu, 'DRVR' );
 
-	DebugAddMenu();
+	DebugSetMenuEnabled( PreferencesGetDebugMenu() );
 
 	DrawMenuBar();
 }
@@ -493,7 +494,7 @@ static void UserInterfaceDoFileMenu( short aMenuItem, Boolean thefOption )
 //			break;
 //		}
 		case kMENUItemPreferences:
-			PreferenceDialog();
+			PreferenceDialog( thefOption );
 			break;
 		case kMENUItemQuitID:
 			sFinished = TRUE;
@@ -692,7 +693,7 @@ static eIterateChoice ApplyCheckIntegrity( LibraryPtr lib, int index, Str255 fNa
 
 typedef eIterateChoice (*ApplyFun)( LibraryPtr lib, int index, Str255 fName, short vRefNum, long dirID );
 
-static void UserInterfaceIterateSelection( LibraryPtr lib, ApplyFun f, Boolean loop )
+static Boolean UserInterfaceIterateSelection( LibraryPtr lib, ApplyFun f, Boolean loop )
 {
 	int i;
 	Str255 fName;
@@ -710,7 +711,7 @@ static void UserInterfaceIterateSelection( LibraryPtr lib, ApplyFun f, Boolean l
 				switch (c)
 				{
 					case kStop:
-						return;
+						return FALSE;
 					case kPrev:
 						i -= 2;
 						if (i==-2)
@@ -729,6 +730,8 @@ static void UserInterfaceIterateSelection( LibraryPtr lib, ApplyFun f, Boolean l
 				}
 			}
 	} while (loop);
+
+	return TRUE;
 }
 
 static void UserInterfaceIterateAll( LibraryPtr lib, ApplyFun f, Boolean loop )
@@ -808,7 +811,8 @@ static void UserInterfaceAutoPlaySelected( LibraryPtr lib )
 	NumToString( LibraryGetSelectionCount( lib ), selectedCount );
 	ParamText( selectedCount, "", "", "" );
 	NoteAlert( kALRTConfirmAutoplayID, NULL );
-	LibraryAutostartSelectedFlims( lib );
+	if (LibraryAutostartSelectedFlims( lib ))
+		InfoAutoPlaySuccess();
 }
 
 static void UserInterfaceEnableDisableMenus()
@@ -888,7 +892,8 @@ static void UserInterfaceDoLibraryMenu( short item, Boolean option )
 			UserInterfaceRemoveSelected( sLibrary );
 			break;
 		case kMENUItemCheckIntegrityID:
-			UserInterfaceIterateSelection( sLibrary, ApplyCheckIntegrity, FALSE );
+			if (UserInterfaceIterateSelection( sLibrary, ApplyCheckIntegrity, FALSE ))
+				InfoIntegritySuccess();
 			break;
 		case kMENUItemAutostartID:
 			UserInterfaceAutoPlaySelected( sLibrary );
@@ -1264,10 +1269,13 @@ static Boolean DoDialogEvent( EventRecord *anEvent )
 	return FALSE;
 }
 
+//	-------------------------------------------------------------------
+//	Main user event loop
+//	-------------------------------------------------------------------
+
 void UserInterfaceLoop()
 {
 	//	Note: we do not manage multi-finder properly
-	RgnHandle mouseRgn;
 	EventRecord theEvent;
 	
 		//	Shows library
@@ -1277,9 +1285,6 @@ void UserInterfaceLoop()
 		//	Show tool tips window (in front of Libary)
 	if (PreferencesGetShowTipsStartup())
 		ToggleTips();
-
-
-	mouseRgn = NewRgn();
 
 	while (!sFinished)
 	{

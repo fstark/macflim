@@ -25,6 +25,6 @@ Boolean DebugIsOn( void );
 
 void DebugFillMem( void );
 
-void DebugAddMenu( void );
+void DebugSetMenuEnabled( Boolean menuEnabled );
 
 #endif

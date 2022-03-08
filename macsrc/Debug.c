@@ -132,14 +132,21 @@ void DebugFillMem( void )
 
 MenuHandle sDebugMenu;
 
-void DebugAddMenu( void )
+void DebugSetMenuEnabled( Boolean menuEnabled )
 {
-	return ;
-
-	sDebugMenu = NewMenu( kMENUDebugID, "\pDebug" );
-	AppendMenu( sDebugMenu, "\pShow Free Memory" );
+	if (menuEnabled && !sDebugMenu)
+	{
+		sDebugMenu = NewMenu( kMENUDebugID, "\pDebug" );
+		AppendMenu( sDebugMenu, "\pShow Free Memory" );
 	
-	InsertMenu( sDebugMenu, 0 );
+		InsertMenu( sDebugMenu, 0 );
+	}
+	if (!menuEnabled && sDebugMenu)
+	{		//	#### Unsure if this deletes the menu item
+		DeleteMenu( kMENUDebugID );
+		DisposeMenu( sDebugMenu );
+		sDebugMenu = NULL;
+	}
 }
 
 

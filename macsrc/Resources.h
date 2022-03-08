@@ -80,10 +80,15 @@ enum {	kMENUItemDebugID = 1 };
 	#define kPreferenceShowAll			2
 	#define kPreferenceSetTypeCreator	3
 	#define kPreferenceMaxBufferSize	4
+	#define kPreferenceDebugMenu		5
 
 #define kDLOGFatalID					136		//	Not used, for reference
 
 #define kDLOGOpenFlimErrorID 			137
+
+#define kDLOGFileIntegrityOkID			138
+
+#define kDLOGAutoPlayOkID				139
 
 #define kDLOGErrorNonFatal				140
 
@@ -94,6 +99,7 @@ enum {	kMENUItemDebugID = 1 };
 
 #define kDLOGPreferencesRestart			143
 #define kDLOGProgress					144
+
 
 //	-------------------------------------------------------------------
 //	PICTs

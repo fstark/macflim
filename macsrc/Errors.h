@@ -16,4 +16,8 @@ void ErrorScreenTooSmall(
 	unsigned short screenHeight
 	);
 
+void InfoIntegritySuccess( void );
+
+void InfoAutoPlaySuccess( void );
+
 #endif

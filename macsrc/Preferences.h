@@ -64,6 +64,8 @@ short PreferencesGetNextTipBtnIndex( void );
 void PreferencesSetNextTipBtnIndex( short nextTipBtnIndex );
 Boolean PreferencesGetShowTipsStartup( void );
 void PreferencesSetShowTipsStartup( Boolean showTipsStartup );
+Boolean PreferencesGetDebugMenu( void );
+Boolean PreferencesSetDebugMenu( Boolean debugMenu );
 
 //	-------------------------------------------------------------------
 //	Call at the beginning of the program
@@ -87,6 +89,6 @@ void PreferenceSave( void );
 //	Shows the preference dialog, let user interact and save
 //	-------------------------------------------------------------------
 
-void PreferenceDialog( void );
+void PreferenceDialog( Boolean option );
 
 #endif

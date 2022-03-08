@@ -1,8 +1,15 @@
 #include "Errors.h"
+
+//	-------------------------------------------------------------------
+//	INCLUDES
+//	-------------------------------------------------------------------
+
 #include "Resources.h"
 #include "Util.h"
 #include "stdio.h"
 #include "string.h"
+
+//	-------------------------------------------------------------------
 
 void ErrorCannotOpenFlimFile(
 	OSErr err,
@@ -24,6 +31,8 @@ void ErrorCannotOpenFlimFile(
 	UtilDialog( kDLOGOpenFlimErrorID );
 }
 
+//	-------------------------------------------------------------------
+
 void ErrorScreenTooSmall(
 	const char *name,
 	unsigned short flimWidth,
@@ -44,3 +53,20 @@ void ErrorScreenTooSmall(
 	
 	UtilDialog( kDLOGScreenTooSmallErrorID );
 }
+
+//	-------------------------------------------------------------------
+
+void InfoIntegritySuccess( void )
+{
+	ParamText( "", "", "", "" );
+	UtilDialog( kDLOGFileIntegrityOkID );
+}
+
+//	-------------------------------------------------------------------
+
+void InfoAutoPlaySuccess( void )
+{
+	ParamText( "", "", "", "" );
+	UtilDialog( kDLOGAutoPlayOkID );
+}
+
