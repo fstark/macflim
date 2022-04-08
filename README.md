@@ -40,8 +40,10 @@ To ease with testing, an optional mp4 of the flim can be generated. This will le
 
 ## How do I play flims on my Mac?
 
-Head to http://www.macflim.com/macflim2 to download the standalone player.
-Alternatively, if you want to have the latest version and the source code, the 'MacFlim Source Code.dsk' file is a disk image, containing a working System 6.0.8, the MacFlim source code and binaries, and a THINK 5 development environment. This is what is used to develop MacFlim and Mini MacFlim.
+[The release are accessible in github, as a dsk file](https://github.com/fstark/macflim/releases).
+Head to [the MacFlim website](http://www.macflim.com/macflim2) to sample flims.
+
+Alternatively, you can build it from the source code, by downloading the 'MacFlim Source Code.dsk' file which is a disk image, containing a working System 6.0.8, the MacFlim source code and binaries, and a THINK 5 development environment. This is what is used to develop MacFlim and Mini MacFlim.
 
 ## Ok, how do I compile the encoder?
 
