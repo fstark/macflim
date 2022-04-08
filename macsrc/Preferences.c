@@ -16,7 +16,7 @@
 //	The preference data structure
 //	-------------------------------------------------------------------
 
-#define kPrefVersion 0x04 //	Bumped at every incompatible change of data structure
+#define kPrefVersion 0x05 //	Bumped at every incompatible change of data structure
 
 typedef struct
 {
@@ -28,8 +28,10 @@ typedef struct
 	Boolean showTipsStartup;
 	Boolean loop;
 	Boolean debugMenu;
+	Boolean singleFrameReadAhead;
 
 	char filler1;
+	char filler2[16];
 
 	Size maxBufferSize;
 	short nextTipIndex;
@@ -318,9 +320,19 @@ Boolean PreferencesGetDebugMenu( void )
 	return sPreferences->debugMenu;
 }
 
-Boolean PreferencesSetDebugMenu( Boolean debugMenu )
+void PreferencesSetDebugMenu( Boolean debugMenu )
 {
 	sPreferences->debugMenu = debugMenu;
+}
+
+Boolean PreferencesGetSingleFrameReadAhead( void )
+{
+	return sPreferences->singleFrameReadAhead;
+}
+
+void PreferencesSetSingleFrameReadAhead( Boolean singleFrameReadAhead )
+{
+	sPreferences->singleFrameReadAhead = singleFrameReadAhead;
 }
 
 #include "Resources.h"
@@ -333,25 +345,29 @@ void PreferenceDialog( Boolean option )
 	Handle iCheckSetTypeCreator;
 	Handle iMaxBufferSize;
 	Handle iDebugMenu;
+	Handle iSingleFrame;
 	short iType;
-	short iRect;
+	Rect iRect;
 	Str255 iText;
 	Ptr savePtr = NULL;
 
 		//	Get the dialog and fill it
 	preferences = GetNewDialog( kDLOGPreferenceID, NULL, (WindowPtr)-1 );
 
+	GetDItem( preferences, kPreferenceShowAll, &iType, &iCheckShowAll, &iRect );
+	GetDItem( preferences, kPreferenceSetTypeCreator, &iType, &iCheckSetTypeCreator, &iRect );
+	GetDItem( preferences, kPreferenceMaxBufferSize, &iType, &iMaxBufferSize, &iRect );
+	GetDItem( preferences, kPreferenceSingleFrame, &iType, &iSingleFrame, &iRect );
+	GetDItem( preferences, kPreferenceDebugMenu, &iType, &iDebugMenu, &iRect );
+
 	if (!option && !PreferencesGetDebugMenu())
 	{
 		HideDItem( preferences, kPreferenceDebugMenu );
 	}
 
-	GetDItem( preferences, kPreferenceShowAll, &iType, &iCheckShowAll, &iRect );
 	SetCtlValue( iCheckShowAll, PreferenceGetShowAll() );
-	GetDItem( preferences, kPreferenceSetTypeCreator, &iType, &iCheckSetTypeCreator, &iRect );
 	SetCtlValue( iCheckSetTypeCreator, PreferenceGetSetTypeCreator() );
 
-	GetDItem( preferences, kPreferenceMaxBufferSize, &iType, &iMaxBufferSize, &iRect );
 	if (PreferenceGetMaxBufferSize()!=0)
 		NumToString( PreferenceGetMaxBufferSize(), iText );
 	else
@@ -360,8 +376,7 @@ void PreferenceDialog( Boolean option )
 
 	HiliteControl( iCheckSetTypeCreator, PreferenceGetShowAll()?0:255 );
 
-
-	GetDItem( preferences, kPreferenceDebugMenu, &iType, &iDebugMenu, &iRect );
+	SetCtlValue( iSingleFrame, PreferencesGetSingleFrameReadAhead() );
 	SetCtlValue( iDebugMenu, PreferencesGetDebugMenu() );
 
 	UtilPlaceWindow( preferences, 0.2 );
@@ -386,6 +401,11 @@ void PreferenceDialog( Boolean option )
 			PreferencesSetDebugMenu( !PreferencesGetDebugMenu() );
 			SetCtlValue( iDebugMenu, PreferencesGetDebugMenu() );
 		}
+		if (itemHit==kPreferenceSingleFrame)
+		{
+			PreferencesSetSingleFrameReadAhead( !PreferencesGetSingleFrameReadAhead() );
+			SetCtlValue( iSingleFrame, PreferencesGetSingleFrameReadAhead() );
+		}
 	}	while (itemHit!=kPreferenceButtonOk);
 
 		//	Max buffer size
@@ -396,7 +416,7 @@ void PreferenceDialog( Boolean option )
 		if (maxBufferSize!=PreferenceGetMaxBufferSize())
 		{
 			HideCursor();	//	#### Hideous
-			UtilDialog( kDLOGPreferencesRestart );
+			UtilModalDialog( kDLOGPreferencesRestart );
 			ShowCursor();
 			PreferenceSetMaxBufferSize( maxBufferSize );
 		}

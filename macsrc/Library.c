@@ -1119,18 +1119,23 @@ FlimPtr LibraryOpenFlim( LibraryPtr lib, int index )
 	struct LibraryEntryFlim *lef = GetLEF( lib, index );
 	Str255 name;
 
-//xxx this is wrong, because lef is not HLocked
-
 	//	#### if volumes have been re-ordered, this may be slow and even do floppy access...
 	//	We could get the vRefNum back from the flim and update the library
 	flim = FlimOpenByNameAnyVolumes( (void*)lef->fName, lef->vRefNum, lef->dirID, kHFS );
 	if (!flim)
 	{
-		ErrorCannotOpenFlimFile( FlimError(), lef->fName, lef->vRefNum, lef->dirID );
+		switch (ErrorCannotOpenFlimFile( FlimError(), lef->fName, lef->vRefNum, lef->dirID ))
+		{
+			case 0:	//	ignore
+				break;
+			case 1:	//	locate
+			case 2:	//	remove
+				break;	//	#### NOT IMPLEMENTED YET
+		}
 		LibraryUnloadEntry( lib, index );
 		return NULL;
 	}
-	
+
 	LibraryUnloadEntry( lib, index );
 	return flim;
 }

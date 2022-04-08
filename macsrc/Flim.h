@@ -139,4 +139,24 @@ struct FlimInfo
 
 struct FlimInfo *FlimGetInfo( FlimPtr flim );
 
+
+
+
+/* #### IN PROGRESS
+
+//	New flim management
+
+//	Opens the specificed flim
+OSErr FlimOpenByName( Str255 fName, short vRefNum, long dirID, eFileAPI api, short *fRefNum );
+
+//	Looks for flim in a different volume (same name, same directory, potentially different volume)
+Boolean FlimAdjustVolume( Str255 fName, short *vRefNum, long dirID, eFileAPI api );
+
+//	Looks for flim in specific directory or below [PBHGetVol at startup!]
+Boolean FlimFindInDirectory( Str255 fName, short vRefNum, long *dirID );
+
+//	Looks for flim in specific directory or below [PBHGetVol at startup!]
+Boolean FlimFindInVolume( Str255 fName, short vRefNum, long *dirID );
+*/
+
 #endif

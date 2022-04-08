@@ -153,13 +153,22 @@ OSErr UtilSetFileTypeCreator( Str255 fName, short vRefNum, long dirID, OSType ty
 //	Perform a modal dialog properly placed
 //	-------------------------------------------------------------------
 
-void UtilDialog( short dlogID );
+void UtilModalDialog( short dlogID );
+
+//	-------------------------------------------------------------------
+//	Load, place and shows a dialog. Needs DisposPtr on the returned pointer.
+//	-------------------------------------------------------------------
+
+DialogPtr UtilPlaceDialog( short dlogID );
 
 //	-------------------------------------------------------------------
 //	Outputs a string and a number in the debugger
 //	-------------------------------------------------------------------
 
 void DebugStrLong( Str255 s, long l );
+
+
+void UtilErrToString( OSErr err, Str255 str );
 
 
 #endif

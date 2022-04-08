@@ -31,7 +31,7 @@ A974 : Button
 * Add a "Restore Default" in preference dialog.
 * Changing flim types should not remove auto play [? what did I meant]
 * Empty state for Library
-* Better handling of mute (via scaling of silence, asd it is now limited to the length of the silence buffer)
+* Better handling of mute (via scaling of silence, as it is now limited to the length of the silence buffer)
 * Help
 * A way to remove autoplay?
 * Specific autoplay icon?
@@ -39,6 +39,12 @@ A974 : Button
 * Correctly center CheckSum progress panel
 * Correctly center autoplay validation panel
 
+* Manage file errors when setting a flim to autoplay
+
+2.0.8
+* [DONE] Add Network optimised playback
+* [DONE] Manage file errors when checking checksums
+* [DONE] Better file not found dialog
 2.0.7
 * [DONE] Debug preferences and debug menu
 * [DONE] Clean up names when adding

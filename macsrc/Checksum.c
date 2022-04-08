@@ -6,16 +6,19 @@
 
 #include "Util.h"
 #include "Resources.h"
+#include "Errors.h"
 
 //	-------------------------------------------------------------------
 //	Returns checksum from flim file
 //	-------------------------------------------------------------------
 
-static unsigned short ChecksumFlimGet( Str255 fName, short vRefNum, long dirID )
+#define WRONG_FLETCHER	0xffff
+
+static OSErr ChecksumFlimGet( Str255 fName, short vRefNum, long dirID, unsigned short *fletcher )
 {
-	unsigned fletcher = 0xffff;
 	OSErr err;
 	short fRefNum;
+	*fletcher = WRONG_FLETCHER;
 
 		//	Open flim
 	if (FALSE)
@@ -50,22 +53,26 @@ static unsigned short ChecksumFlimGet( Str255 fName, short vRefNum, long dirID )
 
 		fRefNum = pb.ioParam.ioRefNum;
 	}
-	CheckErr( err, "FSOpen" );
+	if (err!=noErr)
+		return err;
 
 		//	Skip first Kb of comments
-	SetFPos( fRefNum, fsFromStart, 1022 );
-	if (err==noErr)
+	err = SetFPos( fRefNum, fsFromStart, 1022 );
+	if (err!=noErr)
+		return err;
+
 	{
 			//	Read Fletcher-16
 		long read_size = 2;
-		err = FSRead( fRefNum, &read_size, &fletcher );
+		err = FSRead( fRefNum, &read_size, fletcher );
 		CheckErr( err, "FSRead" );
 	}
 
 	err = FSClose( fRefNum );
-	CheckErr( err, "FSClose" );
+	if (err!=noErr)
+		return -1;
 	
-	return fletcher;
+	return noErr;
 }
 
 //	-------------------------------------------------------------------
@@ -265,7 +272,7 @@ done:
 		{
 			ShowCursor();
 			ParamText( "\pFlim have no checksum", "", "", "" );
-			UtilDialog( kDLOGNoChecksumID );
+			UtilModalDialog( kDLOGNoChecksumID );
 			HideCursor();
 		}
 		else if (fletcher!=fletcher_ref)
@@ -288,12 +295,22 @@ done:
 
 Boolean ChecksumFlimIfNeeded( Str255 fName, short vRefNum, long dirID, Boolean interactive )
 {
-	unsigned short checksum = ChecksumFlimGet( fName, vRefNum, dirID );
+	unsigned short checksum;
+	OSErr err;
+
+	err = ChecksumFlimGet( fName, vRefNum, dirID, &checksum );
+	
+	if (err!=noErr)
+	{
+		ErrorCannotOpenFlimFile( err, (void*)fName, vRefNum, dirID );
+		return FALSE;
+	}
+
 	if (checksum!=0xffff)
 	{
 		DialogPtr theCheckDialog = NULL;
 		short itemHit = kCheckIntegrityButtonOk;
-
+	
 		if (interactive)
 		{
 			theCheckDialog = GetNewDialog( kDLOGCheckIntegrityID, NULL, (WindowPtr)-1 );
@@ -303,7 +320,7 @@ Boolean ChecksumFlimIfNeeded( Str255 fName, short vRefNum, long dirID, Boolean i
 		}
 		if (itemHit==kCheckIntegrityButtonOk)
 			return ChecksumFlimPerformDialog( fName, vRefNum, dirID, checksum );
-
+	
 	}
 
 	return TRUE;

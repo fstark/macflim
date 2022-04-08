@@ -619,10 +619,10 @@ static void XorZoom( Rect *fromRectPtr, int ticks, Boolean open )
 
 typedef enum
 {
-	kStop,
-	kPrev,
-	kAgain,
-	kNext
+	kIterateStop,
+	kIteratePrev,
+	kIterateAgain,
+	kIterateNext
 }	eIterateChoice;
 
 
@@ -633,12 +633,12 @@ static Rect sZoomedRect;	//	From which rect did we "zoom-in" (for the zoom-out) 
 static eIterateChoice ApplyPlay( LibraryPtr lib, int index, Str255 fName, short vRefNum, long dirID )
 {
 	FlimPtr flim = LibraryOpenFlim( lib, index );
-	eIterateChoice result = kNext;
+	eIterateChoice result = kIterateNext;
 	Rect fromRect;
 
 		//	We failed to open, we abort
 	if (!flim)
-		return kStop;
+		return kIterateStop;
 
 	if (!sZoomed)
 	{
@@ -664,16 +664,16 @@ static eIterateChoice ApplyPlay( LibraryPtr lib, int index, Str255 fName, short 
 //			Error( "\pCannot play flim", "\pScreen too small" );
 //			break;
 		case kAbort:
-			result = kStop;
+			result = kIterateStop;
 			break;
 		case kRestart:
-			result = kAgain;
+			result = kIterateAgain;
 			break;
 		case kSkip:
-			result = kNext;
+			result = kIterateNext;
 			break;
 		case kPrevious:
-			result = kPrev;
+			result = kIteratePrev;
 			break;
 		default:
 			break;
@@ -688,7 +688,7 @@ static eIterateChoice ApplyPlay( LibraryPtr lib, int index, Str255 fName, short 
 
 static eIterateChoice ApplyCheckIntegrity( LibraryPtr lib, int index, Str255 fName, short vRefNum, long dirID )
 {
-	return ChecksumFlimIfNeeded( fName, vRefNum, dirID, FALSE )?kNext:kAbort;
+	return ChecksumFlimIfNeeded( fName, vRefNum, dirID, FALSE )?kIterateNext:kIterateStop;
 }
 
 typedef eIterateChoice (*ApplyFun)( LibraryPtr lib, int index, Str255 fName, short vRefNum, long dirID );
@@ -710,9 +710,9 @@ static Boolean UserInterfaceIterateSelection( LibraryPtr lib, ApplyFun f, Boolea
 				c = ((*f)( lib, i, fName, vRefNum, dirID ));
 				switch (c)
 				{
-					case kStop:
+					case kIterateStop:
 						return FALSE;
-					case kPrev:
+					case kIteratePrev:
 						i -= 2;
 						if (i==-2)
 						{
@@ -722,10 +722,10 @@ static Boolean UserInterfaceIterateSelection( LibraryPtr lib, ApplyFun f, Boolea
 								i = LibraryGetCount(lib)-2;	//	ugly
 						}
 						break;
-					case kAgain:
+					case kIterateAgain:
 						i--;
 						break;
-					case kNext:
+					case kIterateNext:
 						break;
 				}
 			}

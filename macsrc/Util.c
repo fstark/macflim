@@ -239,7 +239,7 @@ void Error( Str255 s, short err )
 	
 	NumToString( err, errStr );
 	ParamText( s, errStr, "", "" );
-	UtilDialog( kDLOGErrorNonFatal );
+	UtilModalDialog( kDLOGErrorNonFatal );
 }
 
 void CheckPtr( void *p, const char *msg )
@@ -403,10 +403,20 @@ OSErr UtilSetFileTypeCreator( Str255 fName, short vRefNum, long dirID, OSType ty
 
 //	-------------------------------------------------------------------
 
-void UtilDialog( short dlogID )
+void UtilModalDialog( short dlogID )
+{
+	DialogPtr dialog = UtilPlaceDialog( dlogID );
+	short itemHit;
+
+	ModalDialog( NULL, &itemHit );
+	DisposDialog( dialog );
+}
+
+//	-------------------------------------------------------------------
+
+DialogPtr UtilPlaceDialog( short dlogID )
 {
 	DialogPtr dialog = GetNewDialog( dlogID, NULL, (WindowPtr)-1 );
-	short itemHit;
 
 	assert( dialog!=NULL, "GetNewDialog" );
 
@@ -414,8 +424,8 @@ void UtilDialog( short dlogID )
 	ShowWindow( dialog );
 	DrawDialog( dialog );
 	ShowCursor();
-	ModalDialog( NULL, &itemHit );
-	DisposDialog( dialog );
+	
+	return dialog;
 }
 
 //	-------------------------------------------------------------------
@@ -435,8 +445,33 @@ void DebugStrLong( Str255 s, long l )
 	DebugStr( lStr );
 }
 
+//	-------------------------------------------------------------------
+
+static void *UtilStringFromErr( OSErr err )
+{
+	return "\p(Unknown error)";
+}
+
+//	-------------------------------------------------------------------
+
+void UtilErrToString( OSErr err, Str255 str )
+{
+	Str255 str2;
+	str[0] = 0;
+	str2[0] = 0;
+
+	StrCatPP( str, UtilStringFromErr( err ) );
+	NumToString( err, str2 );
+	StrCatPP( str, "\p (" );
+	StrCatPP( str, str2 );
+	StrCatPP( str, "\p)" );
+}
+
 #else
 
-void UtilDialog( short dlogID ) {}
+void UtilModalDialog( short dlogID ) {}
 
 #endif
+
+
+

@@ -81,10 +81,12 @@ enum {	kMENUItemDebugID = 1 };
 	#define kPreferenceSetTypeCreator	3
 	#define kPreferenceMaxBufferSize	4
 	#define kPreferenceDebugMenu		5
+	#define kPreferenceSingleFrame		9
 
 #define kDLOGFatalID					136		//	Not used, for reference
 
 #define kDLOGOpenFlimErrorID 			137
+	#define kOpenFlimErrorDebugTextID	4
 
 #define kDLOGFileIntegrityOkID			138
 
@@ -96,6 +98,8 @@ enum {	kMENUItemDebugID = 1 };
 	#define kNextTipItemID				1
 	#define kTipItemID					2
 	#define kShowTipItemID				3
+
+#define kDLOGDebugFileErrorID			142
 
 #define kDLOGPreferencesRestart			143
 #define kDLOGProgress					144

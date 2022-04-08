@@ -11,6 +11,7 @@
 #include "Buffer.h"
 #include <stdio.h>
 #include "Resources.h"
+#include "Preferences.h"
 
 //	-------------------------------------------------------------------
 //	FLIM FILE PARSING FUNCTIONS
@@ -155,7 +156,7 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 	if (maxBlockSize<=0)
 	{
 		ParamText( "\pError", "\pBuffer size are too small to play flims. Please correct in preferences.", "", "" );
-		UtilDialog( kDLOGErrorNonFatal );
+		UtilModalDialog( kDLOGErrorNonFatal );
 		FlimDispos( flim );
 		return NULL;
 	}
@@ -180,7 +181,7 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 	if (flim->version!=1)
 	{
 		ParamText( "\pError", "\pFile corrupted or wrong version (expected version 1)", "", "" );
-		UtilDialog( kDLOGErrorNonFatal );
+		UtilModalDialog( kDLOGErrorNonFatal );
 		FlimDispos( flim );
 		return NULL;
 	}
@@ -189,7 +190,7 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 	if (flim->streamCount>MAX_STREAMS)
 	{
 		ParamText( "\pError", "\pFile has too many streams (max 10)", "", "" );
-		UtilDialog( kDLOGErrorNonFatal );
+		UtilModalDialog( kDLOGErrorNonFatal );
 		FlimDispos( flim );
 		return NULL;
 	}
@@ -203,7 +204,7 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 		if (flim->streams[i].type!=i)
 		{
 			ParamText( "\pError", "\pFile streams are not ordered correctly", "", "" );
-			UtilDialog( kDLOGErrorNonFatal );
+			UtilModalDialog( kDLOGErrorNonFatal );
 			FlimDispos( flim );
 			return NULL;
 		}
@@ -231,62 +232,80 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 
 		toc = (short *)FlimReadStreamNewPtr( flim, kFlimStreamToc );
 
-		flim->accessTable = (struct AccessItem *)NewPtrNoFail( sizeof(struct AccessItem)*maxAccessEntries );
+#ifndef MINI_PLAYER // Miniplayer don't support network play for now
+		if (PreferencesGetSingleFrameReadAhead())
+		{	//	We build an access table with a single frame
+			int l = flim->info.frameCount;
+			struct AccessItem *p = (struct AccessItem *)NewPtrNoFail( sizeof(struct AccessItem)*l );
+			short *q = toc;
 
-		frameCount = 0;
-		currentSize = 0;
-		flim->blockCount = 0;
-		for (index=0;index!=flim->info.frameCount;index++)
-		{
-			//	If we need to go to the next block, so be it
-			if (currentSize+toc[index]>=flim->blockSize)
+			if (!p)
 			{
-				frameCount = 0;
-				currentSize = 0;
-				blockIndex++;
-				if (blockIndex==maxAccessEntries)
-				{
-					MySetPtrSize( flim->accessTable, sizeof(struct AccessItem)*(maxAccessEntries+1024) );
-					if (MemError())
-						Abort( "\pNot enough access entries to load TOC" );
-					maxAccessEntries += 1024;
-				}
-			}
-
-
-/*
-			if (maxBlockSize<currentSize)
-			{
-				maxBlockSize = currentSize;
-#ifdef VERBOSE
-				printf( "MAX BLOCK SIZE %ld\n", maxBlockSize );
-#endif
-			}
-*/
-
-			frameCount++;
-			flim->accessTable[blockIndex].frameCount = frameCount;
-			currentSize += toc[index];
-			if (currentSize>flim->blockSize)
-			{
-				ParamText( "\pError", "\pBuffer size is too small to load this flim. Please change buffer size in Preferences.", "", "" );
-				UtilDialog( kDLOGErrorNonFatal );
+				ParamText( "\pError", "\pNot enough memory to load this flim in network mode.", "", "" );
+				UtilModalDialog( kDLOGErrorNonFatal );
 				MyDisposPtr( (Ptr)toc );
 				FlimDispos( flim );
 				return NULL;
 			}
-			flim->accessTable[blockIndex].blockSize = currentSize;
+			
+			flim->accessTable = p;
+			flim->blockCount = l;
 
-			flim->blockCount = blockIndex+1;
+				//	Blocks size are a single frame
+			while (l--)
+			{
+				p->frameCount = 1;
+				p->blockSize = *q++;
+				p++;
+			}
 		}
-		
-//		flim->maxBlockSize = maxBlockSize;
+		else
+#endif
+		{
+			flim->accessTable = (struct AccessItem *)NewPtrNoFail( sizeof(struct AccessItem)*maxAccessEntries );
+	
+			frameCount = 0;
+			currentSize = 0;
+			flim->blockCount = 0;
+			for (index=0;index!=flim->info.frameCount;index++)
+			{
+				//	If we need to go to the next block, so be it
+				if (currentSize+toc[index]>=flim->blockSize)
+				{
+					frameCount = 0;
+					currentSize = 0;
+					blockIndex++;
+					if (blockIndex==maxAccessEntries)
+					{
+						MySetPtrSize( flim->accessTable, sizeof(struct AccessItem)*(maxAccessEntries+1024) );
+						if (MemError())
+							Abort( "\pNot enough access entries to load TOC" );
+						maxAccessEntries += 1024;
+					}
+				}
+	
+				frameCount++;
+				flim->accessTable[blockIndex].frameCount = frameCount;
+				currentSize += toc[index];
+				if (currentSize>flim->blockSize)
+				{
+					ParamText( "\pError", "\pBuffer size is too small to load this flim. Please change buffer size in Preferences.", "", "" );
+					UtilModalDialog( kDLOGErrorNonFatal );
+					MyDisposPtr( (Ptr)toc );
+					FlimDispos( flim );
+					return NULL;
+				}
+				flim->accessTable[blockIndex].blockSize = currentSize;
+	
+				flim->blockCount = blockIndex+1;
+			}
+		}
 
 		MyDisposPtr( (Ptr)toc );
+	
+		//	Give back the extra memory
+		MySetPtrSize( flim->accessTable, flim->blockCount*sizeof(struct AccessItem) );
 	}
-
-	//	Give back the extra memory
-	MySetPtrSize( flim->accessTable, flim->blockCount*sizeof(struct AccessItem) );
 
 	flim->poster = NULL;
 

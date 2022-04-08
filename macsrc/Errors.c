@@ -5,30 +5,37 @@
 //	-------------------------------------------------------------------
 
 #include "Resources.h"
+#include "Preferences.h"
 #include "Util.h"
 #include "stdio.h"
 #include "string.h"
 
 //	-------------------------------------------------------------------
 
-void ErrorCannotOpenFlimFile(
+int ErrorCannotOpenFlimFile(
 	OSErr err,
 	const char *fileName,
-	long vRefNum,
+	short vRefNum,
 	long dirID
 	)
 {
-	Str255 errStr;
-	Str255 vRefNumStr;
-	Str255 dirIDStr;
+//	ParamText( fileName, errStr, vRefNumStr, dirIDStr );
 	
-	NumToString( err, errStr );
-	NumToString( vRefNum, vRefNumStr );
-	NumToString( dirID, dirIDStr );
-	
-	ParamText( fileName, errStr, vRefNumStr, dirIDStr );
-	
-	UtilDialog( kDLOGOpenFlimErrorID );
+	DialogPtr dialog = UtilPlaceDialog( kDLOGOpenFlimErrorID );
+	short itemHit;
+
+	ParamText( fileName, "", "", "" );
+
+	do
+	{
+		ModalDialog( NULL, &itemHit );
+		if (PreferencesGetDebugMenu() && itemHit==kOpenFlimErrorDebugTextID)
+			ErrorDebugFile( err, (void*)fileName, vRefNum, dirID );
+	} while (itemHit>=kOpenFlimErrorDebugTextID);
+
+	DisposDialog( dialog );
+
+	return itemHit-1;
 }
 
 //	-------------------------------------------------------------------
@@ -51,7 +58,29 @@ void ErrorScreenTooSmall(
 	
 	ParamText( name, flimResolutionStr, screenResolutionStr, "" );
 	
-	UtilDialog( kDLOGScreenTooSmallErrorID );
+	UtilModalDialog( kDLOGScreenTooSmallErrorID );
+}
+
+//	-------------------------------------------------------------------
+
+void ErrorDebugFile(
+	OSErr err,
+	Str255 fileName,
+	long vRefNum,
+	long dirID
+	)
+{
+	Str255 errStr;
+	Str255 vRefNumStr;
+	Str255 dirIDStr;
+	
+	UtilErrToString( err, errStr );
+	NumToString( vRefNum, vRefNumStr );
+	NumToString( dirID, dirIDStr );
+	
+	ParamText( fileName, errStr, vRefNumStr, dirIDStr );
+	
+	UtilModalDialog( kDLOGDebugFileErrorID );
 }
 
 //	-------------------------------------------------------------------
@@ -59,7 +88,7 @@ void ErrorScreenTooSmall(
 void InfoIntegritySuccess( void )
 {
 	ParamText( "", "", "", "" );
-	UtilDialog( kDLOGFileIntegrityOkID );
+	UtilModalDialog( kDLOGFileIntegrityOkID );
 }
 
 //	-------------------------------------------------------------------
@@ -67,6 +96,6 @@ void InfoIntegritySuccess( void )
 void InfoAutoPlaySuccess( void )
 {
 	ParamText( "", "", "", "" );
-	UtilDialog( kDLOGAutoPlayOkID );
+	UtilModalDialog( kDLOGAutoPlayOkID );
 }
 

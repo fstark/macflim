@@ -65,7 +65,9 @@ void PreferencesSetNextTipBtnIndex( short nextTipBtnIndex );
 Boolean PreferencesGetShowTipsStartup( void );
 void PreferencesSetShowTipsStartup( Boolean showTipsStartup );
 Boolean PreferencesGetDebugMenu( void );
-Boolean PreferencesSetDebugMenu( Boolean debugMenu );
+void PreferencesSetDebugMenu( Boolean debugMenu );
+Boolean PreferencesGetSingleFrameReadAhead( void );
+void PreferencesSetSingleFrameReadAhead( Boolean singleFrameReadAhead );
 
 //	-------------------------------------------------------------------
 //	Call at the beginning of the program
