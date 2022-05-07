@@ -17,23 +17,23 @@
 
 ## [F03X] Fred
 
-*Yep, in the computer. So, right now we're in... [doigt sur les levres puis levé comme pour voir la direction du vent]... a 15.6MHz 68030 32 bits CPU, with a 68882 FPU. 64MB of RAM, and a SCSI drive.*
+*Yep, in the computer. So, right now we're in... [finger on lips, up and feeling the wind]... a 15.6MHz 68030 32 bits CPU, with a 68882 FPU. 64MB of RAM, and a SCSI drive.*
 *Yes, top of the line computer right there, that's an SE/30 the best of the best available... [look at watch] in 1989*
-*Perfect to show the new MacFlim. And what an improvement it is over the previous version! A cool, downright futuristic user interface, which I call a flim library, that lets you collect your favourite flims in a single place. And sound, as you might have noticed. This time, it comes directly from the computer!*
+*Even if we don't use that FPU, it is perfect to show the new MacFlim. And what an improvement it is over the previous version! A cool, downright futuristic user interface, which I call a flim library, that lets you collect your favourite flims in a single place. And sound, as you might have noticed. This time, it comes directly from the computer!*
 
 ## [F04] Zoolander
 
 ## [F05X] Fred
 
-*Thanks Hansel, much appreciated. It may not have been a simple as it looks. So, let's do a proper demo, just after the advertisements!*
+*Thanks Hansel, much appreciated. It may not have been a simple as it looks. So, let's do a proper demo, but first, the advertisements!*
 
 ## [F06-08] 1984/iPod/technologic
 
 ## [F09X] Fred
 
-*Right, sorry, sorry. That was a lot of ads, and god knows we get a lot of these nowadays, but I just had to, you know? They're iconic, really. And that weird futuristic music player. I think they should remove that last part, even if it is quite fitting...*
+*Right, sorry, sorry. Yeah, they did right in not using the original music video of Technologic of that iPod introduction...*
 
-*So, that demo, let's start with some music videos of the latest hits, just a few short extracts, to avoid all that nasty copyright business.*
+*So, for a demo, let's start with some music videos of the latest hits, just a few short extracts, let's try to avoid some nasty copyright business.*
 
 # [END OF SEQUENCE, RETURNS TO SE/30]
 
@@ -43,7 +43,7 @@
 
 ## [F16X] Fred
 
-*Wasn't that quite something? I think watching music is a cool thing, and I love having my Mac TV, or MTV, as I like to call it.*
+*Wasn't that quite something? I think watching music is a cool thing, and I love having my Macintosh Tele Vision, or MTV, as I'd like to call it.*
 
 *But we can do even better. Are you tired of going out with your friends and going to the movies? Wouldn't you rather stay home, and enjoy the cinematic experience from your chair? Now you can. The future is there, and it's glorious.*
 
@@ -55,7 +55,7 @@
 
 # CCCHHHAAANNNGGEEEE
 
-## [F21X] Fred
+## [F22X] Fred
 
 *And MacFlim is so advanced that it even allows to see music and flims from the future! Let's see some examples, and I promise to come back afterward.*
 
@@ -186,13 +186,43 @@ voiceover : This is Mac Works XL 3, running on an unmodded Lisa 2/10. It runs a 
 
 ## [F39] Launch Star Wars
 
+voiceover : so, you saw macflim on all the original compact macintoshes, in their stock configuration. The Macitosh Classic is similar to the se, and the Classic II or Performa 200 is between the SE and the SE/30.
+
+voiceover : speaking of the Classic, here is MacFlim on a Classic Color
+
+**** Launching MacFlim, error on color.
+
+voiceover : Yeah, what did you expect? 
+
+**** Changing color depth, relaunching
+
+voiceover : The screen is a little larger than the original Macs, so there is an option for that too. But, in black and white, sorry.
+
+## ????
+
+voiceover : So, is anyone still watching? Let's see something special: this is an SE/30, with a network card.
+
+**** Launches MacFlim.
+
+The flim is shared using EtherTalk, from a Linux server. This is a se-quality flim, but let's see how it it goes...
+
+## ???? Play Sledgehammer
+
+voiceover : Ok, it goes badly. That's because, when there is data coming from the network, the CPU is not available for normal processing, and everything breaks down.
+
+voiceover : However, not everything is lost. There is a new option in the preferences menu, that reduces the buffer sizes so we have only a single frame of buffer. The side effect is that packets won't generally interrupt playback, and, while not perfect, it makes se-quality flims playable on an SE/30 via the network.
+
+## ???? Launch Sledgehammer
+
+voiceover : And that's what I call a win!
+
 voiceover : So, that's all for today, hop you enjoyed. Please visit www.macflim.com and the github, to get MacFlim and some example flims. Have fun!
 
 ### ON-SCREEN: http://www.macflim.com
 ### ON-SCREEN: http://github.com/fstark/macflim
 ### ON-SCREEN: @fredericstark
 
-As a bonus, here is a visual comparion of the quality of the encodings in various cases. 
+As a bonus, here is a visual comparion of the quality of the encodings in various cases. I suggest you view the video in HD.
 
 ### ON-SCREEN: Matrix
 
@@ -202,7 +232,7 @@ comparaison des 4 matrix.
 
 comparaison des 4 bad apple.
 
-### ON-SCREEN: Should should go now
+### ON-SCREEN: You should really go now. You have been warned.
 
 comparaison des 4 rick roll.
 

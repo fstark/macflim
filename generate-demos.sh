@@ -163,6 +163,7 @@ cd -
 # encode LaClasseAmericaine.mp4   00-SAMPLE2 xl 0:13 7 :15 2 2 "--filters k40w20sc --byterate 380 --silent true"
 
 # encode Zoolander.mp4            02-ZOO se30 6 2 0 1 10
+
 # encode Zoolander.mp4            04-ZOO se30 17 3 0 1 10
 
 # encode 1984.mkv                 06-1984 se30 15 10 0 1 1.43 "--filters k10g1.2sc"     # UGLY
@@ -180,13 +181,14 @@ cd -
 # encode StarWars.mp4             18-SW2 se30 1:49:07.4 17.3 0 1 00:00:11.11 "--filters k10w10g1sc"
 # encode The_Shining_Johnny.mp4   19-SHINING se30 0:45 26 0 1 00:00:23.64 "--filters w20g1.6sc"
 # encode 2001.mp4                 20-2001 se30 00:02:18 14 0 1 00:00:00 "--filters k10g0.8ZZsc"
-# encode Matrix.mp4               21-MAT se30 1:46:27.5 13.60 0 1 00:00:09.427
 
-# encode Gangnan_Style.mp4        23-GANG se30 0:3:42 00:00:08 0 1 00:00:4 "--filters k6w10g1.6sc"
-# encode SinCity.mp4              24-SIN se30 02:10 15 0 1 00:00:04.672 "--filters k5w30g1.6sc --dither error"
-# 300 WITH THE MACFLIM SUBTITLES
-# encode 300.mp4                  25-300 se30 00:12:35.500 14.3 0 1 00:00:09.802 "--srt sample/source/300-macflim.srt"
-# encode Bad_Apple.mp4            26-BAD se30 1:11 21.5 0 1 00:00:04.171 "--filters k20w20g1sc"
+# encode Gangnan_Style.mp4        22-GANG se30 0:3:42 00:00:08 0 1 00:00:4 "--filters k6w10g1.6sc"
+# encode SinCity.mp4              23-SIN se30 02:10 15 0 1 00:00:04.672 "--filters k5w30g1.6sc --dither error"
+## 300 WITH THE MACFLIM SUBTITLES
+# encode 300.mp4                  24-300 se30 00:12:35.500 14.3 0 1 00:00:09.802 "--srt sample/source/300-macflim.srt"
+# encode Bad_Apple.mp4            25-BAD se30 1:11 21.5 0 1 00:00:04.171 "--filters k20w20g1sc"
+# encode Matrix.mp4               26-MAT se30 1:46:27.5 13.60 0 1 00:00:09.427
+
 
 # encode Bad_Apple.mp4            28-BAD se 1:11 21.5 0 1 00:00:04.171 "--filters k20w20g1sc"
 
@@ -194,32 +196,34 @@ cd -
 
 # encode Sweet_Dreams.mp4         33-SWEET plus 2:14.6 19 0 1 00:00:09.200 "--filters w10k10g1bbsc --dither error --error-bleed 0.9"
 
-# encode StarWars.mp4             36-SW 512 00:02:01 25.8 0 1 00:00:25.77 "--filters k10g1sc"
+# encode StarWars.mp4             36-SW 512k 00:02:01 25.8 0 1 00:00:25.77 "--filters k10g1sc"
 
-# encode Amiga_Ball.mp4           37-AMIGA xl 0:29 10 0 1 00:00:00.434 "--filters gzq5 --byterate 380"
+# encode Amiga_Ball.mp4           37-AMIGA 128k 0:29 10 0 1 00:00:00.434 "--filters gzzq5 --byterate 380"
 # encode Matrix.mp4               38-MAT xl   01:46:25.500 00:00:17 0 1 00:00:07.427 "--filters gbbszq15c --byterate 380"
 
 # encode StarWars.mp4             39-SW xl 00:02:01 38 0 1 00:00:25.77 "--filters k10g1sc"
 
 # encode ThatsAll.mp4             40-ALL se30 0 3600 0 1 00:00:03.867 "--dither error --filters k5w20g1.6sc"
 
+
+
 # encode Matrix.mp4               YT-99-MAT se30 01:46:27.500 00:00:30.780 0 1 00:00:09.427 "--filters gc --watermark SE/30"
 # encode Matrix.mp4               YT-99-MAT se   01:46:27.500 00:00:30.780 0 1 00:00:09.427 "--filters gbsqc --dither error  --watermark SE"
 # encode Matrix.mp4               YT-99-MAT plus 01:46:27.500 00:00:30.780 0 1 00:00:09.427 "--filters gbbszq15c  --watermark PLUS"
-# encode Matrix.mp4               YT-99-MAT xl   01:46:27.500 00:00:30.780 0 1 00:00:09.427 "--filters gbbszq15c --byterate 380 --watermark 128K"
-# ( cd /mnt/data0/WebSites/www.macflim.com/macflim2/samples && ffmpeg -loglevel info -y -i "YT-99-MAT-se30.mp4" -i "YT-99-MAT-se.mp4" -i "YT-99-MAT-plus.mp4" -i "YT-99-MAT-xl.mp4" -filter_complex "[0:v][1:v]hstack=inputs=2[top]; [2:v][3:v]hstack=inputs=2[bottom]; [top][bottom]vstack=inputs=2[v]; [2:a]acopy[a]" -map_metadata -1 -map "[v]" -map "[a]" YT-99-MAT-grid.mp4 && open YT-99-MAT-grid.mp4 )
+encode Matrix.mp4               YT-99-MAT 128k   01:46:27.500 00:00:30.780 0 1 00:00:09.427 "--filters gbbszq15c --byterate 380 --watermark 128K"
+( cd /mnt/data0/WebSites/www.macflim.com/macflim2/samples && ffmpeg -loglevel info -y -i "YT-99-MAT-se30.mp4" -i "YT-99-MAT-se.mp4" -i "YT-99-MAT-plus.mp4" -i "YT-99-MAT-128k.mp4" -filter_complex "[0:v][1:v]hstack=inputs=2[top]; [2:v][3:v]hstack=inputs=2[bottom]; [top][bottom]vstack=inputs=2[v]; [2:a]acopy[a]" -map_metadata -1 -map "[v]" -map "[a]" YT-99-MAT-grid.mp4 && open YT-99-MAT-grid.mp4 )
 
 # encode Bad_Apple.mp4            YT-99-BAD se30 1:11 21.5 0 1 00:00:04.171 "--filters k20w20g1sc --watermark SE/30"
 # encode Bad_Apple.mp4            YT-99-BAD se 1:11 21.5 0 1 00:00:04.171 "--filters k20w20g1sc --watermark SE"
 # encode Bad_Apple.mp4            YT-99-BAD plus 1:11 21.5 0 1 00:00:04.171 "--filters k20w20g1sc --watermark PLUS"
-# encode Bad_Apple.mp4            YT-99-BAD xl 1:11 21.5 0 1 00:00:04.171 "--filters k20w20g1sc --byterate 380 --watermark 128K"
-# ( cd /mnt/data0/WebSites/www.macflim.com/macflim2/samples && ffmpeg -loglevel info -y -i "YT-99-BAD-se30.mp4" -i "YT-99-BAD-se.mp4" -i "YT-99-BAD-plus.mp4" -i "YT-99-BAD-xl.mp4" -filter_complex "[0:v][1:v]hstack=inputs=2[top]; [2:v][3:v]hstack=inputs=2[bottom]; [top][bottom]vstack=inputs=2[v]; [2:a]acopy[a]" -map_metadata -1 -map "[v]" -map "[a]" YT-99-BAD-grid.mp4 && open YT-99-BAD-grid.mp4 )
+encode Bad_Apple.mp4            YT-99-BAD 128k 1:11 21.5 0 1 00:00:04.171 "--filters k20w20g1sc --byterate 380 --watermark 128K"
+( cd /mnt/data0/WebSites/www.macflim.com/macflim2/samples && ffmpeg -loglevel info -y -i "YT-99-BAD-se30.mp4" -i "YT-99-BAD-se.mp4" -i "YT-99-BAD-plus.mp4" -i "YT-99-BAD-128k.mp4" -filter_complex "[0:v][1:v]hstack=inputs=2[top]; [2:v][3:v]hstack=inputs=2[bottom]; [top][bottom]vstack=inputs=2[v]; [2:a]acopy[a]" -map_metadata -1 -map "[v]" -map "[a]" YT-99-BAD-grid.mp4 && open YT-99-BAD-grid.mp4 )
 
-# encode RickRoll.mp4 YT-99-RR se30 0 30 0 5 2 "--filters k10w20g1.6sc --watermark SE/30"
-# encode RickRoll.mp4 YT-99-RR se 0 30 0 5 2 "--filters k10w20g1.6sc --watermark SE"
-# encode RickRoll.mp4 YT-99-RR plus 0 30 0 5 2 "--filters k10w20g1.6sc --watermark PLUS"
-# encode RickRoll.mp4 YT-99-RR xl 0 30 0 5 2 "--filters Z37k10w20g1.6sczz --byterate 380 --watermark 128K"
-# ( cd /mnt/data0/WebSites/www.macflim.com/macflim2/samples && ffmpeg -loglevel info -y -i "YT-99-RR-se30.mp4" -i "YT-99-RR-se.mp4" -i "YT-99-RR-plus.mp4" -i "YT-99-RR-xl.mp4" -filter_complex "[0:v][1:v]hstack=inputs=2[top]; [2:v][3:v]hstack=inputs=2[bottom]; [top][bottom]vstack=inputs=2[v]; [2:a]acopy[a]" -map_metadata -1 -map "[v]" -map "[a]" YT-99-RR-grid.mp4 && open YT-99-RR-grid.mp4 )
+encode RickRoll.mp4 YT-99-RR se30 0 30 0 5 2 "--filters k10w20g1.6sc --watermark SE/30"
+encode RickRoll.mp4 YT-99-RR se 0 30 0 5 2 "--filters k10w20g1.6sc --watermark SE"
+encode RickRoll.mp4 YT-99-RR plus 0 30 0 5 2 "--filters k10w20g1.6sc --watermark PLUS"
+encode RickRoll.mp4 YT-99-RR 128k 0 30 0 5 2 "--filters Z37k10w20g1.6sczz --byterate 380 --watermark 128K"
+( cd /mnt/data0/WebSites/www.macflim.com/macflim2/samples && ffmpeg -loglevel info -y -i "YT-99-RR-se30.mp4" -i "YT-99-RR-se.mp4" -i "YT-99-RR-plus.mp4" -i "YT-99-RR-128k.mp4" -filter_complex "[0:v][1:v]hstack=inputs=2[top]; [2:v][3:v]hstack=inputs=2[bottom]; [top][bottom]vstack=inputs=2[v]; [2:a]acopy[a]" -map_metadata -1 -map "[v]" -map "[a]" YT-99-RR-grid.mp4 && open YT-99-RR-grid.mp4 )
 
 
 ### -----------------
@@ -261,7 +265,7 @@ cd -
 
 
 # TESTS FOR XL VERSIONS
-encode Matrix.mp4               Matrix xl   01:46:15 00:00:43.280 01:46:30.200 10 00:00:41 "--filters gbbsq15c --srt sample/source/Matrix.eng.srt"
+# encode Matrix.mp4               Matrix xl   01:46:15 00:00:43.280 01:46:30.200 10 00:00:41 "--filters gbbsq15c --srt sample/source/Matrix.eng.srt"
 # encode Matrix.mp4               Matrix 512k   01:46:15 00:00:43.280 01:46:30.200 10 00:00:41 "--filters gbbszq15c --byterate 480 --srt sample/source/Matrix.eng.srt"
 # encode Matrix.mp4               Matrix 128k   01:46:25.500 00:00:17 01:46:30.200 10 00:00:07.427 "--filters gbbszq15c --byterate 380 --srt sample/source/Matrix.eng.srt"
 # encode StarWars.mp4             StarWars-Intro 512k 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc --byterate 480"
@@ -271,7 +275,7 @@ encode Matrix.mp4               Matrix xl   01:46:15 00:00:43.280 01:46:30.200 1
 # encode StarWars.mp4             StarWars-Intro se 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc"
 # encode StarWars.mp4             StarWars-Intro plus 00:02:01 38 00:02:11 5 00:00:25.77 "--filters k10g1sc"
 
-encode Matrix.mp4               Matrix portable   01:46:15 00:00:43.280 01:46:30.200 10 00:00:41 "--filters gbbsq15c --srt sample/source/Matrix.eng.srt"
+# encode Matrix.mp4               Matrix portable   01:46:15 00:00:43.280 01:46:30.200 10 00:00:41 "--filters gbbsq15c --srt sample/source/Matrix.eng.srt"
 
 
 # encode StarWars.mp4             Model200 xl 00:02:01 38 00:02:11 5 00:00:25.77 "--width 224 --height 128 --filters k10g1s --byterate 580 --bars none --group false"
