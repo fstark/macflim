@@ -47,21 +47,19 @@ Alternatively, you can build it from the source code, by downloading the 'MacFli
 
 ## Ok, how do I compile the encoder?
 
-The pre-requisites are ffmpeg, youtube-dl (optional) and ImageMagick (optional)
+The pre-requisites are ffmpeg, youtube-dl or yt-dlp (optional) and ImageMagick (optional)
 
-* ``ffmpeg`` libraries are required for compilation. 
+* ``ffmpeg`` libraries are required for compilation (you'll need version 4.x).
 * ``yt-dlp`` or ``youtube-dl`` is used if you want to directly encode movies from youtube or vimeo (or others).
 * ``ImageMagick`` is used if you want to generate ``gif`` files.
 
 On a Mac:
 
-    brew install ffmpeg
-    brew install youtube-dl
+    brew unlink ffmpeg
+    brew install ffmpeg@4
+    brew link ffmpeg@4
+    brew install yt-dlp
     brew install ImageMagick
-
-Optionally, yt-dlp should be installable with:
-
-    brew install yt-dlp/taps/yt-dlp
 
 On a linux (ubuntu):
 
@@ -73,10 +71,10 @@ On a linux (ubuntu):
 
     # Make sure you get the dependecies
     sudo apt-get install libavformat-dev libavcodec-dev libavutil-dev
-    sudo apt-get install youtube-dl
+    sudo apt-get install yt-dlp
     sudo apt-get install imagemagick
 
-Note, ``youtube-dl`` is not easy to keep up to date from apt. See https://github.com/ytdl-org/youtube-dl#installation for a better way to install it. Also, as ``youtube-dl`` is currently quite slow ``yt-dlp`` will be used instead if installed (``yt-dlp`` cannot be installed via apt for now, see https://github.com/yt-dlp/yt-dlp for instructions)
+Note, ``yt-dlp`` is not easy to keep up to date from apt. See https://github.com/yt-dlp/yt-dlp#installation for a better way to install it.
 
 You can the get the source code using:
 
@@ -84,13 +82,19 @@ You can the get the source code using:
 
 (or your regional equivalent)
 
-Compiling is as simple as opening a terminal and typing ``make``. There are some warnings of obsolete functions use with ffmpeg, but it is already a miracle that it works. If anyone has a pull request to fix this, let me know.
+Compiling is as simple as opening a terminal and typing ``make`` (see notes for Apple silicon below). There are some warnings of obsolete functions use with ffmpeg, but it is already a miracle that it works. If anyone has a pull request to fix this, let me know.
 
 After compilation, you can generate a sample flim using:
 
     ./flimmaker 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' --mp4 out.mp4
 
 This will download the video and encode it for se30 playback (the default), as 'out.flim'. It will take a couple of minutes. You can then immediately play the ``out.mp4`` file, which is identical to the se30 playback, including a mono output. Enjoy!
+
+## Apple silicon notes
+
+If you are using Homebrew on a modern Mac, chances are that you'll need to tell the compiler explicitly where to look for the headers and libraries:
+
+    CFLAGS=-I/opt/homebrew/include/ LDLIBS=-L/opt/homebrew/lib/ make
 
 ## General flim creation options
 
