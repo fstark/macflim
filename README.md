@@ -244,7 +244,7 @@ The Mac Plus and the Mac SE profiles are ``--fps-ratio 2`` by default, while the
 
 ### --group **boolean**
 
-Using ``--group false`` will have the player display partially constructed frames every 60th of a second. Due to limitations in the hardware/the way MacFlim works, the Mac Plus and the Mac SE cannot group the frames, and you can see the construction on screen. The SE/30 doesn't have to display partial results, which results more stable display. However, one can use ``--group true`` for the SE/30 to get some interesting low-fidelity effects.
+Using ``--group false`` will have the player display partially constructed frames every 60th of a second. Due to limitations in the hardware/the way MacFlim works, the Mac Plus and the Mac SE cannot group the frames, and you can see the construction on screen. The SE/30 doesn't have to display partial results, which results more stable display. However, one can use ``--group false`` for the SE/30 to get some interesting low-fidelity effects.
 
 The Mac Plus and the Mac SE profiles are not grouped, while the SE/30 is.
 
