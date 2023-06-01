@@ -640,14 +640,14 @@ std::string profile_name = "se30";
             if (res!=0)
             {
                 std::clog << "yt-dlp not installed or failing, falling back to youtube-dl (code " << res << ")\n";
-            }
 
-            sprintf( buffer, "youtube-dl '%s' -f mp4 --output '%s'", input_file.c_str(), cache_file.c_str() );
-            res = system( buffer );
-            if (res!=0)
-            {
-                std::clog << "youtube-dl failed with error " << res << "\n";
-                exit( EXIT_FAILURE );
+                sprintf( buffer, "youtube-dl '%s' -f mp4 --output '%s'", input_file.c_str(), cache_file.c_str() );
+                res = system( buffer );
+                if (res!=0)
+                {
+                    std::clog << "youtube-dl failed with error " << res << "\n";
+                    exit( EXIT_FAILURE );
+                }
             }
 
                 //  Switch input file
