@@ -1,6 +1,6 @@
 # Uncomment the following two lines for compilation under homebrew on Mac M1
-# CXXFLAGS += -v -I/opt/homebrew/include/
-# LDLIBS += -L/opt/homebrew/lib/
+CXXFLAGS += -I/opt/homebrew/include/
+LDLIBS += -L/opt/homebrew/lib/
 
 all: ../flimmaker ../flimutil
 
