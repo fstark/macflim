@@ -1,4 +1,4 @@
-# Uncomment the following two lines for compilation under homebrew on Mac M1
+# The following two lines are for compilation under homebrew on Mac M1
 CXXFLAGS += -I/opt/homebrew/include/
 LDLIBS += -L/opt/homebrew/lib/
 
