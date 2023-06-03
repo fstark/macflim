@@ -205,6 +205,7 @@ int main()
 	InitUtilities();
 	BufferInit( PreferenceGetMaxBufferSize(), reservedSpace );
 	InitCursor();
+	CodecInit();
 
 	{
 		//	As sprintf may be used in interruption for HUD
@@ -222,6 +223,7 @@ int main()
 //	HideCursor();
 
 	//	Set up screen
+	InitPlayback();
 	gScreen = ScreenInit( gScreen );
 //	ScreenVideoPrepare( gScreen, 512, 342 );
 

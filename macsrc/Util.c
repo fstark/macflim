@@ -4,11 +4,13 @@
 #include <string.h>
 #include "Resources.h"
 
+GrafPtr sGrafPtr;
+
 //	-------------------------------------------------------------------
 //	Generic assertion => break into debugger
 //	-------------------------------------------------------------------
 
-static int my_strlen( const char *msg )
+int my_strlen( const char *msg )
 {
 	int s = 0;
 	while (*msg++)
@@ -16,10 +18,25 @@ static int my_strlen( const char *msg )
 	return s;
 }
 
-static void my_strcpy( char *d, const char *s )
+void my_strcpy( char *d, const char *s )
 {
 	while ((*d++=*s++))
 		;
+}
+
+void my_memcpy( void *d, const void *s, unsigned long len )
+{
+	char *dd = d;
+	const char *ss = s;
+	while (len--)
+		*dd++ = *ss++;
+}
+
+void DebugLong( long l )
+{
+	Str255 s;
+	NumToString( l, s );
+	DebugStr( s );
 }
 
 void assert( int v, const char *msg )
@@ -70,6 +87,19 @@ void InitUtilities( void )
 	SetRect( &theRect, 10, 80, 502, 180 );
 		//	altDBoxProc has a more 'vintage" look.
 	sDialogFatalError = NewDialog( &theDialog, &theRect, "\pFatal Error", FALSE, altDBoxProc, (WindowPtr)-1, FALSE, 0, sDITLHdl );
+
+		//	XCMD precludes us of accessing screenBits
+	GetPort( &sGrafPtr );
+}
+
+//	-------------------------------------------------------------------
+
+void DeinitUtilities( void )
+{
+	if (sDialogFatalError)
+		DisposDialog( sDialogFatalError);
+	if (sDITLHdl)
+		DisposHandle( sDITLHdl );
 }
 
 //	-------------------------------------------------------------------
@@ -257,18 +287,18 @@ void CheckPtr( void *p, const char *msg )
 
 void StrCpyPP( Str255 p, const Str255 q )
 {
-	memcpy( p, q, q[0]+1 );
+	my_memcpy( p, q, q[0]+1 );
 }
 
 void StrCatPC( Str255 p, const char *q )
 {
-	memcpy( p+p[0]+1, q, strlen( q ) );
-	p[0] += strlen( q );
+	my_memcpy( p+p[0]+1, q, my_strlen( q ) );
+	p[0] += my_strlen( q );
 }
 
 void StrCatPP( Str255 p, Str255 q )
 {
-	memcpy( p+p[0]+1, q+1, q[0]+1 );
+	my_memcpy( p+p[0]+1, q+1, q[0]+1 );
 	p[0] += q[0];
 }
 
@@ -290,13 +320,13 @@ void UtilPlaceWindow( WindowPtr window, float percentTop )
 
 	short wl = window->portRect.left;
 	short wr = window->portRect.right;
-	short sl = screenBits.bounds.left;
-	short sr = screenBits.bounds.right;
+	short sl = sGrafPtr->portBits.bounds.left;
+	short sr = sGrafPtr->portBits.bounds.right;
 
 	short wt = window->portRect.top-TBAR;
 	short wb = window->portRect.bottom;
-	short st = screenBits.bounds.top+MBAR;
-	short sb = screenBits.bounds.bottom;
+	short st = sGrafPtr->portBits.bounds.top+MBAR;
+	short sb = sGrafPtr->portBits.bounds.bottom;
 	
 	MoveWindow( window, ((sr-sl)-(wr-wl))/2, ((sb-st)-(wb-wt))*percentTop+MBAR+TBAR, FALSE );
 }
@@ -307,7 +337,7 @@ void UtilPlaceWindow( WindowPtr window, float percentTop )
 
 Size GetScreenSaveSize()
 {
-	return ((Size)screenBits.rowBytes)*RectHeight(screenBits.bounds);
+	return ((Size)sGrafPtr->portBits.rowBytes)*RectHeight(sGrafPtr->portBits.bounds);
 }
 
 void SaveScreen( Ptr *ptr )
@@ -317,7 +347,7 @@ void SaveScreen( Ptr *ptr )
 	*ptr = MyNewPtr( count );
 
 	if (*ptr)
-		BlockMove( screenBits.baseAddr, *ptr, count );
+		BlockMove( sGrafPtr->portBits.baseAddr, *ptr, count );
 }
 
 //	-------------------------------------------------------------------
@@ -326,8 +356,8 @@ void RestoreScreen( Ptr *ptr )
 {
 	if (*ptr)
 	{
-		long count = ((long)screenBits.rowBytes)*RectHeight(screenBits.bounds);
-		BlockMove( *ptr, screenBits.baseAddr, count );
+		long count = ((long)sGrafPtr->portBits.rowBytes)*RectHeight(sGrafPtr->portBits.bounds);
+		BlockMove( *ptr, sGrafPtr->portBits.baseAddr, count );
 		MyDisposPtr( *ptr );
 		*ptr = NULL;
 	}
@@ -335,7 +365,7 @@ void RestoreScreen( Ptr *ptr )
 	{	//	We hack it with a screen-wide window
 		//	(#### Note: prob doesn't redraw the menu bar)
 		//	(but the case of not enough memory to save screen, but enough memory to run the UI seems weird)
-		WindowPtr w = NewWindow( NULL, &screenBits.bounds, "\p", TRUE, plainDBox, (WindowPtr)-1, FALSE, 0);
+		WindowPtr w = NewWindow( NULL, &sGrafPtr->portBits.bounds, "\p", TRUE, plainDBox, (WindowPtr)-1, FALSE, 0);
 		if (w)
 		{
 			DisposeWindow( w );

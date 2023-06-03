@@ -36,7 +36,7 @@ void DebugUpdateMem()
 	GetPort( &savePort );
 
 	sprintf( buffer+1, "%ld", sLastMem );
-	buffer[0] = strlen( buffer+1 );
+	buffer[0] = my_strlen( buffer+1 );
 	
 	if (!sDebugPort)
 	{

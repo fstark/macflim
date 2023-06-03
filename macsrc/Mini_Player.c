@@ -15,7 +15,7 @@ int main()
 		//	Mac toolbox init
 	InitGraf( &thePort );
 	MachineInit();
-
+	CodecInit();
 
 	if (MachineIsMinimal())
 	{
@@ -46,12 +46,15 @@ int main()
 	InitCursor();
 
 	HideCursor();
+	
 
 	if (!MachineIsBlackAndWhite())
 	{
 		//	Not a BW screen
 		return 0;
 	}
+
+	InitPlayback();
 
 	//	The fancy version
 	//	Set up screen

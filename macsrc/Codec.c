@@ -329,7 +329,9 @@ static void CopyLines_all_ref( char *source, struct CodecControlBlock *ccb )
 //	to play flims
 //	-------------------------------------------------------------------
 
-DisplayProc sProcs[2][2][kCodecCount] = {
+DisplayProc sProcs[2][2][kCodecCount];
+/* ####
+= {
 	{		//	non-ref, all sizes
 		{ Null_ref, Null_ref, UnpackZ32_all, Invert_all_ref, CopyLines_all_ref },
 			//	non-ref, same size
@@ -342,6 +344,35 @@ DisplayProc sProcs[2][2][kCodecCount] = {
 		{ Null_ref, Null_ref, UnpackZ32_same_ref, Invert_same_ref, CopyLines_same_ref },
 	},
 };
+*/
+
+//	XCMD cannot init globals with code pointers
+void CodecInit()
+{
+	sProcs[0][0][0] = Null_ref;
+	sProcs[0][0][1] = Null_ref;
+	sProcs[0][0][2] = UnpackZ32_all;
+	sProcs[0][0][3] = Invert_all_ref;
+	sProcs[0][0][4] = CopyLines_all_ref;
+
+	sProcs[0][1][0] = Null_ref;
+	sProcs[0][1][1] = Null_ref;
+	sProcs[0][1][2] = UnpackZ32_same;
+	sProcs[0][1][3] = Invert_same_ref;
+	sProcs[0][1][4] = CopyLines_same_ref;
+
+	sProcs[1][0][0] = Null_ref;
+	sProcs[1][0][1] = Null_ref;
+	sProcs[1][0][2] = UnpackZ32_all_ref;
+	sProcs[1][0][3] = Invert_all_ref;
+	sProcs[1][0][4] = CopyLines_all_ref;
+
+	sProcs[1][1][0] = Null_ref;
+	sProcs[1][1][1] = Null_ref;
+	sProcs[1][1][2] = UnpackZ32_same_ref;
+	sProcs[1][1][3] = Invert_same_ref;
+	sProcs[1][1][4] = CopyLines_same_ref;
+}
 
 //	-------------------------------------------------------------------
 

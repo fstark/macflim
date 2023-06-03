@@ -55,6 +55,10 @@ DisplayProc CodecGetProc( eCodec codec, Boolean same, Boolean ref );
 
 //	-------------------------------------------------------------------
 
+void CodecInit( void );
+
+//	-------------------------------------------------------------------
+
 //	Usure if right place
 Boolean CreateOffsetTable(
 	unsigned char ***offsets,

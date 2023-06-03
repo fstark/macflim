@@ -34,10 +34,12 @@ ePlayResult FlimSyncPlay( FlimPtr flim )
 	ePlayResult theResult = kDone;
 	struct FlimInfo *flimInfo;
 
+
 	blk = FlimInitBlock( flim, BufferGet( 0 ) );
 
 	flimInfo = FlimGetInfo( flim );
-	if (!ScreenVideoPrepare( gScreen, flimInfo->width, flimInfo->height ))
+
+	if (!ScreenVideoPrepare( gScreen, flimInfo->width, flimInfo->height, -1, "?" ))
 		return kCodecError;
 
 	ScreenClear( gScreen );

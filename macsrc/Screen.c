@@ -330,16 +330,22 @@ void ScreenLog( ScreenPtr screen, const char *format, ... )
 
 ScreenPtr ScreenInit( ScreenPtr scrn )
 {
-	int w = screenBits.bounds.right-screenBits.bounds.left;
-	int h = screenBits.bounds.bottom-screenBits.bounds.top;
+	//	XCMD : removed screenbits
+	GrafPtr port;
+	int w,h;
+	
+	GetPort( &port );
+
+	w = port->portBits.bounds.right-port->portBits.bounds.left;
+	h = port->portBits.bounds.bottom-port->portBits.bounds.top;
 
 	assert( scrn!=NULL, "Screen not created" );
 
-	scrn->physAddr = (unsigned char *)screenBits.baseAddr;
+	scrn->physAddr = (unsigned char *)port->portBits.baseAddr;
 	scrn->width = w;
 	scrn->height = h;
 
-	scrn->rowBytes = screenBits.rowBytes;
+	scrn->rowBytes = port->portBits.rowBytes;
 
 	scrn->ready = FALSE;
 
@@ -395,7 +401,6 @@ extern long *gOffsets;//####hack from codec.c
 Boolean ScreenVideoPlayable( ScreenPtr scrn, short width, short height )
 {
 	return scrn->width>=width && scrn->height>=height;
-//	return width<=512;
 }
 
 Boolean ScreenVideoPrepare( ScreenPtr scrn, short width, short height, unsigned long codecs, const char *name )
@@ -413,6 +418,9 @@ Boolean ScreenVideoPrepare( ScreenPtr scrn, short width, short height, unsigned 
 #endif
 		return FALSE;
 	}
+
+
+
 
 		// to be removed
 

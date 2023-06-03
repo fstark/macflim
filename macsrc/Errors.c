@@ -52,10 +52,10 @@ void ErrorScreenTooSmall(
 	char screenResolutionStr[256];
 
 	sprintf( flimResolutionStr+1, "%ux%u", flimWidth, flimHeight );
-	flimResolutionStr[0] = strlen( flimResolutionStr+1 );
+	flimResolutionStr[0] = my_strlen( flimResolutionStr+1 );
 	sprintf( screenResolutionStr+1, "%ux%u", screenWidth, screenHeight );
-	screenResolutionStr[0] = strlen( screenResolutionStr+1 );
-	
+	screenResolutionStr[0] = my_strlen( screenResolutionStr+1 );
+
 	ParamText( name, flimResolutionStr, screenResolutionStr, "" );
 	
 	UtilModalDialog( kDLOGScreenTooSmallErrorID );

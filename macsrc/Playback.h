@@ -104,8 +104,8 @@ extern short gState;
 
 extern long gSpinCount;
 
-
-
+//	Initialize globals for playback
+void InitPlayback( void );
 
 //	#### playbackvbl (should not be visible)
 //void InstallPlaybackHandler( void );

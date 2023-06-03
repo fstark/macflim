@@ -14,17 +14,30 @@ typedef enum
 //	-------------------------------------------------------------------
 
 //	-------------------------------------------------------------------
+
+//	-------------------------------------------------------------------
 //	Assertion (with C-string)
 //	-------------------------------------------------------------------
 
 void assert( int v, const char *msg );
 
 //	-------------------------------------------------------------------
+//	Reimplementation of somne basic C functions to run in XCMDs
+//	-------------------------------------------------------------------
+int my_strlen( const char *msg );
+void my_strcpy( char *d, const char *s );
+void my_memcpy( void *d, const void *s, unsigned long len );
+
+void DebugLong( long l );
+
+//	-------------------------------------------------------------------
 //	Initing the utilities set aside some memory to be able to properly
 //	abort in low-memory conditions
+//	XCMD : Gets the physical screen
 //	-------------------------------------------------------------------
 
 void InitUtilities( void );
+void DeinitUtilities( void );
 
 //	-------------------------------------------------------------------
 //	Empty routine helpful to place a breakpoint to

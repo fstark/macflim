@@ -14,6 +14,8 @@ MacFlim brings movie playing abilities to the most popular members of the Macint
 
 * The source code and binaries for "Mini MacFlim", a low-memory version of the popular video player for the vintage mac.
 
+* The source code and binary for the XCMD to play a flim from HyperCard (BEWARE: Alpha state for feedback -- leaks memory)
+
 * The source code of flimmaker, the command line encoder. It runs on Mac and Linux (and could probably compiled on windows with a C++20 compiler).
 
 With this code, you should be able to encode and play a video sequence on your vintage mac.
@@ -30,7 +32,7 @@ _Create flims and immediately admire them. Note the gif [has reduced frame rate]
 
 Well, the main change is that flims now have sound. This needed a complete rewrite of both the player and the encoder. All your old flims are now obsolete, sorry.
 
-Note that the new player app is currently less fancy than MacFlim 1.0. It only lets you play full screen flims. But with glorious 8 bits 22KHz mono sound. Old features of the player may be added back.
+Note that the new player app is currently less fancy than MacFlim 1.0. It only lets you play full screen flims. But with glorious 8 bits 22KHz mono sound. Old features of the player may be added back. There is also an "playflim" HyperCard XCMD to play a flim from HyperCard.
 
 Encoding input is greatly simplified: you don't have to resize the input to 512x342 any more. You don't need to have it in grayscale. You don't have to have it in pgm format. You can directly feed mp4 movies, or even youtube or vimeo urls to the encoder.
 

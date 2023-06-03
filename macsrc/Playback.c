@@ -247,7 +247,7 @@ BlockPtr GetOtherBlock( BlockPtr blk )
 
 //	The screen
 struct ScreenRecord gScreenRec;
-ScreenPtr gScreen = &gScreenRec;
+ScreenPtr gScreen; // = &gScreenRec; #### XCMD
 
 
 
@@ -281,6 +281,8 @@ ePlayResult PlayFlim( FlimPtr flim, Boolean silent )
 	int index;
 	struct FlimInfo *flimInfo;
 
+	assert( gScreen!=NULL, "Call InitPlayback" );
+	
 #ifdef SYNCPLAY
 	return FlimSyncPlay( flim );
 #endif
@@ -474,3 +476,9 @@ ePlayResult PlayFlimFileLoop( Str255 fName, short vRefNum, long dirID, eFileAPI 
 
 	return theResult;
 }
+
+void InitPlayback( void )
+{
+	gScreen = &gScreenRec;	//	XCMD
+}
+

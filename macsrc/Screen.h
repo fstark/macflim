@@ -98,6 +98,7 @@ Boolean ScreenVideoPlayable( ScreenPtr scrn, short width, short height );
 //	height of the input (pixels)
 //	codecs is the sets of codecs used by the flim
 //	#### name is only passed to be displayed in errors. Errors should not be displayed this deep. Pascal string
+//	#### codecs isn't used yet (remove?)
 //	Returns TRUE if flim can play, FALSE if flim is not playable
 //	-------------------------------------------------------------------
 
