@@ -14,7 +14,7 @@ MacFlim brings movie playing abilities to the most popular members of the Macint
 
 * The source code and binaries for "Mini MacFlim", a low-memory version of the popular video player for the vintage mac.
 
-* The source code and binary for the XCMD to play a flim from HyperCard (BEWARE: Alpha state for feedback -- leaks memory)
+* The source code and binary for the XCMD to play a flim from HyperCard.
 
 * The source code of flimmaker, the command line encoder. It runs on Mac and Linux (and could probably compiled on windows with a C++20 compiler).
 

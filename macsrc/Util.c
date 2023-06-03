@@ -94,7 +94,7 @@ void InitUtilities( void )
 
 //	-------------------------------------------------------------------
 
-void DeinitUtilities( void )
+void DisposUtilities( void )
 {
 	if (sDialogFatalError)
 		DisposDialog( sDialogFatalError);
@@ -206,12 +206,20 @@ void MySetPtrSize( void *aPtr, Size aSize )
 	SetPtrSize( p-1, sizeof( struct PtrHeader ) + aSize );
 }
 
+//	-------------------------------------------------------------------
+
+void DebugMem( void )
+{
+	DebugLong( totalAllocated );
+}
+
 #else
 
 Ptr MyNewPtr( Size aSize ) { return NewPtr( aSize ); }
 void MyDisposPtr( void *aPtr ) { DisposPtr( aPtr ); }
 Size MyGetPtrSize( void *aPtr ) { return GetPtrSize( aPtr ); }
 void MySetPtrSize( void *aPtr, Size aSize ) { SetPtrSize( aPtr, aSize ); }
+void DebugMem( void ) {}
 
 #endif
 

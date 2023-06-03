@@ -17,7 +17,7 @@ void BufferInit( Size maxSize, Size leftBytes );
 //	Free the buffers
 //	-------------------------------------------------------------------
 
-void BufferDispos( void );
+void DisposBuffer( void );
 
 //	-------------------------------------------------------------------
 //	Return buffer size

@@ -72,7 +72,7 @@ void BufferInit( Size maxSize, Size leftBytes )
 
 //	-------------------------------------------------------------------
 
-void BufferDispos( void )
+void DisposBuffer( void )
 {
 	if (sBuffer[0]) MyDisposPtr( sBuffer[0] );
 	if (sBuffer[1]) MyDisposPtr( sBuffer[1] );

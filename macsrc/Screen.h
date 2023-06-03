@@ -73,6 +73,7 @@ void KillScreen( ScreenPtr scrn, short killcode );
 //	-------------------------------------------------------------------
 
 ScreenPtr ScreenInit( ScreenPtr scrn );
+void ScreenDispos( ScreenPtr scrn );
 
 //	-------------------------------------------------------------------
 //	Clears screen to black

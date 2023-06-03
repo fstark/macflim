@@ -37,7 +37,7 @@ void DebugLong( long l );
 //	-------------------------------------------------------------------
 
 void InitUtilities( void );
-void DeinitUtilities( void );
+void DisposUtilities( void );
 
 //	-------------------------------------------------------------------
 //	Empty routine helpful to place a breakpoint to
@@ -73,6 +73,9 @@ Ptr MyNewPtr( Size aSize );
 void MyDisposPtr( void *aPtr );
 Size MyGetPtrSize( void *aPtr );
 void MySetPtrSize( void *aPtr, Size aSize );
+
+//	Goes to debugger printing the available memory available
+void DebugMem( void );
 
 //	-------------------------------------------------------------------
 //	Allocation without fail

@@ -354,6 +354,17 @@ ScreenPtr ScreenInit( ScreenPtr scrn )
 }
 
 //	-------------------------------------------------------------------
+
+void ScreenDispos( ScreenPtr scrn )
+{
+	if (scrn->ccb.offsets32)
+	{
+		MyDisposPtr( scrn->ccb.offsets32 );
+		scrn->ccb.offsets32 = NULL;
+	}
+}
+
+//	-------------------------------------------------------------------
 //	Clear full physical screen to black (slow)
 //	-------------------------------------------------------------------
 

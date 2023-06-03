@@ -109,6 +109,17 @@ void PreferenceLoad( void )
 
 //	-------------------------------------------------------------------
 
+void DisposPreferences( void )
+{
+	if (sPrefHdl)
+	{
+		HUnlock( sPrefHdl );
+		ReleaseResource( sPrefHdl );
+	}
+}
+
+//	-------------------------------------------------------------------
+
 Boolean PreferenceGetIsPlaybackVBL( void )
 {
 	assert( sPreferences!=NULL, "IsPlaybackVBL" );

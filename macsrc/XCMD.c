@@ -21,6 +21,8 @@ pascal void main( XCmdBlockPtr params )
 	RememberA0();
 	SetUpA4();
 
+//	DebugMem();
+
 	InitUtilities();
 	MachineInit();
 	CodecInit();
@@ -57,9 +59,12 @@ pascal void main( XCmdBlockPtr params )
 	}
 	
 	RestoreScreen( &savePtr );
+	ScreenDispos( gScreen );
 	ShowCursor();
-	BufferDispos();
-	DeinitUtilities();
+	DisposBuffer();
+	DisposUtilities();
+
+//	DebugMem();
 
 	RestoreA4();
 }

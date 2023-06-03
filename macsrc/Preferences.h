@@ -20,6 +20,7 @@
 //	-------------------------------------------------------------------
 
 void PreferenceLoad( void );
+void DisposPreferences( void );
 
 //	-------------------------------------------------------------------
 //	VBL driven playback. Can be used from mini player

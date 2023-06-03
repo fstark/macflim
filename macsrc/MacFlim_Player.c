@@ -264,7 +264,7 @@ int main()
 
 	ShowCursor();
 
-	BufferDispos();
+	DisposBuffer();
 
 	FlushEvents( everyEvent, 0 );
 
