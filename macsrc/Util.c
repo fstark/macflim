@@ -32,6 +32,19 @@ void my_memcpy( void *d, const void *s, unsigned long len )
 		*dd++ = *ss++;
 }
 
+int my_memcmp( void *d, void *s, unsigned long len )
+{
+	char *dd = d;
+	const char *ss = s;
+	while (len--)
+	{
+		int r = *dd++ - *ss++;
+		if (r)
+			return r;
+	}
+	return 0;
+}
+
 void DebugLong( long l )
 {
 	Str255 s;
@@ -291,6 +304,8 @@ void CheckPtr( void *p, const char *msg )
 	}
 }
 
+#endif
+
 //	-------------------------------------------------------------------
 
 void StrCpyPP( Str255 p, const Str255 q )
@@ -310,7 +325,13 @@ void StrCatPP( Str255 p, Str255 q )
 	p[0] += q[0];
 }
 
-#endif
+Boolean StrEquPP( Str255 p, Str255 q )
+{
+	if (p[0]!=q[0])
+		return false;
+
+	return !my_memcmp( p+1, q+1, p[0] );
+}
 
 //	-------------------------------------------------------------------
 
@@ -379,8 +400,6 @@ void RestoreScreen( Ptr *ptr )
 			DisposeWindow( w );
 		}
 	}
-
-
 }
 
 //	-------------------------------------------------------------------

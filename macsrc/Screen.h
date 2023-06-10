@@ -13,17 +13,21 @@ struct ScreenRecord
 	unsigned char *physAddr;		//	Real physical top of screen
 	short width;		//	Width in pixels
 	short height;		//	Height in pixels
-	unsigned char *baseAddr;		//	Base addr of start of image (may be in the middle of the physical screen)
 	short rowBytes;		//	Number of bytes between a line and the next
+
+		//	Playback-dependant data
+	short playback_left;	//	Left of playback
+	short playback_top;		//	Top of playback
+	unsigned char *baseAddr;		//	Base addr of start of image (may be in the middle of the physical screen)
 
 		//	Flim dependent data
 	Boolean ready;		//	Ready to decode a flim
 
-						//	The codec control block
-	struct CodecControlBlock ccb;
-
 	short flim_width;
 	short flim_height;
+
+						//	The codec control block
+	struct CodecControlBlock ccb;
 
 	short stride4;		//	Number of longs from the end of a line to the beginning of the next
 						//	stride4*4+[flim width] == rowBytes
@@ -80,6 +84,7 @@ void ScreenDispos( ScreenPtr scrn );
 //	-------------------------------------------------------------------
 
 void ScreenClear( ScreenPtr scrn );
+void ScreenClearVideo( ScreenPtr scrn );
 
 //	-------------------------------------------------------------------
 //	Flashes a subset of the lines (useful for debugging)
@@ -103,7 +108,7 @@ Boolean ScreenVideoPlayable( ScreenPtr scrn, short width, short height );
 //	Returns TRUE if flim can play, FALSE if flim is not playable
 //	-------------------------------------------------------------------
 
-Boolean ScreenVideoPrepare( ScreenPtr scrn, short width, short height, unsigned long codecs, const char *name );
+Boolean ScreenVideoPrepare( ScreenPtr scrn, short playback_left, short playback_top, short width, short height, unsigned long codecs, const char *name );
 
 //	-------------------------------------------------------------------
 //	Uncompress a video frame of data

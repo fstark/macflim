@@ -270,7 +270,7 @@ static Boolean TestKey( unsigned char *keys, char k )
 //	Plays a file
 //	-------------------------------------------------------------------
 
-ePlayResult PlayFlim( FlimPtr flim, Boolean silent )
+ePlayResult PlayFlim( FlimPtr flim, short playback_left, short playback_top, Boolean silent )
 {
 	OSErr err;
 	short fRefNum;
@@ -291,7 +291,7 @@ ePlayResult PlayFlim( FlimPtr flim, Boolean silent )
 		return kScreenError;
 
 	flimInfo = FlimGetInfo( flim );
-	if (!ScreenVideoPrepare( gScreen, flimInfo->width, flimInfo->height, flimInfo->codecs, FlimGetName( flim ) ))
+	if (!ScreenVideoPrepare( gScreen, playback_left, playback_top, flimInfo->width, flimInfo->height, flimInfo->codecs, FlimGetName( flim ) ))
 		return kCodecError;
 
 	//	Hack to check the buffer size
@@ -307,7 +307,7 @@ ePlayResult PlayFlim( FlimPtr flim, Boolean silent )
 
 	theResult = kDone;
 
-	ScreenClear( gScreen );
+	ScreenClearVideo( gScreen );
 
 		//	Start of flim
 	FlimSeekStart( flim );
@@ -451,7 +451,7 @@ ePlayResult PlayFlimFile( Str255 fName, short vRefNum, long dirID, eFileAPI api,
 		goto close;
 #endif
 
-		theResult = PlayFlim( flim, silent );
+		theResult = PlayFlim( flim, -1, -1, silent );
 	}
 	while (theResult==kRestart);
 

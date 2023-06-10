@@ -326,6 +326,7 @@ void ScreenLog( ScreenPtr screen, const char *format, ... )
 
 //	-------------------------------------------------------------------
 //	Fills scrn with information to display on the physical screen
+//	Does not fill playback/flim dependant data
 //	-------------------------------------------------------------------
 
 ScreenPtr ScreenInit( ScreenPtr scrn )
@@ -381,6 +382,19 @@ void ScreenClear( ScreenPtr scrn )
 	}
 }
 
+void ScreenClearVideo( ScreenPtr scrn )
+{
+	struct CodecControlBlock *ccb = &scrn->ccb;
+	long total;
+
+	assert( ccb!=NULL, "No CCB" );
+
+	total = (long)(ccb->source_width32)*ccb->source_height;
+	
+	while (total--)
+		*(ccb->offsets32[total]) = 0xffffffffL;
+}
+
 //	-------------------------------------------------------------------
 //	Flashes the screen (slow)
 //	-------------------------------------------------------------------
@@ -414,7 +428,7 @@ Boolean ScreenVideoPlayable( ScreenPtr scrn, short width, short height )
 	return scrn->width>=width && scrn->height>=height;
 }
 
-Boolean ScreenVideoPrepare( ScreenPtr scrn, short width, short height, unsigned long codecs, const char *name )
+Boolean ScreenVideoPrepare( ScreenPtr scrn, short playback_left, short playback_top, short width, short height, unsigned long codecs, const char *name )
 {
 	int i;
 	short rowbytes = width/8;
@@ -434,14 +448,19 @@ Boolean ScreenVideoPrepare( ScreenPtr scrn, short width, short height, unsigned 
 
 
 		// to be removed
-
+	scrn->playback_left = playback_left;
+	scrn->playback_top = playback_top;
 	scrn->flim_width = width;
 	scrn->flim_height = height;
 	scrn->stride4 = (scrn->rowBytes-rowbytes)/4;
 
 
+/*
 	scrn->baseAddr = scrn->physAddr + ((scrn->width-width)/2)/8;
 	scrn->baseAddr += ((long)scrn->rowBytes)*((scrn->height-height)/2);
+*/
+	scrn->baseAddr = scrn->physAddr + scrn->playback_left/8;
+	scrn->baseAddr += ((long)scrn->rowBytes) * scrn->playback_top;
 
 //	Make sure the address is not odd
 //	(for instance on a Lisa, the screen is 90 bytes wide, so there is a 13 bytes offset)
@@ -452,7 +471,7 @@ Boolean ScreenVideoPrepare( ScreenPtr scrn, short width, short height, unsigned 
 		scrn->procs[i] = CodecGetProc( i, width==scrn->rowBytes*8, CODEC_TYPE );
 		if (!scrn->procs[i])
 			return FALSE;
-	}	
+	}
 
 	scrn->ccb.source_width = width;
 	scrn->ccb.source_width8 = width/8;

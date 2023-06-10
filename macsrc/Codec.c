@@ -19,7 +19,7 @@
 //	-------------------------------------------------------------------
 
 Boolean CreateOffsetTable(
-	unsigned char ***offsets,
+	unsigned long ***offsets,
 	unsigned char *base_addr,
 	unsigned short input_width,
 	unsigned short input_height,
@@ -31,19 +31,19 @@ Boolean CreateOffsetTable(
 		//	How many offset entries do we need?
 		//	(number of source pixels/32)
 	long total_offset_count = input_width_long*(long)input_height;
-	unsigned char **p;
+	unsigned long **p;
 	int x,y;
 	int i;
 
 	if (*offsets)
 		MyDisposPtr( *offsets );
 
-	*offsets = (unsigned char **)MyNewPtr( total_offset_count*sizeof(long) );
+	*offsets = (unsigned long **)MyNewPtr( total_offset_count*sizeof(long) );
 	if (!*offsets)
 		return FALSE;
 
 	for (i=0;i!=total_offset_count;i++)
-		(*offsets)[i] = base_addr;
+		(*offsets)[i] = (unsigned long *)base_addr;
 
 	p = *offsets;
 	for (y=0;y!=input_height;y++)
@@ -52,7 +52,7 @@ Boolean CreateOffsetTable(
 
 		for (x=0;x!=input_width_long;x++)
 		{
-			*p++ = line_start;
+			*p++ = (unsigned long *)line_start;
 			line_start += 4;
 		}
 	}
@@ -299,7 +299,7 @@ static void CopyLines_same_ref( char *source, struct CodecControlBlock *ccb )
 
 static void CopyLines_all_ref( char *source, struct CodecControlBlock *ccb )
 {
-	register unsigned char *dest = ccb->offsets32[0];
+	register unsigned char *dest = (unsigned char *)ccb->offsets32[0];
 	register unsigned short rowbytes = ccb->output_width8;
 	int width = ccb->source_width8;
 
@@ -310,7 +310,7 @@ static void CopyLines_all_ref( char *source, struct CodecControlBlock *ccb )
 
 	source += 4;
 
-	dest = ccb->offsets32[offset/4];
+	dest = (unsigned char *)ccb->offsets32[offset/4];
 
 	while (len)
 	{

@@ -111,7 +111,7 @@ void InitPlayback( void );
 //void InstallPlaybackHandler( void );
 //void RemovePlaybackHandler( void );
 
-ePlayResult PlayFlim( FlimPtr flim, Boolean silent );
+ePlayResult PlayFlim( FlimPtr flim, short playback_left, short playback_top, Boolean silent );
 ePlayResult PlayFlimFile( Str255 fName, short vRefNum, long dirID, eFileAPI api, Boolean silent );
 ePlayResult PlayFlimFileLoop( Str255 fName, short vRefNum, long dirID, eFileAPI api, Boolean silent );
 

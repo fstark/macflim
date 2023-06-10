@@ -32,7 +32,7 @@ struct CodecControlBlock
 	unsigned short source_width32;	//	Width of source in longs
 	unsigned short source_height;	//	Height of source
 	
-	unsigned char **offsets32;		//	Image offsets as offsets to screen (widthxheight/32) entries
+	unsigned long **offsets32;		//	Image offsets as offsets to screen (widthxheight/32) entries
 									//	Screen is in offsets[0]
 
 	unsigned short output_width8;	//	Width of the output in bytes
@@ -61,7 +61,7 @@ void CodecInit( void );
 
 //	Usure if right place
 Boolean CreateOffsetTable(
-	unsigned char ***offsets,
+	unsigned long ***offsets,
 	unsigned char *base_addr,
 	unsigned short input_width,
 	unsigned short input_height,

@@ -80,6 +80,8 @@ static pascal void DoFrame()
 		move.l 0x904, a5
 	}
 
+	RestoreMouse();
+
 	dlog_str( "CALLBACK #" );
 	dlog_int( gPlaybackBlock->frames_left );
 	dlog_str( " " );
@@ -197,6 +199,8 @@ if (gDebug)
 	gInter--;
 
 end:
+
+	DrawMouse();
 
 		//	Restore previous A5
 	asm

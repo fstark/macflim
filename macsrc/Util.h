@@ -27,6 +27,7 @@ void assert( int v, const char *msg );
 int my_strlen( const char *msg );
 void my_strcpy( char *d, const char *s );
 void my_memcpy( void *d, const void *s, unsigned long len );
+int my_memcmp( void *d, void *s, unsigned long len );
 
 void DebugLong( long l );
 
@@ -125,6 +126,12 @@ void StrCatPC( Str255 p, const char *q );
 //	-------------------------------------------------------------------
 
 void StrCatPP( Str255 p, Str255 q );
+
+//	-------------------------------------------------------------------
+//	True if two Pascal strings are equal
+//	-------------------------------------------------------------------
+
+Boolean StrEquPP( Str255 p, Str255 q );
 
 //	####
 void UtilPlaceWindow( WindowPtr window, float percentTop );
