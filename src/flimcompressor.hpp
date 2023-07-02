@@ -159,6 +159,22 @@ public:
         image previous( W_, H_ );
         fill( previous, 0 );
 
+        //  #### We painfully extract what the firs image should be
+        image img0( W_,H_ );
+        copy( img0, images_[0], bars );
+        image img1 = filter( img0, filters.c_str() );
+        image img2( W_,H_ );
+        if (dither==image::error_diffusion)
+            error_diffusion( img2, img1, previous, stability, *get_error_diffusion_by_name( error_algorithm ), error_bleed, error_bidi );
+        else if (dither==image::ordered)
+            ordered_dither( img2, img1, previous );
+        round_corners( img2 );
+        ::watermark( img2, watermark );
+        copy( previous, img2 );
+        write_image( "/tmp/start.pgm", previous );
+
+
+
         framebuffer current_fb{ previous };     //  The framebuffer displayed on screen at each step
 
         int in_fr=0;
