@@ -55,13 +55,7 @@ void copy_from_values_be( std::vector<uint8_t>::iterator destination, IT source,
 
 #include <random>
 
-//  ------------------------------------------------------------------
-//  A framebuffer is a packed black and white screen
-//  One can xor framebuffers together
-//  and get their encoded version in a row-major or column-major way
-//  as 8, 16 or 32 bits buffers in big-endian
-//  ------------------------------------------------------------------
-
+///  A framebuffer is a packed black and white screen
 class framebuffer
 {
 private:
@@ -168,8 +162,8 @@ public:
     {
         assert( img.W()==W_ && img.H()==H_ );
         auto p = std::begin(data_);
-        for (int y=0;y!=H_;y++)
-            for (int x=0;x!=W_;x+=8)
+        for (size_t y=0;y!=H_;y++)
+            for (size_t x=0;x!=W_;x+=8)
                 *p++ = (int)(img.at(x  ,y)*128+img.at(x+1,y)*64+img.at(x+2,y)*32+img.at(x+3,y)*16+
                              img.at(x+4,y)*  8+img.at(x+5,y)* 4+img.at(x+6,y)* 2+img.at(x+7,y)     ) ^ 0xff;
     }
@@ -234,8 +228,8 @@ public:
     image as_image() const
     {
         image res( W_, H_ );
-        for (int y=0;y!=H_;y++)
-            for (int x=0;x!=W_;x++)
+        for (size_t y=0;y!=H_;y++)
+            for (size_t x=0;x!=W_;x++)
                 res.at(x,y) = !(data_[y*get_rowbytes()+x/8] & (1<<(7-(x%8))));
         return res;
     }

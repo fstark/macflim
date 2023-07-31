@@ -2,6 +2,42 @@ In order to play sound, I need to gain space in files:
 
 Compression is achived by storing the xor between consecutive frames, and compressing this data. Hopefully, it should be smaller, as the encoding try to keep the error diffusion pixels at the same place.
 
+# Last try at describing the flim file format
+
+Flim length is a multiple of 2, by adding an optional 0x00
+
+4 Bytes: 'F', 'L', 'I', 'M'
+1 Byte: 0x0d
+
+1017 bytes: comment (used to store the encoding command, so ``head -2 x.flim`` gives the command used)
+
+2 bytes: Flecter checksum of the rest of the file.
+
+Rest of the file:
+
+2 bytes: 0x1 == version 1
+2 bytes: entries in the header
+For each entry:
+    2 bytes: type
+    4 bytes: offset to data (starting just after this header)
+    4 bytes: data size
+
+Type of entries:
+    0x00: movie info
+    0x01: movie data
+    0x02: table of content (more later)
+    0x03: poster
+
+Unknown entries should be ignored.
+
+Movie info data (entry 0x00):
+    2 bytes: width
+    2 bytes: height
+    2 bytes: 0 = with sound, 1 = silent
+    4 bytes: number of frames (screen updates)
+    4 bytes: number of ticks (60th of a second)
+
+
 # New new format:
 
 ## Definitions

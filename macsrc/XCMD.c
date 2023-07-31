@@ -212,7 +212,7 @@ pascal void main( XCmdBlockPtr params )
 	InitPlayback();
 	HideCursor();
 	ScreenInit( gScreen );
-	SaveScreen( &savePtr );
+//	SaveScreen( &savePtr );
 
 	ComputeMouse();
 	DrawMouse();
@@ -222,13 +222,18 @@ pascal void main( XCmdBlockPtr params )
 	if (fullscreen)
 		ScreenClear( gScreen );
 
-	if (!error)
+	if (error)
+			ReturnXCMDValue( params, error );
+	else
 	{
 		GetVol( 0, &vRefNum );//?
 		flim = FlimOpenByName( fileName, vRefNum, 0/* CurDirStore */, kHFS );
 	
 		if (!flim)
-			MessageStr( (unsigned char*)"\pCannot open flim file" );
+		{
+//			MessageStr( (unsigned char*)"\pCannot open flim file" );
+			ReturnXCMDValue( params, "Cannot open flim file" );
+		}
 		else
 		{
 			ePlayResult theResult;
@@ -258,14 +263,12 @@ pascal void main( XCmdBlockPtr params )
 			FlimDispos( flim );
 		}
 	}
-	else
-		ReturnXCMDValue( params, error );
 	
 //	DebugLong( x );
 //	DebugLong( y );
 	
 	RestoreMouse();
-	RestoreScreen( &savePtr );
+//	RestoreScreen( &savePtr );
 	ScreenDispos( gScreen );
 	ShowCursor();
 	DisposBuffer();

@@ -43,7 +43,7 @@ public:
     size_t W() const { return W_; }
     size_t H() const { return H_; }
 
-    const float &at( int x, int y ) const
+    const float &at( size_t x, size_t y ) const
     {
         assert( x>=0 );
         assert( y>=0 );
@@ -51,7 +51,7 @@ public:
         assert( y<H_ );
         return image_[x+y*W_];
     }
-    float &at( int x, int y )
+    float &at( size_t x, size_t y )
     {
         assert( x>=0 );
         assert( y>=0 );

@@ -619,8 +619,6 @@ std::cout << "PROFILE BYTERATE " << profile_.byterate() << "\n";
         std::vector<uint8_t> header;
         auto out_header = std::back_inserter( header );
 
-        const int HEADER_SIZE = 64;
-
         write2( out_header, 0x1 );                      //  Version
         write2( out_header, 4 );                        //  Entry count
 

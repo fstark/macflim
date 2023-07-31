@@ -35,14 +35,14 @@ clean:
 	rm -f ../flimmaker ../flimutil flimmaker.o imgcompress.o image.o watermark.o ruler.o reader.o writer.o
 
 debug: flimmaker.cpp flimutil.c imgcompress.cpp watermark.cpp image.cpp ruler.cpp flimencoder.hpp flimcompressor.hpp compressor.hpp imgcompress.hpp framebuffer.hpp image.hpp ruler.hpp
-	c++ -std=c++2a -c -g -fsanitize=undefined imgcompress.cpp -o imgcompress.o
-	c++ -std=c++2a -c -g -fsanitize=undefined flimmaker.cpp -o flimmaker.o
-	c++ -std=c++2a -c -g -fsanitize=undefined watermark.cpp -o watermark.o
-	c++ -std=c++2a -c -g -fsanitize=undefined image.cpp -o image.o
-	c++ -std=c++2a -c -g -fsanitize=undefined ruler.cpp -o ruler.o
-	c++ -std=c++2a -c -g -fsanitize=undefined reader.cpp -o reader.o
-	c++ -std=c++2a -c -g -fsanitize=undefined writer.cpp -o writer.o
-	c++ -std=c++2a -g -fsanitize=undefined imgcompress.o flimmaker.o watermark.o image.o ruler.o reader.o writer.o -lavformat -lavcodec -lavutil -o ../flimmaker
+	c++ -O0 -std=c++2a -c -g -fsanitize=undefined imgcompress.cpp -o imgcompress.o
+	c++ -Wall -O0 -std=c++2a -c -g -fsanitize=undefined flimmaker.cpp -o flimmaker.o
+	c++ -O0 -std=c++2a -c -g -fsanitize=undefined watermark.cpp -o watermark.o
+	c++ -O0 -std=c++2a -c -g -fsanitize=undefined image.cpp -o image.o
+	c++ -O0 -std=c++2a -c -g -fsanitize=undefined ruler.cpp -o ruler.o
+	c++ -O0 -std=c++2a -c -g -fsanitize=undefined reader.cpp -o reader.o
+	c++ -O0 -std=c++2a -c -g -fsanitize=undefined writer.cpp -o writer.o
+	c++ -O0 -std=c++2a -g -fsanitize=undefined imgcompress.o flimmaker.o watermark.o image.o ruler.o reader.o writer.o -lavformat -lavcodec -lavutil -o ../flimmaker
 	cc -g -Wno-unused-result flimutil.c -o ../flimutil
 #	gdb ./flimmaker
 
