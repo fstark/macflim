@@ -381,11 +381,11 @@ public:
             if (group_)
                 local_ticks = ticks;
 
-            for (int i=0;i!=ticks;i+=local_ticks)
+            for (size_t i=0;i!=ticks;i+=local_ticks)
             {
                     //  Add as much audio as we have for the local ticks
                 std::vector<uint8_t> audio;
-                for (int i=0;i!=local_ticks;i++)
+                for (size_t i=0;i!=local_ticks;i++)
                 {
                     sound_frame_t snd;
                     if (current_audio_<std::end(audio_))
@@ -563,7 +563,7 @@ else
             if (group)
                 local_ticks = ticks;
 
-            for (int i=0;i!=ticks;i+=local_ticks)
+            for (size_t i=0;i!=ticks;i+=local_ticks)
             {
 
                     //  Build the frame
@@ -571,7 +571,7 @@ else
 
                 f.ticks = local_ticks;
 
-                for (int i=0;i!=local_ticks;i++)
+                for (size_t i=0;i!=local_ticks;i++)
                 {
 
                     sound_frame_t snd;
@@ -620,7 +620,7 @@ else
                 {
                     int img = frames_.size()+1;
                     std::clog << "CODEC log enabled for frame #" << img << ":\n";
-                    for (int i=0;i!=codecs.size();i++)
+                    for (size_t i=0;i!=codecs.size();i++)
                     {
                         char buffer[1024];
                         sprintf( buffer, "codec-%06d-img-%d.pgm", img, (int)codecs[i].signature );

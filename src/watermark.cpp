@@ -154,7 +154,8 @@ static void putc( image &img, char c, size_t posx, size_t posy )
         //  The 8 lines
     for (int y=0;y!=8;y++)
         for (int x=0;x!=8;x++)
-            img.at(posx+x,y+posy) = (sFont[c][y] & (1<<(x))) ? 1 : 0;
+                //  Casting 'c' to int to keep compiler quiet
+            img.at(posx+x,y+posy) = (sFont[(int)c][y] & (1<<(x))) ? 1 : 0;
 }
 
 void watermark( image &img, const std::string &s )

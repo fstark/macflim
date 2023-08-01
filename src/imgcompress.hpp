@@ -144,7 +144,6 @@ inline std::vector<run<T>> pack(
 {
     std::vector<run<T>> output_buffer;
     offset_t offset{ width, height };
-    size_t linear_offset;
 
     size_t total_bytes = kHeaderSize; //  end-marker
 

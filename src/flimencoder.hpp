@@ -275,8 +275,6 @@ public:
 
     std::string description() const
     {
-        char buffer[1024];
-
         std::ostringstream cmd;
 
         cmd << "--byterate " << byterate_;
@@ -446,7 +444,7 @@ public:
 
         //  Poster extraction
         image poster_image = images_[0];
-        int poster_index = poster_ts_*fps_/profile_.fps_ratio();
+        size_t poster_index = poster_ts_*fps_/profile_.fps_ratio();
 
         if (poster_index>=0 && poster_index<images_.size())
             poster_image = images_[poster_index];
@@ -652,27 +650,27 @@ std::cout << "PROFILE BYTERATE " << profile_.byterate() << "\n";
         long fletcher = 0;
         if ((movie.size()%2)==1)
             movie.push_back( 0x00 );
-        for (int i=0;i!=header.size();i+=2)
+        for (size_t i=0;i!=header.size();i+=2)
         {
             fletcher += ((int)(header[i]))*256+header[i+1];
             fletcher %= 65535;
         }
-        for (int i=0;i!=global.size();i+=2)
+        for (size_t i=0;i!=global.size();i+=2)
         {
             fletcher += ((int)(global[i]))*256+global[i+1];
             fletcher %= 65535;
         }
-        for (int i=0;i!=movie.size();i+=2)
+        for (size_t i=0;i!=movie.size();i+=2)
         {
             fletcher += ((int)(movie[i]))*256+movie[i+1];
             fletcher %= 65535;
         }
-        for (int i=0;i!=toc.size();i+=2)
+        for (size_t i=0;i!=toc.size();i+=2)
         {
             fletcher += ((int)(toc[i]))*256+toc[i+1];
             fletcher %= 65535;
         }
-        for (int i=0;i!=poster.size();i+=2)
+        for (size_t i=0;i!=poster.size();i+=2)
         {
             fletcher += ((int)(poster[i]))*256+poster[i+1];
             fletcher %= 65535;
@@ -703,7 +701,7 @@ std::cout << "PROFILE BYTERATE " << profile_.byterate() << "\n";
                 for (auto &frame:frames)
                 {
                     // std::clog << frame.ticks << std::flush;
-                    for (int i=0;i!=frame.ticks;i++)
+                    for (size_t i=0;i!=frame.ticks;i++)
                     {
                         index++;
                         std::clog << "Wrote " << index << " frames\r" << std::flush;

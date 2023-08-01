@@ -214,7 +214,7 @@ std::clog << ret << "\n";
           decoded = FFMIN(ret, pkt.size);
   
 
- static int audio_frame_count = 0; 
+//  static int audio_frame_count = 0; 
 
           if (*got_frame)
           {
@@ -481,13 +481,9 @@ public:
         pkt_.size = 0;
 
         int got_frame = 0;
-        bool abort = false;
-
-
 
         while (av_read_frame(format_context_, &pkt_) >= 0)
         {
-            AVPacket orig_pkt = pkt_;
             do {
                 auto ret = decode_packet( &got_frame, 0, pkt_ );
                 if (images_.size()==frame_to_extract_)

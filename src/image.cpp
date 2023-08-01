@@ -19,8 +19,8 @@ void copy_scale( image &destination, const image &source, double scale )
     int centerdw = destination.W()/2;
     int centerdh = destination.H()/2;
 
-    for (int y=0;y!=destination.H();y++)
-        for (int x=0;x!=destination.W();x++)
+    for (size_t y=0;y!=destination.H();y++)
+        for (size_t x=0;x!=destination.W();x++)
         {
             int fromx = centersw-(centerdw-x)*scale;
             int fromy = centersh-(centerdh-y)*scale;

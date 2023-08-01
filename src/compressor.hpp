@@ -172,13 +172,13 @@ class vertical_compressor : public compressor
         std::vector<std::vector<size_t>> deltas;
         deltas.resize( mx+1 );
 
-        for (int i=0;i!=get_T_size();i++)
+        for (size_t i=0;i!=get_T_size();i++)
             if (delta_[i])
                 deltas[delta_[i]].push_back( i );
 
         bool done = false;
 
-        for (int i=deltas.size()-1;i!=0;i--)
+        for (size_t i=deltas.size()-1;i!=0;i--)
         {
             for (auto ix:deltas[i])
                 if (packmap.set(ix)>=max_size)
@@ -193,7 +193,7 @@ class vertical_compressor : public compressor
                 break;
 
             //  We add the borders of the packmap if not "expensive"
-            for (int ix=0;ix!=get_T_size();ix++)
+            for (size_t ix=0;ix!=get_T_size();ix++)
                 if (((ix%H_)!=0) && ((ix%H_)!=H_-1) && packmap.empty_border(ix))
                     if (delta_[ix]*2>=i)
                         if (packmap.set(ix)>=max_size)
@@ -253,7 +253,7 @@ size_t vertical_from_horizontal( size_t h ) const
         auto target_data_ = target.raw_values<T>();      //  The data we are trying to converge to
         std::vector<size_t> delta_(get_T_size());        //  0: it is sync'ed
 
-        for (int i=0;i!=get_T_size();i++)
+        for (size_t i=0;i!=get_T_size();i++)
         {
             if (current_data_[i]==target_data_[i])
                     //  Data is identical, we don't care about updating this
@@ -352,7 +352,7 @@ size_t vertical_from_horizontal( size_t h ) const
             for (auto &run:closer)
             {
                 std::clog << "@" << run.offset*sizeof(T) << ":[ ";
-                for (int i=0;i!=run.data.size();i++)
+                for (size_t i=0;i!=run.data.size();i++)
                 {
 
                     auto offset = vertical_from_horizontal( run.offset )+i;

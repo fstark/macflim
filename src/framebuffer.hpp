@@ -98,7 +98,7 @@ private:
     template <typename IT>
     void unpack_vertical_be( std::vector<uint8_t>::iterator destination,  IT source ) const
     {
-        for (int i=0;i!=get_width<typename IT::value_type>();i++)
+        for (size_t i=0;i!=get_width<typename IT::value_type>();i++)
         {
             copy_from_values_be( destination, source, H_, get_rowbytes() );
             source += H_;
@@ -143,7 +143,7 @@ private:
     template <typename T, typename IT>
     void pack_vertical_be( IT out ) const
     {
-        for (int x=0;x!=get_rowbytes();x+=sizeof(T))
+        for (size_t x=0;x!=get_rowbytes();x+=sizeof(T))
             copy_from_bytes_be<T,IT>(
                 out,
                 std::begin(data_)+x,

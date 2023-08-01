@@ -110,7 +110,7 @@ void pushFrame( const image &img, const sound_frame_t &snd )
         // }
         // std::cout << "pkt key: " << (pkt.flags & AV_PKT_FLAG_KEY) << " " << 
         //     pkt.size << "\n";
-        uint8_t* size = ((uint8_t*)pkt.data);
+        // uint8_t* size = ((uint8_t*)pkt.data);
         // std::cout << "first: " << (int)size[0] << " " << (int)size[1] << 
         //     " " << (int)size[2] << " " << (int)size[3] << " " << (int)size[4] << 
         //     " " << (int)size[5] << " " << (int)size[6] << " " << (int)size[7] << 

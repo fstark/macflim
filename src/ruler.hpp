@@ -144,7 +144,7 @@ class bit_ruler : public ruler<T>
     constexpr size_t countbits( T v, size_t from, size_t to ) const
     {
         size_t res = 0;
-        for (int i=from;i!=to;i++)
+        for (auto i=from;i!=to;i++)
             res += !!(v&(1<<i));
         return res;
     }

@@ -1,5 +1,13 @@
 # The following two lines are for compilation under homebrew on Mac M1
-CXXFLAGS += -I/opt/homebrew/include/
+
+# char-subscripts
+# deprecated-declarations
+# sign-compare
+# unused-but-set-variable
+# unused-variable
+
+# -Werror 
+CXXFLAGS += -Wsign-compare -Wchar-subscripts -Wunused-but-set-variable -Wunused-variable -Wno-deprecated-declarations -I/opt/homebrew/include/
 LDLIBS += -L/opt/homebrew/lib/
 
 all: ../flimmaker ../flimutil
