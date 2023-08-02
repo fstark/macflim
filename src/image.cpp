@@ -22,19 +22,13 @@ void copy_scale( image &destination, const image &source, double scale )
     for (size_t y=0;y!=destination.H();y++)
         for (size_t x=0;x!=destination.W();x++)
         {
-            int fromx = centersw-(centerdw-x)*scale;
-            int fromy = centersh-(centerdh-y)*scale;
+            int fromx = centersw-(centerdw-(int)x)*scale;
+            int fromy = centersh-(centerdh-(int)y)*scale;
 
             if (fromx<0 || source.W()<=fromx || fromy<0 || source.H()<=fromy)
-            {
-                // std::clog << x << " C " ;
                 destination.at( x, y ) = 0;
-            }
             else
-            {
-                // std::clog << fromx << " D " ;
                 destination.at( x, y ) = source.at( fromx, fromy );
-            }
         }
 }
 
