@@ -192,7 +192,7 @@ public:
 
     void randomize( int seed )
     {
-        std::default_random_engine generator;
+        std::default_random_engine generator(seed);
         std::uniform_int_distribution<int> distribution(0,255);
         for (auto &v:data_)
             v = distribution(generator);

@@ -38,8 +38,6 @@ public:
     {
     }
 
-    image &operator=( const image &o ) = default;
-
     size_t W() const { return W_; }
     size_t H() const { return H_; }
 

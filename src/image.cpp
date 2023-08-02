@@ -25,7 +25,7 @@ void copy_scale( image &destination, const image &source, double scale )
             int fromx = centersw-(centerdw-(int)x)*scale;
             int fromy = centersh-(centerdh-(int)y)*scale;
 
-            if (fromx<0 || source.W()<=fromx || fromy<0 || source.H()<=fromy)
+            if (fromx<0 || (int)source.W()<=fromx || fromy<0 || (int)source.H()<=fromy)
                 destination.at( x, y ) = 0;
             else
                 destination.at( x, y ) = source.at( fromx, fromy );
@@ -60,8 +60,8 @@ void copy( image &destination, const image &source, bool black_bars )
 //  ------------------------------------------------------------------
 void fill( image &img, float value )
 {
-    for (int y=0;y!=img.H();y++)
-        for (int x=0;x!=img.W();x++)
+    for (size_t y=0;y!=img.H();y++)
+        for (size_t x=0;x!=img.W();x++)
             img.at(x,y) = value;
 }
 
@@ -78,12 +78,12 @@ image sharpen( const image &src )
 
     auto res = src;
 
-    for (int x=1;x!=src.W()-1;x++)
-        for (int y=1;y!=src.H()-1;y++)
+    for (size_t x=1;x!=src.W()-1;x++)
+        for (size_t y=1;y!=src.H()-1;y++)
         {
             float v = 0;
-            for (int x0=0;x0!=3;x0++)
-                for (int y0=0;y0!=3;y0++)
+            for (size_t x0=0;x0!=3;x0++)
+                for (size_t y0=0;y0!=3;y0++)
                 {
                     v += src.at(x+x0-1,y+y0-1)*kernel[x0][y0];
                 }
@@ -106,12 +106,12 @@ image blur3( const image &src )
 
     auto res = src;
 
-    for (int x=1;x!=src.W()-1;x++)
-        for (int y=1;y!=src.H()-1;y++)
+    for (size_t x=1;x!=src.W()-1;x++)
+        for (size_t y=1;y!=src.H()-1;y++)
         {
             float v = 0;
-            for (int x0=0;x0!=3;x0++)
-                for (int y0=0;y0!=3;y0++)
+            for (size_t x0=0;x0!=3;x0++)
+                for (size_t y0=0;y0!=3;y0++)
                 {
                     v += src.at(x+x0-1,y+y0-1)*kernel[x0][y0];
                 }
@@ -138,12 +138,12 @@ image blur5( const image &src )
 
     auto res = src;
 
-    for (int x=2;x!=src.W()-2;x++)
-        for (int y=2;y!=src.H()-2;y++)
+    for (size_t x=2;x!=src.W()-2;x++)
+        for (size_t y=2;y!=src.H()-2;y++)
         {
             float v = 0;
-            for (int x0=0;x0!=5;x0++)
-                for (int y0=0;y0!=5;y0++)
+            for (size_t x0=0;x0!=5;x0++)
+                for (size_t y0=0;y0!=5;y0++)
                 {
                     v += src.at(x+x0-2,y+y0-2)*kernel[x0][y0];
                 }
@@ -160,8 +160,8 @@ image flip( const image &src )
 {
     image res = src;
 
-    for (int x=0;x!=src.W()/2;x++)
-        for (int y=0;y!=src.H();y++)
+    for (size_t x=0;x!=src.W()/2;x++)
+        for (size_t y=0;y!=src.H();y++)
         {
             std::swap( res.at(x,y), res.at(res.W()-1-x,y) );
         }
@@ -176,8 +176,8 @@ image invert( const image &src )
 {
     image res = src;
 
-    for (int x=0;x!=src.W();x++)
-        for (int y=0;y!=src.H();y++)
+    for (size_t x=0;x!=src.W();x++)
+        for (size_t y=0;y!=src.H();y++)
         {
             res.at(x,y) = 1 - res.at(x,y);
         }
@@ -193,7 +193,7 @@ image debug_filter( const image &src )
 {
     image res = src;
 
-    for (int x=0;x!=src.W();x++)
+    for (size_t x=0;x!=src.W();x++)
     {
         res.at(x,0) = 1;
         res.at(x,1) = 0;
@@ -201,7 +201,7 @@ image debug_filter( const image &src )
         res.at(x,src.H()-2) = 0;
     }
 
-    for (int y=1;y!=src.H()-1;y++)
+    for (size_t y=1;y!=src.H()-1;y++)
     {
         res.at(0,y) = 1;
         res.at(1,y) = 0;
@@ -221,8 +221,8 @@ image black( const image &src, double percent )
 
     percent /= 100;
 
-    for (int x=0;x!=src.W();x++)
-        for (int y=0;y!=src.H();y++)
+    for (size_t x=0;x!=src.W();x++)
+        for (size_t y=0;y!=src.H();y++)
         {
             // if (res.at(x,y)<1.0/256.0*16)
             //     res.at(x,y) = 0;
@@ -246,8 +246,8 @@ image white( const image &src, double percent )
 
     percent /= 100;
 
-    for (int x=0;x!=src.W();x++)
-        for (int y=0;y!=src.H();y++)
+    for (size_t x=0;x!=src.W();x++)
+        for (size_t y=0;y!=src.H();y++)
         {
             // if (res.at(x,y)<1.0/256.0*16)
             //     res.at(x,y) = 0;
@@ -269,8 +269,8 @@ image gamma( const image &src, double gamma )
 {
     image res = src;
 
-    for (int x=0;x!=src.W();x++)
-        for (int y=0;y!=src.H();y++)
+    for (size_t x=0;x!=src.W();x++)
+        for (size_t y=0;y!=src.H();y++)
         {
             res.at(x,y) = pow( src.at(x,y), gamma );
         }
@@ -285,13 +285,13 @@ image zoom_out( const image &src, double bx )
     const double by = src.H()/2-a*(src.H()/2);
 
     image res = src;
-    for (int y=0;y!=src.H();y++)
-        for (int x=0;x!=src.W();x++)
+    for (size_t y=0;y!=src.H();y++)
+        for (size_t x=0;x!=src.W();x++)
         {
             int from_x = (x-bx)/a;
             int from_y = (y-by)/a;
 
-            if (from_x>0 && from_x<src.W() && from_y>0 && from_y<src.H())
+            if (from_x>0 && from_x<(int)src.W() && from_y>0 && from_y<(int)src.H())
                 res.at(x,y) = src.at(from_x,from_y);
             else
                 res.at(x,y) = 0;
@@ -306,11 +306,11 @@ image zoom_in( const image &src, size_t pixels )   //  #### Not wise
     const double a = ((src.W()/2)-bx)/(src.W()/2);
 
     image res = src;
-    for (int y=0;y!=src.H();y++)
-        for (int x=0;x!=src.W();x++)
+    for (size_t y=0;y!=src.H();y++)
+        for (size_t x=0;x!=src.W();x++)
         {
-            int from_x = (x-(int)src.W()/2)*a+src.W()/2;
-            int from_y = (y-(int)src.H()/2)*a+src.H()/2;
+            int from_x = ((int)x-(int)src.W()/2)*a+src.W()/2;
+            int from_y = ((int)y-(int)src.H()/2)*a+src.H()/2;
 
 // (512-256)*(256-32)/256+256
 
@@ -327,8 +327,8 @@ image zoom_in( const image &src, size_t pixels )   //  #### Not wise
 //  ------------------------------------------------------------------
 void reduce_image_half( image &dest, const image &source )
 {
-    for (int y=0;y!=dest.H();y++)
-        for (int x=0;x!=dest.W();x++)
+    for (size_t y=0;y!=dest.H();y++)
+        for (size_t x=0;x!=dest.W();x++)
             dest.at(x,y) = (source.at(2*x,2*y)+source.at(2*x+1,2*y)+source.at(2*x,2*y+1)+source.at(2*x+1,2*y+1))/4;
 }
 
@@ -340,8 +340,8 @@ void copy_resize( image &dest, const image &source )
 {
     double rw = source.W()*1.0/dest.W();
     double rh = source.H()*1.0/dest.H();
-    for (int y=0;y!=dest.H();y++)
-        for (int x=0;x!=dest.W();x++)
+    for (size_t y=0;y!=dest.H();y++)
+        for (size_t x=0;x!=dest.W();x++)
             dest.at(x,y) = source.at(x*rw,y*rh);
 }
 
@@ -388,8 +388,8 @@ image quantize( const image &img, int n )
 {
     image res = img;
 
-    for (int y=0;y!=res.H();y++)
-        for (int x=0;x!=res.W();x++)
+    for (size_t y=0;y!=res.H();y++)
+        for (size_t x=0;x!=res.W();x++)
             res.at(x,y) = ((int)(img.at(x,y)*(n-1)+.5))/(double)(n-1);
 
     return res;
@@ -534,8 +534,8 @@ bool read_image( image &result, const char *file )
     for (int i=0;i!=15;i++)
         fgetc( f );
 
-    for (int y=0;y!=image.H();y++)
-        for (int x=0;x!=image.W();x++)
+    for (size_t y=0;y!=image.H();y++)
+        for (size_t x=0;x!=image.W();x++)
         {    // img[x][y] = ((int)(fgetc(f)/255.0*16))/16.0;
             image.at(x,y) = correct( fgetc(f) )/255.0;
         }
@@ -576,8 +576,8 @@ void write_image( const char *file, const image &img )
     }
 
     fprintf( f, "P5\n%ld %ld\n255\n", img.W(), img.H() );
-    for (int y=0;y!=img.H();y++)
-        for (int x=0;x!=img.W();x++)
+    for (size_t y=0;y!=img.H();y++)
+        for (size_t x=0;x!=img.W();x++)
             fputc( img.at(x,y)*255, f );
 
     fclose( f );
@@ -594,8 +594,8 @@ void quantize( image &dest, const image &source )
 {
     dest = source;
 
-    for (int y=0;y!=source.H();y++)
-        for (int x=0;x!=source.W();x++)
+    for (size_t y=0;y!=source.H();y++)
+        for (size_t x=0;x!=source.W();x++)
         {
             float source_color = dest.at(x,y);
             float color;
@@ -630,10 +630,10 @@ static int dither[8][8] =
     {63, 31, 55, 23, 61, 29, 53, 21}
 };
 
-void ordered_dither( image &dest, const image &source, const image &previous )
+void ordered_dither( image &dest, const image &source, [[maybe_unused]] const image &previous )
 {
-    for (int y=0;y!=source.H();y++)
-        for (int x=0;x!=source.W();x++)
+    for (size_t y=0;y!=source.H();y++)
+        for (size_t x=0;x!=source.W();x++)
         {
             //  The color we'd like this pixel to be
             float color = source.at(x,y);
@@ -809,8 +809,8 @@ void old_quantize( image &dest, const image &source, const image &previous, floa
 {
     dest = source;
 
-    for (int y=0;y!=source.H();y++)
-        for (int x=0;x!=source.W();x++)
+    for (size_t y=0;y!=source.H();y++)
+        for (size_t x=0;x!=source.W();x++)
         {
             //  The color we'd like this pixel to be
             float source_color = dest.at(x,y);
@@ -888,10 +888,10 @@ void error_diffusion( image &dest, const image &source, const image &previous, f
 
     int dir = 1;
     
-    for (int y=0;y!=source.H();y++)
+    for (size_t y=0;y!=source.H();y++)
     {
-        int beginx = 0;
-        int endx = source.W();
+        size_t beginx = 0;
+        size_t endx = source.W();
 
         if (dir==-1)
         {
@@ -899,7 +899,7 @@ void error_diffusion( image &dest, const image &source, const image &previous, f
             endx = -1;
         }
 
-        for (int x=beginx;x!=endx;x+=dir)
+        for (size_t x=beginx;x!=endx;x+=dir)
         {
             //  The color we'd like this pixel to be
             float source_color = dest.at(x,y);
@@ -930,8 +930,8 @@ void error_diffusion( image &dest, const image &source, const image &previous, f
             for (auto &t:algo.targets)
             {
                 float e = error * t.amount;
-                int tx = x+t.dx*dir;
-                int ty = y+t.dy;
+                size_t tx = x+t.dx*dir;
+                size_t ty = y+t.dy;
                 if (tx>=0 && tx<source.W() && ty>=0 && ty<source.H())
                     dest.at(tx,ty) = dest.at(tx,ty) + e;
             }

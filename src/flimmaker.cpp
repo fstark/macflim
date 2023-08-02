@@ -688,9 +688,9 @@ std::string profile_name = "se30";
 
     std::vector<std::unique_ptr<output_writer>> w;
     if (mp4_file!="")
-        w.push_back( std::move(make_ffmpeg_writer( mp4_file, custom_profile.width(), custom_profile.height() ) ) );
+        w.push_back( make_ffmpeg_writer( mp4_file, custom_profile.width(), custom_profile.height() ) );
     if (gif_file!="")
-        w.push_back( std::move(make_gif_writer( gif_file, custom_profile.width(), custom_profile.height() ) ) );
+        w.push_back( make_gif_writer( gif_file, custom_profile.width(), custom_profile.height() ) );
 
     auto encoder = flimencoder{ custom_profile };
     encoder.set_fps( fps );

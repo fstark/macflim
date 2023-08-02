@@ -67,7 +67,7 @@ public:
 
     null_compressor( size_t width, size_t height ) : compressor{ width, height } {}
 
-    virtual std::vector<uint8_t> compress( framebuffer &current, const framebuffer &target, /* weigths, */ size_t budget ) const
+    virtual std::vector<uint8_t> compress( [[maybe_unused]] framebuffer &current, [[maybe_unused]] const framebuffer &target, /* weigths, */ [[maybe_unused]] size_t budget ) const
     {
         return {};
     }
@@ -80,7 +80,7 @@ public:
 
     invert_compressor( size_t width, size_t height ) : compressor{ width, height } {}
 
-    virtual std::vector<uint8_t> compress( framebuffer &current, const framebuffer &target, /* weigths, */ size_t budget ) const
+    virtual std::vector<uint8_t> compress( framebuffer &current, [[maybe_unused]] const framebuffer &target, /* weigths, */ [[maybe_unused]] size_t budget ) const
     {
         current = current.inverted();
         return {};

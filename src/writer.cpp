@@ -74,8 +74,8 @@ void pushFrame( const image &img, const sound_frame_t &snd )
     }
 
         uint8_t *p = videoFrame->data[0];
-        for (int y=0;y!=H_;y++)
-            for (int x=0;x!=W_;x++)
+        for (size_t y=0;y!=H_;y++)
+            for (size_t x=0;x!=W_;x++)
             {
                 auto v = img.at(x,y);
                 if (v<=0.5) *p++ = 0;
@@ -494,7 +494,7 @@ class gif_writer : public output_writer
 public:
     gif_writer( const std::string filename ) : filename_{ filename } {}
 
-    virtual void write_frame( const image& img, const sound_frame_t &snd )
+    virtual void write_frame( const image& img, [[maybe_unused]] const sound_frame_t &snd )
     {
         if ((count_%3)==0)
         {
@@ -527,7 +527,7 @@ std::unique_ptr<output_writer> make_ffmpeg_writer( const std::string &movie_path
     return std::make_unique<ffmpeg_writer>( movie_path, w, h );
 }
 
-std::unique_ptr<output_writer> make_gif_writer( const std::string &movie_path, size_t w, size_t h )
+std::unique_ptr<output_writer> make_gif_writer( const std::string &movie_path, [[maybe_unused]] size_t w, [[maybe_unused]] size_t h )
 {
     return std::make_unique<gif_writer>( movie_path );
 }
@@ -535,7 +535,7 @@ std::unique_ptr<output_writer> make_gif_writer( const std::string &movie_path, s
 class null_writer : public output_writer
 {
 public:
-    virtual void write_frame( const image& img, const sound_frame_t &snd )
+    virtual void write_frame( [[maybe_unused]] const image& img, [[maybe_unused]] const sound_frame_t &snd )
     {
     }
 };

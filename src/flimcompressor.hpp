@@ -361,8 +361,6 @@ public:
         // Adds one image to the generated video, keep track of previous
         void add( const image &source )
         {
-            // logger.log( "source", source );
-
                 //  Dither the new image
             ditherer_.dither( source );
             image dest = ditherer_.current();
@@ -453,7 +451,7 @@ public:
         fill( previous, 0 );
 
 static bool generate_initial_frame = false;
-static bool loop_to_initial = true;
+// static bool loop_to_initial = true;
 
         if (generate_initial_frame)
         {
@@ -473,8 +471,7 @@ static bool loop_to_initial = true;
         }
 
 
-#ifdef NEW_VERSION
-    #warning "NEW VERSION"
+#ifndef OLD_VERSION
     DitheringParameters dp { bars, filters, dither, error_algorithm, stability, error_bleed, error_bidi, watermark };
     Ditherer d{ previous, dp };
     SubtitleBurner sb{  subtitles_ };

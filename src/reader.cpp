@@ -33,7 +33,7 @@ public:
     void append_silence( float duration )
     {
         size_t sample_count = sample_rate_ * duration;
-        for (int i=0;i!=sample_count;i++)
+        for (size_t i=0;i!=sample_count;i++)
         {
             data_.push_back( 0 );
         }
@@ -42,10 +42,10 @@ public:
     //  Append sample_count samples over each of the channels
     void append_samples( float **samples, size_t sample_count )
     {
-        for (int i=0;i!=sample_count;i++)
+        for (size_t i=0;i!=sample_count;i++)
         {
             float v = 0;
-            for (int j=0;j!=channel_count_;j++)
+            for (size_t j=0;j!=channel_count_;j++)
                 v += samples[j][i];
 
             data_.push_back( v/channel_count_ );
@@ -102,7 +102,7 @@ class ffmpeg_reader : public input_reader
     int ixv;    //  Video frame index
     int ixa;    //  Audio frame index
 
-    int video_frame_count = 0;
+    size_t video_frame_count = 0;
 
     std::unique_ptr<image> video_image_;        //  Size of the video input
     std::unique_ptr<image> default_image_;      //  Size of our output
@@ -119,7 +119,7 @@ class ffmpeg_reader : public input_reader
 
     bool found_sound_ = false;                   //  To track if sounds starts with an offset
 
-    int decode_packet(int *got_frame, int cached, AVPacket &pkt)
+    int decode_packet(int *got_frame, AVPacket &pkt)
     {
         int ret = 0;
         int decoded = pkt.size;
@@ -485,7 +485,7 @@ public:
         while (av_read_frame(format_context_, &pkt_) >= 0)
         {
             do {
-                auto ret = decode_packet( &got_frame, 0, pkt_ );
+                auto ret = decode_packet( &got_frame, pkt_ );
                 if (images_.size()==frame_to_extract_)
                     goto end;
                 if (ret < 0)
@@ -500,7 +500,7 @@ public:
             pkt_.data = NULL;
             pkt_.size = 0;
             do {
-                decode_packet(&got_frame, 1, pkt_);
+                decode_packet(&got_frame, pkt_);
             } while (got_frame);
         }
 
@@ -539,7 +539,7 @@ end:
     {
         if (image_ix==-1)
             return nullptr;
-        if (image_ix==images_.size())
+        if (image_ix==(int)images_.size())
             return nullptr;
         auto res = std::make_unique<image>( images_[image_ix] );
         image_ix++;

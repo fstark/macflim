@@ -12,7 +12,7 @@ struct subtitle
 {
     double start;
     double stop;
-    std::vector<std::string> text;
+    std::vector<std::string> text = {};
     bool reverse = false;
 };
 
