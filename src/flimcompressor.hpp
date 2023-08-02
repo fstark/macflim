@@ -302,7 +302,7 @@ public:
         //  Encoded video with codec signature and trailer (#### why trailer?)
         std::vector<uint8_t> get_video_encoded_data() const
         {
-            std::vector<uint8_t> result = { codec_.signature, 0x00, 0x00, 0x00 };
+            std::vector<uint8_t> result = { 0x00, 0x00, 0x00, codec_.signature };
             result.insert( std::end(result), std::begin(data_), std::end(data_) );
             return result;
         }
@@ -328,7 +328,7 @@ public:
         std::vector<sound_frame_t>::const_iterator current_audio_; //  Current audio
         std::vector<frame> frames_; // Output generated frames
         bool log_progress_ = true;
-        double total_q_ = 0;        //  Total quality
+        // double total_q_ = 0;        //  Total quality
         const size_t BucketsCount = 1000;       //  Error distribution (#### can be a separate histogram class)
         std::vector<size_t> fail_;
     
@@ -361,6 +361,8 @@ public:
         // Adds one image to the generated video, keep track of previous
         void add( const image &source )
         {
+            // logger.log( "source", source );
+
                 //  Dither the new image
             ditherer_.dither( source );
             image dest = ditherer_.current();
@@ -429,7 +431,7 @@ public:
 
             std::clog << "Q=" << q << " \n";
 
-            total_q_ += q;
+            // total_q_ += q;
 /*
             if (q!=1)
             {
@@ -471,8 +473,8 @@ static bool loop_to_initial = true;
         }
 
 
-if (!true)
-{
+#ifdef NEW_VERSION
+    #warning "NEW VERSION"
     DitheringParameters dp { bars, filters, dither, error_algorithm, stability, error_bleed, error_bidi, watermark };
     Ditherer d{ previous, dp };
     SubtitleBurner sb{  subtitles_ };
@@ -480,11 +482,7 @@ if (!true)
     for (auto &big_image:images_)
         ch.add( big_image );
     frames_ = ch.get_frames();
-}
-else
-{
-
-
+#else
             //  This is the initial image, all black by default
         image initial_image( previous );
 
@@ -498,7 +496,7 @@ else
         std::vector<size_t> fail;
         fail.resize( BucketsCount+1, 0 );
 
-        double total_q = 0;
+        // double total_q = 0;
 
             //  The audio ptr
         auto audio = std::begin( audio_ );
@@ -667,7 +665,6 @@ else
 // write_image( "/tmp/img0.pgm", current_fb.as_image() );
 // exit(0);
 
-
                 f.source = fb;
                 f.result = current_fb;
 
@@ -680,7 +677,7 @@ else
 
             std::clog << "Q=" << q << " \n";
 
-            total_q += q;
+            // total_q += q;
 /*
             if (q!=1)
             {
@@ -732,7 +729,7 @@ else
         std::clog << var95*100 << "% of frames are within 5% of the target pixels\n";
 
         // fprintf( stderr, "\n\nFrames rendered at less than 00-90%%: %ld. Rendered at 90-99%%: %ld. Average rendering %7.5f%%.\n", fail2, fail1, total_q/in_fr*100 );
-    }
+#endif
     }
 };
 
