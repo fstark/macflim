@@ -329,8 +329,65 @@ public:
         std::vector<frame> frames_; // Output generated frames
         bool log_progress_ = true;
         // double total_q_ = 0;        //  Total quality
-        const size_t BucketsCount = 1000;       //  Error distribution (#### can be a separate histogram class)
-        std::vector<size_t> fail_;
+        static const size_t BucketCount = 1000;       //  Error distribution
+
+        template <size_t N> class qhistogram
+        {
+            size_t total_ = 0;
+            std::vector<size_t> samples_;
+            bool verbose_ = true;
+
+        public:
+            qhistogram() : samples_(N+1) {}
+
+            ~qhistogram()
+            {
+                dump();
+            }
+
+            void add( double quality )
+            {
+                assert( quality>=0 && quality<=1 );
+                samples_[quality*N]++;
+                total_++;
+            }
+
+            void dump() const
+            {
+                if (verbose_)
+                {
+                    std::clog << "+----------+--------+----------+----------+\n";
+                    std::clog << "|     Q    | Frames |   Perc.  |  Cumul.  |\n";
+                    std::clog << "|----------|--------|----------|----------|\n";
+                }
+
+                size_t cumulative = 0;
+                double var99 = 0;
+                double var98 = 0;
+                double var95 = 0;
+                for (size_t i=0;i!=N+1;i++)
+                {
+                    cumulative += samples_[i];
+                    auto percent = (cumulative*1.0/total_);
+                    if (percent>0.01 && var99==0)
+                        var99 = i*1.0/N;
+                    if (percent>0.02 && var98==0)
+                        var98 = i*1.0/N;
+                    if (percent>0.05 && var95==0)
+                        var95 = i*1.0/N;
+                    if (verbose_)
+                        if (samples_[i])
+                            fprintf( stderr, "| %7.3f%% | %6zu | %7.3f%% | %7.3f%% |\n", i*1.0/N*100, samples_[i], (samples_[i]*1.0/total_)*100, percent*100 );
+                }
+                if (verbose_)
+                    std::clog << "+----------+--------+----------+----------+\n";
+                std::clog << "99% of the frames are within "<< var99*100 << "% of the target pixels\n";
+                std::clog << "98% of the frames are within "<< var98*100 << "% of the target pixels\n";
+                std::clog << "95% of the frames are within "<< var95*100 << "% of the target pixels\n";
+            }
+        };
+
+        qhistogram<BucketCount> histo_;
     
         public:
         CompressorHelper(
@@ -352,7 +409,6 @@ public:
             group_{ group }
         {
             //  blah
-            fail_.resize( BucketsCount+1, 0 );
             current_tick_ = 0;
             in_fr_ = 0;
             current_audio_ = std::begin( audio_ );
@@ -427,7 +483,7 @@ public:
 
             auto q = frames_.back().result.proximity( fb );
 
-            std::clog << "Q=" << q << " \n";
+            // std::clog << "Q=" << q << " \n";
 
             // total_q_ += q;
 /*
@@ -436,8 +492,7 @@ public:
                 fprintf( stderr, "# %4d (%5.3fs) \u001b[%sm%05.3f%%\u001b[0m\n", in_fr, current_tick/60.0, q<.9?"91":"0", q*100 );
             }
 */
-            fail_[q*BucketsCount]++;
-
+            histo_.add( q );
             current_tick_ = next_tick;
         }
 
