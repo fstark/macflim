@@ -51,15 +51,13 @@ Alternatively, you can build it from the source code, by downloading the 'MacFli
 
 The pre-requisites are ffmpeg, youtube-dl or yt-dlp (optional) and ImageMagick (optional)
 
-* ``ffmpeg`` libraries are required for compilation (you'll need version 4.x).
+* ``ffmpeg`` and associated libraries are required for compilation (version 7.0.2 or higher is recommended).
 * ``yt-dlp`` or ``youtube-dl`` is used if you want to directly encode movies from youtube or vimeo (or others).
 * ``ImageMagick`` is used if you want to generate ``gif`` files.
 
 On a Mac:
 
-    brew unlink ffmpeg
-    brew install ffmpeg@4
-    brew link ffmpeg@4
+    brew install ffmpeg
     brew install yt-dlp
     brew install ImageMagick
 
