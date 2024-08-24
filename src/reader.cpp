@@ -130,7 +130,14 @@ class ffmpeg_reader : public input_reader
             /* decode video frame */
             ret = avcodec_send_packet(video_codec_context_, pkt);
             if (ret < 0) {
-                throw "Error sending video packet for decoding";
+                if (ret == AVERROR_EOF) {
+                    // End of file, not an error in this case
+                    return 0;
+                }
+                char errbuf[AV_ERROR_MAX_STRING_SIZE];
+                av_strerror(ret, errbuf, AV_ERROR_MAX_STRING_SIZE);
+                std::cerr << "Error sending video packet for decoding: " << errbuf << std::endl;
+                return ret;
             }
 
             while (ret >= 0) {
@@ -138,7 +145,10 @@ class ffmpeg_reader : public input_reader
                 if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
                     break;
                 } else if (ret < 0) {
-                    throw "Error during video decoding";
+                    char errbuf[AV_ERROR_MAX_STRING_SIZE];
+                    av_strerror(ret, errbuf, AV_ERROR_MAX_STRING_SIZE);
+                    std::cerr << "Error during video decoding: " << errbuf << std::endl;
+                    return ret;
                 }
 
                 *got_frame = 1;
@@ -178,7 +188,14 @@ class ffmpeg_reader : public input_reader
         {
             ret = avcodec_send_packet(audio_codec_context_, pkt);
             if (ret < 0) {
-                throw "Error sending audio packet for decoding";
+                if (ret == AVERROR_EOF) {
+                    // End of file, not an error in this case
+                    return 0;
+                }
+                char errbuf[AV_ERROR_MAX_STRING_SIZE];
+                av_strerror(ret, errbuf, AV_ERROR_MAX_STRING_SIZE);
+                std::cerr << "Error sending audio packet for decoding: " << errbuf << std::endl;
+                return ret;
             }
 
             while (ret >= 0) {
@@ -186,7 +203,10 @@ class ffmpeg_reader : public input_reader
                 if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
                     break;
                 } else if (ret < 0) {
-                    throw "Error during audio decoding";
+                    char errbuf[AV_ERROR_MAX_STRING_SIZE];
+                    av_strerror(ret, errbuf, AV_ERROR_MAX_STRING_SIZE);
+                    std::cerr << "Error during audio decoding: " << errbuf << std::endl;
+                    return ret;
                 }
 
                 *got_frame = 1;
@@ -215,9 +235,6 @@ class ffmpeg_reader : public input_reader
                 }
             }
         }
-
-        if (sDebug)
-            std::clog << "decode_packet returning " << decoded << "\n";
 
         return decoded;
     }
@@ -274,6 +291,12 @@ public:
         {
             std::clog << "Video stream index :" << ixv << "\n";
             std::clog << "Audio stream index :" << ixa << "\n";
+        }
+
+        double actual_duration = format_context_->duration / (double)AV_TIME_BASE;
+        if (duration > actual_duration) {
+            std::clog << "Warning: Requested duration (" << duration << "s) exceeds video length (" << actual_duration << "s). Trimming to video length.\n";
+            duration = actual_duration;
         }
 
         double seek_to = std::max(from-10.0,0.0);    //  We seek to 10 seconds earlier, if we can
@@ -359,7 +382,7 @@ public:
             std::clog << "VIDEO CODEC OPENED WITH PIXEL FORMAT " << av_get_pix_fmt_name(video_codec_context_->pix_fmt) << "\n";
 
         if (video_codec_context_->pix_fmt!=AV_PIX_FMT_YUV420P)
-            throw "WAS EXPECTING A YUV240P PIXEL FORMAT";
+            throw "WAS EXPECTING A YUV420P PIXEL FORMAT";
 
         auto bufsize = av_image_alloc(
             video_dst_data_,
@@ -401,12 +424,10 @@ public:
 
         int got_frame = 0;
 
-        while (av_read_frame(format_context_, pkt_) >= 0)
+        while (av_read_frame(format_context_, pkt_) >= 0 && images_.size() < frame_to_extract_)
         {
             do {
                 auto ret = decode_packet(&got_frame, pkt_);
-                if (images_.size() == frame_to_extract_)
-                    goto end;
                 if (ret < 0)
                     break;
                 pkt_->data += ret;
@@ -425,7 +446,6 @@ public:
             } while (got_frame);
         }
 
-    end:
         std::clog << "\n";
 
         image_ix = 0;
@@ -487,7 +507,7 @@ std::unique_ptr<input_reader> make_ffmpeg_reader(const std::string &movie_path, 
 {
     try
     {
-        return std::make_unique<ffmpeg_reader>(movie_path, from, to);
+        return std::make_unique<ffmpeg_reader>(movie_path, from, to - from);
     }
     catch (const char *e)
     {
