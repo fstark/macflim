@@ -932,7 +932,7 @@ void error_diffusion( image &dest, const image &source, const image &previous, f
                 float e = error * t.amount;
                 size_t tx = x+t.dx*dir;
                 size_t ty = y+t.dy;
-                if (tx>=0 && tx<source.W() && ty>=0 && ty<source.H())
+                if (tx < source.W() && ty < source.H())
                     dest.at(tx,ty) = dest.at(tx,ty) + e;
             }
         }
