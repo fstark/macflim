@@ -43,16 +43,16 @@ public:
 
     const float &at( size_t x, size_t y ) const
     {
-        assert( x>=0 );
-        assert( y>=0 );
+        assert( x < W_ );
+        assert( y < H_ );
         assert( x<W_ );
         assert( y<H_ );
         return image_[x+y*W_];
     }
     float &at( size_t x, size_t y )
     {
-        assert( x>=0 );
-        assert( y>=0 );
+        assert( x < W_ );
+        assert( y < H_ );
         assert( x<W_ );
         assert( y<H_ );
         return image_[x+y*W_];
