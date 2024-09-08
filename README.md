@@ -1,3 +1,5 @@
+**WARNING: FFMPEG5 IS NOW REQUIRED FOR CREATING FLIMS**
+
 # MacFlim, the true Mac video player
 
 MacFlim is a video encoder and player for black and white vintage Macintoshes, now in its second incarnation.
@@ -49,7 +51,7 @@ Alternatively, you can build it from the source code, by downloading the 'MacFli
 
 ## Ok, how do I compile the encoder?
 
-The pre-requisites are ffmpeg, youtube-dl or yt-dlp (optional) and ImageMagick (optional)
+The pre-requisites are ffmpeg version 5 (this has changed from previous releases), youtube-dl or yt-dlp (optional) and ImageMagick (optional)
 
 * ``ffmpeg`` and associated libraries are required for compilation (version 7 or higher is recommended, but version 5 or higher should work).
 * ``yt-dlp`` or ``youtube-dl`` is used if you want to directly encode movies from youtube or vimeo (or others).
@@ -61,7 +63,7 @@ On a Mac:
     brew install yt-dlp
     brew install ImageMagick
 
-On a linux (ubuntu):
+On a linux (ubuntu 24.04 includes ffmpeg>=5):
 
     # Note: make sure you have a recent c++20 compiler
     sudo apt-get update
@@ -73,6 +75,7 @@ On a linux (ubuntu):
     sudo apt-get install libavformat-dev libavcodec-dev libavutil-dev
     sudo apt-get install yt-dlp
     sudo apt-get install imagemagick
+
 
 Note, ``yt-dlp`` is not easy to keep up to date from apt. See https://github.com/yt-dlp/yt-dlp#installation for a better way to install it.
 
