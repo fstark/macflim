@@ -51,15 +51,13 @@ Alternatively, you can build it from the source code, by downloading the 'MacFli
 
 The pre-requisites are ffmpeg, youtube-dl or yt-dlp (optional) and ImageMagick (optional)
 
-* ``ffmpeg`` libraries are required for compilation (you'll need version 4.x).
+* ``ffmpeg`` and associated libraries are required for compilation (version 7 or higher is recommended, but version 5 or higher should work).
 * ``yt-dlp`` or ``youtube-dl`` is used if you want to directly encode movies from youtube or vimeo (or others).
 * ``ImageMagick`` is used if you want to generate ``gif`` files.
 
 On a Mac:
 
-    brew unlink ffmpeg
-    brew install ffmpeg@4
-    brew link ffmpeg@4
+    brew install ffmpeg
     brew install yt-dlp
     brew install ImageMagick
 
@@ -84,7 +82,7 @@ You can the get the source code using:
 
 (or your regional equivalent)
 
-Compiling is as simple as opening a terminal and typing ``make`` (see notes for Apple silicon below). There are some warnings of obsolete functions use with ffmpeg, but it is already a miracle that it works. If anyone has a pull request to fix this, let me know.
+Compiling is as simple as opening a terminal and typing ``make`` (see notes for Apple silicon below). There may be some warnings of obsolete functions use with ffmpeg, but it is already a miracle that it works. If anyone has a pull request to fix this, let me know.
 
 After compilation, you can generate a sample flim using:
 

@@ -32,7 +32,7 @@ flimmaker.o: flimmaker.cpp flimencoder.hpp flimcompressor.hpp compressor.hpp img
 	c++ $(LDLIBS) -std=c++2a flimmaker.o imgcompress.o image.o watermark.o ruler.o reader.o writer.o -lavformat -lavcodec -lavutil -o ../flimmaker
 
 ../flimutil: flimutil.c
-	cc -O3 -Wno-unused-result  flimutil.c -o ../flimutil
+	cc -O3 -Wno-unused-result flimutil.c -o ../flimutil
 
 clean:
 	rm -f ../flimmaker ../flimutil flimmaker.o imgcompress.o image.o watermark.o ruler.o reader.o writer.o
@@ -47,10 +47,6 @@ debug: flimmaker.cpp flimutil.c imgcompress.cpp watermark.cpp image.cpp ruler.cp
 	c++ -O0 -std=c++2a -c -g -fsanitize=undefined writer.cpp -o writer.o
 	c++ -O0 -std=c++2a -g -fsanitize=undefined imgcompress.o flimmaker.o watermark.o image.o ruler.o reader.o writer.o -lavformat -lavcodec -lavutil -o ../flimmaker
 	cc -g -Wno-unused-result flimutil.c -o ../flimutil
-#	gdb ./flimmaker
 
 video_test: video_test.c
 	gcc -Wno-deprecated-declarations video_test.c -lavformat -lavcodec -lavutil -o video_test
-
-
-#../flimmaker --input '/media/fred/Movies/Movies/Collections/Star Wars (1977-2019)/Star Wars - Episode V - The Empire Strikes Back (1980) [88]/Star Wars - Episode V - The Empire Strikes Back (1980) [720p,x264].mp4' --from 1:59:17.36 --duration 3.46 --bars false --group false --byterate 100000
