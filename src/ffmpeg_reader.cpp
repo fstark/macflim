@@ -1,4 +1,4 @@
-#include "reader.hpp"
+#include "ffmpeg_reader.hpp"
 
 extern "C" {
     #include <libavformat/avformat.h>
