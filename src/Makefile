@@ -1,3 +1,6 @@
+# Set default parallel build option
+MAKEFLAGS += -j16
+
 # The following two lines are for compilation under homebrew on Mac M1
 # -Wsign-compare -Wchar-subscripts -Wunused-but-set-variable -Wunused-variable 
 
@@ -19,10 +22,6 @@ OBJS = image.o reader.o writer.o ruler.o watermark.o imgcompress.o filesystem_re
 # Include the dependency files
 -include $(OBJS:.o=.d)
 
-# Specific rule for flimmaker.o with additional dependencies
-# flimmaker.o: flimmaker.cpp flimencoder.hpp flimcompressor.hpp compressor.hpp imgcompress.hpp framebuffer.hpp image.hpp ruler.hpp reader.hpp writer.hpp subtitles.hpp
-# 	${CPP} $(CXXFLAGS) -std=c++23 -MMD -MP -c -O3 -I liblzg/src/include flimmaker.cpp -o flimmaker.o
-
 ../flimmaker: $(OBJS)
 	${CPP} $(LDLIBS) -std=c++23 $(OBJS) -lavformat -lavcodec -lavutil -o ../flimmaker
 
@@ -32,16 +31,12 @@ OBJS = image.o reader.o writer.o ruler.o watermark.o imgcompress.o filesystem_re
 clean:
 	rm -f ../flimmaker ../flimutil $(OBJS) $(OBJS:.o=.d)
 
-debug: flimmaker.cpp flimutil.c imgcompress.cpp watermark.cpp image.cpp ruler.cpp flimencoder.hpp flimcompressor.hpp compressor.hpp imgcompress.hpp framebuffer.hpp image.hpp ruler.hpp
-	${CPP} -O0 -std=c++2a -MMD -MP -c -g -fsanitize=undefined imgcompress.cpp -o imgcompress.o
-	${CPP} -Wall -O0 -std=c++2a -MMD -MP -c -g -fsanitize=undefined flimmaker.cpp -o flimmaker.o
-	${CPP} -O0 -std=c++2a -MMD -MP -c -g -fsanitize=undefined watermark.cpp -o watermark.o
-	${CPP} -O0 -std=c++2a -MMD -MP -c -g -fsanitize=undefined image.cpp -o image.o
-	${CPP} -O0 -std=c++2a -MMD -MP -c -g -fsanitize=undefined ruler.cpp -o ruler.o
-	${CPP} -O0 -std=c++2a -MMD -MP -c -g -fsanitize=undefined reader.cpp -o reader.o
-	${CPP} -O0 -std=c++2a -MMD -MP -c -g -fsanitize=undefined writer.cpp -o writer.o
-	${CPP} -O0 -std=c++2a -g -fsanitize=undefined imgcompress.o flimmaker.o watermark.o image.o ruler.o reader.o writer.o -lavformat -lavcodec -lavutil -o ../flimmaker
+# Debug target
+debug: CXXFLAGS += -O0 -std=c++2a -g -fsanitize=undefined
+debug: $(OBJS)
+	${CPP} $(CXXFLAGS) $(OBJS) -lavformat -lavcodec -lavutil -o ../flimmaker
 	cc -g -Wno-unused-result flimutil.c -o ../flimutil
 
-video_test: video_test.c
-	gcc -Wno-deprecated-declarations video_test.c -lavformat -lavcodec -lavutil -o video_test
+# Pattern rule for compiling .cpp files to .o files in debug mode
+$(OBJS): %.o: %.cpp
+	${CPP} $(CXXFLAGS) -MMD -MP -c $< -o $@
