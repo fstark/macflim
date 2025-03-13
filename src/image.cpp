@@ -26,7 +26,7 @@ void copy_scale( image &destination, const image &source, double scale )
             int fromy = centersh-(centerdh-(int)y)*scale;
 
             if (fromx<0 || (int)source.W()<=fromx || fromy<0 || (int)source.H()<=fromy)
-                destination.at( x, y ) = 0;
+                destination.at( x, y ) = 0; // #### Should be settable (used by --bars)
             else
                 destination.at( x, y ) = source.at( fromx, fromy );
         }

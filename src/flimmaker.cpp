@@ -53,6 +53,8 @@ static int sStream = 0;
 
 #include "image.hpp"
 #include "reader.hpp"
+#include "filesystem_reader.hpp"
+#include "ffmpeg_reader.hpp"
 #include "writer.hpp"
 #include "subtitles.hpp"
 
@@ -196,7 +198,8 @@ void segfault_handler(int signal) {
 
 // The main function, does all the work
 // flimmaker [-g] --in <%d.pgm> --from <index> --to <index> --cover <index> --audio <audio.wav> --flim <file>
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
     signal(SIGSEGV, segfault_handler);
     try {
         std::string input_file = "";
@@ -525,7 +528,7 @@ int main(int argc, char **argv) {
         if (ends_with(input_file, ".pgm")) {
             std::clog << "Reading pgm from '" << input_file << "' pattern, at " << fps << " frames per second, using '" << audio_arg << "' audio file\n";
             std::clog << "( use --fps and --audio to change fps and audio )\n";
-            r = std::make_unique<filesystem_reader>(input_file, fps, audio_arg, from_index, to_index);
+            r = make_filesystem_reader(input_file, fps, audio_arg, from_index, to_index);
         } else {
             r = make_ffmpeg_reader(input_file, from_index, duration);
             fps = r->frame_rate();

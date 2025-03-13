@@ -9,6 +9,8 @@
 
 #include <functional>
 
+#include <algorithm>
+
 /// Alternate implementaiton of std::popcount, to support non compliant C++20 compilers (MacOS 10.15)
 inline int mypopcount( unsigned n )
 {
