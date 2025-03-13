@@ -325,7 +325,7 @@ class ffmpeg_reader : public input_reader
 public:
     ffmpeg_reader() {}
 
-    ffmpeg_reader(const std::string &movie_path, double from, double duration)
+    ffmpeg_reader(const std::string &movie_path, timestamp_t from, timestamp_t duration)
     {
         av_log_set_level(AV_LOG_WARNING);
 
@@ -361,7 +361,7 @@ public:
             std::clog << "Audio stream index :" << ixa << "\n";
         }
 
-        double actual_duration = format_context_->duration / (double)AV_TIME_BASE;
+        timestamp_t actual_duration = format_context_->duration / (double)AV_TIME_BASE;
         if (duration > actual_duration)
         {
             std::clog << "Warning: Requested duration (" << duration << "s) exceeds video length (" 
@@ -369,7 +369,7 @@ public:
             duration = actual_duration;
         }
 
-        double seek_to = std::max(from - 10.0, 0.0);    //  We seek to 10 seconds earlier, if we can
+        timestamp_t seek_to = std::max(from - 10.0, 0.0);    //  We seek to 10 seconds earlier, if we can
         if (avformat_seek_file(format_context_, -1, seek_to * AV_TIME_BASE, 
                                seek_to * AV_TIME_BASE, seek_to * AV_TIME_BASE, 
                                AVSEEK_FLAG_ANY) < 0)
@@ -523,7 +523,7 @@ public:
     }
 };
 
-std::unique_ptr<input_reader> make_ffmpeg_reader(const std::string &movie_path, double from, double to)
+std::unique_ptr<input_reader> make_ffmpeg_reader(const std::string &movie_path, timestamp_t from, timestamp_t to)
 {
     try
     {

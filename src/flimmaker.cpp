@@ -37,6 +37,7 @@
 #ifdef LZG
 #include "lzg.h"
 #endif
+#include "common.hpp"
 #include "flimencoder.hpp"
 
 using namespace std::string_literals;
@@ -79,7 +80,7 @@ int num_from_string(const char **s) {
 // 02:04.470 => 124.47
 // 1230.2 => 1230.2
 // 0001:1:1:3.1toto => 219663.1
-double seconds_from_string(const char *s) {
+timestamp_t seconds_from_string(const char *s) {
     double d = 0;
     for (;;) {
         if (*s >= '0' && *s <= '9')
@@ -208,10 +209,10 @@ int main(int argc, char **argv)
         std::string gif_file = "";
         std::string out_arg = "out.flim";
         std::string audio_arg = "audio.raw";
-        double from_index = 0;  // #### This is not an index, it is a timestamp
-        double to_index = std::numeric_limits<double>::max();
+        timestamp_t from_index = 0;  // #### This is not an index, it is a timestamp
+        timestamp_t to_index = std::numeric_limits<double>::max();
         double duration = 300;  // 5 minutes by default
-        double poster_ts = -1;
+        timestamp_t poster_ts = -1;
         int cover_from = -1;
         int cover_to = -1;
         double fps = 24.0;

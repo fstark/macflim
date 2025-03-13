@@ -2,4 +2,4 @@
 
 #include "reader.hpp"
 
-std::unique_ptr<input_reader> make_ffmpeg_reader(const std::string &movie_path, double from, double to);
+std::unique_ptr<input_reader> make_ffmpeg_reader(const std::string &movie_path, timestamp_t from, timestamp_t to);

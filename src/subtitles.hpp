@@ -6,20 +6,19 @@
 #include <tuple>
 #include <iostream>
 
-//  A subtltes 
+#include "common.hpp"
+
+//  A subtitle
 struct subtitle
 {
-    double start;
-    double stop;
+    timestamp_t start;
+    timestamp_t stop;
     std::vector<std::string> text = {};
     bool reverse = false;
 };
 
-
-
-
 //  Parse srt timestamp string
-std::optional<std::tuple<double,double>> read_timestamps( const std::string &timestamps )
+std::optional<std::tuple<timestamp_t,timestamp_t>> read_timestamps( const std::string &timestamps )
 {
     int h0,m0,s0,ms0;
     int h1,m1,s1,ms1;
@@ -27,7 +26,7 @@ std::optional<std::tuple<double,double>> read_timestamps( const std::string &tim
         return std::nullopt;
     auto start = h0*3600+m0*60+s0+ms0/1000.0;
     auto stop = h1*3600+m1*60+s1+ms1/1000.0;
-    return std::tuple<double,double>{ start, stop };
+    return std::tuple<timestamp_t,timestamp_t>{ start, stop };
 }
 
 using namespace std::string_literals;
@@ -91,7 +90,7 @@ std::vector<subtitle> read_subtitles( std::istream &in )
 }
 
 /// Offset the subtitles of -from seconds and truncate so it is not longer than duration seconds.
-std::vector<subtitle> subtitles_extract( const std::vector<subtitle> &subtitles, double from, double duration )
+std::vector<subtitle> subtitles_extract( const std::vector<subtitle> &subtitles, timestamp_t from, timestamp_t duration )
 {
     std::vector<subtitle> result;
 
