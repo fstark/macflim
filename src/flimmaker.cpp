@@ -197,6 +197,34 @@ void segfault_handler(int signal) {
     exit(1);
 }
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+
+const std::string temp_file()
+{
+    std::string cache_file;
+    #ifdef _WIN32
+    char temp_path[MAX_PATH];
+    if (GetTempPath(MAX_PATH, temp_path) == 0)
+        throw "Failed to get temporary path\n";
+    char temp_file[MAX_PATH];
+    if (GetTempFileName(temp_path, "flim", 0, temp_file) == 0)
+        throw "Failed to create temporary file\n";
+    cache_file = temp_file;
+#else
+    char cache_file_template[] = "/tmp/flimmaker_cache_XXXXXX";
+    int cache_fd = mkstemp(cache_file_template);
+    if (cache_fd == -1)
+        throw "Failed to create temporary file\n";
+    cache_file = cache_file_template;
+    close(cache_fd);
+#endif
+    return cache_file;
+}
+
 // The main function, does all the work
 // flimmaker [-g] --in <%d.pgm> --from <index> --to <index> --cover <index> --audio <audio.wav> --flim <file>
 int main(int argc, char **argv)
@@ -222,7 +250,8 @@ int main(int argc, char **argv)
         std::string change_pattern = "";
         std::string target_pattern = "";
         bool auto_watermark = false;
-        std::string cache_file = std::tmpnam(nullptr);
+        std::string cache_file = temp_file();
+
         bool generated_cache = true;
         bool downloaded_file = false;
         bool profile_set = false;

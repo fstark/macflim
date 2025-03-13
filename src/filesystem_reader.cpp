@@ -20,11 +20,12 @@ class filesystem_reader : public input_reader
     }
 
 public:
-    filesystem_reader(const std::string &file_pattern, double frame_rate, const std::string &audio_path, size_t from_frame, size_t count) : file_pattern_{file_pattern},
-                                                                                                                                            frame_rate_{frame_rate},
-                                                                                                                                            audio_path_{audio_path},
-                                                                                                                                            from_frame_{from_frame},
-                                                                                                                                            count_{count}
+    filesystem_reader(const std::string &file_pattern, double frame_rate, const std::string &audio_path, size_t from_frame, size_t count) :
+		file_pattern_{file_pattern},
+		frame_rate_{frame_rate},
+		audio_path_{audio_path},
+		from_frame_{from_frame},
+		count_{count}
     {
         current_image_index_ = from_frame_;
     }
