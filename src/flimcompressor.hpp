@@ -1,5 +1,4 @@
-#ifndef FILM_COMPRESSOR_INCLUDED__
-#define FILM_COMPRESSOR_INCLUDED__
+#pragma once
 
 #include "image.hpp"
 #include "framebuffer.hpp"
@@ -784,6 +783,3 @@ static bool generate_initial_frame = false;
 #endif
     }
 };
-
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef SUBTITLES_INCLUDED__
-#define SUBTITLES_INCLUDED__
+#pragma once
 
 #include <vector>
 #include <string>
@@ -113,5 +112,3 @@ std::vector<subtitle> subtitles_extract( const std::vector<subtitle> &subtitles,
 
     return result;
 }
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef IMAGECOMPRESS_INCLUDED__
-#define IMAGECOMPRESS_INCLUDED__
+#pragma once
 
 //  ------------------------------------------------------------------
 //  Compression utilities for B&W images
@@ -416,5 +415,3 @@ public:
 
 
 void packz32opt_test();
-
-#endif

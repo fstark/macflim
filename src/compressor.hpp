@@ -1,5 +1,4 @@
-#ifndef COMPRESSOR_INCLUDED__
-#define COMPRESSOR_INCLUDED__
+#pragma once
 
 #include <vector>
 #include <bitset>
@@ -440,5 +439,3 @@ size_t vertical_from_horizontal( size_t h ) const
         return res;
     }
 };
-
-#endif

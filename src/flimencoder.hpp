@@ -1,5 +1,4 @@
-#ifndef FLIMENCODER_INCLUDED__
-#define FLIMENCODER_INCLUDED__
+#pragma once
 
 #include <string>
 
@@ -732,5 +731,3 @@ std::cout << "PROFILE BYTERATE " << profile_.byterate() << "\n";
         }
     }
 };
-
-#endif

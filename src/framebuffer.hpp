@@ -1,5 +1,4 @@
-#ifndef FRAMEBUFFER_INCLUDED__
-#define FRAMEBUFFER_INCLUDED__
+#pragma once
 
 #include <vector>
 #include "image.hpp"
@@ -303,5 +302,3 @@ public:
         std::copy( p, p+bytelen, out );
     }
 };
-
-#endif

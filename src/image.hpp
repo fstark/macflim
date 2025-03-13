@@ -1,5 +1,4 @@
-#ifndef IMAGE_INCLUDED__
-#define IMAGE_INCLUDED__
+#pragma once
 
 #include <cstdint>
 
@@ -98,5 +97,3 @@ void copy( image &destination, const image &source, bool black_bars=true );
 
 //  #### This has nothing to do here
 void delete_files_of_pattern( const std::string &pattern );
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef RULER_INCLUDED__
-#define RULER_INCLUDED__
+#pragma once
 
 #include <bitset>
 #include <iostream>
@@ -171,4 +170,3 @@ public:
     }
 };
 
-#endif
