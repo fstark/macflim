@@ -59,14 +59,19 @@ static int sStream = 0;
 #include "writer.hpp"
 #include "subtitles.hpp"
 
-inline bool ends_with(std::string const & value, std::string const & ending) {
-    if (ending.size() > value.size()) return false;
+inline bool ends_with(std::string const & value, std::string const & ending)
+{
+    if (ending.size() > value.size())
+        return false;
+
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
 }
 
-int num_from_string(const char **s) {
+int num_from_string(const char **s)
+{
     int n = 0;
-    while (**s >= '0' && **s <= '9') {
+    while (**s >= '0' && **s <= '9')
+    {
         n = n * 10 + (**s - '0');
         (*s)++;
     }
@@ -80,9 +85,11 @@ int num_from_string(const char **s) {
 // 02:04.470 => 124.47
 // 1230.2 => 1230.2
 // 0001:1:1:3.1toto => 219663.1
-timestamp_t seconds_from_string(const char *s) {
+timestamp_t seconds_from_string(const char *s)
+{
     double d = 0;
-    for (;;) {
+    for (;;)
+    {
         if (*s >= '0' && *s <= '9')
             d = d * 60 + num_from_string(&s);
         if (*s != ':')
@@ -91,10 +98,12 @@ timestamp_t seconds_from_string(const char *s) {
     }
     if (!*s)
         return d;
-    if (*s == '.') {
+    if (*s == '.')
+    {
         double f = 1;
         s++;
-        while (*s >= '0' && *s <= '9') {
+        while (*s >= '0' && *s <= '9')
+        {
             f /= 10;
             d += f * (*s++ - '0');
         }
@@ -102,7 +111,8 @@ timestamp_t seconds_from_string(const char *s) {
     return d;
 }
 
-void test_seconds_from_string() {
+void test_seconds_from_string()
+{
     assert(seconds_from_string("42") == 42);
     assert(seconds_from_string("05:31") == 331);
     assert(seconds_from_string("2:4") == 124);
@@ -112,7 +122,8 @@ void test_seconds_from_string() {
 }
 
 // Write a bunch of bytes in a file
-void write_data(const char *file, u_int8_t *data, size_t len) {
+void write_data(const char *file, u_int8_t *data, size_t len)
+{
     FILE *f = fopen(file, "wb");
     while (len--)
         fputc(*data++, f);
@@ -125,7 +136,8 @@ const char *version = "2.0.0";
 #include <chrono>
 #include <ctime>
 
-void usage(const std::string name) {
+void usage(const std::string name)
+{
     std::cerr << "Usage\n";
     std::cerr << name << " INPUT [OPTIONS ...]\n";
     std::cerr << "  INPUT can be either a mp4 file name, a movie URL or a 'pgm' pattern.'\n";
@@ -169,7 +181,8 @@ void usage(const std::string name) {
     std::cerr << "    --debug BOOLEAN             : enables various debug options\n";
 
     std::cerr << "\nList of profiles names for the --profile option (default 'se30'):\n";
-    for (auto n : { "128k", "512k", "xl", "plus", "se", "portable", "se30", "perfect" }) {
+    for (auto n : { "128k", "512k", "xl", "plus", "se", "portable", "se30", "perfect" })
+    {
         encoding_profile p;
         encoding_profile::profile_named(n, 512, 342, p);
         std::cerr << "        " << n << " : " << p.description() << "\n";
@@ -177,14 +190,16 @@ void usage(const std::string name) {
 
     std::cerr << "\nList of error diffusion algorithms for the --error_diffusion option (default 'floyd'):\n";
 
-    error_diffusion_algorithms([](const std::string name, const std::string description) {
+    error_diffusion_algorithms([](const std::string name, const std::string description)
+    {
         fprintf(stderr, "               %16s : %s\n", name.c_str(), description.c_str());
     });
 
     std::cerr << "use '" << name << " --help' for displaying this help page.\n";
 }
 
-void segfault_handler(int signal) {
+void segfault_handler(int signal)
+{
     void *array[10];
     size_t size;
 
@@ -230,7 +245,8 @@ const std::string temp_file()
 int main(int argc, char **argv)
 {
     signal(SIGSEGV, segfault_handler);
-    try {
+    try
+    {
         std::string input_file = "";
         std::string srt_file = "";
         std::string mp4_file = "";
@@ -267,7 +283,8 @@ int main(int argc, char **argv)
         codecs.back().coder = std::make_shared<null_compressor>(0, 0);
 
         std::string comment = "FLIM\n";
-        for (int i = 0; i != argc; i++) {
+        for (int i = 0; i != argc; i++)
+        {
             if (i != 0)
                 comment += " ";
             comment += argv[i];
@@ -292,197 +309,244 @@ int main(int argc, char **argv)
         argc--;
         argv++;
 
-        while (argc) {
-            if (!strcmp(*argv, "--help")) {
+        while (argc)
+        {
+            if (!strcmp(*argv, "--help"))
+            {
                 usage(cmd_name);
                 ::exit(EXIT_SUCCESS);
             }
 
-            if (strncmp(*argv, "--", 2)) {
-                if (input_file != "") {
+            if (strncmp(*argv, "--", 2))
+            {
+                if (input_file != "")
+                {
                     std::cerr << "Input file specified twice: '" << input_file << "' and '" << *argv << "'\n";
                     ::exit(EXIT_FAILURE);
                 }
                 input_file = *argv;
-            } else if (!strcmp(*argv, "--cache")) {
+            } else if (!strcmp(*argv, "--cache"))
+            {
                 argc--;
                 argv++;
                 cache_file = *argv;
                 generated_cache = false;
-            } else if (!strcmp(*argv, "--mp4")) {
+            } else if (!strcmp(*argv, "--mp4"))
+            {
                 argc--;
                 argv++;
                 mp4_file = *argv;
-            } else if (!strcmp(*argv, "--srt")) {
+            } else if (!strcmp(*argv, "--srt"))
+            {
                 argc--;
                 argv++;
                 srt_file = *argv;
-            } else if (!strcmp(*argv, "--gif")) {
+            } else if (!strcmp(*argv, "--gif"))
+            {
                 argc--;
                 argv++;
                 gif_file = *argv;
-            } else if (!strcmp(*argv, "--profile")) {
+            } else if (!strcmp(*argv, "--profile"))
+            {
                 argc--;
                 argv++;
                 profile_name = *argv;
-                if (profile_name == "xl") {
+                if (profile_name == "xl")
+                {
                     width = (720 / 32) * 32;
                     height = 364;
                     std::cerr << "xl -- setting resolution to " << width << "x" << height << "\n";
                 }
-                if (profile_name == "portable") {
+                if (profile_name == "portable")
+                {
                     width = (640 / 32) * 32;
                     height = 400;
                     std::cerr << "portable -- setting resolution to " << width << "x" << height << "\n";
                 }
-                if (!encoding_profile::profile_named(profile_name, width, height, custom_profile)) {
+                if (!encoding_profile::profile_named(profile_name, width, height, custom_profile))
+                {
                     std::cerr << "Cannot find encoding profile '" << *argv << "'\n";
                     ::exit(EXIT_FAILURE);
                 }
                 profile_set = true;
-            } else if (!strcmp(*argv, "--width")) {
+            } else if (!strcmp(*argv, "--width"))
+            {
                 argc--;
                 argv++;
-                if (profile_set) {
+                if (profile_set)
+                {
                     std::cerr << "Changing width will reset setting profile to '" << profile_name << "'\n";
                 }
                 width = atoi(*argv);
-                if ((width % 32) != 0) {
+                if ((width % 32) != 0)
+                {
                     width = (width / 32) * 32;
                     std::cerr << "Width must be multiple of 32, rounding it down to '" << width << "'\n";
                 }
                 encoding_profile::profile_named(profile_name, width, height, custom_profile);
-            } else if (!strcmp(*argv, "--height")) {
+            } else if (!strcmp(*argv, "--height"))
+            {
                 argc--;
                 argv++;
-                if (profile_set) {
+                if (profile_set)
+                {
                     std::cerr << "Changing height will reset setting profile to '" << profile_name << "'\n";
                 }
                 height = atoi(*argv);
                 encoding_profile::profile_named(profile_name, width, height, custom_profile);
-            } else if (!strcmp(*argv, "--byterate")) {
+            } else if (!strcmp(*argv, "--byterate"))
+            {
                 argc--;
                 argv++;
                 custom_profile.set_byterate(atoi(*argv));
-            } else if (!strcmp(*argv, "--fps")) {
+            } else if (!strcmp(*argv, "--fps"))
+            {
                 argc--;
                 argv++;
                 fps = atof(*argv);
-            } else if (!strcmp(*argv, "--fps-ratio")) {
+            } else if (!strcmp(*argv, "--fps-ratio"))
+            {
                 argc--;
                 argv++;
                 custom_profile.set_fps_ratio(atoi(*argv));
-            } else if (!strcmp(*argv, "--group")) {
+            } else if (!strcmp(*argv, "--group"))
+            {
                 argc--;
                 argv++;
                 custom_profile.set_group(bool_from(*argv));
-            } else if (!strcmp(*argv, "--debug")) {
+            } else if (!strcmp(*argv, "--debug"))
+            {
                 argc--;
                 argv++;
                 sDebug = bool_from(*argv);
-            } else if (!strcmp(*argv, "--from")) {
+            } else if (!strcmp(*argv, "--from"))
+            {
                 argc--;
                 argv++;
                 from_index = seconds_from_string(*argv);
-            } else if (!strcmp(*argv, "--to")) {
+            } else if (!strcmp(*argv, "--to"))
+            {
                 argc--;
                 argv++;
                 to_index = atof(*argv);
-            } else if (!strcmp(*argv, "--duration")) {
+            } else if (!strcmp(*argv, "--duration"))
+            {
                 argc--;
                 argv++;
                 duration = seconds_from_string(*argv);
-            } else if (!strcmp(*argv, "--cover-from")) {
+            } else if (!strcmp(*argv, "--cover-from"))
+            {
                 argc--;
                 argv++;
                 cover_from = atoi(*argv);
-            } else if (!strcmp(*argv, "--cover-to")) {
+            } else if (!strcmp(*argv, "--cover-to"))
+            {
                 argc--;
                 argv++;
                 cover_to = atoi(*argv);
-            } else if (!strcmp(*argv, "--cover")) {
+            } else if (!strcmp(*argv, "--cover"))
+            {
                 argc--;
                 argv++;
                 cover_from = atoi(*argv);
                 cover_to = cover_from + 23;
-            } else if (!strcmp(*argv, "--poster")) {
+            } else if (!strcmp(*argv, "--poster"))
+            {
                 argc--;
                 argv++;
                 poster_ts = seconds_from_string(*argv);
-            } else if (!strcmp(*argv, "--audio")) {
+            } else if (!strcmp(*argv, "--audio"))
+            {
                 argc--;
                 argv++;
                 audio_arg = *argv;
-            } else if (!strcmp(*argv, "--flim")) {
+            } else if (!strcmp(*argv, "--flim"))
+            {
                 argc--;
                 argv++;
                 out_arg = *argv;
-            } else if (!strcmp(*argv, "--out-pattern") || !strcmp(*argv, "--pgm-pattern") || !strcmp(*argv, "--pgm")) {
+            } else if (!strcmp(*argv, "--out-pattern") || !strcmp(*argv, "--pgm-pattern") || !strcmp(*argv, "--pgm"))
+            {
                 argc--;
                 argv++;
                 pgm_pattern = *argv;
-            } else if (!strcmp(*argv, "--diff-pattern")) {
+            } else if (!strcmp(*argv, "--diff-pattern"))
+            {
                 argc--;
                 argv++;
                 diff_pattern = *argv;
-            } else if (!strcmp(*argv, "--change-pattern")) {
+            } else if (!strcmp(*argv, "--change-pattern"))
+            {
                 argc--;
                 argv++;
                 change_pattern = *argv;
-            } else if (!strcmp(*argv, "--target-pattern")) {
+            } else if (!strcmp(*argv, "--target-pattern"))
+            {
                 argc--;
                 argv++;
                 target_pattern = *argv;
-            } else if (!strcmp(*argv, "--comment")) {
+            } else if (!strcmp(*argv, "--comment"))
+            {
                 argc--;
                 argv++;
                 comment += "comment: ";
                 comment += *argv;
                 comment += "\n";
-            } else if (!strcmp(*argv, "--watermark")) {
+            } else if (!strcmp(*argv, "--watermark"))
+            {
                 argc--;
                 argv++;
                 if (!strcmp(*argv, "auto"))
                     auto_watermark = true;
                 else
                     watermark = *argv;
-            } else if (!strcmp(*argv, "--filters")) {
+            } else if (!strcmp(*argv, "--filters"))
+            {
                 argc--;
                 argv++;
                 custom_profile.set_filters(*argv);
-            } else if (!strcmp(*argv, "--bars")) {
+            } else if (!strcmp(*argv, "--bars"))
+            {
                 argc--;
                 argv++;
                 custom_profile.set_bars(bool_from(*argv));
-            } else if (!strcmp(*argv, "--codec")) {
+            } else if (!strcmp(*argv, "--codec"))
+            {
                 argc--;
                 argv++;
                 codecs.push_back(flimcompressor::make_codec(*argv, width, height));
-            } else if (!strcmp(*argv, "--dither")) {
+            } else if (!strcmp(*argv, "--dither"))
+            {
                 argc--;
                 argv++;
                 custom_profile.set_dither(*argv);
-            } else if (!strcmp(*argv, "--error-stability")) {
+            } else if (!strcmp(*argv, "--error-stability"))
+            {
                 argc--;
                 argv++;
                 custom_profile.set_stability(atof(*argv));
-            } else if (!strcmp(*argv, "--error-algorithm")) {
+            } else if (!strcmp(*argv, "--error-algorithm"))
+            {
                 argc--;
                 argv++;
                 custom_profile.set_error_algorithm(*argv);
-            } else if (!strcmp(*argv, "--error-bleed")) {
+            } else if (!strcmp(*argv, "--error-bleed"))
+            {
                 argc--;
                 argv++;
                 custom_profile.set_error_bleed(atof(*argv));
-            } else if (!strcmp(*argv, "--error-bidi")) {
+            } else if (!strcmp(*argv, "--error-bidi"))
+            {
                 argc--;
                 argv++;
                 custom_profile.set_error_bidi(bool_from(*argv));
-            } else if (!strcmp(*argv, "--silent")) {
+            } else if (!strcmp(*argv, "--silent"))
+            {
                 argc--;
                 argv++;
                 custom_profile.set_silent(bool_from(*argv));
-            } else {
+            } else
+            {
                 std::cerr << "Unknown argument " << *argv << "\n";
                 return EXIT_FAILURE;
             }
@@ -491,18 +555,21 @@ int main(int argc, char **argv)
             argv++;
         }
 
-        if (input_file == "") {
+        if (input_file == "")
+        {
             usage(cmd_name);
             exit(EXIT_FAILURE);
         }
 
         std::vector<subtitle> subs;
 
-        if (srt_file != "") {
+        if (srt_file != "")
+        {
             std::ifstream ifs;
             ifs.open(srt_file, std::ifstream::in);
 
-            if (!ifs.good()) {
+            if (!ifs.good())
+            {
                 std::cerr << "ERROR: Cannot open subtitle file [" << srt_file << "]\n";
                 exit(EXIT_FAILURE);
             }
@@ -513,21 +580,27 @@ int main(int argc, char **argv)
         }
 
         // If input-file is a URL, use yt-dlp to retrieve content
-        if (input_file.rfind("https://", 0) == 0) {
-            if (std::filesystem::exists(cache_file)) {
+        if (input_file.rfind("https://", 0) == 0)
+        {
+            if (std::filesystem::exists(cache_file))
+            {
                 input_file = cache_file;
                 std::clog << "Using cached file: '" << cache_file << "'\n";
-            } else {
+            }
+            else
+            {
                 char buffer[1024];
                 auto input_url = input_file;
 
                 sprintf(buffer, "yt-dlp '%s' -f mp4 --output '%s'", input_file.c_str(), cache_file.c_str());
                 int res = system(buffer);
-                if (res != 0) {
+                if (res != 0)
+                {
                     std::clog << "yt-dlp not installed or failing, falling back to youtube-dl (code " << res << ")\n";
                     sprintf(buffer, "youtube-dl '%s' -f mp4 --output '%s'", input_file.c_str(), cache_file.c_str());
                     res = system(buffer);
-                    if (res != 0) {
+                    if (res != 0)
+                    {
                         std::clog << "youtube-dl failed with error " << res << "\n";
                         exit(EXIT_FAILURE);
                     }
@@ -542,11 +615,13 @@ int main(int argc, char **argv)
         if (poster_ts == -1)
             poster_ts = duration / 3;
 
-        if (codecs.size() > 1) {
+        if (codecs.size() > 1)
+        {
             custom_profile.set_codecs(codecs);
         }
 
-        if (auto_watermark) {
+        if (auto_watermark)
+        {
             if (watermark.size() > 0)
                 watermark += " ";
             watermark += custom_profile.description();
@@ -555,11 +630,14 @@ int main(int argc, char **argv)
         std::clog << "Encoding arguments :\n" << custom_profile.description() << "\n";
 
         std::unique_ptr<input_reader> r;
-        if (ends_with(input_file, ".pgm")) {
+        if (ends_with(input_file, ".pgm"))
+        {
             std::clog << "Reading pgm from '" << input_file << "' pattern, at " << fps << " frames per second, using '" << audio_arg << "' audio file\n";
             std::clog << "( use --fps and --audio to change fps and audio )\n";
             r = make_filesystem_reader(input_file, fps, audio_arg, from_index, to_index);
-        } else {
+        }
+        else
+        {
             r = make_ffmpeg_reader(input_file, from_index, duration);
             fps = r->frame_rate();
         }
@@ -584,11 +662,14 @@ int main(int argc, char **argv)
 
         encoder.make_flim(out_arg, r.get(), w);
 
-        if (downloaded_file && generated_cache) {
+        if (downloaded_file && generated_cache)
+        {
             std::clog << "Removing '" << cache_file << "'\n";
             unlink(cache_file.c_str());
         }
-    } catch (const char *error) {
+    }
+    catch (const char *error)
+    {
         std::cerr << "**** ERROR: [" << error << "]\n";
         return EXIT_FAILURE;
     }

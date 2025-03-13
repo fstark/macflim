@@ -10,6 +10,18 @@
 
 extern bool sDebug;
 
+/* ####
+    Size management seems wrong
+    There is a size in the profile that is overriden by the caller
+    The main code knows the size of xl and portable
+    This is done to allow the user to override the size in the arguments
+    either before or after setting the profile
+    But it is wrong. The user size should be -1,-1 if not set
+    Then the profile should be fetched
+    After the arg parsing, the size should be retreived from the profile if not set on the commande line
+*/
+
+
 /**
  * A set of encoding parameters
  */
