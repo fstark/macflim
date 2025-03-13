@@ -13,7 +13,8 @@ extern "C" {
 extern bool sDebug;
 
 /// This stores a sound buffer and transform it into a suitable format for flims
-class sound_buffer {
+class sound_buffer
+{
     std::vector<float> data_;
     size_t channel_count_ = 0;      //  # of channels
     size_t sample_rate_ = 0;        //  # of samples per second
@@ -26,14 +27,16 @@ public:
         sample_rate_{sample_rate}
     {}
 
-    void append_silence(float duration) {
+    void append_silence(float duration)
+    {
         size_t sample_count = sample_rate_ * duration;
         for (size_t i = 0; i != sample_count; i++) {
             data_.push_back(0);
         }
     }
 
-    void append_samples(float **samples, size_t sample_count) {
+    void append_samples(float **samples, size_t sample_count)
+    {
         for (size_t i = 0; i != sample_count; i++) {
             float v = 0;
             for (size_t j = 0; j != channel_count_; j++) {
@@ -43,22 +46,26 @@ public:
         }
     }
 
-    void process() {
+    void process()
+    {
         min_sample_ = *std::min_element(std::begin(data_), std::end(data_));
         max_sample_ = *std::max_element(std::begin(data_), std::end(data_));
     }
 
-    std::unique_ptr<sound_frame_t> extract(size_t frame) {
+    std::unique_ptr<sound_frame_t> extract(size_t frame)
+    {
         double t = frame / 60.0;        //  Time in seconds
         size_t start = t * sample_rate_;
 
-        if (start >= data_.size()) {
+        if (start >= data_.size())
+        {
             return nullptr;
         }
 
         auto fr = std::make_unique<sound_frame_t>();
 
-        for (int i = 0; i != sound_frame_t::size; i++) {
+        for (int i = 0; i != sound_frame_t::size; i++)
+        {
             size_t index = start + (i / 370.0 / 60.0) * sample_rate_;
             if (index < data_.size()) {
                 fr->at(i) = (data_[index] - min_sample_) / (max_sample_ - min_sample_) * 255;
@@ -71,7 +78,8 @@ public:
     }
 };
 
-class ffmpeg_reader : public input_reader {
+class ffmpeg_reader : public input_reader
+{
     AVFormatContext *format_context_ = nullptr;
     const AVCodec *video_decoder_;
     const AVCodec *audio_decoder_;
@@ -96,10 +104,13 @@ class ffmpeg_reader : public input_reader {
     size_t frame_to_extract_;
     bool found_sound_ = false;                   //  To track if sounds starts with an offset
 
-    int decode_video_packet(int *got_frame, AVPacket *pkt) {
+    int decode_video_packet(int *got_frame, AVPacket *pkt)
+    {
         int ret = avcodec_send_packet(video_codec_context_, pkt);
-        if (ret < 0) {
-            if (ret == AVERROR_EOF) {
+        if (ret < 0)
+        {
+            if (ret == AVERROR_EOF)
+            {
                 return 0;
             }
             char errbuf[AV_ERROR_MAX_STRING_SIZE];
@@ -108,11 +119,15 @@ class ffmpeg_reader : public input_reader {
             return ret;
         }
 
-        while (ret >= 0) {
+        while (ret >= 0)
+        {
             ret = avcodec_receive_frame(video_codec_context_, frame_);
-            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+            {
                 break;
-            } else if (ret < 0) {
+            }
+            else if (ret < 0)
+            {
                 char errbuf[AV_ERROR_MAX_STRING_SIZE];
                 av_strerror(ret, errbuf, AV_ERROR_MAX_STRING_SIZE);
                 std::cerr << "Error during video decoding: " << errbuf << std::endl;
@@ -126,7 +141,8 @@ class ffmpeg_reader : public input_reader {
             #endif
 
             if (frame_->pts * av_q2d(video_stream_->time_base) >= first_frame_second_ && 
-                images_.size() <= video_frame_count) {
+                images_.size() <= video_frame_count)
+            {
                 #ifdef VERBOSE
                 printf("video_frame%s n:%d coded_n:%d presentation_ts:%ld / %f\n",
                     cached ? "(cached)" : "",
@@ -148,7 +164,8 @@ class ffmpeg_reader : public input_reader {
                 copy(images_.back(), *video_image_);
             }
             #ifdef VERBOSE
-            else {
+            else
+            {
                 std::clog << "." << std::flush;  //  We are skipping frames
             }
             #endif
@@ -157,10 +174,13 @@ class ffmpeg_reader : public input_reader {
         return 0;
     }
 
-    int decode_audio_packet(int *got_frame, AVPacket *pkt) {
+    int decode_audio_packet(int *got_frame, AVPacket *pkt)
+    {
         int ret = avcodec_send_packet(audio_codec_context_, pkt);
-        if (ret < 0) {
-            if (ret == AVERROR_EOF) {
+        if (ret < 0)
+        {
+            if (ret == AVERROR_EOF)
+            {
                 return 0;
             }
             char errbuf[AV_ERROR_MAX_STRING_SIZE];
@@ -169,11 +189,15 @@ class ffmpeg_reader : public input_reader {
             return ret;
         }
 
-        while (ret >= 0) {
+        while (ret >= 0)
+        {
             ret = avcodec_receive_frame(audio_codec_context_, frame_);
-            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+            {
                 break;
-            } else if (ret < 0) {
+            }
+            else if (ret < 0)
+            {
                 char errbuf[AV_ERROR_MAX_STRING_SIZE];
                 av_strerror(ret, errbuf, AV_ERROR_MAX_STRING_SIZE);
                 std::cerr << "Error during audio decoding: " << errbuf << std::endl;
@@ -187,7 +211,8 @@ class ffmpeg_reader : public input_reader {
                       << " sample count " << frame_->nb_samples << "\n";
             #endif
 
-            if (frame_->pts * av_q2d(audio_stream_->time_base) >= first_frame_second_) {
+            if (frame_->pts * av_q2d(audio_stream_->time_base) >= first_frame_second_)
+            {
                 #ifdef VERBOSE
                 std::clog << "USING AUDIO FRAME\n";
                 #endif
@@ -208,84 +233,91 @@ class ffmpeg_reader : public input_reader {
         return 0;
     }
 
-    int decode_packet(int *got_frame, AVPacket *pkt) {
+    int decode_packet(int *got_frame, AVPacket *pkt)
+    {
         int decoded = pkt->size;
         *got_frame = 0;
 
-        if (pkt->stream_index == ixv) {
+        if (pkt->stream_index == ixv)
+        {
             decode_video_packet(got_frame, pkt);
-        } else if (pkt->stream_index == ixa) {
+        }
+        else if (pkt->stream_index == ixa)
+        {
             decode_audio_packet(got_frame, pkt);
         }
 
         return decoded;
     }
 
-    void init_video_context() {
+    void init_video_context()
+    {
         video_codec_context_ = avcodec_alloc_context3(video_decoder_);
-        if (!video_codec_context_) {
+        if (!video_codec_context_)
             throw "CANNOT ALLOCATE VIDEO CODEC CONTEXT";
-        }
 
-        if (avcodec_parameters_to_context(video_codec_context_, video_stream_->codecpar) < 0) {
+        if (avcodec_parameters_to_context(video_codec_context_, video_stream_->codecpar) < 0)
             throw "FAILED TO COPY VIDEO CODEC PARAMETERS";
-        }
 
         AVDictionary *opts = NULL;
         av_dict_set(&opts, "refcounted_frames", "0", 0);    //  Do not refcount
 
-        if (avcodec_open2(video_codec_context_, video_decoder_, &opts) < 0) {
+        if (avcodec_open2(video_codec_context_, video_decoder_, &opts) < 0)
             throw "CANNOT OPEN VIDEO CODEC";
-        }
 
-        if (sDebug) {
+        if (sDebug)
+        {
             std::clog << "VIDEO CODEC OPENED WITH PIXEL FORMAT " 
                       << av_get_pix_fmt_name(video_codec_context_->pix_fmt) << "\n";
         }
 
-        if (video_codec_context_->pix_fmt != AV_PIX_FMT_YUV420P) {
+        if (video_codec_context_->pix_fmt != AV_PIX_FMT_YUV420P)
             throw "WAS EXPECTING A YUV420P PIXEL FORMAT";
-        }
     }
 
-    void init_audio_context() {
-        if (ixa != AVERROR_STREAM_NOT_FOUND) {
+    void init_audio_context()
+    {
+        if (ixa != AVERROR_STREAM_NOT_FOUND)
+        {
             audio_codec_context_ = avcodec_alloc_context3(audio_decoder_);
-            if (!audio_codec_context_) {
+            if (!audio_codec_context_)
                 throw "CANNOT ALLOCATE AUDIO CODEC CONTEXT";
-            }
-
-            if (avcodec_parameters_to_context(audio_codec_context_, audio_stream_->codecpar) < 0) {
+            
+            if (avcodec_parameters_to_context(audio_codec_context_, audio_stream_->codecpar) < 0)
                 throw "FAILED TO COPY AUDIO CODEC PARAMETERS";
-            }
 
-            if (avcodec_open2(audio_codec_context_, audio_decoder_, nullptr) < 0) {
+            if (avcodec_open2(audio_codec_context_, audio_decoder_, nullptr) < 0)
                 throw "CANNOT OPEN AUDIO CODEC";
-            }
 
-            if (sDebug) {
+            if (sDebug)
+            {
                 std::clog << "AUDIO CODEC: " << avcodec_get_name(audio_codec_context_->codec_id) << "\n";
             }
 
             AVSampleFormat sfmt = audio_codec_context_->sample_fmt;
             int n_channels = audio_codec_context_->ch_layout.nb_channels;
 
-            if (sDebug) {
+            if (sDebug)
+            {
                 std::clog << "SAMPLE FORMAT:" << av_get_sample_fmt_name(sfmt) << "\n";
                 std::clog << "# CHANNELS   :" << n_channels << "\n";
                 std::clog << "PLANAR       :" << (av_sample_fmt_is_planar(sfmt) ? "YES" : "NO") << "\n";
             }
 
-            if (av_sample_fmt_is_planar(sfmt)) {
+            if (av_sample_fmt_is_planar(sfmt))
+            {
                 sfmt = av_get_packed_sample_fmt(sfmt);
 
-                if (sDebug) {
+                if (sDebug)
+                {
                     std::clog << "PACKED FORMAT:" << av_get_sample_fmt_name(sfmt) << "\n";
                     std::clog << "SAMPLE RATE  :" << audio_codec_context_->sample_rate << "\n";
                 }
             }
             sound_ = std::make_unique<sound_buffer>(n_channels, audio_codec_context_->sample_rate);
-        } else {
+        }
+        else
+        {
             sound_ = nullptr;
         }
     }
@@ -293,44 +325,45 @@ class ffmpeg_reader : public input_reader {
 public:
     ffmpeg_reader() {}
 
-    ffmpeg_reader(const std::string &movie_path, double from, double duration) {
+    ffmpeg_reader(const std::string &movie_path, double from, double duration)
+    {
         av_log_set_level(AV_LOG_WARNING);
 
-        if (avformat_open_input(&format_context_, movie_path.c_str(), NULL, NULL) != 0) {
+        if (avformat_open_input(&format_context_, movie_path.c_str(), NULL, NULL) != 0)
             throw "Cannot open input file";
-        }
-
-        if (avformat_find_stream_info(format_context_, NULL) < 0) {
+        
+        if (avformat_find_stream_info(format_context_, NULL) < 0)
             throw "Cannot find stream information";
-        }
 
-        if (sDebug) {
+        if (sDebug)
+        {
             std::clog << "Searching for audio and video in " << format_context_->nb_streams << " streams\n";
         }
 
         ixv = av_find_best_stream(format_context_, AVMEDIA_TYPE_VIDEO, -1, -1, &video_decoder_, 0);
         ixa = av_find_best_stream(format_context_, AVMEDIA_TYPE_AUDIO, -1, -1, &audio_decoder_, 0);
 
-        if (ixv == AVERROR_STREAM_NOT_FOUND) {
+        if (ixv == AVERROR_STREAM_NOT_FOUND)
             throw "NO VIDEO IN FILE";
-        }
-        if (ixv == AVERROR_DECODER_NOT_FOUND) {
-            throw "NO SUITABLE VIDEO DECODER AVAILABLE";
-        }
-        if (ixa == AVERROR_STREAM_NOT_FOUND) {
-            std::cerr << "NO SOUND -- INSERTING SILENCE";
-        }
-        if (ixa == AVERROR_DECODER_NOT_FOUND) {
-            throw "NO SUITABLE AUDIO DECODER AVAILABLE";
-        }
 
-        if (sDebug) {
+        if (ixv == AVERROR_DECODER_NOT_FOUND)
+            throw "NO SUITABLE VIDEO DECODER AVAILABLE";
+
+        if (ixa == AVERROR_STREAM_NOT_FOUND)
+            std::cerr << "NO SOUND -- INSERTING SILENCE";
+
+        if (ixa == AVERROR_DECODER_NOT_FOUND)
+            throw "NO SUITABLE AUDIO DECODER AVAILABLE";
+
+        if (sDebug)
+        {
             std::clog << "Video stream index :" << ixv << "\n";
             std::clog << "Audio stream index :" << ixa << "\n";
         }
 
         double actual_duration = format_context_->duration / (double)AV_TIME_BASE;
-        if (duration > actual_duration) {
+        if (duration > actual_duration)
+        {
             std::clog << "Warning: Requested duration (" << duration << "s) exceeds video length (" 
                       << actual_duration << "s). Trimming to video length.\n";
             duration = actual_duration;
@@ -339,19 +372,20 @@ public:
         double seek_to = std::max(from - 10.0, 0.0);    //  We seek to 10 seconds earlier, if we can
         if (avformat_seek_file(format_context_, -1, seek_to * AV_TIME_BASE, 
                                seek_to * AV_TIME_BASE, seek_to * AV_TIME_BASE, 
-                               AVSEEK_FLAG_ANY) < 0) {
+                               AVSEEK_FLAG_ANY) < 0)
             throw "CANNOT SEEK IN FILE";
-        }
 
         video_stream_ = format_context_->streams[ixv];
         audio_stream_ = ixa != AVERROR_STREAM_NOT_FOUND ? format_context_->streams[ixa] : nullptr;
 
-        if (sDebug) {
+        if (sDebug)
+        {
             std::clog << "Video : " << video_stream_->codecpar->width << "x"
                       << video_stream_->codecpar->height << "@"
                       << av_q2d(video_stream_->r_frame_rate) << " fps"
                       << " timebase:" << av_q2d(video_stream_->time_base) << "\n";
-            if (audio_stream_) {
+            if (audio_stream_)
+            {
                 std::clog << "Audio : " << audio_stream_->codecpar->sample_rate << "Hz \n";
             }
         }
@@ -370,20 +404,20 @@ public:
             video_codec_context_->pix_fmt,
             1);
 
-        if (bufsize < 0) {
+        if (bufsize < 0)
             throw "CANNOT ALLOCATE IMAGE";
-        }
-
+        
         video_image_ = std::make_unique<image>(video_codec_context_->width, video_codec_context_->height);
 
+            // #### need to clarify what size we want when extracting. Why the hard-coded 512x342?
         double aspect = video_codec_context_->width / (double)video_codec_context_->height;
-        if (aspect > 512 / 342.0) {
+        if (aspect > 512 / 342.0)
             default_image_ = std::make_unique<image>(342 * aspect, 342);
-        } else {
+        else
             default_image_ = std::make_unique<image>(512, 512 / aspect);
-        }
 
-        if (sDebug) {
+        if (sDebug)
+        {
             std::clog << "Image structure:\n";
             std::clog << video_dst_linesize_[0] << " " << video_dst_linesize_[1] << " "
                       << video_dst_linesize_[2] << " " << video_dst_linesize_[3] << "\n";
@@ -396,18 +430,18 @@ public:
         frame_ = av_frame_alloc();
 
         pkt_ = av_packet_alloc();
-        if (!pkt_) {
+        if (!pkt_)
             throw "Failed to allocate packet";
-        }
-
+        
         int got_frame = 0;
 
-        while (av_read_frame(format_context_, pkt_) >= 0 && images_.size() < frame_to_extract_) {
-            do {
+        while (av_read_frame(format_context_, pkt_) >= 0 && images_.size() < frame_to_extract_)
+        {
+            do
+            {
                 auto ret = decode_packet(&got_frame, pkt_);
-                if (ret < 0) {
+                if (ret < 0)
                     break;
-                }
                 pkt_->data += ret;
                 pkt_->size -= ret;
             } while (pkt_->size > 0);
@@ -415,10 +449,12 @@ public:
         }
 
         /* flush cached frames */
-        if (images_.size() != frame_to_extract_) {
+        if (images_.size() != frame_to_extract_)
+        {
             pkt_->data = NULL;
             pkt_->size = 0;
-            do {
+            do
+            {
                 decode_packet(&got_frame, pkt_);
             } while (got_frame);
         }
@@ -427,41 +463,50 @@ public:
 
         image_ix = 0;
 
-        if (sDebug) {
+        if (sDebug)
+        {
             std::clog << "\nAcquired " << images_.size() << " frames of video for a total of "
                       << images_.size() / av_q2d(video_stream_->r_frame_rate) << " seconds \n";
         }
 
-        if (ixa != AVERROR_STREAM_NOT_FOUND) {
+        if (ixa != AVERROR_STREAM_NOT_FOUND)
+        {
             sound_->process();
             sound_ix = 0;
         }
 
-        if (sDebug) {
+        if (sDebug)
+        {
             std::clog << "\n";
         }
     }
 
-    ~ffmpeg_reader() {
+    ~ffmpeg_reader()
+    {
         avformat_close_input(&format_context_);
         avcodec_free_context(&video_codec_context_);
-        if (audio_codec_context_) {
+        if (audio_codec_context_)
+        {
             avcodec_free_context(&audio_codec_context_);
         }
         av_frame_free(&frame_);
         av_packet_free(&pkt_);
         av_freep(&video_dst_data_[0]);
-        if (sDebug) {
+        if (sDebug)
+        {
             std::clog << "Closed media file\n";
         }
     }
 
-    virtual double frame_rate() {
+    virtual double frame_rate()
+    {
         return av_q2d(video_stream_->r_frame_rate);
     }
 
-    virtual std::unique_ptr<image> next() {
-        if (image_ix == -1 || image_ix == (int)images_.size()) {
+    virtual std::unique_ptr<image> next()
+    {
+        if (image_ix == -1 || image_ix == (int)images_.size())
+        {
             return nullptr;
         }
         auto res = std::make_unique<image>(images_[image_ix]);
@@ -469,18 +514,23 @@ public:
         return res;
     }
 
-    virtual std::unique_ptr<sound_frame_t> next_sound() {
-        if (ixa != AVERROR_STREAM_NOT_FOUND) {
+    virtual std::unique_ptr<sound_frame_t> next_sound()
+    {
+        if (ixa != AVERROR_STREAM_NOT_FOUND)
             return sound_->extract(sound_ix++);
-        }
+        
         return nullptr;
     }
 };
 
-std::unique_ptr<input_reader> make_ffmpeg_reader(const std::string &movie_path, double from, double to) {
-    try {
+std::unique_ptr<input_reader> make_ffmpeg_reader(const std::string &movie_path, double from, double to)
+{
+    try
+    {
         return std::make_unique<ffmpeg_reader>(movie_path, from, to - from);
-    } catch (const char *e) {
+    }
+    catch (const char *e)
+    {
         std::clog << "**** ERROR : " << e << "\n";
         return nullptr;
     }

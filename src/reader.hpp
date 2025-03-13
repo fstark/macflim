@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "common.hpp"
+
 #include "image.hpp"
 
 /// A macintosh formatted sound frame (370 bytes)
@@ -30,13 +32,6 @@ public:
     std::array<uint8_t, size>::const_iterator begin() const { return std::cbegin(data_); }
     std::array<uint8_t, size>::const_iterator end() const { return std::cend(data_); }
 };
-
-///  A timestamps in seconds
-typedef double timestamp_t;
-
-///  Compare two timestamps
-///  They are identical if they are within 1/22050 of a second
-inline bool equals(timestamp_t a, timestamp_t b) { return std::fabs(a - b) < 1.0 / 22050; }
 
 /// Bundles together an image and all the sound frames that are played during the display of the image
 /// A frame has an audio timestamp (the ts at which the audio starts)
