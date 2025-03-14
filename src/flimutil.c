@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <tuple>
 
 const char *SIGNATURE = "flim\r\n01\r\n";
 
@@ -45,12 +46,12 @@ void write32( FILE *f, long v )
 
 #define noHACK
 
-int main( int argc, char ** argv )
+int main( int, char **argv )
 {
     FILE *f = fopen( argv[1], "rb" );
     char buffer[1024];
 
-    (void)fread( buffer, 1, strlen(SIGNATURE), f );
+    std::ignore = fread( buffer, 1, strlen(SIGNATURE), f );
 
     if (strncmp( buffer, SIGNATURE, strlen(SIGNATURE) ))
         fail( "Not a flim" );
