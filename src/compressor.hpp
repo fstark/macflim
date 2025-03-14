@@ -9,15 +9,9 @@
 #include <bit>
 #include <limits>
 
+#include "common.hpp"
 #include "framebuffer.hpp"
 #include "ruler.hpp"
-
-inline bool bool_from( const std::string &v )
-{
-    if (v=="true")
-        return true;
-    return false;
-}
 
 /**
  * Encapsulate a way to compress a single frame transition
@@ -28,7 +22,7 @@ protected:
     size_t W_;
     size_t H_;
 
-    mutable bool verbose_ = false;
+    bool verbose_ = false;
 
         /// Width in bytes
     size_t get_bytes_width() const { return W_/8; }

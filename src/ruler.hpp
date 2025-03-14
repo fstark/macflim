@@ -8,7 +8,7 @@
 #include <limits>
 #include <cassert>
 
-#include "image.hpp"    //  Only for mypopcount
+#include "common.hpp"
 
 template <typename T>
 class ruler
