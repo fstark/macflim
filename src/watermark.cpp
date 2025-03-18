@@ -1,4 +1,4 @@
-#include "image.hpp"
+#include "watermark.hpp"
 
 #include <string>
 

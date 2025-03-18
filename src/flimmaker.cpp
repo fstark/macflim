@@ -303,6 +303,8 @@ int main(int argc, char **argv)
             ::exit(EXIT_FAILURE);
         }
 
+        test_simplesprintf();
+
         packz32opt_test();
         test_seconds_from_string();
 

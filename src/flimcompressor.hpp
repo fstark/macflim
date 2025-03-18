@@ -13,6 +13,7 @@
 
 #include "reader.hpp"
 #include "subtitles.hpp"
+#include "watermark.hpp"
 
 #define VERBOSE
 

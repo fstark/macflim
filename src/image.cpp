@@ -942,16 +942,3 @@ void error_diffusion( image &dest, const image &source, const image &previous, f
     }
 }
 
-//  #### This has nothing to do here
-void delete_files_of_pattern( const std::string &pattern )
-{
-    int i = 0;
-    char filepath[1024];
-    std::clog << "Deleting files of pattern [" << pattern << "] ..." << std::flush;
-    do
-    {
-        i++;
-        sprintf( filepath, pattern.c_str(), i );
-    }   while (!remove(filepath));
-    std::clog << i << " files deleted\n";
-}

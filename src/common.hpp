@@ -1,6 +1,7 @@
 #pragma once
 
 #include <math.h>
+#include <string>
 
 ///  A timestamps in seconds
 typedef double timestamp_t;
@@ -28,3 +29,7 @@ inline bool bool_from( const std::string &v )
     return false;
 }
 
+///  Delete files matching pattern
+void delete_files_of_pattern( const std::string &pattern );
+
+void test_simplesprintf();

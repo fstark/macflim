@@ -9,8 +9,7 @@ MAKEFLAGS += -j16
 CPP = g++-14
 
 # Default compilation flags
-# we want to add: -fsanitize=undefined but need to fix image.cpp
-CXXFLAGS += -Wall -Werror -Wno-deprecated-declarations -Wextra -I/opt/homebrew/include/ -std=c++2a 
+CXXFLAGS += -Wall -Werror -fsanitize=undefined -Wno-deprecated-declarations -Wextra -I/opt/homebrew/include/ -std=c++2a 
 
 # Default compile target
 all: debug
@@ -22,7 +21,7 @@ debug: ../flimmaker ../flimutil
 release: ../flimmaker ../flimutil
 
 # List of object files
-OBJS = image.o reader.o writer.o ruler.o watermark.o imgcompress.o filesystem_reader.o ffmpeg_reader.o flimmaker.o 
+OBJS = image.o reader.o writer.o ruler.o watermark.o imgcompress.o filesystem_reader.o ffmpeg_reader.o flimmaker.o common.o
 
 # Include the dependency files
 -include $(OBJS:.o=.d)
