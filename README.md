@@ -113,7 +113,7 @@ The general format is:
 
 * An url supported by ``youtube-dl`` (or ``yy-dlp``). If the ``input-file-name`` starts with ``https://``, flimmaker will try to use ``youtube-dl`` to download the specified file and encode it. See the ``--cache`` option to avoid downloading multiple times the same source.
 
-* A set of local 512x342 8 bits pgm files. If the ``input-file-name`` ends with ``.pgm``, it will be considered as a ``printf`` pattern and used to read local images (starting at index 1? #### CHECK ME). For instance, ``movie-%06d.pgm`` will read all files named ``movie-000001.pgm``, ``movie-000002.pgm``, etc... [Yes, if one uses '%s', the app will crash](https://github.com/fstark/macflim/issues/4). See the ``--fps`` and ``--audio`` option to specify the audio for pgm files.
+* A set of local 512x342 8 bits pgm files. If the ``input-file-name`` ends with ``.pgm``, it will be considered as a simple ``printf`` pattern (supporting only ``%d`` and ``%nd``, with ``n`` numeric, left-padded with zeroes) and used to read local images (starting at index 1? #### CHECK ME). For instance, ``movie-%06d.pgm`` will read all files named ``movie-000001.pgm``, ``movie-000002.pgm``, etc... . See the ``--fps`` and ``--audio`` option to specify the audio for pgm files.
 
 All other arguments to ``flimmaker`` go in pairs.
 
