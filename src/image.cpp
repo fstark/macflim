@@ -575,7 +575,7 @@ void write_image( const char *file, const image &img )
         return ;
     }
 
-    fprintf( f, "P5\n%ld %ld\n255\n", img.W(), img.H() );
+    fprintf( f, "P5\n%zu %zu\n255\n", img.W(), img.H() );
     for (size_t y=0;y!=img.H();y++)
         for (size_t x=0;x!=img.W();x++)
             fputc( img.at(x,y)*255, f );

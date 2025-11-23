@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <cstring>
 
 #include "flimcompressor.hpp"
 
@@ -736,7 +737,7 @@ std::cout << "PROFILE BYTERATE " << profile_.byterate() << "\n";
             {
                 char buffer[1024];
                 std::clog << "COVER " << i << "\n";
-                sprintf( buffer, "cover-%06ld.pgm", i-cover_begin_+1 );
+                sprintf( buffer, "cover-%06zu.pgm", i-cover_begin_+1 );
                 auto logimg = frames[i].result.as_image();
                 write_image( buffer, logimg );
             }

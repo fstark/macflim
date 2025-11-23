@@ -144,7 +144,7 @@ class copy_line_compressor : public compressor
 template <typename T>
 class vertical_compressor : public compressor
 {
-    virtual std::string name() const { char buffer[1024]; sprintf( buffer, "z%lu", sizeof(T)*8 ); return buffer; }
+    virtual std::string name() const { char buffer[1024]; sprintf( buffer, "z%zu", sizeof(T)*8 ); return buffer; }
 
     const ruler<T> &ruler_;
 
@@ -267,7 +267,7 @@ size_t vertical_from_horizontal( size_t h ) const
             {
                 fprintf( stderr, "    " );
                 for (size_t x=0;x!=get_T_width();x++)
-                    fprintf( stderr, "%3ld ", delta_[x*H_+y] );
+                    fprintf( stderr, "%3lld ", (long long)delta_[x*H_+y] );
                 fprintf( stderr, "\n" );
             }
         }

@@ -329,7 +329,7 @@ public:
     virtual void write_frame(const image& img, [[maybe_unused]] const sound_frame_t &snd) {
         if ((count_ % 3) == 0) {
             char buffer[1024];
-            sprintf(buffer, "/tmp/gif-%06lu.pgm", num_);
+            sprintf(buffer, "/tmp/gif-%06zu.pgm", num_);
             write_image(buffer, img);
             num_++;
         }
