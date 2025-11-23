@@ -147,9 +147,9 @@ jobs:
     
     - name: Create tarball
       run: |
-        cd macflim
-        tar czf ../flimmaker-${{ matrix.arch }}-macos.tar.gz bin/
-        cd ..
+        cd macflim/bin
+        tar czf ../../flimmaker-${{ matrix.arch }}-macos.tar.gz flimmaker lib/
+        cd ../..
         
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1

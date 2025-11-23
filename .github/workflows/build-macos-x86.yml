@@ -132,9 +132,9 @@ jobs:
     
     - name: Create tarball for release
       run: |
-        cd macflim
-        tar czf ../flimmaker-x86_64-macos.tar.gz bin/
-        cd ..
+        cd macflim/bin
+        tar czf ../../flimmaker-x86_64-macos.tar.gz flimmaker lib/
+        cd ../..
         sha256sum flimmaker-x86_64-macos.tar.gz > flimmaker-x86_64-macos.tar.gz.sha256
     
     - name: Upload artifacts
