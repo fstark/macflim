@@ -63,11 +63,24 @@ jobs:
           echo "  Pass: $prev_count -> $curr_count libraries"
           prev_count=$curr_count
           for dylib in macflim/bin/lib/*.dylib; do
+            # Handle absolute paths
             otool -L "$dylib" 2>/dev/null | grep -v ":" | grep -v "/usr/lib" | grep -v "@rpath" | awk '{print $1}' | while read dep; do
               depname=$(basename "$dep")
               if [ -f "$dep" ] && [ ! -f "macflim/bin/lib/$depname" ]; then
                 echo "    Adding: $depname"
                 cp "$dep" macflim/bin/lib/ || true
+              fi
+            done
+            # Handle @rpath references (need to find the actual file in brew)
+            otool -L "$dylib" 2>/dev/null | grep "@rpath" | awk '{print $1}' | while read rpathlib; do
+              libname=$(basename "$rpathlib")
+              if [ ! -f "macflim/bin/lib/$libname" ]; then
+                # Try to find it in Homebrew
+                found=$(find "$BREW_PREFIX/lib" "$BREW_PREFIX/opt" -name "$libname" 2>/dev/null | head -1)
+                if [ -n "$found" ] && [ -f "$found" ]; then
+                  echo "    Adding (rpath): $libname"
+                  cp "$found" macflim/bin/lib/ || true
+                fi
               fi
             done
           done
