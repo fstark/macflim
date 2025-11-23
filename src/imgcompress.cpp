@@ -5,15 +5,15 @@
 //  Compresses 'length' bytes from 'buffer' into 'out', and return the compressed size
 //  (unused for now)
 //  ------------------------------------------------------------------
-int packbits( u_int8_t *out, const u_int8_t *buffer, int length )
+int packbits( uint8_t *out, const uint8_t *buffer, int length )
 {
-    const u_int8_t *orig = out;
-    const u_int8_t *end = buffer+length;
+    const uint8_t *orig = out;
+    const uint8_t *end = buffer+length;
 
     while (buffer<end)
     {
         //  We look for the next pair of identical characters
-        const u_int8_t *next_pair = buffer;
+        const uint8_t *next_pair = buffer;
         for (next_pair = buffer;next_pair<end-1;next_pair++)
             if (next_pair[0]==next_pair[1])
                 break;
@@ -26,11 +26,11 @@ int packbits( u_int8_t *out, const u_int8_t *buffer, int length )
         if (next_pair!=buffer)
         {
                 //  We have to write len litterals
-            u_int32_t len = next_pair-buffer;
+            uint32_t len = next_pair-buffer;
             while (len)
             {
                     //  We can write at most 128 literals in one go
-                u_int8_t sub_length = len>128?128:len;
+                uint8_t sub_length = len>128?128:len;
                 len -= sub_length;
                 *out++ = sub_length-1;
                 while (sub_length--)
@@ -46,7 +46,7 @@ int packbits( u_int8_t *out, const u_int8_t *buffer, int length )
 
         assert( buffer<end-1 ); //  As we have a run, we have at least two chars
 
-        u_int8_t c = *buffer;
+        uint8_t c = *buffer;
 
         //  Find the len of the run
         int len = 0;
@@ -71,33 +71,33 @@ int packbits( u_int8_t *out, const u_int8_t *buffer, int length )
 
 void pack_test()
 {
-    u_int8_t in0[] =
+    uint8_t in0[] =
     {
         0xAA, 0xAA, 0xAA, 0x80, 0x00, 0x2A, 0xAA, 0xAA, 0xAA,
         0xAA, 0x80, 0x00, 0x2A, 0x22, 0xAA, 0xAA, 0xAA, 0xAA,
         0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA
     };
-    u_int8_t out0[] =
+    uint8_t out0[] =
     {
         0xFE, 0xAA, 0x02, 0x80, 0x00, 0x2A, 0xFD, 0xAA, 0x03,
         0x80, 0x00, 0x2A, 0x22, 0xF7, 0xAA
     };
 
-    u_int8_t buffer[1024];
+    uint8_t buffer[1024];
     int len;
     
     len = packbits( buffer, in0, sizeof(in0) );
     assert( len==sizeof(out0) );
     assert( memcmp( buffer, out0, len )==0 );
 
-    u_int8_t in1[] = {};
-    u_int8_t out1[] = {};
+    uint8_t in1[] = {};
+    uint8_t out1[] = {};
 
     len = packbits( buffer, in1, sizeof(in1) );
     assert( len==sizeof(out1) );
     assert( memcmp( buffer, out1, len )==0 );
 
-    u_int8_t in2[] = {
+    uint8_t in2[] = {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
@@ -117,13 +117,13 @@ void pack_test()
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
     };
-    u_int8_t out2[] = { 0x81, 0x00, 0xF1, 0x00 };
+    uint8_t out2[] = { 0x81, 0x00, 0xF1, 0x00 };
 
     len = packbits( buffer, in2, sizeof(in2) );
     assert( len==sizeof(out2) );
     assert( memcmp( buffer, out2, len )==0 );
 
-    u_int8_t in3[] = {
+    uint8_t in3[] = {
         0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
         0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
         0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
@@ -144,7 +144,7 @@ void pack_test()
         0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
     };
 
-    u_int8_t out3[] = {
+    uint8_t out3[] = {
         0x7f,
         0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
         0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 
@@ -184,16 +184,16 @@ Take next 7 bits
 If all equal => encode equal
 Else encode specific
 */
-int packzeroes( u_int8_t *out, const u_int8_t *const buffer, int length )
+int packzeroes( uint8_t *out, const uint8_t *const buffer, int length )
 {
-    const u_int8_t *orig = out;
-    const u_int8_t *start = buffer;
-    const u_int8_t *end = start+length;
+    const uint8_t *orig = out;
+    const uint8_t *start = buffer;
+    const uint8_t *end = start+length;
 
     while (start<end)
     {
         //  We look for the next zero
-        const u_int8_t *next_zero;
+        const uint8_t *next_zero;
         for (next_zero = start;next_zero<end;next_zero++)
         {
             if (next_zero==end-1 && !*next_zero)
@@ -206,11 +206,11 @@ int packzeroes( u_int8_t *out, const u_int8_t *const buffer, int length )
         if (next_zero!=start)
         {
                 //  We have to write len litterals
-            u_int32_t len = next_zero-start;
+            uint32_t len = next_zero-start;
             while (len)
             {
                     //  We can write at most 127 literals in one go
-                u_int8_t sub_length = len>127?127:len;
+                uint8_t sub_length = len>127?127:len;
                 len -= sub_length;
                 *out++ = sub_length;
                 while (sub_length--)
@@ -280,16 +280,16 @@ void unpackzeroesx( char *d, const char *s, size_t maxlen )
 
 
 
-int packz32( u_int32_t *out, const u_int32_t *const buffer, int length )
+int packz32( uint32_t *out, const uint32_t *const buffer, int length )
 {
-    const u_int32_t *orig = out;
-    const u_int32_t *start = buffer;
-    const u_int32_t *end = start+length;
+    const uint32_t *orig = out;
+    const uint32_t *start = buffer;
+    const uint32_t *end = start+length;
 
     while (start<end)
     {
         //  We look for the next non-zero
-        const u_int32_t *next_non_zero;
+        const uint32_t *next_non_zero;
         for (next_non_zero = start;next_non_zero<end;next_non_zero++)
         {
             if (*next_non_zero)
@@ -303,7 +303,7 @@ int packz32( u_int32_t *out, const u_int32_t *const buffer, int length )
         start += zero_count;
 
         //  We look for the next zero
-        const u_int32_t *next_zero;
+        const uint32_t *next_zero;
         for (next_zero = start;next_zero<end;next_zero++)
         {
             if (!*next_zero)
@@ -312,7 +312,7 @@ int packz32( u_int32_t *out, const u_int32_t *const buffer, int length )
 
         u_int16_t non_zero_count = next_zero-start;
 
-        u_int32_t header = (zero_count<<16)+non_zero_count;
+        uint32_t header = (zero_count<<16)+non_zero_count;
 
         *out++ = header;
 
@@ -329,16 +329,16 @@ int packz32( u_int32_t *out, const u_int32_t *const buffer, int length )
 
 void packz32_test()
 {
-    u_int32_t in0[] =
+    uint32_t in0[] =
     {
         0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000001, 0x00000002, 0x00000003, 0x00000000
     };
-    u_int32_t out0[] =
+    uint32_t out0[] =
     {
         0x00040003, 0x00000001, 0x00000002, 0x00000003, 0x00010000, 0x00000000
     };
 
-    u_int32_t buffer[1024];
+    uint32_t buffer[1024];
     int len;
     
     len = packz32( buffer, in0, sizeof(in0)/sizeof(*in0) );
@@ -352,7 +352,7 @@ void packz32_test()
 
 void packz32opt_test()
 {
-    std::vector<u_int32_t> in0 =
+    std::vector<uint32_t> in0 =
     {
         0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000001, 0x00000002, 0x00000003, 0x00000000,
         0x00000000, 0x00000005, 0x00000006, 0x00000007

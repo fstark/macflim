@@ -9,16 +9,16 @@
 #include <assert.h>
 #include <memory.h>
 
-int packbits( u_int8_t *out, const u_int8_t *buffer, int length );
-int packzeroes( u_int8_t *out, const u_int8_t *const buffer, int length );
+int packbits( uint8_t *out, const uint8_t *buffer, int length );
+int packzeroes( uint8_t *out, const uint8_t *const buffer, int length );
 void unpackzeroesx( char *d, const char *s, size_t maxlen );
 
-//  #### Note: u_int8_t is C not C++! (uint8_t)
+//  #### Note: Using uint8_t (standard C++) instead of uint8_t (BSD)
 
 //  ------------------------------------------------------------------
 //  Pack the data by 32 bits blocks, compressing consecutive zeroes
 //  ------------------------------------------------------------------
-int packz32( u_int32_t *out, const u_int32_t *const buffer, int length );
+int packz32( uint32_t *out, const uint32_t *const buffer, int length );
 void packz32_test();
 
 #include <vector>

@@ -27,7 +27,7 @@ public:
             data_[i] = 128;
     }
 
-    u_int8_t &at(size_t i) { return data_[i]; }
+    uint8_t &at(size_t i) { return data_[i]; }
 
     std::array<uint8_t, size>::const_iterator begin() const { return std::cbegin(data_); }
     std::array<uint8_t, size>::const_iterator end() const { return std::cend(data_); }

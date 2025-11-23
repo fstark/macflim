@@ -400,10 +400,10 @@ class flimencoder
         return res;
     }
 
-    std::vector<u_int8_t> normalize_sound( std::vector<double> sound_samples, size_t len )
+    std::vector<uint8_t> normalize_sound( std::vector<double> sound_samples, size_t len )
     {
         sound_samples.resize(len);
-        std::vector<u_int8_t> res;
+        std::vector<uint8_t> res;
 
         if (sound_samples.size()>0)
         {
@@ -609,7 +609,7 @@ std::cout << "POSTER INDEX: " << poster_index << "\n";
             current_frame++;
         }
 
-        std::vector<u_int8_t> global;
+        std::vector<uint8_t> global;
         auto out_global = std::back_inserter( global );
 
         write2( out_global, profile_.width() );                      //  width
@@ -623,7 +623,7 @@ std::cout << "PROFILE BYTERATE " << profile_.byterate() << "\n";
         write2( out_global, profile_.byterate() );      //  Byterate
 
         framebuffer poster_fb{ poster_small_bw };
-        std::vector<u_int8_t> poster = poster_fb.raw_values_natural<u_int8_t>();
+        std::vector<uint8_t> poster = poster_fb.raw_values_natural<uint8_t>();
 
         std::vector<uint8_t> header;
         auto out_header = std::back_inserter( header );
