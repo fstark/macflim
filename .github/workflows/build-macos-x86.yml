@@ -27,8 +27,12 @@ jobs:
         make clean
         make release
         
+        # Ad-hoc code sign the binary
+        codesign -s - -f ../flimmaker
+        
         # Show binary info
         file ../flimmaker
+        codesign -dv ../flimmaker
     
     - name: Package with bundled libraries
       run: |
