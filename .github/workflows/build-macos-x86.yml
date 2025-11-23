@@ -42,49 +42,55 @@ jobs:
         # Copy the binary
         cp flimmaker macflim/bin/
         
-        # Find and copy ffmpeg dylibs
+        # Detect what libraries the binary actually needs and copy them
         BREW_PREFIX=$(brew --prefix)
-        cp "$BREW_PREFIX/lib/libavformat".*.dylib macflim/bin/lib/ || true
-        cp "$BREW_PREFIX/lib/libavcodec".*.dylib macflim/bin/lib/ || true
-        cp "$BREW_PREFIX/lib/libavutil".*.dylib macflim/bin/lib/ || true
-        cp "$BREW_PREFIX/lib/libswresample".*.dylib macflim/bin/lib/ || true
-        cp "$BREW_PREFIX/lib/libswscale".*.dylib macflim/bin/lib/ || true
+        echo "=== Libraries referenced by flimmaker ==="
+        otool -L flimmaker | grep -v ":" | grep -v "/usr/lib" | grep -v "@rpath" || true
         
-        # Copy GCC C++ standard library
+        # Copy all libraries referenced by the binary
+        otool -L flimmaker | grep -v ":" | grep -v "/usr/lib" | grep -v "@rpath" | awk '{print $1}' | while read lib; do
+          if [ -f "$lib" ]; then
+            cp "$lib" macflim/bin/lib/
+          fi
+        done
+        
+        # Copy GCC C++ standard library (these use @rpath already)
         GCC_LIB=$(brew --prefix gcc@14)/lib/gcc/14
         cp "$GCC_LIB/libstdc++".*.dylib macflim/bin/lib/ || true
         cp "$GCC_LIB/libgcc_s".*.dylib macflim/bin/lib/ || true
         
-        # Copy dependencies of ffmpeg libraries
+        # Copy dependencies of bundled libraries
         for dylib in macflim/bin/lib/*.dylib; do
-          otool -L "$dylib" | grep "$BREW_PREFIX" | awk '{print $1}' | while read dep; do
+          otool -L "$dylib" 2>/dev/null | grep -v ":" | grep -v "/usr/lib" | grep -v "@rpath" | awk '{print $1}' | while read dep; do
             depname=$(basename "$dep")
-            if [ ! -f "macflim/bin/lib/$depname" ]; then
+            if [ -f "$dep" ] && [ ! -f "macflim/bin/lib/$depname" ]; then
               cp "$dep" macflim/bin/lib/ || true
             fi
           done
         done
         
-        # Update library paths in flimmaker
+        # Now fix all the paths in the binary - detect actual paths and replace them
+        echo "=== Fixing library paths in flimmaker ==="
         install_name_tool -add_rpath "@executable_path/lib" macflim/bin/flimmaker || true
-        for lib in "$BREW_PREFIX/lib/libav"*.dylib; do
-          libname=$(basename "$lib")
-          install_name_tool -change "$lib" "@rpath/$libname" macflim/bin/flimmaker || true
-        done
-        for lib in "$GCC_LIB/libstdc++"*.dylib "$GCC_LIB/libgcc_s"*.dylib; do
-          libname=$(basename "$lib")
-          install_name_tool -change "$lib" "@rpath/$libname" macflim/bin/flimmaker || true
+        otool -L macflim/bin/flimmaker | grep -v ":" | grep -v "/usr/lib" | grep -v "@rpath" | awk '{print $1}' | while read oldpath; do
+          libname=$(basename "$oldpath")
+          if [ -f "macflim/bin/lib/$libname" ]; then
+            echo "  Changing $oldpath -> @rpath/$libname"
+            install_name_tool -change "$oldpath" "@rpath/$libname" macflim/bin/flimmaker || true
+          fi
         done
         
-        # Update library paths in bundled dylibs
+        # Fix paths in all bundled dylibs
         for dylib in macflim/bin/lib/*.dylib; do
           chmod +w "$dylib"
           # Update id
           install_name_tool -id "@rpath/$(basename $dylib)" "$dylib" || true
           # Update dependencies
-          otool -L "$dylib" | grep "$BREW_PREFIX" | awk '{print $1}' | while read dep; do
+          otool -L "$dylib" 2>/dev/null | grep -v ":" | grep -v "/usr/lib" | grep -v "@rpath" | awk '{print $1}' | while read dep; do
             depname=$(basename "$dep")
-            install_name_tool -change "$dep" "@rpath/$depname" "$dylib" || true
+            if [ -f "macflim/bin/lib/$depname" ]; then
+              install_name_tool -change "$dep" "@rpath/$depname" "$dylib" || true
+            fi
           done
         done
       
