@@ -12,13 +12,13 @@ CPP = g++-14
 CXXFLAGS += -Wall -Werror -fsanitize=undefined -Wno-deprecated-declarations -Wextra -I/opt/homebrew/include/ -std=c++2a 
 
 # Default compile target
-all: debug
+all: release
 
 debug: CXXFLAGS += -O0 -g
 release: CXXFLAGS += -O3 -Werror
 
-debug: ../flimmaker ../flimutil
-release: ../flimmaker ../flimutil
+debug: ../flimmaker
+release: ../flimmaker
 
 # List of object files
 OBJS = image.o reader.o writer.o ruler.o watermark.o imgcompress.o filesystem_reader.o ffmpeg_reader.o flimmaker.o common.o
@@ -29,11 +29,8 @@ OBJS = image.o reader.o writer.o ruler.o watermark.o imgcompress.o filesystem_re
 ../flimmaker: $(OBJS)
 	${CPP} ${CXXFLAGS} $(LDLIBS) $(OBJS) -lavformat -lavcodec -lavutil -o ../flimmaker
 
-../flimutil: flimutil.c
-	${CPP} ${CXXFLAGS} flimutil.c -o ../flimutil
-
 clean:
-	rm -f ../flimmaker ../flimutil $(OBJS) $(OBJS:.o=.d)
+	rm -f ../flimmaker $(OBJS) $(OBJS:.o=.d)
 
 # Pattern rule for compiling .cpp files to .o files
 $(OBJS): %.o: %.cpp
