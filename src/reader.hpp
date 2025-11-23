@@ -67,9 +67,9 @@ class frame_accumulator
 };
 
 
+/*
 #include <generator>
 
-/*
 std::generator<unsigned int> f()
 {
     unsigned int i = 1;
