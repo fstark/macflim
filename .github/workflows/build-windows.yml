@@ -102,13 +102,11 @@ jobs:
         EOF
         
     - name: Create zip package
-      shell: bash
+      shell: pwsh
       run: |
-        cd flimmaker-windows
-        zip -r ../flimmaker-windows-x86_64.zip .
-        cd ..
-        echo "=== Package created ==="
-        ls -lh flimmaker-windows-x86_64.zip
+        Compress-Archive -Path flimmaker-windows\* -DestinationPath flimmaker-windows-x86_64.zip
+        Write-Host "=== Package created ==="
+        Get-Item flimmaker-windows-x86_64.zip | Format-List
         
     - name: Upload artifact
       uses: actions/upload-artifact@v4
