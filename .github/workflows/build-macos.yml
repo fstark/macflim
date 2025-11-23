@@ -27,12 +27,8 @@ jobs:
         make clean
         make release
         
-        # Ad-hoc code sign the binary
-        codesign -s - -f ../flimmaker
-        
         # Show binary info
         file ../flimmaker
-        codesign -dv ../flimmaker
       
     - name: Package with bundled libraries
       run: |
@@ -59,15 +55,25 @@ jobs:
         cp "$GCC_LIB/libstdc++".*.dylib macflim/bin/lib/ || true
         cp "$GCC_LIB/libgcc_s".*.dylib macflim/bin/lib/ || true
         
-        # Copy dependencies of bundled libraries
-        for dylib in macflim/bin/lib/*.dylib; do
-          otool -L "$dylib" 2>/dev/null | grep -v ":" | grep -v "/usr/lib" | grep -v "@rpath" | awk '{print $1}' | while read dep; do
-            depname=$(basename "$dep")
-            if [ -f "$dep" ] && [ ! -f "macflim/bin/lib/$depname" ]; then
-              cp "$dep" macflim/bin/lib/ || true
-            fi
+        # Copy dependencies of bundled libraries (iterate until no new files are added)
+        echo "=== Copying transitive dependencies ==="
+        prev_count=0
+        curr_count=$(ls -1 macflim/bin/lib/*.dylib 2>/dev/null | wc -l)
+        while [ "$curr_count" -gt "$prev_count" ]; do
+          echo "  Pass: $prev_count -> $curr_count libraries"
+          prev_count=$curr_count
+          for dylib in macflim/bin/lib/*.dylib; do
+            otool -L "$dylib" 2>/dev/null | grep -v ":" | grep -v "/usr/lib" | grep -v "@rpath" | awk '{print $1}' | while read dep; do
+              depname=$(basename "$dep")
+              if [ -f "$dep" ] && [ ! -f "macflim/bin/lib/$depname" ]; then
+                echo "    Adding: $depname"
+                cp "$dep" macflim/bin/lib/ || true
+              fi
+            done
           done
+          curr_count=$(ls -1 macflim/bin/lib/*.dylib 2>/dev/null | wc -l)
         done
+        echo "  Final: $curr_count libraries bundled"
         
         # Now fix all the paths in the binary - detect actual paths and replace them
         echo "=== Fixing library paths in flimmaker ==="
@@ -93,6 +99,11 @@ jobs:
             fi
           done
         done
+        
+        # Ad-hoc code sign the binary (do this AFTER all install_name_tool modifications)
+        echo "=== Code signing ==="
+        codesign -s - -f macflim/bin/flimmaker
+        codesign -dv macflim/bin/flimmaker || true
       
     - name: Verify build
       run: |
