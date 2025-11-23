@@ -49,8 +49,6 @@ jobs:
       run: |
         brew install gcc@14
         brew install ffmpeg
-        brew install yt-dlp
-        brew install imagemagick
       
     - name: Test build on ${{ matrix.arch }}
       run: |
