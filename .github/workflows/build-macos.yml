@@ -26,7 +26,7 @@ jobs:
         cd src
         make clean
         # Build universal binary for both ARM64 and x86_64
-        CFLAGS="-I/opt/homebrew/include/ -arch arm64 -arch x86_64" LDLIBS="-L/opt/homebrew/lib/ -Wl,-rpath,@executable_path/lib -arch arm64 -arch x86_64" make release
+        make osx-fat
         
         # Verify it's a universal binary
         file ../flimmaker
@@ -82,7 +82,9 @@ jobs:
         ls -lh macflim/bin/flimmaker
         ls -lh macflim/bin/lib/
         otool -L macflim/bin/flimmaker
-        ./macflim/bin/flimmaker --help || true
+        echo "=== Testing flimmaker binary ==="
+        ./macflim/bin/flimmaker --help
+        echo "=== Binary test completed successfully ==="
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
