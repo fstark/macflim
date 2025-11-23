@@ -1,4 +1,4 @@
-name: Build macOS (ARM64)
+name: Build macOS (x86_64)
 
 on:
   push:
@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-macos:
-    runs-on: macos-latest
+  build-macos-x86:
+    runs-on: macos-13
     
     steps:
     - name: Checkout code
@@ -29,7 +29,7 @@ jobs:
         
         # Show binary info
         file ../flimmaker
-      
+    
     - name: Package with bundled libraries
       run: |
         # Create directory structure
@@ -96,6 +96,6 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: macflim-macos-${{ github.sha }}
+        name: macflim-macos-x86_64-${{ github.sha }}
         path: macflim/
         retention-days: 30
