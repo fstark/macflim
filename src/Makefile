@@ -10,6 +10,7 @@ CPP = g++-14
 
 # Detect Homebrew prefix (ARM: /opt/homebrew, Intel: /usr/local)
 UNAME_S := $(shell uname -s)
+UNAME_M := $(shell uname -m)
 ifeq ($(UNAME_S),Darwin)
     BREW_PREFIX := $(shell brew --prefix 2>/dev/null || echo /usr/local)
     CXXFLAGS += -I$(BREW_PREFIX)/include/
@@ -31,7 +32,7 @@ debug: ../flimmaker
 release: ../flimmaker
 
 test: ../flimmaker
-	cd ../tests && bash run_tests.sh
+	cd ../tests && bash run_tests.sh $(UNAME_M)
 
 # List of object files
 OBJS = image.o reader.o writer.o ruler.o watermark.o imgcompress.o filesystem_reader.o ffmpeg_reader.o flimmaker.o common.o
