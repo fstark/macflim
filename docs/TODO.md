@@ -183,3 +183,4 @@ make && ./flimmaker ipodad1.mp4 --profile plus --out ipodad1.flim --dither order
 
 # Billie Jean plus
 make && ./flimmaker billiejean.mp4 --profile plus --out billiejean-plus.flim --byterate 1500 --stability 0.5 --half-rate true --group false --bars true --dither floyd --filters w10k10g2bszzq --codec null --codec z32 --mp4 out.mp4
+./flimmaker --cache /tmp/palmer.mp4 https://www.youtube.com/watch?v=UrGw_cOgwa8 --mp4 simply.mp4

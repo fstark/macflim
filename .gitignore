@@ -37,3 +37,6 @@
 flimutil
 flimmaker
 .DS_Store
+
+# Due to git being confused by symlinks
+compare/
