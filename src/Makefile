@@ -8,14 +8,18 @@ MAKEFLAGS += -j16
 # Compiler needs to support C++20
 CPP = g++-14
 
-# Default compilation flags
-CXXFLAGS += -Wall -Werror -Wno-deprecated-declarations -Wextra -I/opt/homebrew/include/ -std=c++2a 
-
-# macOS-specific settings for bundling libraries
+# Detect Homebrew prefix (ARM: /opt/homebrew, Intel: /usr/local)
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
-    LDLIBS += -L/opt/homebrew/lib/ -Wl,-rpath,@executable_path/lib
+    BREW_PREFIX := $(shell brew --prefix 2>/dev/null || echo /usr/local)
+    CXXFLAGS += -I$(BREW_PREFIX)/include/
+    LDLIBS += -L$(BREW_PREFIX)/lib/ -Wl,-rpath,@executable_path/lib
+else
+    CXXFLAGS += -I/opt/homebrew/include/
 endif
+
+# Default compilation flags
+CXXFLAGS += -Wall -Werror -Wno-deprecated-declarations -Wextra -std=c++2a
 
 # Default compile target
 all: release
