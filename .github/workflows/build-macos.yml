@@ -21,16 +21,14 @@ jobs:
         brew install yt-dlp
         brew install imagemagick
       
-    - name: Build universal flimmaker
+    - name: Build flimmaker
       run: |
         cd src
         make clean
-        # Build universal binary for both ARM64 and x86_64
-        make osx-fat
+        make release
         
-        # Verify it's a universal binary
+        # Show binary info
         file ../flimmaker
-        lipo -info ../flimmaker
       
     - name: Package with bundled libraries
       run: |
