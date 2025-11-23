@@ -39,3 +39,80 @@ jobs:
       run: |
         cd src
         make test
+    
+    - name: Package with DLLs
+      run: |
+        mkdir -p flimmaker-windows
+        cp flimmaker.exe flimmaker-windows/
+        
+        # Find all DLL dependencies
+        echo "=== Finding DLL dependencies ==="
+        ldd flimmaker.exe | grep -i mingw | awk '{print $3}' | while read dll; do
+          if [ -f "$dll" ]; then
+            echo "Copying: $(basename $dll)"
+            cp "$dll" flimmaker-windows/
+          fi
+        done
+        
+        # Also check for any additional FFmpeg DLLs that might be needed
+        MINGW_PREFIX="/mingw64"
+        cp "$MINGW_PREFIX/bin/avformat-"*.dll flimmaker-windows/ 2>/dev/null || true
+        cp "$MINGW_PREFIX/bin/avcodec-"*.dll flimmaker-windows/ 2>/dev/null || true
+        cp "$MINGW_PREFIX/bin/avutil-"*.dll flimmaker-windows/ 2>/dev/null || true
+        cp "$MINGW_PREFIX/bin/swresample-"*.dll flimmaker-windows/ 2>/dev/null || true
+        cp "$MINGW_PREFIX/bin/swscale-"*.dll flimmaker-windows/ 2>/dev/null || true
+        
+        # Copy GCC runtime DLLs
+        cp "$MINGW_PREFIX/bin/libgcc_s_seh-1.dll" flimmaker-windows/ 2>/dev/null || true
+        cp "$MINGW_PREFIX/bin/libstdc++-6.dll" flimmaker-windows/ 2>/dev/null || true
+        cp "$MINGW_PREFIX/bin/libwinpthread-1.dll" flimmaker-windows/ 2>/dev/null || true
+        
+        echo "=== Package contents ==="
+        ls -lh flimmaker-windows/
+        
+    - name: Create README
+      run: |
+        cat > flimmaker-windows/README.txt << 'EOF'
+        flimmaker for Windows
+        =====================
+        
+        This is a portable version of flimmaker built for Windows x86_64.
+        
+        Usage:
+        ------
+        1. Extract this entire folder somewhere on your computer
+        2. Open Command Prompt or PowerShell in this folder
+        3. Run: flimmaker.exe --help
+        
+        Example:
+        --------
+        flimmaker.exe input.mp4 --flim output.flim
+        
+        Requirements:
+        -------------
+        - Windows 10 or later (64-bit)
+        - All required DLLs are included in this package
+        
+        Build Information:
+        ------------------
+        Built from: https://github.com/fstark/macflim
+        Commit: ${{ github.sha }}
+        Date: ${{ github.event.head_commit.timestamp }}
+        
+        EOF
+        
+    - name: Create zip package
+      shell: bash
+      run: |
+        cd flimmaker-windows
+        zip -r ../flimmaker-windows-x86_64.zip .
+        cd ..
+        echo "=== Package created ==="
+        ls -lh flimmaker-windows-x86_64.zip
+        
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: flimmaker-windows-x86_64
+        path: flimmaker-windows-x86_64.zip
+        retention-days: 90
