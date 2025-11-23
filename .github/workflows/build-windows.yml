@@ -27,6 +27,7 @@ jobs:
           mingw-w64-x86_64-gcc
           mingw-w64-x86_64-ffmpeg
           make
+          diffutils
       
     - name: Build flimmaker
       run: |
