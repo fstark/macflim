@@ -9,13 +9,13 @@ MAKEFLAGS += -j16
 CPP = g++-14
 
 # Default compilation flags
-CXXFLAGS += -Wall -Werror -fsanitize=undefined -Wno-deprecated-declarations -Wextra -I/opt/homebrew/include/ -std=c++2a 
+CXXFLAGS += -Wall -Werror -Wno-deprecated-declarations -Wextra -I/opt/homebrew/include/ -std=c++2a 
 
 # Default compile target
 all: release
 
-debug: CXXFLAGS += -O0 -g
-release: CXXFLAGS += -O3 -Werror
+debug: CXXFLAGS += -O0 -g -fsanitize=undefined
+release: CXXFLAGS += -O3
 
 debug: ../flimmaker
 release: ../flimmaker
