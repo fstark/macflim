@@ -1,0 +1,41 @@
+name: Build Windows
+
+on:
+  push:
+    branches: [ main, generators ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: >-
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-ffmpeg
+          make
+      
+    - name: Build flimmaker
+      run: |
+        cd src
+        make clean
+        make release CPP=g++
+        
+    - name: Test binary
+      run: |
+        cd src
+        file ../flimmaker.exe || ls -lh ../flimmaker.exe
+        ../flimmaker.exe --help

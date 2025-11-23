@@ -19,7 +19,11 @@
  */
 
 #include <stdlib.h>
+#ifndef _WIN32
 #include <unistd.h>
+#include <signal.h>
+#include <execinfo.h>
+#endif
 #include <memory.h>
 #include <math.h>
 #include <assert.h>
@@ -31,8 +35,6 @@
 #include <array>
 #include <memory>
 #include <filesystem>
-#include <signal.h>
-#include <execinfo.h>
 #define noLZG
 #ifdef LZG
 #include "lzg.h"
@@ -198,6 +200,7 @@ void usage(const std::string name)
     std::cerr << "use '" << name << " --help' for displaying this help page.\n";
 }
 
+#ifndef _WIN32
 void segfault_handler(int signal)
 {
     void *array[10];
@@ -211,6 +214,7 @@ void segfault_handler(int signal)
     backtrace_symbols_fd(array, size, STDERR_FILENO);
     exit(1);
 }
+#endif
 
 #ifdef _WIN32
 #include <windows.h>
@@ -244,7 +248,9 @@ const std::string temp_file()
 // flimmaker [-g] --in <%d.pgm> --from <index> --to <index> --cover <index> --audio <audio.wav> --flim <file>
 int main(int argc, char **argv)
 {
+#ifndef _WIN32
     signal(SIGSEGV, segfault_handler);
+#endif
     try
     {
         std::string input_file = "";

@@ -1,11 +1,12 @@
 name: Build macOS (ARM64)
 
 on:
-  push:
-    branches: [ main, generators ]
-  pull_request:
-    branches: [ main ]
+  # Temporarily disabled while working on Windows build
   workflow_dispatch:
+  # push:
+  #   branches: [ main, generators ]
+  # pull_request:
+  #   branches: [ main ]
 
 jobs:
   build-macos:
