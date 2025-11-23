@@ -1,0 +1,92 @@
+name: Build macOS
+
+on:
+  push:
+    branches: [ main, generators ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install dependencies
+      run: |
+        brew install ffmpeg
+        brew install yt-dlp
+        brew install imagemagick
+      
+    - name: Build universal flimmaker
+      run: |
+        cd src
+        make clean
+        # Build universal binary for both ARM64 and x86_64
+        CFLAGS="-I/opt/homebrew/include/ -arch arm64 -arch x86_64" LDLIBS="-L/opt/homebrew/lib/ -Wl,-rpath,@executable_path/lib -arch arm64 -arch x86_64" make release
+        
+        # Verify it's a universal binary
+        file ../flimmaker
+        lipo -info ../flimmaker
+      
+    - name: Package with bundled libraries
+      run: |
+        # Create directory structure
+        mkdir -p macflim/bin/lib
+        
+        # Copy the binary
+        cp flimmaker macflim/bin/
+        
+        # Find and copy ffmpeg dylibs
+        BREW_PREFIX=$(brew --prefix)
+        cp "$BREW_PREFIX/lib/libavformat".*.dylib macflim/bin/lib/ || true
+        cp "$BREW_PREFIX/lib/libavcodec".*.dylib macflim/bin/lib/ || true
+        cp "$BREW_PREFIX/lib/libavutil".*.dylib macflim/bin/lib/ || true
+        cp "$BREW_PREFIX/lib/libswresample".*.dylib macflim/bin/lib/ || true
+        cp "$BREW_PREFIX/lib/libswscale".*.dylib macflim/bin/lib/ || true
+        
+        # Copy dependencies of ffmpeg libraries
+        for dylib in macflim/bin/lib/*.dylib; do
+          otool -L "$dylib" | grep "$BREW_PREFIX" | awk '{print $1}' | while read dep; do
+            depname=$(basename "$dep")
+            if [ ! -f "macflim/bin/lib/$depname" ]; then
+              cp "$dep" macflim/bin/lib/ || true
+            fi
+          done
+        done
+        
+        # Update library paths in flimmaker
+        install_name_tool -add_rpath "@executable_path/lib" macflim/bin/flimmaker || true
+        for lib in "$BREW_PREFIX/lib/libav"*.dylib; do
+          libname=$(basename "$lib")
+          install_name_tool -change "$lib" "@rpath/$libname" macflim/bin/flimmaker || true
+        done
+        
+        # Update library paths in bundled dylibs
+        for dylib in macflim/bin/lib/*.dylib; do
+          chmod +w "$dylib"
+          # Update id
+          install_name_tool -id "@rpath/$(basename $dylib)" "$dylib" || true
+          # Update dependencies
+          otool -L "$dylib" | grep "$BREW_PREFIX" | awk '{print $1}' | while read dep; do
+            depname=$(basename "$dep")
+            install_name_tool -change "$dep" "@rpath/$depname" "$dylib" || true
+          done
+        done
+      
+    - name: Verify build
+      run: |
+        ls -lh macflim/bin/flimmaker
+        ls -lh macflim/bin/lib/
+        otool -L macflim/bin/flimmaker
+        ./macflim/bin/flimmaker --help || true
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: macflim-macos-${{ github.sha }}
+        path: macflim/
+        retention-days: 30
