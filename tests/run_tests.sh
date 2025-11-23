@@ -6,7 +6,14 @@ ARCH="${1:-x86_64}"  # Default to x86_64 if no argument provided
 
 echo "Running tests for architecture: $ARCH"
 
-../flimmaker test_01.mp4 --flim test_01.flim
+# Find the binary (flimmaker or flimmaker.exe)
+if [ -f ../flimmaker.exe ]; then
+	FLIMMAKER=../flimmaker.exe
+else
+	FLIMMAKER=../flimmaker
+fi
+
+$FLIMMAKER test_01.mp4 --flim test_01.flim
 
 if [ "$ARCH" = "arm64" ]; then
 	# On ARM64, just verify the file was created (due to floating point differences)
