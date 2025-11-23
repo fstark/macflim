@@ -1,15 +1,39 @@
-name: Build macOS (x86_64)
+name: Create Release
 
 on:
   push:
-    branches: [ main, generators ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
+    tags:
+      - 'v*'  # Triggers on version tags like v1.0.0
 
 jobs:
-  build-macos-x86:
-    runs-on: macos-13
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+
+  build-and-upload:
+    needs: create-release
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            arch: arm64
+            workflow: build-macos.yml
+          - os: macos-13
+            arch: x86_64
+            workflow: build-macos-x86.yml
+    runs-on: ${{ matrix.os }}
     
     steps:
     - name: Checkout code
@@ -120,28 +144,19 @@ jobs:
           codesign --remove-signature "$dylib" 2>/dev/null || true
         done
         echo "All signatures removed - binaries are now unsigned"
-      
-    - name: Verify build
-      run: |
-        ls -lh macflim/bin/flimmaker
-        ls -lh macflim/bin/lib/
-        otool -L macflim/bin/flimmaker
-        echo "=== Testing flimmaker binary ==="
-        ./macflim/bin/flimmaker --help
-        echo "=== Binary test completed successfully ==="
     
-    - name: Create tarball for release
+    - name: Create tarball
       run: |
         cd macflim
-        tar czf ../flimmaker-x86_64-macos.tar.gz bin/
+        tar czf ../flimmaker-${{ matrix.arch }}-macos.tar.gz bin/
         cd ..
-        sha256sum flimmaker-x86_64-macos.tar.gz > flimmaker-x86_64-macos.tar.gz.sha256
-    
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
+        
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        name: flimmaker-x86_64-macos
-        path: |
-          flimmaker-x86_64-macos.tar.gz
-          flimmaker-x86_64-macos.tar.gz.sha256
-        retention-days: 30
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./flimmaker-${{ matrix.arch }}-macos.tar.gz
+        asset_name: flimmaker-${{ matrix.arch }}-macos.tar.gz
+        asset_content_type: application/gzip

@@ -130,9 +130,18 @@ jobs:
         ./macflim/bin/flimmaker --help
         echo "=== Binary test completed successfully ==="
     
+    - name: Create tarball for release
+      run: |
+        cd macflim
+        tar czf ../flimmaker-arm64-macos.tar.gz bin/
+        cd ..
+        sha256sum flimmaker-arm64-macos.tar.gz > flimmaker-arm64-macos.tar.gz.sha256
+    
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: macflim-macos-${{ github.sha }}
-        path: macflim/
+        name: flimmaker-arm64-macos
+        path: |
+          flimmaker-arm64-macos.tar.gz
+          flimmaker-arm64-macos.tar.gz.sha256
         retention-days: 30
