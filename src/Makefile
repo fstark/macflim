@@ -30,6 +30,9 @@ release: CXXFLAGS += -O3
 debug: ../flimmaker
 release: ../flimmaker
 
+test: ../flimmaker
+	cd ../tests && ./run_tests.sh
+
 # List of object files
 OBJS = image.o reader.o writer.o ruler.o watermark.o imgcompress.o filesystem_reader.o ffmpeg_reader.o flimmaker.o common.o
 
