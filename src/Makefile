@@ -28,7 +28,7 @@ release: ../flimmaker
 # macOS universal binary (fat binary with both ARM64 and x86_64)
 osx-fat: CPP = clang++ -arch arm64 -arch x86_64
 osx-fat: CXXFLAGS += -O3
-osx-fat: LDLIBS += -Wl,-rpath,@executable_path/lib
+osx-fat: LDLIBS += -L/opt/homebrew/lib/ -Wl,-rpath,@executable_path/lib
 osx-fat: ../flimmaker
 
 # List of object files
