@@ -8,9 +8,10 @@ on:
 jobs:
   create-release:
     runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -19,144 +20,42 @@ jobs:
       with:
         tag_name: ${{ github.ref }}
         release_name: Release ${{ github.ref }}
+        body: |
+          ## Installation
+          
+          Install via Homebrew:
+          ```
+          brew install fstark/macflim/flimmaker
+          ```
+          
+          This will build from source and install all dependencies automatically.
         draft: false
         prerelease: false
 
-  build-and-upload:
-    needs: create-release
+  test-builds:
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
           - os: macos-latest
             arch: arm64
-            workflow: build-macos.yml
           - os: macos-13
             arch: x86_64
-            workflow: build-macos-x86.yml
-    runs-on: ${{ matrix.os }}
-    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
     - name: Install dependencies
       run: |
+        brew install gcc@14
         brew install ffmpeg
         brew install yt-dlp
         brew install imagemagick
       
-    - name: Build flimmaker
+    - name: Test build on ${{ matrix.arch }}
       run: |
         cd src
         make clean
-        make release
-        
-        # Show binary info
+        make release CPP=g++-14
         file ../flimmaker
-    
-    - name: Package with bundled libraries
-      run: |
-        # Create directory structure
-        mkdir -p macflim/bin/lib
-        
-        # Copy the binary
-        cp flimmaker macflim/bin/
-        
-        # Detect what libraries the binary actually needs and copy them
-        BREW_PREFIX=$(brew --prefix)
-        echo "=== Libraries referenced by flimmaker ==="
-        otool -L flimmaker | grep -v ":" | grep -v "/usr/lib" | grep -v "@rpath" || true
-        
-        # Copy all libraries referenced by the binary
-        otool -L flimmaker | grep -v ":" | grep -v "/usr/lib" | grep -v "@rpath" | awk '{print $1}' | while read lib; do
-          if [ -f "$lib" ]; then
-            cp "$lib" macflim/bin/lib/
-          fi
-        done
-        
-        # Copy GCC C++ standard library (these use @rpath already)
-        GCC_LIB=$(brew --prefix gcc@14)/lib/gcc/14
-        cp "$GCC_LIB/libstdc++".*.dylib macflim/bin/lib/ || true
-        cp "$GCC_LIB/libgcc_s".*.dylib macflim/bin/lib/ || true
-        
-        # Copy dependencies of bundled libraries (iterate until no new files are added)
-        echo "=== Copying transitive dependencies ==="
-        prev_count=0
-        curr_count=$(ls -1 macflim/bin/lib/*.dylib 2>/dev/null | wc -l)
-        while [ "$curr_count" -gt "$prev_count" ]; do
-          echo "  Pass: $prev_count -> $curr_count libraries"
-          prev_count=$curr_count
-          for dylib in macflim/bin/lib/*.dylib; do
-            # Handle absolute paths
-            otool -L "$dylib" 2>/dev/null | grep -v ":" | grep -v "/usr/lib" | grep -v "@rpath" | awk '{print $1}' | while read dep; do
-              depname=$(basename "$dep")
-              if [ -f "$dep" ] && [ ! -f "macflim/bin/lib/$depname" ]; then
-                echo "    Adding: $depname"
-                cp "$dep" macflim/bin/lib/ || true
-              fi
-            done
-            # Handle @rpath references (need to find the actual file in brew)
-            otool -L "$dylib" 2>/dev/null | grep "@rpath" | awk '{print $1}' | while read rpathlib; do
-              libname=$(basename "$rpathlib")
-              if [ ! -f "macflim/bin/lib/$libname" ]; then
-                # Try to find it in Homebrew
-                found=$(find "$BREW_PREFIX/lib" "$BREW_PREFIX/opt" -name "$libname" 2>/dev/null | head -1)
-                if [ -n "$found" ] && [ -f "$found" ]; then
-                  echo "    Adding (rpath): $libname"
-                  cp "$found" macflim/bin/lib/ || true
-                fi
-              fi
-            done
-          done
-          curr_count=$(ls -1 macflim/bin/lib/*.dylib 2>/dev/null | wc -l)
-        done
-        echo "  Final: $curr_count libraries bundled"
-        
-        # Now fix all the paths in the binary - detect actual paths and replace them
-        echo "=== Fixing library paths in flimmaker ==="
-        install_name_tool -add_rpath "@executable_path/lib" macflim/bin/flimmaker || true
-        otool -L macflim/bin/flimmaker | grep -v ":" | grep -v "/usr/lib" | grep -v "@rpath" | awk '{print $1}' | while read oldpath; do
-          libname=$(basename "$oldpath")
-          if [ -f "macflim/bin/lib/$libname" ]; then
-            echo "  Changing $oldpath -> @rpath/$libname"
-            install_name_tool -change "$oldpath" "@rpath/$libname" macflim/bin/flimmaker || true
-          fi
-        done
-        
-        # Fix paths in all bundled dylibs
-        for dylib in macflim/bin/lib/*.dylib; do
-          chmod +w "$dylib"
-          # Update id
-          install_name_tool -id "@rpath/$(basename $dylib)" "$dylib" || true
-          # Update dependencies
-          otool -L "$dylib" 2>/dev/null | grep -v ":" | grep -v "/usr/lib" | grep -v "@rpath" | awk '{print $1}' | while read dep; do
-            depname=$(basename "$dep")
-            if [ -f "macflim/bin/lib/$depname" ]; then
-              install_name_tool -change "$dep" "@rpath/$depname" "$dylib" || true
-            fi
-          done
-        done
-        
-        # Remove all code signatures (install_name_tool invalidated them)
-        echo "=== Removing code signatures ==="
-        codesign --remove-signature macflim/bin/flimmaker 2>/dev/null || true
-        for dylib in macflim/bin/lib/*.dylib; do
-          codesign --remove-signature "$dylib" 2>/dev/null || true
-        done
-        echo "All signatures removed - binaries are now unsigned"
-    
-    - name: Create tarball
-      run: |
-        cd macflim/bin
-        tar czf ../../flimmaker-${{ matrix.arch }}-macos.tar.gz flimmaker lib/
-        cd ../..
-        
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./flimmaker-${{ matrix.arch }}-macos.tar.gz
-        asset_name: flimmaker-${{ matrix.arch }}-macos.tar.gz
-        asset_content_type: application/gzip
+        ../flimmaker --help
