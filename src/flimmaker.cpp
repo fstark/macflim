@@ -124,7 +124,7 @@ void test_seconds_from_string()
 }
 
 // Write a bunch of bytes in a file
-void write_data(const char *file, u_int8_t *data, size_t len)
+void write_data(const char *file, uint8_t *data, size_t len)
 {
     FILE *f = fopen(file, "wb");
     while (len--)
