@@ -55,5 +55,4 @@ jobs:
         cd src
         make clean
         make release CPP=g++-14
-        file ../flimmaker
-        ../flimmaker --help
+        make test

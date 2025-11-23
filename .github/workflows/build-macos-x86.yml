@@ -26,7 +26,7 @@ jobs:
         make clean
         make release CPP=g++-14
         
-    - name: Test binary
+    - name: Run tests
       run: |
-        file flimmaker
-        ./flimmaker --help
+        cd src
+        make test
