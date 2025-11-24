@@ -1,5 +1,3 @@
-**WARNING: FFMPEG 5 IS NOW REQUIRED FOR CREATING FLIMS**
-
 # MacFlim, the true Mac video player
 
 MacFlim is a video encoder and player for black and white vintage Macintoshes, now in its second incarnation.
@@ -9,6 +7,12 @@ MacFlim is a video encoder and player for black and white vintage Macintoshes, n
 _The iPod introduction should have waited for MacFlim to be available_
 
 MacFlim brings movie playing abilities to the most popular members of the Macintosh family, namely the Macintosh XL, Macintosh 128K, Macintosh 512K, Mac Plus, Mac SE, Mac SE/30 and the Macintosh Portable, on their beautiful internal black and white 512x342 display (or even larger, for the Mac XL and the Portable!).
+
+# WHAT'S NEW?
+
+The windows version of ``flimmaker`` is available in the [releases!](https://github.com/fstark/macflim/releases)!
+
+``flimmaker`` can now be installed on OSX with a simple ``brew install fstark/macflim/flimmaker``!
 
 ## What is in the repository?
 
@@ -49,13 +53,33 @@ Head to [the MacFlim website](http://www.macflim.com/macflim2) for sample flims.
 
 Alternatively, you can build it from the source code, by downloading the 'MacFlim Source Code.dsk' file which is a disk image, containing a working System 6.0.7, the MacFlim source code and binaries, and a THINK C 5 development environment. This is what is used to develop MacFlim and Mini MacFlim.
 
-## Ok, how do I compile the encoder?
+## How do I get the flim encoder, flimmaker
+
+On OSX (ARM or x86):
+
+* Open a Terminal
+* ``brew install fstark/macflim/flimmaker``
+
+This will compile and install the latest version of flimmaker for OSX
+
+If ``brew`` is not installed, [install it from the distribution](https://brew.sh/)
+
+On Windows (>=10)
+
+* Go to [the latest release](https://github.com/fstark/macflim/releases)
+* Download the zip file for Windows 10.
+* Unzip the file locally and move the directory to where you want to install flimmaker
+* Use the command line to launch the ``flimmaker.exe`` utility
+
+Note: the full ffmpeg runtime is included. However, if you want to automatically download videos from YouTube by specifity an https:// input, you need to install yt-dlp in a place where it can be found by ``flimmaker``.
+
+## Ok, but if I want to compile the encoder myself? (or if I am on linux)
 
 The pre-requisites are FFmpeg version 5 (this has changed from previous releases), youtube-dl or yt-dlp (optional) and ImageMagick (optional)
 
 * ``ffmpeg`` and associated libraries are required for compilation. (Version 7 or higher is recommended, but version 5 or higher should work.)
 * ``yt-dlp`` or ``youtube-dl`` is used if you want to directly encode movies from YouTube or Vimeo (or others).
-* ``ImageMagick`` is used if you want to generate ``gif`` files.
+* ``ImageMagick`` is used if you want to generate ``gif`` files, like the ones on macflim.com.
 
 On a Mac:
 
@@ -95,7 +119,7 @@ This will download the video and encode it for se30 playback (the default), as '
 
 ## Apple silicon notes
 
-If you are using Homebrew on a modern Mac, chances are that you'll need to tell the compiler explicitly where to look for the headers and libraries:
+If you are using Homebrew on a modern Mac to install ``ffmpeg``, chances are that you'll need to tell the compiler explicitly where to look for the headers and libraries:
 
     CFLAGS=-I/opt/homebrew/include/ LDLIBS=-L/opt/homebrew/lib/ make
 

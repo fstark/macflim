@@ -6,10 +6,17 @@ on:
   pull_request:
     branches: [ main ]
   workflow_dispatch:
+  workflow_call:
+    outputs:
+      artifact-name:
+        description: "Name of the uploaded artifact"
+        value: ${{ jobs.build-windows.outputs.artifact-name }}
 
 jobs:
   build-windows:
     runs-on: windows-latest
+    outputs:
+      artifact-name: ${{ steps.set-artifact-name.outputs.name }}
     defaults:
       run:
         shell: msys2 {0}
@@ -101,9 +108,14 @@ jobs:
         
         EOF
         
+    - name: Set artifact name
+      id: set-artifact-name
+      run: |
+        echo "name=flimmaker-windows-x86_64" >> $GITHUB_OUTPUT
+    
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: flimmaker-windows-x86_64
+        name: ${{ steps.set-artifact-name.outputs.name }}
         path: flimmaker-windows/
         retention-days: 90
