@@ -104,7 +104,9 @@ jobs:
     - name: Create zip package
       shell: pwsh
       run: |
-        Compress-Archive -Path flimmaker-windows\* -DestinationPath flimmaker-windows-x86_64.zip
+        cd flimmaker-windows
+        Compress-Archive -Path * -DestinationPath ..\flimmaker-windows-x86_64.zip
+        cd ..
         Write-Host "=== Package created ==="
         Get-Item flimmaker-windows-x86_64.zip | Format-List
         
