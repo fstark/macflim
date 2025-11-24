@@ -101,18 +101,9 @@ jobs:
         
         EOF
         
-    - name: Create zip package
-      shell: pwsh
-      run: |
-        cd flimmaker-windows
-        Compress-Archive -Path * -DestinationPath ..\flimmaker-windows-x86_64.zip
-        cd ..
-        Write-Host "=== Package created ==="
-        Get-Item flimmaker-windows-x86_64.zip | Format-List
-        
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: flimmaker-windows-x86_64
-        path: flimmaker-windows-x86_64.zip
+        path: flimmaker-windows/
         retention-days: 90
