@@ -85,8 +85,8 @@ class ffmpeg_reader : public input_reader
     const AVCodec *audio_decoder_;
     AVStream *video_stream_;
     AVStream *audio_stream_;
-    AVCodecContext *video_codec_context_;
-    AVCodecContext *audio_codec_context_;
+    AVCodecContext *video_codec_context_ = nullptr;
+    AVCodecContext *audio_codec_context_ = nullptr;
     uint8_t *video_dst_data_[4] = {NULL};
     int video_dst_linesize_[4];
     AVPacket *pkt_;
@@ -323,8 +323,6 @@ class ffmpeg_reader : public input_reader
     }
 
 public:
-    ffmpeg_reader() {}
-
     ffmpeg_reader(const std::string &movie_path, timestamp_t from, timestamp_t duration)
     {
         av_log_set_level(AV_LOG_WARNING);
@@ -484,7 +482,10 @@ public:
     ~ffmpeg_reader()
     {
         avformat_close_input(&format_context_);
-        avcodec_free_context(&video_codec_context_);
+        if (video_codec_context_)
+        {
+            avcodec_free_context(&video_codec_context_);
+        }
         if (audio_codec_context_)
         {
             avcodec_free_context(&audio_codec_context_);

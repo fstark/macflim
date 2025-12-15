@@ -32,7 +32,7 @@
 *.app
 
 # Other
-*.mp4
+# *.mp4
 *.flim
 flimutil
 flimmaker
