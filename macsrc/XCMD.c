@@ -7,6 +7,8 @@
 #include <QuickDraw.h>
 #include <SetUpA4.h>
 #include "Mouse.h"
+#include "Machine.h"
+#include "Buffer.h"
 
 //	-------------------------------------------------------------------
 //	Parses the XCMD arguments and put them in the global variables
@@ -33,7 +35,7 @@ Boolean mouse;		//	Stop on mouse?
 
 const char *error = NULL;
 
-Boolean ArgGetString( XCmdBlockPtr params, int index, Str255 result, Str255 def )
+static Boolean ArgGetString( XCmdBlockPtr params, int index, Str255 result, Str255 def )
 {
 	char *str;
 
@@ -49,7 +51,7 @@ Boolean ArgGetString( XCmdBlockPtr params, int index, Str255 result, Str255 def 
 	return true;
 }
 
-Boolean ArgIsString( XCmdBlockPtr params, int index, Str255 what )
+static Boolean ArgIsString( XCmdBlockPtr params, int index, Str255 what )
 {
 	Str255 arg;
 
@@ -59,7 +61,7 @@ Boolean ArgIsString( XCmdBlockPtr params, int index, Str255 what )
 	return StrEquPP( arg, what );
 }
 
-Boolean ArgIsOption( XCmdBlockPtr params, int index, Str255 optName, Boolean *option )
+static Boolean ArgIsOption( XCmdBlockPtr params, int index, Str255 optName, Boolean *option )
 {
 	Str255 arg;
 	Str255 test;
@@ -102,7 +104,7 @@ Boolean ArgIsOption( XCmdBlockPtr params, int index, Str255 optName, Boolean *op
 	return false;
 }
 
-Boolean ArgIsNumber( XCmdBlockPtr params, int index, long *num )
+static Boolean ArgIsNumber( XCmdBlockPtr params, int index, long *num )
 {
 	Str255 arg;
 
@@ -122,7 +124,7 @@ Boolean ArgIsNumber( XCmdBlockPtr params, int index, long *num )
 	return true;
 }
 
-void ReturnXCMDValue( XCmdBlockPtr params, const char *val )
+static void ReturnXCMDValue( XCmdBlockPtr params, const char *val )
 {
 	if (!params->returnValue)
 		params->returnValue = NewHandle( 10 );
@@ -132,7 +134,7 @@ void ReturnXCMDValue( XCmdBlockPtr params, const char *val )
 	my_strcpy( *params->returnValue, val );
 }
 
-void ParseXCMDArguments( XCmdBlockPtr params )
+static void ParseXCMDArguments( XCmdBlockPtr params )
 {
 	int index = 0;
 	

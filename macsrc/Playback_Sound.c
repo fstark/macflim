@@ -19,6 +19,7 @@
 #include "Screen.h"
 #include "Machine.h"
 #include "Buffer.h"
+#include "Mouse.h"
 
 //	-------------------------------------------------------------------
 
