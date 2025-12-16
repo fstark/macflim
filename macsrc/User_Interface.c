@@ -3,6 +3,7 @@
 #include "Resources.h"
 #include "Util.h"
 #include "Self Player.h"
+#include "Mouse.h"
 
 Handle gMenuBar;
 MenuHandle gAppleMenu;
@@ -24,6 +25,7 @@ Boolean sFinished = FALSE;		//	Set to true if we want to exit
 #include "Tips.h"
 #include "Debug.h"
 #include "Errors.h"
+#include "Screen.h"
 
 LibraryPtr sLibrary;
 
@@ -635,6 +637,11 @@ static eIterateChoice ApplyPlay( LibraryPtr lib, int index, Str255 fName, short 
 	FlimPtr flim = LibraryOpenFlim( lib, index );
 	eIterateChoice result = kIterateNext;
 	Rect fromRect;
+	struct FlimInfo *fi;
+	short playback_x;
+	short playback_y;
+	Boolean silent = PreferenceGetIsPlaybackVBL();
+	ePlayResult playResult;
 
 		//	We failed to open, we abort
 	if (!flim)
@@ -647,7 +654,16 @@ static eIterateChoice ApplyPlay( LibraryPtr lib, int index, Str255 fName, short 
 		sZoomed = TRUE;
 	}
 
-	switch (PlayFlim( flim, PreferenceGetIsPlaybackVBL() ))
+	fi = FlimGetInfo( flim );
+	playback_x = (gScreen->width - fi->width)/2;
+	playback_y = (gScreen->height - fi->height)/2;
+
+	do
+	{
+		playResult = PlayFlim( flim, playback_x, playback_y, silent );
+	}	while (playResult==kRestart);
+
+	switch (playResult)
 	{
 		case kScreenError:
 			ShowCursor();
@@ -666,9 +682,9 @@ static eIterateChoice ApplyPlay( LibraryPtr lib, int index, Str255 fName, short 
 		case kAbort:
 			result = kIterateStop;
 			break;
-		case kRestart:
-			result = kIterateAgain;
-			break;
+//		case kRestart:
+//			result = kIterateAgain;
+//			break;
 		case kSkip:
 			result = kIterateNext;
 			break;
@@ -681,6 +697,7 @@ static eIterateChoice ApplyPlay( LibraryPtr lib, int index, Str255 fName, short 
 
 	//	Consumes the keypress/mouse from playback
 	FlushEvents( everyEvent, 0 );
+
 	FlimDispos( flim );
 	
 	return result;
@@ -762,12 +779,18 @@ static void UserInterfacePlaySelected( LibraryPtr lib )
 
 	sZoomed = FALSE;
 	HideCursor();
+	
+	ComputeMouse();
+	DrawMouse();
+	
 	SaveScreen( &savePtr );
 	if (!LibraryIsSelectionEmpty( lib ))
 		UserInterfaceIterateSelection( lib, ApplyPlay, PreferenceGetLoop() );
 	else
 		UserInterfaceIterateAll( lib, ApplyPlay, PreferenceGetLoop() );
 	RestoreScreen( &savePtr );
+	
+	RestoreMouse();
 	if (sZoomed)
 		XorZoom( &sZoomedRect, ZOOM_FRAMES, FALSE );
 	ShowCursor();

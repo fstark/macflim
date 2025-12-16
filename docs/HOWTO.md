@@ -36,4 +36,6 @@ Format: 800K dsk file
 * For homebrew, go in ../homebrew-macflim and do:
 
 ./update-formula.sh v2.0.11
-
+git add .
+git commit -m "Update to v2.0.11"
+git push
