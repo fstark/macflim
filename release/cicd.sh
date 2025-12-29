@@ -255,8 +255,9 @@ if [ -z "$CICD_INTERACTIVE" ]; then
     echo "Mini vMac window ID: $WINDOW_ID (geometry: $WINDOW_GEOMETRY)"
     
     # Wait for System 7.1 to boot
-    echo "Waiting for System 7.1 to boot (2 seconds)..."
-    sleep 2
+    # Sometimes on github, it was slower than expected, so wait a bit longer
+    echo "Waiting for System 7.1 to boot (5 seconds)..."
+    sleep 5
     
     # Try to activate window (may fail in xvfb, but that's OK)
     xdotool windowactivate $WINDOW_ID 2>/dev/null || echo "  (Window activation not supported in headless mode)"
