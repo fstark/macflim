@@ -38,11 +38,10 @@ jobs:
         ./setup_t -m IIx -mem 8M -t lx64 -hres 512 -vres 342 -speed a -magnify 0 -depth 0 > setup.sh
         bash setup.sh
         make
-        cp minivmac ../minivmac
-        chmod +x ../minivmac
+        cp minivmac ../release/minivmac
+        cp MacIIx.ROM ../release/vMac.ROM
+        chmod +x ../release/minivmac
         cd ..
-        echo "Mini vMac built successfully"
-        ./minivmac -h || echo "Mini vMac binary ready"
     
     - name: Extract version
       id: version
@@ -64,8 +63,8 @@ jobs:
         export DISPLAY=:99
         sleep 2
         
-        # Run build
-        MINIVMAC=../minivmac bash cicd.sh
+        # Run build (minivmac is now in release/ directory)
+        MINIVMAC=./minivmac bash cicd.sh
       timeout-minutes: 10
     
     - name: Upload debug screenshots
