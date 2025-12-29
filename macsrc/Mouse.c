@@ -7,6 +7,7 @@
 #include <Types.h>
 #include "Screen.h"
 #include <Quickdraw.h>
+#include "Util.h"
 
 //	-------------------------------------------------------------------
 //	GLOBALS
@@ -25,15 +26,20 @@ static Cursor sHandCursor =
 static unsigned long sMouseData[16][16];
 static unsigned long sMouseMask[16][16];
 
+static Boolean mouseEnabled = FALSE;
 
-void ComputeMouse( void )
+void ComputeMouse( int cursId )
 {
 	int pixel;
 	int y;
-	
-	Handle h = (Handle)GetCursor( 6069 );
-	BlockMove( *h, &sHandCursor, 68 );
-	
+
+	if (cursId!=-1)
+	{
+		Handle h = (Handle)GetCursor( cursId );
+		assert( h!=nil, "Cursor not found" );
+		BlockMove( *h, &sHandCursor, 68 );
+	}
+
 	for (pixel=0;pixel!=16;pixel++)
 	{
 		for (y=0;y!=16;y++)
@@ -48,6 +54,8 @@ void ComputeMouse( void )
 			sMouseMask[pixel][y] = ~mask;
 		}
 	}
+
+	mouseEnabled = TRUE;
 }
 
 static unsigned long sSave[16];
@@ -57,6 +65,9 @@ static void SaveMouseUnder( unsigned long *adrs )
 {
 	int y;
 	unsigned long *s = sSave;
+
+	if (!mouseEnabled)
+		return ;
 
 	sSaveAdrs = adrs;
 
@@ -72,6 +83,9 @@ void RestoreMouse( void )
 	int y;
 	unsigned long *s = sSave;
 	unsigned long *adrs = sSaveAdrs;
+
+	if (!mouseEnabled)
+		return;
 
 	for (y=0;y!=16;y++)
 	{
@@ -94,6 +108,9 @@ void DrawMouse( void )
 	unsigned long *d;
 	unsigned long *m;
 	int rowBytes = gScreen->rowBytes;
+
+	if (!mouseEnabled)
+		return;
 
 	if (x<0) x = 0;
 	if (y<0) y = 0;

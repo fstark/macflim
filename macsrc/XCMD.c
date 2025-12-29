@@ -214,9 +214,10 @@ pascal void main( XCmdBlockPtr params )
 	InitPlayback();
 	HideCursor();
 	ScreenInit( gScreen );
-//	SaveScreen( &savePtr );
+	SaveScreen( &savePtr );
 
-	ComputeMouse();
+	/* 6069 == Hypercard Hand Cursor */
+	ComputeMouse( 6069 );
 	DrawMouse();
 
 	ParseXCMDArguments( params );
@@ -233,7 +234,7 @@ pascal void main( XCmdBlockPtr params )
 	
 		if (!flim)
 		{
-//			MessageStr( (unsigned char*)"\pCannot open flim file" );
+			MessageStr( (unsigned char*)"\pCannot open flim file" );
 			ReturnXCMDValue( params, "Cannot open flim file" );
 		}
 		else
@@ -270,7 +271,7 @@ pascal void main( XCmdBlockPtr params )
 //	DebugLong( y );
 	
 	RestoreMouse();
-//	RestoreScreen( &savePtr );
+	RestoreScreen( &savePtr );
 	ScreenDispos( gScreen );
 	ShowCursor();
 	DisposBuffer();

@@ -12,8 +12,9 @@
 
 //	-------------------------------------------------------------------
 //	Initial precomputation of mouse shape and shifts
+//	Pass the cursor Id to be used, or -1 if you want the default cursor
 //	-------------------------------------------------------------------
-void ComputeMouse( void );
+void ComputeMouse( int cursId );
 
 //	-------------------------------------------------------------------
 //	Restores the screen behind the mouse

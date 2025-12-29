@@ -307,7 +307,9 @@ ePlayResult PlayFlim( FlimPtr flim, short playback_left, short playback_top, Boo
 
 	theResult = kDone;
 
+	
 	ScreenClearVideo( gScreen );
+	DrawMouse();	//	The mouse has been removed, put it back
 
 		//	Start of flim
 	FlimSeekStart( flim );
@@ -440,6 +442,8 @@ ePlayResult PlayFlimFile( Str255 fName, short vRefNum, long dirID, eFileAPI api,
 		//	Open flim
 	FlimPtr flim = FlimOpenByName( fName, vRefNum, dirID, api );
 	ePlayResult theResult;
+	struct FlimInfo *fi;
+	short playback_x, playback_y;
 
 	if (!flim)
 		return kFileError;
@@ -451,7 +455,11 @@ ePlayResult PlayFlimFile( Str255 fName, short vRefNum, long dirID, eFileAPI api,
 		goto close;
 #endif
 
-		theResult = PlayFlim( flim, -1, -1, silent );
+		fi = FlimGetInfo( flim );
+		playback_x = (gScreen->width - fi->width)/2;
+		playback_y = (gScreen->height - fi->height)/2;
+
+		theResult = PlayFlim( flim, playback_x, playback_y, silent );
 	}
 	while (theResult==kRestart);
 

@@ -780,8 +780,8 @@ static void UserInterfacePlaySelected( LibraryPtr lib )
 	sZoomed = FALSE;
 	HideCursor();
 	
-	ComputeMouse();
-	DrawMouse();
+//	ComputeMouse();
+//	DrawMouse();
 	
 	SaveScreen( &savePtr );
 	if (!LibraryIsSelectionEmpty( lib ))

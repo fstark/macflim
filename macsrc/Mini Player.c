@@ -46,8 +46,9 @@ int main()
 	InitCursor();
 
 	HideCursor();
-	
 
+
+	
 	if (!MachineIsBlackAndWhite())
 	{
 		//	Not a BW screen

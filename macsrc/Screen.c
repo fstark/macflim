@@ -444,9 +444,6 @@ Boolean ScreenVideoPrepare( ScreenPtr scrn, short playback_left, short playback_
 		return FALSE;
 	}
 
-
-
-
 		// to be removed
 	scrn->playback_left = playback_left;
 	scrn->playback_top = playback_top;
@@ -455,10 +452,8 @@ Boolean ScreenVideoPrepare( ScreenPtr scrn, short playback_left, short playback_
 	scrn->stride4 = (scrn->rowBytes-rowbytes)/4;
 
 
-/*
-	scrn->baseAddr = scrn->physAddr + ((scrn->width-width)/2)/8;
-	scrn->baseAddr += ((long)scrn->rowBytes)*((scrn->height-height)/2);
-*/
+//	scrn->baseAddr = scrn->physAddr + ((scrn->width-width)/2)/8;
+//	scrn->baseAddr += ((long)scrn->rowBytes)*((scrn->height-height)/2);
 	scrn->baseAddr = scrn->physAddr + scrn->playback_left/8;
 	scrn->baseAddr += ((long)scrn->rowBytes) * scrn->playback_top;
 
