@@ -1,0 +1,101 @@
+name: Classic Mac OS 7 Build
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          xvfb \
+          xdotool \
+          hfsutils \
+          x11-utils \
+          scrot \
+          imagemagick
+    
+    - name: Build Mini vMac from source
+      run: |
+        git clone --depth 1 https://github.com/fstark/minivmac.git minivmac-src
+        cd minivmac-src
+        gcc setup/tool.c -o setup_t
+        ./setup_t -m II -mem 8M -t mc64 -hres 512 -vres 342 -speed a -magnify 0 -depth 0 > setup.sh
+        bash setup.sh
+        make
+        cp minivmac ../minivmac
+        chmod +x ../minivmac
+        cd ..
+        echo "Mini vMac built successfully"
+        ./minivmac -h || echo "Mini vMac binary ready"
+    
+    - name: Extract version
+      id: version
+      run: |
+        if [[ $GITHUB_REF == refs/tags/v* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/v}
+        else
+          VERSION=dev-$(git rev-parse --short HEAD)
+        fi
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Building version: $VERSION"
+    
+    - name: Build MacFlim with Xvfb
+      working-directory: release
+      run: |
+        # Start Xvfb
+        Xvfb :99 -screen 0 1280x1024x24 &
+        export DISPLAY=:99
+        sleep 2
+        
+        # Run build
+        MINIVMAC=../minivmac bash cicd.sh
+      timeout-minutes: 10
+    
+    - name: Capture debug info on failure
+      if: failure()
+      run: |
+        export DISPLAY=:99
+        mkdir -p debug
+        scrot debug/screen.png || true
+        xwininfo -root -tree > debug/windows.txt || true
+        ps aux | grep minivmac > debug/processes.txt || true
+        echo "Debug artifacts captured"
+    
+    - name: Upload debug artifacts
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: debug-${{ github.run_id }}
+        path: debug/
+        retention-days: 30
+    
+    - name: Upload release disk artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: MacFlim-${{ env.VERSION }}-Release
+        path: release/MacFlim-v${{ env.VERSION }}-Release.dsk
+        retention-days: 90
+    
+    - name: Create GitHub Release
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: release/MacFlim-v${{ env.VERSION }}-Release.dsk
+        draft: false
+        prerelease: false
+        generate_release_notes: true
