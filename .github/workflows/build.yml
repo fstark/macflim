@@ -26,7 +26,9 @@ jobs:
           hfsutils \
           x11-utils \
           scrot \
-          imagemagick
+          imagemagick \
+          libx11-dev \
+          libxext-dev
     
     - name: Build Mini vMac from source
       run: |
