@@ -26,15 +26,14 @@ jobs:
           hfsutils \
           x11-utils \
           scrot \
-          imagemagick \
-          gobjc
+          imagemagick
     
     - name: Build Mini vMac from source
       run: |
         git clone --depth 1 https://github.com/fstark/minivmac.git minivmac-src
         cd minivmac-src
         gcc setup/tool.c -o setup_t
-        ./setup_t -m II -mem 8M -t mc64 -hres 512 -vres 342 -speed a -magnify 0 -depth 0 > setup.sh
+        ./setup_t -m II -mem 8M -t lx64 -hres 512 -vres 342 -speed a -magnify 0 -depth 0 > setup.sh
         bash setup.sh
         make
         cp minivmac ../minivmac
