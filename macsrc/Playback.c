@@ -13,6 +13,7 @@
 #include "Preferences.h"
 #include "Flim.h"
 #include "Buffer.h"
+#include "Mouse.h"
 
 #include <stdio.h>
 
