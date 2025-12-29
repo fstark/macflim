@@ -306,10 +306,23 @@ if [ -z "$CICD_INTERACTIVE" ]; then
     
     echo "  Mac should shut down..."
     
-    # Wait for Mini vMac to exit (or force exit if needed)
+    # Wait for Mini vMac to exit (with timeout)
     echo ""
     echo "Waiting for Mini vMac to exit..."
-    wait $MINIVMAC_PID || true
+    
+    # Wait up to 5 seconds for Mini vMac to exit
+    timeout=5
+    elapsed=0
+    while kill -0 $MINIVMAC_PID 2>/dev/null && [ $elapsed -lt $timeout ]; do
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
+    
+    if kill -0 $MINIVMAC_PID 2>/dev/null; then
+        echo -e "${YELLOW}Warning: Mini vMac did not exit after ${timeout}s, forcing shutdown${NC}"
+        kill $MINIVMAC_PID 2>/dev/null || true
+        sleep 2
+    fi
     
 else
     echo -e "${YELLOW}Interactive mode - you can manually test the build${NC}"

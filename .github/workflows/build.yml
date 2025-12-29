@@ -68,6 +68,14 @@ jobs:
         MINIVMAC=../minivmac bash cicd.sh
       timeout-minutes: 10
     
+    - name: Upload debug screenshots
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: debug-screenshots-${{ github.run_id }}
+        path: release/debug-*.png
+        if-no-files-found: warn
+    
     - name: Capture debug info on failure
       if: failure()
       run: |
