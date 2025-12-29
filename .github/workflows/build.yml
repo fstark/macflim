@@ -39,7 +39,7 @@ jobs:
         bash setup.sh
         make
         cp minivmac ../release/minivmac
-        cp MacIIx.ROM ../release/vMac.ROM
+        cp MacIIx.ROM ../release/MacIIx.ROM
         chmod +x ../release/minivmac
         cd ..
     
