@@ -1,7 +1,9 @@
 name: Create Release
 
 on:
-  push:
+  workflow_dispatch:
+  # Temporarily disabled - uncomment to re-enable
+  # push:
     tags:
       - 'v*'  # Triggers on version tags like v1.0.0
 

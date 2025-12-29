@@ -26,7 +26,8 @@ jobs:
           hfsutils \
           x11-utils \
           scrot \
-          imagemagick
+          imagemagick \
+          gobjc
     
     - name: Build Mini vMac from source
       run: |
