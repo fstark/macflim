@@ -155,16 +155,13 @@ send_key() {
         echo "  (Screenshot failed)"
     SCREENSHOT_COUNTER=$((SCREENSHOT_COUNTER + 1))
     
-    # Ensure window has focus (without --sync which hangs)
-    xdotool windowactivate $WINDOW_ID || {
-        echo -e "${RED}Error: Failed to activate window${NC}"
-        return 1
-    }
+    # Try to ensure window has focus (may fail in xvfb, but that's OK)
+    xdotool windowactivate $WINDOW_ID 2>/dev/null || true
     
     # Small delay to ensure activation
     sleep 0.2
     
-    # Send the keystroke
+    # Send the keystroke directly to window (works even without activation)
     xdotool key --window $WINDOW_ID "$key" || {
         echo -e "${RED}Error: Failed to send key $key${NC}"
         return 1
@@ -261,8 +258,8 @@ if [ -z "$CICD_INTERACTIVE" ]; then
     echo "Waiting for System 7.1 to boot (2 seconds)..."
     sleep 2
     
-    # Activate window to ensure focus (without --sync which hangs)
-    xdotool windowactivate $WINDOW_ID
+    # Try to activate window (may fail in xvfb, but that's OK)
+    xdotool windowactivate $WINDOW_ID 2>/dev/null || echo "  (Window activation not supported in headless mode)"
     sleep 1
     
     # Open Sources folder
