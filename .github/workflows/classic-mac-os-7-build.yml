@@ -30,6 +30,19 @@ jobs:
           libx11-dev \
           libxext-dev
     
+    - name: Validate macsrc sync with disk image
+      run: |
+        cd macsrc
+        ./doit.sh
+        cd ..
+        if ! git diff --quiet; then
+          echo "ERROR: macsrc/ is not in sync with MacFlim Source Code.dsk"
+          echo "Run 'macsrc/doit.sh' locally and commit the changes."
+          git diff
+          exit 1
+        fi
+        echo "✓ macsrc/ is in sync with disk image"
+    
     - name: Build Mini vMac from source
       run: |
         git clone --depth 1 https://github.com/fstark/minivmac.git minivmac-src

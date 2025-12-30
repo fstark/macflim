@@ -1,4 +1,4 @@
-name: Build macOS (ARM64)
+name: Build macOS (ARM64) [disabled]
 
 on:
   # Temporarily disabled while working on Windows build

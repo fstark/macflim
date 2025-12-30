@@ -1,0 +1,20 @@
+#!/bin/bash
+# Pre-commit hook to keep macsrc/ in sync with MacFlim Source Code.dsk
+
+# Check if .dsk file is staged for commit
+if git diff --cached --name-only | grep -q "MacFlim Source Code.dsk"; then
+    echo "Detected MacFlim Source Code.dsk changes, running extraction..."
+    
+    # Run extraction script
+    cd macsrc
+    ./doit.sh
+    cd ..
+    
+    # Stage any changes in macsrc/
+    git add macsrc/
+    
+    echo "Extraction complete, macsrc/ changes staged automatically."
+fi
+
+# Allow commit to proceed
+exit 0

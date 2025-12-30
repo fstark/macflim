@@ -40,3 +40,6 @@ flimmaker
 
 # Due to git being confused by symlinks
 compare/
+
+tmp/
+*.mp4
