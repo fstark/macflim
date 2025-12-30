@@ -2,11 +2,11 @@ name: Build macOS (x86_64)
 
 on:
   # Temporarily disabled while working on Windows build
-  workflow_dispatch:
   # push:
   #   branches: [ main, generators ]
   # pull_request:
   #   branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build-macos-x86:
