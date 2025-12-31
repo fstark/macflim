@@ -53,8 +53,8 @@ jobs:
         
         echo "Updating $FORMULA_FILE..."
         
-        # Update URL line
-        sed -i "s|url \"https://github.com/fstark/macflim/archive/refs/tags/.*\.tar\.gz\"|url \"https://github.com/fstark/macflim/archive/refs/tags/$VERSION.tar.gz\"|" "$FORMULA_FILE"
+        # Update URL line to use custom release tarball
+        sed -i "s|url \"https://github.com/fstark/macflim/.*\.tar\.gz\"|url \"https://github.com/fstark/macflim/releases/download/$VERSION/macflim-$VERSION.tar.gz\"|" "$FORMULA_FILE"
         
         # Update SHA256 line
         sed -i "s|sha256 \".*\"|sha256 \"$SHA256\"|" "$FORMULA_FILE"

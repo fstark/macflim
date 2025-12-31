@@ -3,9 +3,7 @@
 Just add a tag like:
 
 ```
-git tag -a v2.0.12 -m "- Added version embedding in binaries/about panels/disk names/flims (use --version in flimmaker to display version)
-- The macsrc/ directory is now always in sync with the content of the disk image and contains fixed filenames
-- Release is now fully automated and produce both windows and vintage Mac binaries (so hopefully easier to update)"
+git tag -a v2.0.12 -m "Release v2.0.12"
 git push origin v2.0.12
 ```
 
@@ -29,3 +27,4 @@ This is a consolidation release. Not all the code was in sync with the repositor
 Everything is now completely automated, so hopefully I'll be able to do more regular updates.
 
 Also, binaries now know what version they are. Use ``flimmaker --version`` to check version, or the about panel of MacFlim.
+
