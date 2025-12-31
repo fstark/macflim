@@ -1,3 +1,5 @@
+[this has been superceed by the automated release process documented in "release/README.md"]
+
 Release process:
 
 1 - Update Notes.c

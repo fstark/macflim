@@ -22,7 +22,7 @@ jobs:
       id: tag_message
       run: |
         # Get tag annotation (not commit message)
-        TAG_MESSAGE=$(git for-each-ref --format='%(contents:body)' refs/tags/${{ github.ref_name }})
+        TAG_MESSAGE=$(git for-each-ref --format='%(contents)' refs/tags/${{ github.ref_name }})
         if [ -n "$TAG_MESSAGE" ]; then
           echo "HAS_MESSAGE=true" >> $GITHUB_OUTPUT
           # Escape for multiline in GitHub Actions

@@ -1,0 +1,64 @@
+name: Update Homebrew Formula
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  update-formula:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Extract version from release
+      id: version
+      run: |
+        VERSION="${{ github.event.release.tag_name }}"
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Updating Homebrew formula for version: $VERSION"
+    
+    - name: Download release tarball and calculate SHA256
+      id: tarball
+      run: |
+        TARBALL_URL="https://github.com/fstark/macflim/archive/refs/tags/${{ steps.version.outputs.VERSION }}.tar.gz"
+        echo "Downloading $TARBALL_URL..."
+        curl -sL "$TARBALL_URL" -o macflim.tar.gz
+        SHA256=$(sha256sum macflim.tar.gz | awk '{print $1}')
+        echo "SHA256=$SHA256" >> $GITHUB_OUTPUT
+        echo "Calculated SHA256: $SHA256"
+    
+    - name: Checkout homebrew-macflim repository
+      uses: actions/checkout@v4
+      with:
+        repository: fstark/homebrew-macflim
+        token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        path: homebrew-macflim
+    
+    - name: Update formula
+      run: |
+        cd homebrew-macflim
+        FORMULA_FILE="Formula/flimmaker.rb"
+        VERSION="${{ steps.version.outputs.VERSION }}"
+        SHA256="${{ steps.tarball.outputs.SHA256 }}"
+        
+        echo "Updating $FORMULA_FILE..."
+        
+        # Update URL line
+        sed -i "s|url \"https://github.com/fstark/macflim/archive/refs/tags/.*\.tar\.gz\"|url \"https://github.com/fstark/macflim/archive/refs/tags/$VERSION.tar.gz\"|" "$FORMULA_FILE"
+        
+        # Update SHA256 line
+        sed -i "s|sha256 \".*\"|sha256 \"$SHA256\"|" "$FORMULA_FILE"
+        
+        echo "Formula updated:"
+        grep -A 1 "url \"https://github.com/fstark/macflim" "$FORMULA_FILE"
+    
+    - name: Commit and push changes
+      run: |
+        cd homebrew-macflim
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add Formula/flimmaker.rb
+        git commit -m "Update flimmaker to ${{ steps.version.outputs.VERSION }}"
+        git push
+        echo "✓ Homebrew formula updated successfully"
