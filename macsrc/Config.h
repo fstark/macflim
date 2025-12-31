@@ -5,7 +5,9 @@
 //	VERSION OF THE PLAYER
 //	-------------------------------------------------------------------
 
-#define VERSION_STRING	"\p2.0a"
+#ifndef VERSION
+#include "Version.h"
+#endif
 
 //	-------------------------------------------------------------------
 //	Those #defines configures the player binary

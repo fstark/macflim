@@ -132,7 +132,10 @@ void write_data(const char *file, uint8_t *data, size_t len)
     fclose(f);
 }
 
-const char *version = "2.0.0";
+#ifndef VERSION
+#define VERSION "dev-unknown"
+#endif
+const char *version = VERSION;
 
 #include <iostream>
 #include <chrono>

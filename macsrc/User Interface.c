@@ -424,11 +424,13 @@ void UserInterfaceInit()
 static void DoAboutMenuItem( Boolean option )
 {
 	short itemHit;
-
+	Str255 version;
 	DialogPtr theDialog = GetNewDialog( kDLOGAboutID, NULL, (WindowPtr)-1 );
 	CheckPtr( theDialog, "kDLOGAboutID" );
 
-	ParamText( VERSION_STRING, "", "", "" );
+	version[0] = 0;
+	StrCatPC( version, VERSION );
+	ParamText( version, "", "", "" );
 	UtilPlaceWindow( theDialog, 0.2 );
 	ShowWindow( theDialog );
 	ModalDialog( NULL, &itemHit );

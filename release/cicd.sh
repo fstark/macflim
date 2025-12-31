@@ -106,6 +106,14 @@ echo "Copying source files to :Sources:..."
 # First, unmount temporarily to access host filesystem
 humount
 
+# Generate Version.h with dynamic version
+echo "Generating Version.h with version ${VERSION}..."
+cat > /tmp/Version.h << EOF
+// MacFlim Version
+// This file is generated during CI builds with the git tag version
+#define VERSION "${VERSION}"
+EOF
+
 # Re-mount and copy each file
 for file in "$SOURCE_DIR"/*; do
     if [ -f "$file" ]; then
@@ -116,6 +124,12 @@ for file in "$SOURCE_DIR"/*; do
         humount
     fi
 done
+
+# Copy generated Version.h (overwriting the development version)
+echo "  Copying generated Version.h..."
+hmount "$BUILD_DISK"
+hcopy /tmp/Version.h ":Sources:Version.h"
+humount
 
 # Mount again for the next step
 hmount "$BUILD_DISK"

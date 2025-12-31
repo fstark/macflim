@@ -8,6 +8,9 @@ MAKEFLAGS += -j16
 # Compiler needs to support C++20
 CPP = g++-14
 
+# Extract version from git or use fallback
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev-unknown")
+
 # Detect operating system and architecture
 UNAME_S := $(shell uname -s)
 UNAME_M := $(shell uname -m)
@@ -32,7 +35,7 @@ else
 endif
 
 # Default compilation flags
-CXXFLAGS += -Wall -Werror -Wno-deprecated-declarations -Wextra -std=c++2a
+CXXFLAGS += -Wall -Werror -Wno-deprecated-declarations -Wextra -std=c++2a -DVERSION=\"$(VERSION)\"
 
 # Default compile target
 all: release

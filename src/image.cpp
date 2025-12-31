@@ -880,10 +880,6 @@ void old_quantize( image &dest, const image &source, const image &previous, floa
 //  ------------------------------------------------------------------
 void error_diffusion( image &dest, const image &source, const image &previous, float stability, const dither_algorithm &algo, float bleed, bool two_ways )
 {
-    // old_quantize( dest, source, previous, stability );
-
-    // return;
-
     dest = source;
 
     int dir = 1;

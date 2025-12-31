@@ -25,6 +25,19 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
+    - name: Extract version
+      id: version
+      run: |
+        if [[ $GITHUB_REF == refs/tags/v* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/v}
+        else
+          VERSION=dev-$(git rev-parse --short HEAD)
+        fi
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Building version: $VERSION"
+      shell: bash
+      
     - name: Setup MSYS2
       uses: msys2/setup-msys2@v2
       with:
@@ -111,7 +124,7 @@ jobs:
     - name: Set artifact name
       id: set-artifact-name
       run: |
-        echo "name=flimmaker-windows-x86_64" >> $GITHUB_OUTPUT
+        echo "name=flimmaker-windows-x86_64-${{ env.VERSION }}" >> $GITHUB_OUTPUT
     
     - name: Upload artifact
       uses: actions/upload-artifact@v4
