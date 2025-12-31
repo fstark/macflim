@@ -114,22 +114,37 @@ cat > /tmp/Version.h << EOF
 #define VERSION "${VERSION}"
 EOF
 
-# Re-mount and copy each file
+# Create temporary directory for filename conversion
+TEMP_SRC_DIR="/tmp/macsrc_temp_$$"
+mkdir -p "$TEMP_SRC_DIR"
+
+# Copy files and convert π back to hfsutils-expected encoding
+echo "Preparing source files with proper encoding for HFS..."
 for file in "$SOURCE_DIR"/*; do
+    if [ -f "$file" ]; then
+        filename=$(basename "$file")
+        # Convert π character to \xB9 for hfsutils compatibility
+        converted_filename=$(echo "$filename" | sed 's/π/\xB9/g')
+        cp "$file" "$TEMP_SRC_DIR/$converted_filename"
+    fi
+done
+
+# Copy generated Version.h to temp dir
+cp /tmp/Version.h "$TEMP_SRC_DIR/Version.h"
+
+# Copy all files from temp directory to Mac disk
+for file in "$TEMP_SRC_DIR"/*; do
     if [ -f "$file" ]; then
         filename=$(basename "$file")
         echo "  Copying $filename..."
         hmount "$BUILD_DISK"
-        hcopy "$(pwd)/$file" ":Sources:"
+        hcopy "$file" ":Sources:"
         humount
     fi
 done
 
-# Copy generated Version.h (overwriting the development version)
-echo "  Copying generated Version.h..."
-hmount "$BUILD_DISK"
-hcopy /tmp/Version.h ":Sources:Version.h"
-humount
+# Clean up temp directory
+rm -rf "$TEMP_SRC_DIR"
 
 # Mount again for the next step
 hmount "$BUILD_DISK"
