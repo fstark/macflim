@@ -62,3 +62,24 @@ jobs:
         git commit -m "Update flimmaker to ${{ steps.version.outputs.VERSION }}"
         git push
         echo "✓ Homebrew formula updated successfully"
+
+  test-homebrew-install:
+    needs: update-formula
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            arch: ARM64
+          - os: macos-15-intel
+            arch: x86_64
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Install from Homebrew tap
+      run: |
+        brew tap fstark/macflim
+        brew install flimmaker
+    
+    - name: Verify installation
+      run: |
+        flimmaker --version
+        echo "✓ flimmaker installed and working on ${{ matrix.os }} (${{ matrix.arch }})"
