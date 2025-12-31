@@ -28,11 +28,13 @@ jobs:
     - name: Download release tarball and calculate SHA256
       id: tarball
       run: |
-        TARBALL_URL="https://github.com/fstark/macflim/archive/refs/tags/${{ steps.version.outputs.VERSION }}.tar.gz"
+        VERSION="${{ steps.version.outputs.VERSION }}"
+        TARBALL_URL="https://github.com/fstark/macflim/releases/download/$VERSION/macflim-$VERSION.tar.gz"
         echo "Downloading $TARBALL_URL..."
         curl -sL "$TARBALL_URL" -o macflim.tar.gz
         SHA256=$(sha256sum macflim.tar.gz | awk '{print $1}')
         echo "SHA256=$SHA256" >> $GITHUB_OUTPUT
+        echo "Calculated SHA256: $SHA256"
         echo "Calculated SHA256: $SHA256"
     
     - name: Checkout homebrew-macflim repository

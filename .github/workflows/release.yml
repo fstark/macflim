@@ -76,6 +76,38 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
 
+  create-source-tarball:
+    runs-on: ubuntu-latest
+    needs: create-release
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Create VERSION file
+      run: |
+        echo "${{ github.ref_name }}" > VERSION
+        echo "Created VERSION file with: ${{ github.ref_name }}"
+    
+    - name: Create source tarball
+      run: |
+        cd ..
+        tar -czf macflim-${{ github.ref_name }}.tar.gz \
+          --exclude=.git \
+          --exclude=.github \
+          macflim/
+        mv macflim-${{ github.ref_name }}.tar.gz macflim/
+        cd macflim
+        ls -lh macflim-${{ github.ref_name }}.tar.gz
+    
+    - name: Upload tarball to release
+      uses: softprops/action-gh-release@v1
+      with:
+        draft: true
+        files: macflim-${{ github.ref_name }}.tar.gz
+    
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+
   # Temporarily disabled - macOS-13 is retired
   # test-builds:
   #   runs-on: ${{ matrix.os }}

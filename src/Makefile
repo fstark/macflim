@@ -8,8 +8,8 @@ MAKEFLAGS += -j16
 # Compiler needs to support C++20
 CPP = g++-14
 
-# Extract version from git or use fallback
-VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev-unknown")
+# Extract version: VERSION file first, then git describe, then fallback
+VERSION ?= $(shell cat VERSION 2>/dev/null || git describe --tags --always --dirty 2>/dev/null || echo "dev-unknown")
 
 # Detect operating system and architecture
 UNAME_S := $(shell uname -s)

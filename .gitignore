@@ -1,6 +1,9 @@
 # Prerequisites
 *.d
 
+# VERSION file (generated at release time)
+VERSION
+
 # Compiled Object files
 *.slo
 *.lo
