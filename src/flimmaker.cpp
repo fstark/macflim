@@ -556,6 +556,10 @@ int main(int argc, char **argv)
                 argc--;
                 argv++;
                 custom_profile.set_silent(bool_from(*argv));
+            } else if (!strcmp(*argv, "--version"))
+            {
+                std::cout << "flimmaker version " << version << "\n";
+                return EXIT_SUCCESS;
             } else
             {
                 std::cerr << "Unknown argument " << *argv << "\n";

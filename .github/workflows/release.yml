@@ -12,6 +12,24 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch tags and history
+
+    - name: Extract tag message
+      id: tag_message
+      run: |
+        TAG_MESSAGE=$(git tag -l --format='%(contents)' ${{ github.ref_name }})
+        if [ -n "$TAG_MESSAGE" ]; then
+          echo "HAS_MESSAGE=true" >> $GITHUB_OUTPUT
+          # Escape for multiline in GitHub Actions
+          {
+            echo 'MESSAGE<<EOF'
+            echo "$TAG_MESSAGE"
+            echo EOF
+          } >> $GITHUB_OUTPUT
+        else
+          echo "HAS_MESSAGE=false" >> $GITHUB_OUTPUT
+        fi
 
     - name: Create Release
       id: create_release
@@ -22,6 +40,7 @@ jobs:
         tag_name: ${{ github.ref }}
         release_name: Release ${{ github.ref }}
         body: |
+          ${{ steps.tag_message.outputs.HAS_MESSAGE == 'true' && format('## What''s New{0}{0}{1}{0}', '\n', steps.tag_message.outputs.MESSAGE) || '' }}
           ## Installation
           
           ### Classic Mac OS
@@ -39,7 +58,7 @@ jobs:
           ### Windows
           Download the `flimmaker-windows-x86_64-${{ github.ref_name }}.zip` file below, extract it, and run `flimmaker.exe`.
           All required DLLs are included.
-        draft: false
+        draft: true
         prerelease: false
     
     outputs:
