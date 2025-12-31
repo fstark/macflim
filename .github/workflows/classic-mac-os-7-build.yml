@@ -3,7 +3,6 @@ name: Classic Mac OS 7 Build
 on:
   push:
     branches: [ main ]
-    tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -119,12 +118,3 @@ jobs:
         name: MacFlim-${{ env.VERSION }}-Release
         path: release/MacFlim-v${{ env.VERSION }}-Release.dsk
         retention-days: 90
-    
-    - name: Create GitHub Release
-      if: startsWith(github.ref, 'refs/tags/v')
-      uses: softprops/action-gh-release@v1
-      with:
-        files: release/MacFlim-v${{ env.VERSION }}-Release.dsk
-        draft: false
-        prerelease: false
-        generate_release_notes: true

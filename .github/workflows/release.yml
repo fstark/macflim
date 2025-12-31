@@ -34,40 +34,44 @@ jobs:
         else
           echo "HAS_MESSAGE=false" >> $GITHUB_OUTPUT
         fi
+    
+    - name: Prepare release body
+      id: release_body
+      run: |
+        {
+          echo 'BODY<<EOF'
+          if [ "${{ steps.tag_message.outputs.HAS_MESSAGE }}" == "true" ]; then
+            echo "## What's New"
+            echo ""
+            echo "${{ steps.tag_message.outputs.MESSAGE }}"
+            echo ""
+          fi
+          echo "## Installation"
+          echo ""
+          echo "### Classic Mac OS"
+          echo "Download the \`MacFlim-${{ github.ref_name }}-Release.dsk\` disk image below."
+          echo "It countains the MacFlim application and HyperCard XCMD."
+          echo ""
+          echo "### macOS"
+          echo "Install via Homebrew:"
+          echo "\`\`\`"
+          echo "brew install fstark/macflim/flimmaker"
+          echo "\`\`\`"
+          echo ""
+          echo "This will build from source and install all dependencies automatically."
+          echo ""
+          echo "### Windows"
+          echo "Download the \`flimmaker-windows-x86_64-${{ github.ref_name }}.zip\` file below, extract it, and run \`flimmaker.exe\`."
+          echo "All required DLLs are included."
+          echo EOF
+        } >> $GITHUB_OUTPUT
 
-    - name: Create Release
+    - name: Create Draft Release
       id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        body: |
-          ${{ steps.tag_message.outputs.HAS_MESSAGE == 'true' && format('## What''s New
-
-          {0}
-
-          ', steps.tag_message.outputs.MESSAGE) || '' }}
-          ## Installation
-          
-          ### Classic Mac OS
-          Download the `MacFlim-${{ github.ref_name }}-Release.dsk` disk image below.
-          It countains the MacFlim application and HyperCard XCMD.
-          
-          ### macOS
-          Install via Homebrew:
-          ```
-          brew install fstark/macflim/flimmaker
-          ```
-          
-          This will build from source and install all dependencies automatically.
-          
-          ### Windows
-          Download the `flimmaker-windows-x86_64-${{ github.ref_name }}.zip` file below, extract it, and run `flimmaker.exe`.
-          All required DLLs are included.
         draft: true
-        prerelease: false
+        body: ${{ steps.release_body.outputs.BODY }}
     
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
@@ -128,14 +132,10 @@ jobs:
         ls -lh flimmaker-windows-x86_64-${{ github.ref_name }}.zip
         
     - name: Upload to Release
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./flimmaker-windows-x86_64-${{ github.ref_name }}.zip
-        asset_name: flimmaker-windows-x86_64-${{ github.ref_name }}.zip
-        asset_content_type: application/zip
+        draft: true
+        files: ./flimmaker-windows-x86_64-${{ github.ref_name }}.zip
 
   attach-classic-mac-release:
     runs-on: ubuntu-latest
@@ -148,11 +148,7 @@ jobs:
         path: classic-mac/
         
     - name: Upload to Release
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./classic-mac/MacFlim-v${{ needs.build-classic-mac.outputs.version }}-Release.dsk
-        asset_name: MacFlim-${{ github.ref_name }}-Release.dsk
-        asset_content_type: application/octet-stream
+        draft: true
+        files: ./classic-mac/MacFlim-v${{ needs.build-classic-mac.outputs.version }}-Release.dsk
