@@ -18,7 +18,8 @@ jobs:
     - name: Extract tag message
       id: tag_message
       run: |
-        TAG_MESSAGE=$(git tag -l --format='%(contents)' ${{ github.ref_name }})
+        # Get tag annotation (not commit message)
+        TAG_MESSAGE=$(git for-each-ref --format='%(contents:body)' refs/tags/${{ github.ref_name }})
         if [ -n "$TAG_MESSAGE" ]; then
           echo "HAS_MESSAGE=true" >> $GITHUB_OUTPUT
           # Escape for multiline in GitHub Actions
@@ -40,7 +41,11 @@ jobs:
         tag_name: ${{ github.ref }}
         release_name: Release ${{ github.ref }}
         body: |
-          ${{ steps.tag_message.outputs.HAS_MESSAGE == 'true' && format('## What''s New{0}{0}{1}{0}', '\n', steps.tag_message.outputs.MESSAGE) || '' }}
+          ${{ steps.tag_message.outputs.HAS_MESSAGE == 'true' && format('## What''s New
+
+          {0}
+
+          ', steps.tag_message.outputs.MESSAGE) || '' }}
           ## Installation
           
           ### Classic Mac OS
