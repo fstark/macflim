@@ -64,30 +64,31 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
 
-  test-builds:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: macos-latest
-            arch: arm64
-          - os: macos-13
-            arch: x86_64
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Install dependencies
-      run: |
-        brew install gcc@14
-        brew install ffmpeg
-      
-    - name: Test build on ${{ matrix.arch }}
-      run: |
-        cd src
-        make clean
-        make release CPP=g++-14
-        make test
+  # Temporarily disabled - macOS-13 is retired
+  # test-builds:
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       include:
+  #         - os: macos-latest
+  #           arch: arm64
+  #         - os: macos-13
+  #           arch: x86_64
+  #   steps:
+  #   - name: Checkout code
+  #     uses: actions/checkout@v4
+  #     
+  #   - name: Install dependencies
+  #     run: |
+  #       brew install gcc@14
+  #       brew install ffmpeg
+  #     
+  #   - name: Test build on ${{ matrix.arch }}
+  #     run: |
+  #       cd src
+  #       make clean
+  #       make release CPP=g++-14
+  #       make test
 
   build-windows:
     needs: create-release
@@ -135,7 +136,7 @@ jobs:
     - name: Download Classic Mac artifact
       uses: actions/download-artifact@v4
       with:
-        name: MacFlim-${{ github.ref_name }}-Release
+        name: MacFlim-${{ needs.build-classic-mac.outputs.version }}-Release
         path: classic-mac/
         
     - name: Upload to Release
@@ -144,6 +145,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./classic-mac/MacFlim-${{ github.ref_name }}-Release.dsk
+        asset_path: ./classic-mac/MacFlim-v${{ needs.build-classic-mac.outputs.version }}-Release.dsk
         asset_name: MacFlim-${{ github.ref_name }}-Release.dsk
         asset_content_type: application/octet-stream

@@ -8,11 +8,17 @@ on:
     branches: [ main ]
   workflow_dispatch:
   workflow_call:
+    outputs:
+      version:
+        description: "Version string for the build"
+        value: ${{ jobs.build.outputs.version }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     
     steps:
     - name: Checkout code
