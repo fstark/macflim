@@ -15,7 +15,13 @@ jobs:
     - name: Extract version from release
       id: version
       run: |
-        VERSION="${{ github.event.release.tag_name }}"
+        if [ -n "${{ github.event.release.tag_name }}" ]; then
+          # Triggered by release publication
+          VERSION="${{ github.event.release.tag_name }}"
+        else
+          # Triggered manually - get latest release
+          VERSION=$(curl -s https://api.github.com/repos/fstark/macflim/releases/latest | jq -r .tag_name)
+        fi
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
         echo "Updating Homebrew formula for version: $VERSION"
     
