@@ -660,6 +660,8 @@ static eIterateChoice ApplyPlay( LibraryPtr lib, int index, Str255 fName, short 
 	playback_x = (gScreen->width - fi->width)/2;
 	playback_y = (gScreen->height - fi->height)/2;
 
+	ScreenClear( gScreen );
+
 	do
 	{
 		playResult = PlayFlim( flim, playback_x, playback_y, silent );
