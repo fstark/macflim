@@ -8,15 +8,19 @@ on:
   workflow_dispatch:
   workflow_call:
     outputs:
-      artifact-name:
-        description: "Name of the uploaded artifact"
-        value: ${{ jobs.build-windows.outputs.artifact-name }}
+      artifact-name-x64:
+        description: "Name of the uploaded x64 artifact"
+        value: ${{ jobs.build-windows-x64.outputs.artifact-name }}
+      artifact-name-arm64:
+        description: "Name of the uploaded ARM64 artifact"
+        value: ${{ jobs.build-windows-arm64.outputs.artifact-name }}
 
 jobs:
-  build-windows:
+  build-windows-x64:
     runs-on: windows-latest
     outputs:
       artifact-name: ${{ steps.set-artifact-name.outputs.name }}
+      version: ${{ steps.version.outputs.version }}
     defaults:
       run:
         shell: msys2 {0}
@@ -93,8 +97,8 @@ jobs:
     - name: Create README
       run: |
         cat > flimmaker-windows/README.txt << 'EOF'
-        flimmaker for Windows
-        =====================
+        flimmaker for Windows x86_64
+        =============================
         
         This is a portable version of flimmaker built for Windows x86_64.
         
@@ -131,4 +135,118 @@ jobs:
       with:
         name: ${{ steps.set-artifact-name.outputs.name }}
         path: flimmaker-windows/
+        retention-days: 90
+
+  build-windows-arm64:
+    runs-on: windows-latest
+    outputs:
+      artifact-name: ${{ steps.set-artifact-name.outputs.name }}
+    defaults:
+      run:
+        shell: msys2 {0}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Extract version
+      id: version
+      run: |
+        if [[ $GITHUB_REF == refs/tags/v* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/v}
+        else
+          VERSION=dev-$(git rev-parse --short HEAD)
+        fi
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Building version: $VERSION"
+      shell: bash
+      
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: CLANGARM64
+        update: true
+        install: >-
+          mingw-w64-clang-aarch64-clang
+          mingw-w64-clang-aarch64-ffmpeg
+          make
+          diffutils
+      
+    - name: Build flimmaker for ARM64
+      run: |
+        cd src
+        make clean
+        make release CPP=clang++
+        
+    - name: Package with DLLs
+      run: |
+        mkdir -p flimmaker-windows-arm64
+        cp flimmaker.exe flimmaker-windows-arm64/
+        
+        # Find all DLL dependencies
+        echo "=== Finding DLL dependencies ==="
+        ldd flimmaker.exe | grep -i clangarm64 | awk '{print $3}' | while read dll; do
+          if [ -f "$dll" ]; then
+            echo "Copying: $(basename $dll)"
+            cp "$dll" flimmaker-windows-arm64/
+          fi
+        done
+        
+        # Also check for any additional FFmpeg DLLs that might be needed
+        MINGW_PREFIX="/clangarm64"
+        cp "$MINGW_PREFIX/bin/avformat-"*.dll flimmaker-windows-arm64/ 2>/dev/null || true
+        cp "$MINGW_PREFIX/bin/avcodec-"*.dll flimmaker-windows-arm64/ 2>/dev/null || true
+        cp "$MINGW_PREFIX/bin/avutil-"*.dll flimmaker-windows-arm64/ 2>/dev/null || true
+        cp "$MINGW_PREFIX/bin/swresample-"*.dll flimmaker-windows-arm64/ 2>/dev/null || true
+        cp "$MINGW_PREFIX/bin/swscale-"*.dll flimmaker-windows-arm64/ 2>/dev/null || true
+        
+        # Copy Clang runtime DLLs
+        cp "$MINGW_PREFIX/bin/libc++.dll" flimmaker-windows-arm64/ 2>/dev/null || true
+        cp "$MINGW_PREFIX/bin/libunwind.dll" flimmaker-windows-arm64/ 2>/dev/null || true
+        
+        echo "=== Package contents ==="
+        ls -lh flimmaker-windows-arm64/
+        
+    - name: Create README
+      run: |
+        cat > flimmaker-windows-arm64/README.txt << 'EOF'
+        flimmaker for Windows ARM64
+        ============================
+        
+        This is a portable version of flimmaker built for Windows ARM64 (Snapdragon, etc).
+        
+        Usage:
+        ------
+        1. Extract this entire folder somewhere on your computer
+        2. Open Command Prompt or PowerShell in this folder
+        3. Run: flimmaker.exe --help
+        
+        Example:
+        --------
+        flimmaker.exe input.mp4 --flim output.flim
+        
+        Requirements:
+        -------------
+        - Windows 11 ARM64 or later
+        - All required DLLs are included in this package
+        
+        Build Information:
+        ------------------
+        Built from: https://github.com/fstark/macflim
+        Commit: ${{ github.sha }}
+        Date: ${{ github.event.head_commit.timestamp }}
+        
+        EOF
+        
+    - name: Set artifact name
+      id: set-artifact-name
+      run: |
+        echo "name=flimmaker-windows-arm64-${{ env.VERSION }}" >> $GITHUB_OUTPUT
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.set-artifact-name.outputs.name }}
+        path: flimmaker-windows-arm64/
         retention-days: 90

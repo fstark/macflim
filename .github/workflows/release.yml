@@ -62,7 +62,10 @@ jobs:
           echo "This will build from source and install all dependencies automatically."
           echo ""
           echo "### Windows"
-          echo "Download the \`flimmaker-windows-x86_64-${{ github.ref_name }}.zip\` file below, extract it, and run \`flimmaker.exe\`."
+          echo "Download the appropriate version for your system:"
+          echo "- \`flimmaker-windows-x86_64-${{ github.ref_name }}.zip\` for Intel/AMD processors"
+          echo "- \`flimmaker-windows-arm64-${{ github.ref_name }}.zip\` for ARM64 processors (Snapdragon, etc.)"
+          echo ""
           echo "All required DLLs are included."
           echo EOF
         } >> $GITHUB_OUTPUT
@@ -147,15 +150,21 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-windows]
     steps:
-    - name: Download Windows artifact
+    - name: Download Windows x64 artifact
       uses: actions/download-artifact@v4
       with:
-        name: ${{ needs.build-windows.outputs.artifact-name }}
-        path: flimmaker-windows/
+        name: ${{ needs.build-windows.outputs.artifact-name-x64 }}
+        path: flimmaker-windows-x64/
+    
+    - name: Download Windows ARM64 artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ needs.build-windows.outputs.artifact-name-arm64 }}
+        path: flimmaker-windows-arm64/
         
-    - name: Create ZIP archive
+    - name: Create x64 ZIP archive
       run: |
-        cd flimmaker-windows
+        cd flimmaker-windows-x64
         # Update README with version info
         echo "" >> README.txt
         echo "Version: ${{ github.ref_name }}" >> README.txt
@@ -163,12 +172,25 @@ jobs:
         zip -r ../flimmaker-windows-x86_64-${{ github.ref_name }}.zip .
         cd ..
         ls -lh flimmaker-windows-x86_64-${{ github.ref_name }}.zip
+    
+    - name: Create ARM64 ZIP archive
+      run: |
+        cd flimmaker-windows-arm64
+        # Update README with version info
+        echo "" >> README.txt
+        echo "Version: ${{ github.ref_name }}" >> README.txt
+        echo "Commit: ${{ github.sha }}" >> README.txt
+        zip -r ../flimmaker-windows-arm64-${{ github.ref_name }}.zip .
+        cd ..
+        ls -lh flimmaker-windows-arm64-${{ github.ref_name }}.zip
         
     - name: Upload to Release
       uses: softprops/action-gh-release@v1
       with:
         draft: true
-        files: ./flimmaker-windows-x86_64-${{ github.ref_name }}.zip
+        files: |
+          ./flimmaker-windows-x86_64-${{ github.ref_name }}.zip
+          ./flimmaker-windows-arm64-${{ github.ref_name }}.zip
 
   attach-classic-mac-release:
     runs-on: ubuntu-latest
