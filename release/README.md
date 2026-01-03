@@ -23,3 +23,4 @@ Example of what's new section:
 ## What's New?
 
 Fixed memory allocation of Mini MacFlim for Multi-Finder execution (default of 350K is too low as prefs wants 300K of buffers)
+First version of the Windows ARM package
