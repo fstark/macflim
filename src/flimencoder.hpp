@@ -38,6 +38,8 @@ protected:
     bool group_ = true;
     std::string filters_ = "c";
     bool bars_ = true;              //  Do we put black bars around the image?
+    double anchor_x_ = 0.5;         //  Horizontal anchor: 0=left, 0.5=center, 1=right
+    double anchor_y_ = 0.5;         //  Vertical anchor: 0=top, 0.5=center, 1=bottom
 
     image::dithering dither_ = image::error_diffusion;
     std::string error_algorithm_ = "floyd";
@@ -74,6 +76,12 @@ public:
 
     bool bars() const { return bars_; }
     void set_bars( bool bars ) { bars_ = bars; }
+
+    double anchor_x() const { return anchor_x_; }
+    void set_anchor_x( double anchor_x ) { anchor_x_ = anchor_x; }
+
+    double anchor_y() const { return anchor_y_; }
+    void set_anchor_y( double anchor_y ) { anchor_y_ = anchor_y; }
 
     image::dithering dither() const { return dither_; }
     bool set_dither( std::string dither )
@@ -468,7 +476,7 @@ std::cout << "POSTER INDEX: " << poster_index << "\n";
 
 
         image poster_small( 128, 86 );
-        copy( poster_small, poster_image, false );
+        copy( poster_small, poster_image, false, 0.5, 0.5 );
 
         image previous( poster_small.W(), poster_small.H() );
         fill( previous, 0 );
@@ -500,7 +508,7 @@ std::cout << "POSTER INDEX: " << poster_index << "\n";
 
         flimcompressor fc{ profile_.width(), profile_.height(), images_, audio_samples_, fps_ / profile_.fps_ratio(), subtitles_ };
 
-        fc.compress( profile_.stability(), profile_.byterate(), profile_.group(), profile_.filters(), watermark_, profile_.codecs(), profile_.dither(), profile_.bars(), profile_.error_algorithm(), profile_.error_bleed(), profile_.error_bidi() );
+        fc.compress( profile_.stability(), profile_.byterate(), profile_.group(), profile_.filters(), watermark_, profile_.codecs(), profile_.dither(), profile_.bars(), profile_.anchor_x(), profile_.anchor_y(), profile_.error_algorithm(), profile_.error_bleed(), profile_.error_bidi() );
 
         if (out_pattern_!="") delete_files_of_pattern( out_pattern_ );
         if (diff_pattern_!="") delete_files_of_pattern( diff_pattern_ );

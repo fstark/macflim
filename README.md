@@ -241,6 +241,10 @@ The width of the generated flim, in pixels. Width must be a multiple of 32, and 
 
 The height of the generated flim, in pixels. Width * height must be less than 65536 (#### or 32768 -- check). Default height is 342.
 
+### --anchor-x **percent** and --anchor-y **percent**
+
+When resizing to the target width and height, a part of the image is cropped. ``--anchor-x`` and ``--anchor-y`` specify where this crop occurs. Imagine your source material is 512x256 and you have a ``--width 256 --height 256``. If anchor-x is 0, then the left column of the output will correspond to the left column of the input. If anchor-x is 1, then the right column of the output will be the right column of the input. If anchor-x is 0.5, the center of the image will match. You can use any value from 0 to 1 for ``anchor-x`` and ``anchor-y``.
+
 ## Moar options!
 
 Digging into the dirty details, here are the options that control the encoding itself (i.e., the options driven by the profile).

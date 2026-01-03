@@ -161,7 +161,7 @@ class ffmpeg_reader : public input_reader
                 video_image_->set_luma(video_dst_data_[0]);
 
                 images_.push_back(*default_image_);
-                copy(images_.back(), *video_image_);
+                copy(images_.back(), *video_image_, true, 0.5, 0.5);
             }
             #ifdef VERBOSE
             else

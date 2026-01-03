@@ -168,6 +168,8 @@ public:
     {
         const bool bars_;                   //  Do we add bars when we resize the added image?  (note: maybe do some image normalizer class that does all conversion work)
         const std::string filters_;         //  Filters to apply
+        const double anchor_x_;             //  Horizontal anchor for image extraction
+        const double anchor_y_;             //  Vertical anchor for image extraction
         const image::dithering dither_;     //  The kind of dither to apply
         const std::string error_algorithm_; //  Error algo
         const double stability_;            //  Stability of the transform
@@ -206,7 +208,7 @@ public:
         void dither( const image &img )
         {
             image resized_image( W_, H_ );   //  note: was 512x342
-            copy( resized_image, img, dp_.bars_ );
+            copy( resized_image, img, dp_.bars_, dp_.anchor_x_, dp_.anchor_y_ );
 
                 //  We filter the image of the "right size", for things like corners, etc...
             image filtered_image = filter( resized_image, dp_.filters_.c_str() );
@@ -500,7 +502,7 @@ public:
     };
 
 
-    void compress( double stability, size_t byterate, bool group, const std::string &filters, const std::string &watermark, const std::vector<codec_spec> &codecs, image::dithering dither, bool bars, const std::string error_algorithm, float error_bleed, bool error_bidi )
+    void compress( double stability, size_t byterate, bool group, const std::string &filters, const std::string &watermark, const std::vector<codec_spec> &codecs, image::dithering dither, bool bars, double anchor_x, double anchor_y, const std::string error_algorithm, float error_bleed, bool error_bidi )
     {
         image previous( W_, H_ );
         fill( previous, 0 );
@@ -512,7 +514,7 @@ static bool generate_initial_frame = false;
         {
             //  #### We painfully extract what the first image should be
             image img0( W_,H_ );
-            copy( img0, images_[0], bars );
+            copy( img0, images_[0], bars, 0.5, 0.5 );
             image img1 = filter( img0, filters.c_str() );
             image img2( W_,H_ );
             if (dither==image::error_diffusion)
@@ -527,7 +529,7 @@ static bool generate_initial_frame = false;
 
 
 #ifndef OLD_VERSION
-    DitheringParameters dp { bars, filters, dither, error_algorithm, stability, error_bleed, error_bidi, watermark };
+    DitheringParameters dp { bars, filters, anchor_x, anchor_y, dither, error_algorithm, stability, error_bleed, error_bidi, watermark };
     Ditherer d{ previous, dp };
     SubtitleBurner sb{  subtitles_ };
     CompressorHelper ch{ d, sb, codecs, fps_, byterate, audio_, group };
@@ -558,7 +560,7 @@ static bool generate_initial_frame = false;
             image dest( W_, H_ );
 
             image source_image( W_, H_ );   //  note: was 512x342
-            copy( source_image, big_image, bars );
+            copy( source_image, big_image, bars, 0.5, 0.5 );
 
             image img = filter( source_image, filters.c_str() );
 

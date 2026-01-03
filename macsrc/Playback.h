@@ -118,7 +118,7 @@ ePlayResult PlayFlimFileLoop( Str255 fName, short vRefNum, long dirID, eFileAPI 
 //void FlimSoundStop( void );
 //void FlimSoundStart( void );
 
-ePlayResult FlimSyncPlay( FlimPtr flim );
+ePlayResult FlimSyncPlay( FlimPtr flim, short playback_left, short playback_top );
 
 BlockPtr FlimInitBlock( FlimPtr flim, Ptr block );
 void FlimDispos( FlimPtr flim );

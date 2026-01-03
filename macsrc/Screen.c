@@ -388,6 +388,12 @@ void ScreenClearVideo( ScreenPtr scrn )
 	long total;
 
 	assert( ccb!=NULL, "No CCB" );
+	
+	//	If we don't have offset table, we are full screen
+	if (ccb->offsets32==NULL)
+	{	ScreenClear( scrn );
+		return ;
+	}
 
 	total = (long)(ccb->source_width32)*ccb->source_height;
 	

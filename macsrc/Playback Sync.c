@@ -22,7 +22,7 @@
 //	Usefull to debug display code or measure raw performance
 //	-------------------------------------------------------------------
 
-ePlayResult FlimSyncPlay( FlimPtr flim )
+ePlayResult FlimSyncPlay( FlimPtr flim, short playback_left, short playback_top )
 {
 	unsigned char *data;
 	long tick;
@@ -39,7 +39,7 @@ ePlayResult FlimSyncPlay( FlimPtr flim )
 
 	flimInfo = FlimGetInfo( flim );
 
-	if (!ScreenVideoPrepare( gScreen, flimInfo->width, flimInfo->height, -1, "?" ))
+	if (!ScreenVideoPrepare( gScreen, playback_left, playback_top, flimInfo->width, flimInfo->height, flimInfo->codecs, FlimGetName( flim ) ))
 		return kCodecError;
 
 	ScreenClear( gScreen );

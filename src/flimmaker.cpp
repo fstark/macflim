@@ -169,6 +169,8 @@ void usage(const std::string name)
     std::cerr << "    --fps-ratio BOOLEAN         : ratio of images from the source to drop.\n";
     std::cerr << "    --group BOOLEAN             : if true, packs ticks together to present screen updates at the same rate as the input media. Only works on a se30.\n";
     std::cerr << "    --bars BOOLEAN              : if false, image is zoomed in so there are no black bars.\n";
+    std::cerr << "    --anchor-x FLOAT            : horizontal anchor point for image extraction (0=left, 0.5=center, 1=right)\n";
+    std::cerr << "    --anchor-y FLOAT            : vertical anchor point for image extraction (0=top, 0.5=center, 1=bottom)\n";
     std::cerr << "    --dither DITHER             : specifies the type of dithering to be used.\n";
     std::cerr << "      'ordered' will use a 4x4 ordered dither matrix.\n";
     std::cerr << "      'error' will use an error diffusion algorithm.\n";
@@ -466,6 +468,16 @@ int main(int argc, char **argv)
                 argc--;
                 argv++;
                 poster_ts = seconds_from_string(*argv);
+            } else if (!strcmp(*argv, "--anchor-x"))
+            {
+                argc--;
+                argv++;
+                custom_profile.set_anchor_x(atof(*argv));
+            } else if (!strcmp(*argv, "--anchor-y"))
+            {
+                argc--;
+                argv++;
+                custom_profile.set_anchor_y(atof(*argv));
             } else if (!strcmp(*argv, "--audio"))
             {
                 argc--;

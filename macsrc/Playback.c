@@ -285,7 +285,7 @@ ePlayResult PlayFlim( FlimPtr flim, short playback_left, short playback_top, Boo
 	assert( gScreen!=NULL, "Call InitPlayback" );
 	
 #ifdef SYNCPLAY
-	return FlimSyncPlay( flim );
+	return FlimSyncPlay( flim, playback_left, playback_top );
 #endif
 
 	if (!MachineIsBlackAndWhite())
@@ -293,6 +293,7 @@ ePlayResult PlayFlim( FlimPtr flim, short playback_left, short playback_top, Boo
 
 	flimInfo = FlimGetInfo( flim );
 	if (!ScreenVideoPrepare( gScreen, playback_left, playback_top, flimInfo->width, flimInfo->height, flimInfo->codecs, FlimGetName( flim ) ))
+
 		return kCodecError;
 
 	//	Hack to check the buffer size
@@ -308,7 +309,6 @@ ePlayResult PlayFlim( FlimPtr flim, short playback_left, short playback_top, Boo
 
 	theResult = kDone;
 
-	
 	ScreenClearVideo( gScreen );
 	DrawMouse();	//	The mouse has been removed, put it back
 
@@ -451,14 +451,14 @@ ePlayResult PlayFlimFile( Str255 fName, short vRefNum, long dirID, eFileAPI api,
 
 	do
 	{
-#ifdef SYNCPLAY
-		theResult = FlimSyncPlay( flim );
-		goto close;
-#endif
-
 		fi = FlimGetInfo( flim );
 		playback_x = (gScreen->width - fi->width)/2;
 		playback_y = (gScreen->height - fi->height)/2;
+
+#ifdef SYNCPLAY
+		theResult = FlimSyncPlay( flim, playback_x, playback_y );
+		goto close;
+#endif
 
 		theResult = PlayFlim( flim, playback_x, playback_y, silent );
 	}

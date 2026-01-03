@@ -634,6 +634,10 @@ typedef enum
 static Boolean sZoomed;		//	Did we execute the "zoom-in code" ?
 static Rect sZoomedRect;	//	From which rect did we "zoom-in" (for the zoom-out) ?
 
+//	#### Unclear why we use PlayFlim and not PlayFlimFile here.
+//	(I suspect because we don't want to reopen the flim file if we loop
+//	but this is what PlayFlimFileLoop is for but there seem to be some confusion
+//	between kDone and kRestart -- or at least it seems...)
 static eIterateChoice ApplyPlay( LibraryPtr lib, int index, Str255 fName, short vRefNum, long dirID )
 {
 	FlimPtr flim = LibraryOpenFlim( lib, index );

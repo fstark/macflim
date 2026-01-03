@@ -77,5 +77,5 @@ void error_diffusion( image &dest, const image &source, const image &previous, f
 bool read_image( image &result, const char *file );
 void write_image( const char *file, const image &img );
 
-void copy( image &destination, const image &source, bool black_bars=true );
+void copy( image &destination, const image &source, bool black_bars=true, double anchor_x=0.5, double anchor_y=0.5 );
 

@@ -12,18 +12,13 @@ void copy_image( image &dest, const image &source )
 }
 
 
-void copy_scale( image &destination, const image &source, double scale )
+void copy_scale( image &destination, const image &source, double scale, double anchor_x=0.5, double anchor_y=0.5 )
 {
-    int centersw = source.W()/2;
-    int centersh = source.H()/2;
-    int centerdw = destination.W()/2;
-    int centerdh = destination.H()/2;
-
     for (size_t y=0;y!=destination.H();y++)
         for (size_t x=0;x!=destination.W();x++)
         {
-            int fromx = centersw-(centerdw-(int)x)*scale;
-            int fromy = centersh-(centerdh-(int)y)*scale;
+            int fromx = anchor_x * (source.W() - scale * destination.W()) + (int)x * scale;
+            int fromy = anchor_y * (source.H() - scale * destination.H()) + (int)y * scale;
 
             if (fromx<0 || (int)source.W()<=fromx || fromy<0 || (int)source.H()<=fromy)
                 destination.at( x, y ) = 0; // #### Should be settable (used by --bars)
@@ -35,7 +30,7 @@ void copy_scale( image &destination, const image &source, double scale )
 //  ------------------------------------------------------------------
 //  Resize an image
 //  ------------------------------------------------------------------
-void copy( image &destination, const image &source, bool black_bars )
+void copy( image &destination, const image &source, bool black_bars, double anchor_x, double anchor_y )
 {
     if (destination.W()==source.W() && destination.H()==source.H())
     {
@@ -50,9 +45,9 @@ void copy( image &destination, const image &source, bool black_bars )
     // copy_scale( destination, source, (scalex + scaley)/2 );
 
     if (!black_bars)
-        copy_scale( destination, source, std::min( scalex, scaley ) );
+        copy_scale( destination, source, std::min( scalex, scaley ), anchor_x, anchor_y );
     else
-        copy_scale( destination, source, std::max( scalex, scaley ) );
+        copy_scale( destination, source, std::max( scalex, scaley ), anchor_x, anchor_y );
 }
 
 //  ------------------------------------------------------------------
