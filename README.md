@@ -10,9 +10,14 @@ MacFlim brings movie playing abilities to the most popular members of the Macint
 
 # WHAT'S NEW?
 
-The windows version of ``flimmaker`` is available in the [releases!](https://github.com/fstark/macflim/releases)!
+The windows version of ``flimmaker`` is available in the [releases!](https://github.com/fstark/macflim/releases), both for x86_64 and arm64! (I don't have feedback confirming that the ARM version works, so feel free to drop a line in the discord if it does)
 
-``flimmaker`` can now be installed on OSX with a simple ``brew install fstark/macflim/flimmaker``!
+``flimmaker`` can now be installed on OSX with a simple ``brew install fstark/macflim/flimmaker``, both on x86_64 and arm64!
+
+The Mac application is also available as a ``.sit`` file, if that's easier for you!
+
+And you can join the [Discord server](https://discord.gg/vuCUhCZhCZ) if you need support, wants to discuss MacFlim, or just want to say how great it is :-)
+
 
 ## What is in the repository?
 
