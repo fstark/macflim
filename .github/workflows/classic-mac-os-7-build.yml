@@ -34,7 +34,8 @@ jobs:
           scrot \
           imagemagick \
           libx11-dev \
-          libxext-dev
+          libxext-dev \
+          unar
     
     - name: Validate macsrc sync with disk image
       run: |

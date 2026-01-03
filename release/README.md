@@ -14,14 +14,17 @@ This will build everything and create a draft release. Go to [github and publish
 Delete the local tag and the global one
 
 ``
-git tag -d v2.0.14
-git push --delete origin v2.0.14
+git tag -d v2.0.15
+git push --delete origin v2.0.15
 ``
 
 Example of what's new section:
 
 ## What's New?
 
-This releases fixes a playback bug: flims of the same size as the screen were crashing the machine with MacFlim (the XCMD was ok).
+Added a Stuff 1.5.1 archive to the release artifcats, containing MacFlim, Mini MacFlim and MacFlim XCMD
 
-Added ``--anchor-x and --anchor-y`` options to ``flimmaker`` to control the crop window. See README.md for details.
+Note:
+* Mini MacFlim is broken in this release
+* The MacFlim XCMD is missing the demo flim
+* There are no flims included in the .sit
