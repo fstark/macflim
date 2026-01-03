@@ -49,8 +49,9 @@ jobs:
           echo "## Installation"
           echo ""
           echo "### Classic Mac OS"
-          echo "Download the \`MacFlim-${{ github.ref_name }}-Release.dsk\` disk image below."
-          echo "It countains the MacFlim application and HyperCard XCMD."
+          echo "Download the \`MacFlim ${{ github.ref_name }}.dsk\` disk image or \`MacFlim ${{ github.ref_name }}.sit\` StuffIt archive below."
+          echo "The disk image contains the MacFlim application and HyperCard XCMD."
+          echo "The StuffIt archive contains the same applications and can be extracted on a classic Mac."
           echo ""
           echo "### macOS"
           echo "Install via Homebrew:"
@@ -144,7 +145,7 @@ jobs:
   
   attach-windows-release:
     runs-on: ubuntu-latest
-    needs: [create-release, build-windows]
+    needs: [build-windows]
     steps:
     - name: Download Windows artifact
       uses: actions/download-artifact@v4
@@ -171,16 +172,24 @@ jobs:
 
   attach-classic-mac-release:
     runs-on: ubuntu-latest
-    needs: [create-release, build-classic-mac]
+    needs: [build-classic-mac]
     steps:
-    - name: Download Classic Mac artifact
+    - name: Download Classic Mac disk artifact
       uses: actions/download-artifact@v4
       with:
-        name: MacFlim-${{ needs.build-classic-mac.outputs.version }}-Release
+        name: MacFlim-${{ needs.build-classic-mac.outputs.version }}-Release-dsk
+        path: classic-mac/
+    
+    - name: Download Classic Mac StuffIt artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: MacFlim-${{ needs.build-classic-mac.outputs.version }}-Release-sit
         path: classic-mac/
         
     - name: Upload to Release
       uses: softprops/action-gh-release@v1
       with:
         draft: true
-        files: ./classic-mac/MacFlim-v${{ needs.build-classic-mac.outputs.version }}-Release.dsk
+        files: |
+          ./classic-mac/MacFlim v${{ needs.build-classic-mac.outputs.version }}.dsk
+          ./classic-mac/MacFlim v${{ needs.build-classic-mac.outputs.version }}.sit

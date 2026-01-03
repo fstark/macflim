@@ -63,6 +63,28 @@ jobs:
         chmod +x ../release/minivmac
         cd ..
     
+    - name: Build sit and macunpack tools
+      run: |
+        # Build sit tool
+        git clone --depth 1 https://github.com/fstark/sit.git sit-src
+        cd sit-src
+        make
+        cp sit ../release/sit
+        chmod +x ../release/sit
+        cd ..
+        
+        # Build macunpack tool
+        git clone --depth 1 https://github.com/fstark/macutils.git macutils-src
+        cd macutils-src/macunpack
+        make
+        cp macunpack ../../release/macunpack
+        chmod +x ../../release/macunpack
+        cd ../..
+        
+        # Verify tools are available
+        ./release/sit --version || echo "sit tool ready"
+        ./release/macunpack --version || echo "macunpack tool ready"
+    
     - name: Extract version
       id: version
       run: |
@@ -82,6 +104,9 @@ jobs:
         Xvfb :99 -screen 0 1280x1024x24 &
         export DISPLAY=:99
         sleep 2
+        
+        # Add tools to PATH
+        export PATH="$PWD:$PATH"
         
         # Run build (minivmac is now in release/ directory)
         MINIVMAC=./minivmac bash cicd.sh
@@ -116,6 +141,13 @@ jobs:
     - name: Upload release disk artifact
       uses: actions/upload-artifact@v4
       with:
-        name: MacFlim-${{ env.VERSION }}-Release
-        path: release/MacFlim-v${{ env.VERSION }}-Release.dsk
+        name: MacFlim-${{ env.VERSION }}-Release-dsk
+        path: release/MacFlim v${{ env.VERSION }}.dsk
+        retention-days: 90
+    
+    - name: Upload StuffIt archive artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: MacFlim-${{ env.VERSION }}-Release-sit
+        path: release/MacFlim v${{ env.VERSION }}.sit
         retention-days: 90

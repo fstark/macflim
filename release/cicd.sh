@@ -37,6 +37,10 @@ cleanup() {
         echo "Cleaning up Mini vMac process..."
         kill $MINIVMAC_PID 2>/dev/null || true
     fi
+    # Clean up temp files and directories
+    rm -rf MacFlim/ 2>/dev/null || true
+    rm -f *.tmp 2>/dev/null || true
+    # rm -f "$RELEASE_BUILD_DISK" 2>/dev/null || true
 }
 
 # Colors for output
@@ -51,6 +55,7 @@ echo -e "${GREEN}=== MacFlim CI/CD Build ===${NC}"
 CICD_DISK="MacFlim CICD.dsk"
 RELEASE_DISK="MacFlim Release Master.dsk"
 BUILD_DISK="MacFlim-CICD-build.dsk"
+RELEASE_BUILD_DISK="MacFlim-Release-build.dsk"
 SOURCE_DIR="../macsrc"  # Source is in parent directory
 VERSION="${VERSION:-dev}"  # Get version from environment or default to 'dev'
 
@@ -82,6 +87,18 @@ if ! command -v xdotool &> /dev/null; then
     exit 1
 fi
 
+if ! command -v macunpack &> /dev/null; then
+    echo -e "${RED}Error: macunpack not found${NC}"
+    echo "Install with: sudo apt-get install macutils (or brew install macutils)"
+    exit 1
+fi
+
+if ! command -v sit &> /dev/null; then
+    echo -e "${RED}Error: sit not found${NC}"
+    echo "Install with: sudo apt-get install stuffit (or build from source)"
+    exit 1
+fi
+
 # Clean up any previous build disk
 if [ -f "$BUILD_DISK" ]; then
     echo "Removing previous build disk..."
@@ -91,6 +108,10 @@ fi
 # Step 1: Duplicate the CICD disk
 echo "Duplicating CICD disk..."
 cp "$CICD_DISK" "$BUILD_DISK"
+
+# Duplicate the Release Master disk for this build
+echo "Duplicating Release Master disk..."
+cp "$RELEASE_DISK" "$RELEASE_BUILD_DISK"
 
 # Step 2: Mount the build disk and copy source files
 echo "Mounting build disk..."
@@ -256,7 +277,7 @@ if [ -z "$CICD_INTERACTIVE" ]; then
     echo "Automated build mode - using xdotool to control emulator"
     
     # Launch Mini vMac in background
-    "$MINIVMAC" "$BUILD_DISK" "$RELEASE_DISK" &
+    "$MINIVMAC" "$BUILD_DISK" &
     MINIVMAC_PID=$!
     
     echo "Mini vMac PID: $MINIVMAC_PID"
@@ -369,85 +390,124 @@ if [ -z "$CICD_INTERACTIVE" ]; then
     echo ""
     echo "Extracting compiled binaries..."
     
-    # Mount the build disk to check for binaries
+    # Mount the build disk once and extract all binaries
     hmount "$BUILD_DISK"
     
-    # Check if binaries exist
+    # Check if binaries exist and extract them
     MACFLIM_EXISTS=0
     MINI_EXISTS=0
+    XCMD_EXISTS=0
     
     # Try to copy MacFlim binary
-    if hcopy -m ":Sources:MacFlim" "/tmp/MacFlim.tmp" 2>/dev/null; then
+    if hcopy -m ":Sources:MacFlim" "./MacFlim.tmp" 2>/dev/null; then
         MACFLIM_EXISTS=1
-        rm -f "/tmp/MacFlim.tmp"
         echo -e "${GREEN}✓ MacFlim binary found${NC}"
     else
         echo -e "${RED}✗ MacFlim binary not found${NC}"
     fi
     
     # Try to copy Mini MacFlim binary
-    if hcopy -m ":Sources:Mini MacFlim" "/tmp/MiniMacFlim.tmp" 2>/dev/null; then
+    if hcopy -m ":Sources:Mini MacFlim" "./MiniMacFlim.tmp" 2>/dev/null; then
         MINI_EXISTS=1
-        rm -f "/tmp/MiniMacFlim.tmp"
         echo -e "${GREEN}✓ Mini MacFlim binary found${NC}"
     else
         echo -e "${RED}✗ Mini MacFlim binary not found${NC}"
     fi
     
+    # Try to copy MacFlim XCMD binary
+    if hcopy -m ":Sources:MacFlim XCMD" "./MacFlimXCMD.tmp" 2>/dev/null; then
+        XCMD_EXISTS=1
+        echo -e "${GREEN}✓ MacFlim XCMD binary found${NC}"
+    else
+        echo -e "${RED}✗ MacFlim XCMD binary not found${NC}"
+    fi
+    
     humount
     
-    if [ $MACFLIM_EXISTS -eq 1 ] && [ $MINI_EXISTS -eq 1 ]; then
+    if [ $MACFLIM_EXISTS -eq 1 ] && [ $MINI_EXISTS -eq 1 ] && [ $XCMD_EXISTS -eq 1 ]; then
         echo ""
-        echo "Copying binaries to Release Master disk..."
+        echo "Copying binaries to Release build disk..."
         
-        # Mount both disks to copy binaries
-        hmount "$BUILD_DISK"
+        # Mount release build disk once and copy all binaries
+        hmount "$RELEASE_BUILD_DISK"
         
-        # Copy MacFlim
-        hcopy -m ":Sources:MacFlim" "./MacFlim.tmp"
-        
-        humount
-        
-        hmount "$RELEASE_DISK"
         hcopy -m "./MacFlim.tmp" ":MacFlim"
-        rm -f "./MacFlim.tmp"
-        
-        humount
-        
-        # Mount again for Mini MacFlim
-        hmount "$BUILD_DISK"
-        hcopy -m ":Sources:Mini MacFlim" "./MiniMacFlim.tmp"
-        humount
-        
-        hmount "$RELEASE_DISK"
         hcopy -m "./MiniMacFlim.tmp" ":Mini MacFlim"
-        rm -f "./MiniMacFlim.tmp"
+        hcopy -m "./MacFlimXCMD.tmp" ":MacFlim XCMD"
         
         humount
         
-        echo -e "${GREEN}✓ Binaries copied to Release Master disk${NC}"
+        # Clean up temp files
+        rm -f "./MacFlim.tmp" "./MiniMacFlim.tmp" "./MacFlimXCMD.tmp"
+        
+        echo -e "${GREEN}✓ Binaries copied to Release build disk${NC}"
         
         # Create versioned copy of release disk
         if [ "$VERSION" != "dev" ]; then
             echo "Creating versioned release disk..."
-            cp "$RELEASE_DISK" "MacFlim-v${VERSION}-Release.dsk"
-            echo "Created: MacFlim-v${VERSION}-Release.dsk"
+            cp "$RELEASE_BUILD_DISK" "MacFlim v${VERSION}.dsk"
+            echo "Created: MacFlim v${VERSION}.dsk"
+        fi
+                # Create .sit archive
+        echo ""
+        echo "Creating StuffIt archive..."
+        
+        # Create temporary directory for extraction
+        mkdir -p MacFlim
+        cd MacFlim
+        
+        # Mount release build disk and extract binaries
+        hmount "../$RELEASE_BUILD_DISK"
+        hcopy -m ":MacFlim" MacFlim.bin
+        hcopy -m ":Mini MacFlim" "Mini MacFlim.bin"
+        hcopy -m ":MacFlim XCMD" "MacFlim XCMD.bin"
+        humount
+        
+        # Unpack binaries from MacBinary format
+        macunpack -3 "MacFlim.bin"
+        macunpack -3 "Mini MacFlim.bin"
+        macunpack -3 "MacFlim XCMD.bin"
+        
+        # Remove .bin files
+        rm *.bin
+        
+        cd ..
+        
+        # Create .sit archive
+        SIT_NAME="MacFlim v${VERSION}.sit"
+        if sit -o "$SIT_NAME" "MacFlim/MacFlim" "MacFlim/Mini MacFlim" "MacFlim/MacFlim XCMD"; then
+            echo -e "${GREEN}✓ Created: $SIT_NAME${NC}"
+            
+            # List archive contents for logging
+            echo ""
+            echo "Archive contents:"
+            lsar "$SIT_NAME"
+            echo ""
+        else
+            echo -e "${RED}✗ Failed to create .sit archive${NC}"
+            cd ..
+            rm -rf MacFlim
+            exit 1
         fi
         
-        # Clean up build disk
+        # Clean up extraction directory
+        rm -rf MacFlim
+                # Clean up build disk
         echo "Cleaning up..."
-        rm -f "$BUILD_DISK"
+#        rm -f "$BUILD_DISK"
         
         echo ""
         echo -e "${GREEN}=== Build Successful ===${NC}"
         if [ "$VERSION" != "dev" ]; then
-            echo "Release disk: MacFlim-v${VERSION}-Release.dsk"
+            echo "Release disk: MacFlim v${VERSION}.dsk"
+            echo "StuffIt archive: MacFlim v${VERSION}.sit"
         fi
         exit 0
     else
         echo ""
         echo -e "${RED}=== Build Failed ===${NC}"
         echo "One or more binaries were not generated"
+        echo "Expected: MacFlim, Mini MacFlim, MacFlim XCMD"
         echo "Build disk preserved as: $BUILD_DISK"
         exit 1
     fi
@@ -462,4 +522,3 @@ fi
 # - Use hattrib to set Finder icon positions for pixel-perfect layout
 # - Edit version resources in binaries (may require custom tools)
 # - Timestamp checking to verify fresh compilation
-# - GitHub Actions integration
