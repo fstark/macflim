@@ -284,9 +284,9 @@ Using ``--group false`` will have the player display partially constructed frame
 
 The Mac Plus and the Mac SE profiles are not grouped, while the SE/30 is.
 
-### --dither **ordered**|**error**
+### --dither **ordered**|**blue**|**error**
 
-The conversion of the image to black and white can be done using either the ``ordered`` dithering or the ``error`` one. In general, the ``error`` ordering will give the typical original *MacFlim* look. However, the number of pixels changing from one frame to another is higher, so it uses more bandwidth for encoding. Also, if the flim is composed of only large flat regular zones, ``ordered`` encoding may give nicer results than ``error``.
+The conversion of the image to black and white can be done using ``ordered`` dithering, ``blue`` noise dithering, or ``error`` diffusion. In general, the ``error`` ordering will give the typical original *MacFlim* look. However, the number of pixels changing from one frame to another is higher, so it uses more bandwidth for encoding. The ``blue`` noise option provides a good tradeoff between the regularity of ``ordered`` and the crispness of ``error``, using a 256×256 texture for high-quality results. For flims composed of only large flat regular zones, ``ordered`` encoding may give the nicest results.
 
 The Mac Plus uses ``ordered`` encoding by default while the Mac SE and SE/30 use the ``error`` encoding (floyd algorithm).
 
