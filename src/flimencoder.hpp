@@ -90,8 +90,10 @@ public:
             dither_ = image::ordered;
         else if (dither=="error")
             dither_ = image::error_diffusion;
+        else if (dither=="blue")
+            dither_ = image::blue_noise;
         else
-            throw "Wrong dither option : only 'ordered' and 'error' are supported";
+            throw "Wrong dither option : only 'ordered', 'error', and 'blue' are supported";
         return true;
     }
     void set_dither( image::dithering dither ) { dither_ = dither; }
@@ -289,6 +291,8 @@ public:
                 return "error";
             case image::ordered:
                 return "ordered";
+            case image::blue_noise:
+                return "blue";
         }
         return "???";
     }
@@ -326,10 +330,11 @@ class flimencoder
 {
     const encoding_profile &profile_;
 
-    std::string out_pattern_ = "out-%06d.pgm"s;
-    std::string change_pattern_ = "change-%06d.pgm"s;
-    std::string diff_pattern_ = "diff-%06d.pgm"s;
-    std::string target_pattern_ = "target-%06d.pgm"s;
+    std::string pgm_poster_pattern_ = "out-%06d.pgm"s;  // Poster thumbnails
+    std::string pgm_pattern_ = ""s;  // Actual encoded frames
+    std::string pgm_change_pattern_ = "change-%06d.pgm"s;
+    std::string pgm_diff_pattern_ = "diff-%06d.pgm"s;
+    std::string pgm_target_pattern_ = "target-%06d.pgm"s;
 
     std::vector<subtitle> subtitles_;
 
@@ -440,10 +445,11 @@ public:
     void set_comment( const std::string comment ) { comment_ = comment; }
     void set_cover( size_t cover_begin, size_t cover_end ) { cover_begin_ = cover_begin; cover_end_ = cover_end; }
     void set_watermark( const std::string watermark ) { watermark_ = watermark; }
-    void set_out_pattern( const std::string pattern ) { out_pattern_ = pattern; }
-    void set_diff_pattern( const std::string pattern ) { diff_pattern_ = pattern; }
-    void set_change_pattern( const std::string pattern ) { change_pattern_ = pattern; }
-    void set_target_pattern( const std::string pattern ) { target_pattern_ = pattern; }
+    void set_pgm_poster_pattern( const std::string pattern ) { pgm_poster_pattern_ = pattern; }
+    void set_pgm_pattern( const std::string pattern ) { pgm_pattern_ = pattern; }
+    void set_diff_pattern( const std::string pattern ) { pgm_diff_pattern_ = pattern; }
+    void set_change_pattern( const std::string pattern ) { pgm_change_pattern_ = pattern; }
+    void set_target_pattern( const std::string pattern ) { pgm_target_pattern_ = pattern; }
     void set_poster_ts( double poster_ts ) { poster_ts_ = poster_ts; }
     void set_subtitles( const std::vector<subtitle> &subtitles ) { subtitles_ = subtitles; /* yes, it is a copy */ }
 
@@ -510,10 +516,11 @@ std::cout << "POSTER INDEX: " << poster_index << "\n";
 
         fc.compress( profile_.stability(), profile_.byterate(), profile_.group(), profile_.filters(), watermark_, profile_.codecs(), profile_.dither(), profile_.bars(), profile_.anchor_x(), profile_.anchor_y(), profile_.error_algorithm(), profile_.error_bleed(), profile_.error_bidi() );
 
-        if (out_pattern_!="") delete_files_of_pattern( out_pattern_ );
-        if (diff_pattern_!="") delete_files_of_pattern( diff_pattern_ );
-        if (change_pattern_!="") delete_files_of_pattern( change_pattern_ );
-        if (target_pattern_!="") delete_files_of_pattern( target_pattern_ );
+        if (pgm_poster_pattern_!="") delete_files_of_pattern( pgm_poster_pattern_ );
+        if (pgm_pattern_!="") delete_files_of_pattern( pgm_pattern_ );
+        if (pgm_diff_pattern_!="") delete_files_of_pattern( pgm_diff_pattern_ );
+        if (pgm_change_pattern_!="") delete_files_of_pattern( pgm_change_pattern_ );
+        if (pgm_target_pattern_!="") delete_files_of_pattern( pgm_target_pattern_ );
 
         auto frames = fc.get_frames();
 
@@ -529,14 +536,14 @@ std::cout << "POSTER INDEX: " << poster_index << "\n";
         std::vector<uint8_t> toc;
         auto out_toc = std::back_inserter( toc );
 
-        if (out_pattern_!="")   //  generate posters samples
+        if (pgm_poster_pattern_!="")   //  generate posters samples
         {
             for (auto &poster_source:images_)
             {
                 static int img = 1;
                 char buffer[1024];
 
-                sprintf( buffer, out_pattern_.c_str(), img++ );
+                sprintf( buffer, pgm_poster_pattern_.c_str(), img++ );
                 image poster_small( 128, 86 );
                 copy( poster_small, poster_source, false );
 
@@ -556,9 +563,9 @@ std::cout << "POSTER INDEX: " << poster_index << "\n";
             {
                 static int img = 1;
                 char buffer[1024];
-                if (out_pattern_!="")
+                if (pgm_poster_pattern_!="")
                 {
-                    sprintf( buffer, out_pattern_.c_str(), img );
+                    sprintf( buffer, pgm_poster_pattern_.c_str(), img );
                     // auto logimg = current_frame->result.as_image();
                     // write_image( buffer, logimg );
         // image poster_small( 128, 86 );
@@ -572,22 +579,28 @@ std::cout << "POSTER INDEX: " << poster_index << "\n";
         // write_image( buffer, poster_small_bw );
 
                 }
-                if (diff_pattern_!="")
+                if (pgm_pattern_!="")
                 {
-                    sprintf( buffer, diff_pattern_.c_str(), img );
+                    sprintf( buffer, pgm_pattern_.c_str(), img );
+                    auto logimg = current_frame->result.as_image();
+                    write_image( buffer, logimg );
+                }
+                if (pgm_diff_pattern_!="")
+                {
+                    sprintf( buffer, pgm_diff_pattern_.c_str(), img );
                     auto logimg = (current_frame->result^current_frame->source).inverted().as_image();
                     write_image( buffer, logimg );
                 }
-                if (change_pattern_!="")
+                if (pgm_change_pattern_!="")
                 {
-                    sprintf( buffer, change_pattern_.c_str(), img );
+                    sprintf( buffer, pgm_change_pattern_.c_str(), img );
                     auto logimg = (current_frame->result^previous_frame).inverted().as_image();
                     write_image( buffer, logimg );
                     previous_frame = current_frame->result;
                 }
-                if (target_pattern_!="")
+                if (pgm_target_pattern_!="")
                 {
-                    sprintf( buffer, target_pattern_.c_str(), img );
+                    sprintf( buffer, pgm_target_pattern_.c_str(), img );
                     auto logimg = current_frame->source.as_image();
                     write_image( buffer, logimg );
                 }

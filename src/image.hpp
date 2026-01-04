@@ -52,7 +52,8 @@ public:
     enum dithering
     {
         error_diffusion = 0,
-        ordered = 1
+        ordered = 1,
+        blue_noise = 2
     };
 
     //  Dealing with ffmpeg data
@@ -67,6 +68,7 @@ void fill( image &img, float value = 0.5 );
 image round_corners( const image& img );
 image filter( const image &from, const char *filters );
 void ordered_dither( image &dest, const image &source, const image &previous );
+void blue_noise_dither( image &dest, const image &source, const image &previous );
 
 struct dither_algorithm;
 

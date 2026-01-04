@@ -160,6 +160,10 @@ void usage(const std::string name)
     std::cerr << "    --mp4 FILE                  : outputs a 60fps mp4 file with the result\n";
     std::cerr << "    --gif FILE                  : outputs a 20fps gif file with the result\n";
     std::cerr << "    --pgm PATTERN               : output every generated image in a pgm file\n";
+    std::cerr << "    --pgm-poster PATTERN        : output poster thumbnails (128x86) of input images\n";
+    std::cerr << "    --pgm-diff PATTERN          : output difference between encoded result and source\n";
+    std::cerr << "    --pgm-change PATTERN        : output difference between consecutive frames\n";
+    std::cerr << "    --pgm-target PATTERN        : output target source images\n";
 
     std::cerr << "\n  Encoding options:\n";
     std::cerr << "    --profile PROFILE           : presents the specific encoding profile, which sets a suitable default for all encoding options\n";
@@ -174,6 +178,7 @@ void usage(const std::string name)
     std::cerr << "    --dither DITHER             : specifies the type of dithering to be used.\n";
     std::cerr << "      'ordered' will use a 4x4 ordered dither matrix.\n";
     std::cerr << "      'error' will use an error diffusion algorithm.\n";
+    std::cerr << "      'blue' will use blue noise dithering.\n";
     std::cerr << "    --error-algorithm ALGORITHM : error diffusion algorithm to be used\n";
     std::cerr << "      Default 'floyd'. See below for the list of valid error dithering algorithms.\n";
     std::cerr << "    --error-stability FLOAT     : amount of error to be accumulated before changing a screen pixel\n";
@@ -273,6 +278,7 @@ int main(int argc, char **argv)
         double fps = 24.0;
         std::string watermark = "";
         std::string pgm_pattern = ""; // "out-%06d.pgm";
+        std::string pgm_poster_pattern = "";
         std::string diff_pattern = "";
         std::string change_pattern = "";
         std::string target_pattern = "";
@@ -488,22 +494,27 @@ int main(int argc, char **argv)
                 argc--;
                 argv++;
                 out_arg = *argv;
-            } else if (!strcmp(*argv, "--out-pattern") || !strcmp(*argv, "--pgm-pattern") || !strcmp(*argv, "--pgm"))
+            } else if (!strcmp(*argv, "--pgm"))
             {
                 argc--;
                 argv++;
                 pgm_pattern = *argv;
-            } else if (!strcmp(*argv, "--diff-pattern"))
+            } else if (!strcmp(*argv, "--pgm-poster"))
+            {
+                argc--;
+                argv++;
+                pgm_poster_pattern = *argv;
+            } else if (!strcmp(*argv, "--pgm-diff"))
             {
                 argc--;
                 argv++;
                 diff_pattern = *argv;
-            } else if (!strcmp(*argv, "--change-pattern"))
+            } else if (!strcmp(*argv, "--pgm-change"))
             {
                 argc--;
                 argv++;
                 change_pattern = *argv;
-            } else if (!strcmp(*argv, "--target-pattern"))
+            } else if (!strcmp(*argv, "--pgm-target"))
             {
                 argc--;
                 argv++;
@@ -680,7 +691,8 @@ int main(int argc, char **argv)
         encoder.set_comment(comment);
         encoder.set_cover(cover_from, cover_to + 1);
         encoder.set_watermark(watermark);
-        encoder.set_out_pattern(pgm_pattern);
+        encoder.set_pgm_poster_pattern(pgm_poster_pattern);
+        encoder.set_pgm_pattern(pgm_pattern);
         encoder.set_diff_pattern(diff_pattern);
         encoder.set_change_pattern(change_pattern);
         encoder.set_target_pattern(target_pattern);

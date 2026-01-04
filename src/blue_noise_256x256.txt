@@ -1,0 +1,1 @@
+Blue noise texture source file (256x256 uint8_t, 65536 bytes) for dithering. Generated from Christoph Peters' LDR_LLL1_0.png (https://raw.githubusercontent.com/Calinou/free-blue-noise-textures/master/256_256/LDR_LLL1_0.png). Can be used with C++23 #embed directive when compiler support is available.

@@ -647,6 +647,39 @@ void ordered_dither( image &dest, const image &source, [[maybe_unused]] const im
         }
 }
 
+// Blue noise dithering implementation
+// The blue noise texture is stored in blue_noise_256x256.bin (256x256 uint8_t values 0-255)
+// When C++23 #embed is widely supported, this can be replaced with:
+// static const unsigned char blue_noise_256x256_bin[] = {
+// #embed "blue_noise_256x256.bin"
+// };
+#include "blue_noise_256x256.h"
+
+void blue_noise_dither( image &dest, const image &source, [[maybe_unused]] const image &previous )
+{
+    constexpr size_t BLUE_NOISE_SIZE = 256;
+    
+    for (size_t y=0; y!=source.H(); y++)
+        for (size_t x=0; x!=source.W(); x++)
+        {
+            //  The color we'd like this pixel to be
+            float color = source.at(x,y);
+
+            //  We look at our position in the blue noise texture (tiling)
+            size_t xn = x % BLUE_NOISE_SIZE;
+            size_t yn = y % BLUE_NOISE_SIZE;
+
+            //  Get threshold from blue noise texture (convert uint8_t to float 0-1)
+            //  Match ordered_dither behavior: compare scaled color (0-255) against threshold (0-255)
+            float threshold = blue_noise_256x256_bin[yn * BLUE_NOISE_SIZE + xn];
+
+            if (color * 255.0f >= threshold)
+                dest.at(x,y) = 1;
+            else
+                dest.at(x,y) = 0;
+        }
+}
+
 struct dither_target
 {
     float amount;   //  The amount of error to spread

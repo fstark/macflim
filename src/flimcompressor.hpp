@@ -219,6 +219,8 @@ public:
                 error_diffusion( dithered_image, filtered_image, dithered_image_, dp_.stability_, *get_error_diffusion_by_name( dp_.error_algorithm_ ), dp_.error_bleed_, dp_.error_bidi_ );
             else if (dp_.dither_==image::ordered)
                 ordered_dither( dithered_image, filtered_image, dithered_image_ );
+            else if (dp_.dither_==image::blue_noise)
+                blue_noise_dither( dithered_image, filtered_image, dithered_image_ );
             else
                 throw "Unknown dithering option";
 
