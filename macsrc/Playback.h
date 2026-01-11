@@ -140,6 +140,7 @@ struct Playback
 
 void PlaybackVBLInit( struct Playback *playback );
 void PlaybackSoundInit( struct Playback *playback );
+void PlaybackVBLSoundInit( struct Playback *playback );
 
 extern struct Playback gPlayback;
 

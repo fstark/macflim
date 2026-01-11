@@ -1,7 +1,5 @@
 //	-------------------------------------------------------------------
-//	The callback for playback driven by vertical interrupts
-//	We get one call each VBL, play the sound directly on the hardware
-//	the draw one frame update
+//	The callback for silent playback driven by vertical interrupts
 //	-------------------------------------------------------------------
 
 #include "Playback.h"

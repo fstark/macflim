@@ -346,7 +346,9 @@ ePlayResult PlayFlim( FlimPtr flim, short playback_left, short playback_top, Boo
 	}
 	else
 	{
-		PlaybackSoundInit( &gPlayback );
+//FReD
+//		PlaybackSoundInit( &gPlayback );
+		PlaybackVBLSoundInit( &gPlayback );
 	}
 
 	gPlayback.init();
