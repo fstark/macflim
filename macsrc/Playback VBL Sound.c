@@ -1,13 +1,13 @@
 //	-------------------------------------------------------------------
 //	VBL-driven playback with direct sound DMA writes
 //	-------------------------------------------------------------------
-//	Phase 1 & 2: Test with rotating 440Hz/880Hz/1320Hz tones
+//	Phase 3: Extract real audio from frame data
 //	Writes directly to SoundBase DMA buffer (high-order byte of each word)
 //	Bypasses sound driver to avoid cracking on Mac Plus/68030 systems
+//	Requires single-tick (370 byte) audio frames
 //	-------------------------------------------------------------------
 
 #include "Playback.h"
-#include <math.h>
 
 #define vBase 0xefe1fe
 #define vBufB 0
@@ -32,21 +32,12 @@
 //	-------------------------------------------------------------------
 
 #define SOUND_BUFFER_SIZE 370		//	370 bytes per frame at 60Hz
-#define PI 3.14159265358979323846
 
 //	-------------------------------------------------------------------
-//	Test tone buffers (440Hz, 880Hz, 1320Hz)
+//	Static silence buffer (initialized once at startup)
 //	-------------------------------------------------------------------
 
-static unsigned char *tone440 = NULL;
-static unsigned char *tone880 = NULL;
-static unsigned char *tone1320 = NULL;
-
-//	-------------------------------------------------------------------
-//	Frame counter for tone rotation (20 frames = 1/3 second per tone)
-//	-------------------------------------------------------------------
-
-static long gFrameCounter = 0;
+static unsigned char silenceBuffer[SOUND_BUFFER_SIZE];
 
 //	-------------------------------------------------------------------
 //	The VBL task
@@ -81,23 +72,6 @@ static long sAlive = 0;
 #define noDEBUG_VBL
 
 //	-------------------------------------------------------------------
-//	Generate a sine wave tone buffer
-//	-------------------------------------------------------------------
-
-static void GenerateTone( unsigned char *buffer, int frequency )
-{
-	int i;
-	double sampleRate = 22200.0;		//	Close enough to 22254.54
-	
-	for (i = 0; i < SOUND_BUFFER_SIZE; i++)
-	{
-		double phase = 2.0 * PI * frequency * i / sampleRate;
-		double sample = 128.0 + 127.0 * sin(phase);
-		buffer[i] = (unsigned char)sample;
-	}
-}
-
-//	-------------------------------------------------------------------
 //	Copy audio to sound DMA buffer
 //	Write to high-order byte of each word (every other byte)
 //	-------------------------------------------------------------------
@@ -119,9 +93,6 @@ static void CopyToSoundDMA( unsigned char *source )
 
 static pascal void DoFrameWithSound()
 {
-	unsigned char *currentTone;
-	int toneIndex;
-	
 		//	Recover the value of A5 for access to global
 		//	from the 4 bytes before the VBL entry
     asm
@@ -192,24 +163,32 @@ if (gDebug)
 	}
 	
 	//	-------------------------------------------------------------------
-	//	PHASE 2: Rotate through test tones every 20 frames (1/3 second)
+	//	Extract audio from block or use silence
 	//	-------------------------------------------------------------------
 	
-	gFrameCounter++;
-	toneIndex = (gFrameCounter / 20) % 3;
-	
-	if (toneIndex == 0)
-		currentTone = tone440;
-	else if (toneIndex == 1)
-		currentTone = tone880;
-	else
-		currentTone = tone1320;
-	
-	//	-------------------------------------------------------------------
-	//	Write audio directly to sound DMA buffer (minimal latency)
-	//	-------------------------------------------------------------------
-	
-	CopyToSoundDMA( currentTone );
+	{
+		unsigned char *audioSource;
+		
+		//	Check if sound exists and is exactly 1 tick
+		if (gPlaybackBlock->sound != (FrameDataPtr)gPlaybackBlock->video && 
+		    gPlaybackBlock->ticks == 1)
+		{
+			//	Use real sound data from block
+			//	Skip 6-byte header (mode, count, etc.) to get to raw samples
+			audioSource = gPlaybackBlock->sound->data + 6;
+		}
+		else
+		{
+			//	Use silence (no sound or multi-tick frame)
+			audioSource = silenceBuffer;
+		}
+		
+		//	-------------------------------------------------------------------
+		//	Write audio directly to sound DMA buffer (minimal latency)
+		//	-------------------------------------------------------------------
+		
+		CopyToSoundDMA( audioSource );
+	}
 	
 	//	-------------------------------------------------------------------
 	//	Now handle video frame decode and block management
@@ -269,7 +248,7 @@ end:
 }
 
 //	-------------------------------------------------------------------
-//	Initialize tone buffers and enable sound
+//	Initialize silence buffer and enable sound
 //	-------------------------------------------------------------------
 
 static void Init( void )
@@ -279,20 +258,13 @@ static void Init( void )
     int i;
 
 	//	-------------------------------------------------------------------
-	//	Allocate and generate test tone buffers
+	//	Initialize static silence buffer
 	//	-------------------------------------------------------------------
 
-	assert( tone440==NULL, "Tone buffers already allocated" );
-	
-	tone440 = (unsigned char *)MyNewPtr(SOUND_BUFFER_SIZE);
-	tone880 = (unsigned char *)MyNewPtr(SOUND_BUFFER_SIZE);
-	tone1320 = (unsigned char *)MyNewPtr(SOUND_BUFFER_SIZE);
-	
-	assert( tone440!=NULL && tone880!=NULL && tone1320!=NULL, "Tone buffer allocation failed" );
-	
-	GenerateTone( tone440, 440 );
-	GenerateTone( tone880, 880 );
-	GenerateTone( tone1320, 1320 );
+	for (i = 0; i < SOUND_BUFFER_SIZE; i++)
+	{
+		silenceBuffer[i] = 128;		//	DC offset (silence)
+	}
 	
 	//	-------------------------------------------------------------------
 	//	Fill sound DMA buffer with silence before enabling sound
@@ -326,7 +298,6 @@ static void Init( void )
     taskElem.myA5 = (long)CurrentA5;
 
 	gState = pausedState;
-	gFrameCounter = 0;
 
     theError = VInstall( (QElemPtr)&taskElem.gTask );
     assert( theError==noErr, "Failed to install VBL task" );
@@ -370,28 +341,6 @@ static void Dispos( void )
 	theError = VRemove( (QElemPtr)&taskElem.gTask );
 	assert( theError==noErr, "Failed to remove VBL task" );
 */
-	
-	//	-------------------------------------------------------------------
-	//	Free tone buffers
-	//	-------------------------------------------------------------------
-	
-	if (tone440 != NULL)
-	{
-		MyDisposPtr( tone440 );
-		tone440 = NULL;
-	}
-	
-	if (tone880 != NULL)
-	{
-		MyDisposPtr( tone880 );
-		tone880 = NULL;
-	}
-	
-	if (tone1320 != NULL)
-	{
-		MyDisposPtr( tone1320 );
-		tone1320 = NULL;
-	}
 }
 
 //	-------------------------------------------------------------------
