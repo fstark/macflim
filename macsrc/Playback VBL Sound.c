@@ -174,7 +174,6 @@ if (gDebug)
 		    gPlaybackBlock->ticks == 1)
 		{
 			//	Use real sound data from block
-			//	Skip 6-byte header (mode, count, etc.) to get to raw samples
 			audioSource = gPlaybackBlock->sound->data + 6;
 		}
 		else
