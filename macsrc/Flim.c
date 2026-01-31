@@ -452,6 +452,13 @@ Boolean FlimGetIsSilent( FlimPtr flim )
 
 //	-------------------------------------------------------------------
 
+Boolean FlimGetIsSingleTick( FlimPtr flim )
+{
+	return flim->info.frameCount == flim->info.ticks;
+}
+
+//	-------------------------------------------------------------------
+
 struct FlimInfo *FlimGetInfo( FlimPtr flim )
 {
 	return &flim->info;

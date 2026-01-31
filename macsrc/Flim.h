@@ -108,6 +108,12 @@ int FlimGetFileRefNum( FlimPtr flim );
 Boolean FlimGetIsSilent( FlimPtr flim );
 
 //	-------------------------------------------------------------------
+//	Returns TRUE if flim has single-tick (ungrouped) frames
+//	-------------------------------------------------------------------
+
+Boolean FlimGetIsSingleTick( FlimPtr flim );
+
+//	-------------------------------------------------------------------
 //	Allocate and creates a new poster for the flim
 //	-------------------------------------------------------------------
 
@@ -129,7 +135,7 @@ struct FlimInfo
 {
 	short width;	//	yet unused in playback
 	short height;	//	unused in playback
-	Boolean dummy;	//	Padding
+	Boolean dummy;	//	unused, set to 0, reserved for future use
 	Boolean silent;
 	Size frameCount;
 	Size ticks;

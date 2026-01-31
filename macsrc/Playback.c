@@ -344,11 +344,13 @@ ePlayResult PlayFlim( FlimPtr flim, short playback_left, short playback_top, Boo
 	{
 		PlaybackVBLInit( &gPlayback );
 	}
+	else if ( FlimGetIsSingleTick( flim ) && MachineIsPlusOrEarlier() )
+	{
+		PlaybackVBLSoundInit( &gPlayback );
+	}
 	else
 	{
-//FReD
-//		PlaybackSoundInit( &gPlayback );
-		PlaybackVBLSoundInit( &gPlayback );
+		PlaybackSoundInit( &gPlayback );
 	}
 
 	gPlayback.init();

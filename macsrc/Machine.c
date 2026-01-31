@@ -160,3 +160,32 @@ Boolean MachineIsBlackAndWhite()
 
 	return FALSE;
 }
+
+//	-------------------------------------------------------------------
+
+Boolean MachineIsPlusOrEarlier( void )
+{
+	SysEnvRec theEnvRec;
+	OSErr err;
+	
+	//	Minimal machines are definitely Plus or earlier
+	if (gMachine.minimal)
+		return TRUE;
+	
+	//	Check machine type via SysEnvirons
+	if (!gMachine.originalROM)
+	{
+		err = SysEnvirons( 1, &theEnvRec );
+		
+		if (err==noErr)
+		{
+			//	Mac Plus = envMacPlus (4)
+			//	Mac SE = envSE (5)
+			//	Anything <= 5 is Plus or earlier
+			return theEnvRec.machineType <= 5;
+		}
+	}
+	
+	//	If we can't determine, assume it's old hardware
+	return TRUE;
+}

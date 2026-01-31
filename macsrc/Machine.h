@@ -35,4 +35,11 @@ long MachineGetBogoMips( void );
 
 Boolean MachineIsBlackAndWhite( void );
 
+//	-------------------------------------------------------------------
+//	TRUE if machine is Mac Plus or earlier (128K, 512K, Plus, SE)
+//	These machines need VBL-driven sound DMA for single-tick audio
+//	-------------------------------------------------------------------
+
+Boolean MachineIsPlusOrEarlier( void );
+
 #endif
