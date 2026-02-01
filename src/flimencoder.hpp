@@ -517,6 +517,8 @@ std::cout << "POSTER INDEX: " << poster_index << "\n";
             error_diffusion( poster_small_bw, poster_small, previous, 0, *get_error_diffusion_by_name( profile_.error_algorithm() ), profile_.error_bleed(), profile_.error_bidi() );
         else if (profile_.dither()==image::ordered)
             ordered_dither( poster_small_bw, poster_small, previous );
+        else if (profile_.dither()==image::blue_noise)
+            blue_noise_dither( poster_small_bw, poster_small, previous );
 
         // error_diffusion( poster_small_bw, poster_small, prev, 0, *error_diff, 0.99, true );
         write_image( "/tmp/poster1.pgm", poster_image );
