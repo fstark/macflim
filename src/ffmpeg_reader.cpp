@@ -524,11 +524,11 @@ public:
     }
 };
 
-std::unique_ptr<input_reader> make_ffmpeg_reader(const std::string &movie_path, timestamp_t from, timestamp_t to)
+std::unique_ptr<input_reader> make_ffmpeg_reader(const std::string &movie_path, timestamp_t from, timestamp_t duration)
 {
     try
     {
-        return std::make_unique<ffmpeg_reader>(movie_path, from, to - from);
+        return std::make_unique<ffmpeg_reader>(movie_path, from, duration);
     }
     catch (const char *e)
     {
