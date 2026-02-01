@@ -16,7 +16,7 @@ The windows version of ``flimmaker`` is available in the [releases!](https://git
 
 The Mac application is also available as a ``.sit`` file, if that's easier for you!
 
-And you can join the [Discord server](https://discord.gg/vuCUhCZhCZ) if you need support, wants to discuss MacFlim, or just want to say how great it is :-)
+And you can join the [Discord server](https://discord.gg/9rVDSw2D4N) if you need support, wants to discuss MacFlim, or just want to say how great it is :-)
 
 New features are:
 
