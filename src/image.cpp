@@ -669,11 +669,10 @@ void blue_noise_dither( image &dest, const image &source, [[maybe_unused]] const
             size_t xn = x % BLUE_NOISE_SIZE;
             size_t yn = y % BLUE_NOISE_SIZE;
 
-            //  Get threshold from blue noise texture (convert uint8_t to float 0-1)
-            //  Match ordered_dither behavior: compare scaled color (0-255) against threshold (0-255)
-            float threshold = blue_noise_256x256_bin[yn * BLUE_NOISE_SIZE + xn];
+            //  Get threshold from blue noise texture (center in each bin: 0.5/256, 1.5/256, ..., 255.5/256)
+            float threshold = (blue_noise_256x256_bin[yn * BLUE_NOISE_SIZE + xn] + 0.5f) / 256.0f;
 
-            if (color * 255.0f >= threshold)
+            if (color >= threshold)
                 dest.at(x,y) = 1;
             else
                 dest.at(x,y) = 0;

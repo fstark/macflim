@@ -18,6 +18,13 @@ The Mac application is also available as a ``.sit`` file, if that's easier for y
 
 And you can join the [Discord server](https://discord.gg/vuCUhCZhCZ) if you need support, wants to discuss MacFlim, or just want to say how great it is :-)
 
+New features are:
+
+* A new 'blue' dithering that is as efficient to encode as the 'ordered' dithering, but looks much closer to the 'error' dithering. It will allow nicer flims on lower end macs (like the plus), or encoding flims with more changes on higher end machines (like the se30)
+
+* A new playback method that bypasses the sound driver that is selected automatically for flims non "grouped" on early macs (ie: up to the Macintosh SE). This allow sound to be played on Mac with a [MicroMac Performer upgrade](https://www.micromac.com/products/performer.html).
+
+* A new 'performer' profile that generates flims playable on a Mac with a Performer upgrade.
 
 ## What is in the repository?
 
@@ -186,6 +193,7 @@ Specifies the encoding/playback profile you want to use.
 
 * 128k: The profile for playing on a Macintosh 128K, from the floppy disk. Identical to the 512K, but with a byterate of 380 bytes. Make sure flim files are less than 400KB (in general around 20 seconds)!
 
+* performer: *Experimental* profile to generates flim playable on a mac plus with a [MicroMac Performer upgrade](https://www.micromac.com/products/performer.html).
 
 Examples:
 

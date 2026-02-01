@@ -199,6 +199,27 @@ public:
             result.set_silent( false );
             return true;
         }
+        //  The MicroMac Performer accelerator (16MHz 68030 on a plus)
+        if (name=="performer"s)
+        {
+            result.set_byterate( 5000 );
+            result.set_filters( "g1.6bsc" );
+            result.set_fps_ratio( 2 );
+            result.set_group( false );
+            result.set_stability( 0.5 );
+            result.set_bars( true );
+            result.set_dither( "blue" );
+            result.set_error_algorithm( "floyd" );
+            result.set_error_bidi( true );
+            result.set_error_bleed( 0.95 );
+            result.codecs_.clear();
+            result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "lines:count=30", result.W_, result.H_ ) );
+            result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
+            result.set_silent( false );
+            return true;
+        }
         if (name=="portable"s)
         {
             result.set_byterate( 2500 );

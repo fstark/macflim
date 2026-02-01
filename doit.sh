@@ -149,3 +149,7 @@ make flimmaker
 
 
 # Space 1999 : https://www.youtube.com/watch?v=0CPJ-AbCsT8
+
+
+# Performer sample:
+# ../flimmaker --profile performer --filters w10k10g1bscZ /mnt/data0/Development/macflim/sample/source/Sweet_Dreams.mp4 --mp4 out.mp4 --flim sweet-dreams-performer.flim && open out.mp4
