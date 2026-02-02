@@ -10,6 +10,12 @@ all: ../flimmaker ../flimutil
 image.o: image.cpp imgcompress.hpp image.hpp
 	c++ $(CXXFLAGS) -std=c++2a -c -O3 image.cpp -o image.o
 
+subtitles.o: subtitles.cpp subtitles.hpp
+	c++ $(CXXFLAGS) -std=c++2a -c -O3 subtitles.cpp -o subtitles.o
+
+flimformat.o: flimformat.cpp flimformat.hpp flimencoder.hpp
+	c++ $(CXXFLAGS) -std=c++2a -c -O3 flimformat.cpp -o flimformat.o
+
 reader.o: reader.cpp reader.hpp image.hpp
 	c++ $(CXXFLAGS) -std=c++2a -c -O3 reader.cpp -o reader.o
 
@@ -25,19 +31,19 @@ watermark.o: watermark.cpp imgcompress.hpp image.hpp
 imgcompress.o: imgcompress.cpp imgcompress.hpp image.hpp
 	c++ $(CXXFLAGS) -std=c++2a -c -O3 imgcompress.cpp -o imgcompress.o
 
-flimmaker.o: flimmaker.cpp flimencoder.hpp flimcompressor.hpp compressor.hpp imgcompress.hpp framebuffer.hpp image.hpp ruler.hpp reader.hpp writer.hpp subtitles.hpp
+flimmaker.o: flimmaker.cpp flimencoder.hpp flimcompressor.hpp compressor.hpp imgcompress.hpp framebuffer.hpp image.hpp ruler.hpp reader.hpp writer.hpp subtitles.hpp flimformat.hpp
 	c++ $(CXXFLAGS) -std=c++2a -c -O3 -I liblzg/src/include flimmaker.cpp -o flimmaker.o
 
-../flimmaker: flimmaker.o imgcompress.o image.o watermark.o ruler.o reader.o writer.o
-	c++ $(LDLIBS) -std=c++2a flimmaker.o imgcompress.o image.o watermark.o ruler.o reader.o writer.o -lavformat -lavcodec -lavutil -o ../flimmaker
+../flimmaker: flimmaker.o imgcompress.o image.o watermark.o ruler.o reader.o writer.o flimformat.o subtitles.o
+	c++ $(LDLIBS) -std=c++2a flimmaker.o imgcompress.o image.o watermark.o ruler.o reader.o writer.o flimformat.o subtitles.o -lavformat -lavcodec -lavutil -o ../flimmaker
 
 ../flimutil: flimutil.c
 	cc -O3 -Wno-unused-result  flimutil.c -o ../flimutil
 
 clean:
-	rm -f ../flimmaker ../flimutil flimmaker.o imgcompress.o image.o watermark.o ruler.o reader.o writer.o
+	rm -f ../flimmaker ../flimutil flimmaker.o imgcompress.o image.o watermark.o ruler.o reader.o writer.o flimformat.o subtitles.o
 
-debug: flimmaker.cpp flimutil.c imgcompress.cpp watermark.cpp image.cpp ruler.cpp flimencoder.hpp flimcompressor.hpp compressor.hpp imgcompress.hpp framebuffer.hpp image.hpp ruler.hpp
+debug: flimmaker.cpp flimutil.c imgcompress.cpp watermark.cpp image.cpp ruler.cpp flimformat.cpp flimformat.hpp flimencoder.hpp flimcompressor.hpp compressor.hpp imgcompress.hpp framebuffer.hpp image.hpp ruler.hpp subtitles.cpp subtitles.hpp
 	c++ -O0 -std=c++2a -c -g -fsanitize=undefined imgcompress.cpp -o imgcompress.o
 	c++ -Wall -O0 -std=c++2a -c -g -fsanitize=undefined flimmaker.cpp -o flimmaker.o
 	c++ -O0 -std=c++2a -c -g -fsanitize=undefined watermark.cpp -o watermark.o
@@ -45,7 +51,9 @@ debug: flimmaker.cpp flimutil.c imgcompress.cpp watermark.cpp image.cpp ruler.cp
 	c++ -O0 -std=c++2a -c -g -fsanitize=undefined ruler.cpp -o ruler.o
 	c++ -O0 -std=c++2a -c -g -fsanitize=undefined reader.cpp -o reader.o
 	c++ -O0 -std=c++2a -c -g -fsanitize=undefined writer.cpp -o writer.o
-	c++ -O0 -std=c++2a -g -fsanitize=undefined imgcompress.o flimmaker.o watermark.o image.o ruler.o reader.o writer.o -lavformat -lavcodec -lavutil -o ../flimmaker
+	c++ -O0 -std=c++2a -c -g -fsanitize=undefined flimformat.cpp -o flimformat.o
+	c++ -O0 -std=c++2a -c -g -fsanitize=undefined subtitles.cpp -o subtitles.o
+	c++ -O0 -std=c++2a -g -fsanitize=undefined imgcompress.o flimmaker.o watermark.o image.o ruler.o reader.o writer.o flimformat.o subtitles.o -lavformat -lavcodec -lavutil -o ../flimmaker
 	cc -g -Wno-unused-result flimutil.c -o ../flimutil
 #	gdb ./flimmaker
 

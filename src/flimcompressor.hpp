@@ -62,11 +62,14 @@ private:
     std::vector<subtitle> subtitles_;
 
     std::vector<frame> frames_;
+    std::unique_ptr<framebuffer> initial_;   //  The initial image
 
 public:
     flimcompressor( size_t W, size_t H, const std::vector<image> &images, const std::vector<sound_frame_t> &audio, double fps, const std::vector<subtitle> &subtitles ) : W_{W}, H_{H}, images_{images}, audio_{audio}, fps_{fps}, subtitles_{subtitles} {}
 
     const std::vector<frame> &get_frames() const { return frames_; }
+
+    framebuffer *get_initial() const { return initial_.get(); }
 
     bool progress_ = true;
 
@@ -327,6 +330,7 @@ public:
         size_t current_tick_;   //  Output tick number
         std::vector<sound_frame_t>::const_iterator current_audio_; //  Current audio
         std::vector<frame> frames_; // Output generated frames
+
         bool log_progress_ = true;
         // double total_q_ = 0;        //  Total quality
         static const size_t BucketCount = 1000;       //  Error distribution
@@ -415,7 +419,7 @@ public:
         }
 
         // Adds one image to the generated video, keep track of previous
-        void add( const image &source )
+        double add( const image &source )
         {
                 //  Dither the new image
             ditherer_.dither( source );
@@ -494,6 +498,8 @@ public:
 */
             histo_.add( q );
             current_tick_ = next_tick;
+
+            return q;
         }
 
         std::vector<frame> get_frames() const { return frames_; }
@@ -502,13 +508,13 @@ public:
 
     void compress( double stability, size_t byterate, bool group, const std::string &filters, const std::string &watermark, const std::vector<codec_spec> &codecs, image::dithering dither, bool bars, const std::string error_algorithm, float error_bleed, bool error_bidi )
     {
+        bool loop = true;
+        bool initial_frame = true;
+
         image previous( W_, H_ );
         fill( previous, 0 );
 
-static bool generate_initial_frame = false;
-// static bool loop_to_initial = true;
-
-        if (generate_initial_frame)
+        if (initial_frame)
         {
             //  #### We painfully extract what the first image should be
             image img0( W_,H_ );
@@ -523,8 +529,9 @@ static bool generate_initial_frame = false;
             ::watermark( img2, watermark );
             copy( previous, img2 );
             write_image( "/tmp/start.pgm", previous );
-        }
 
+            initial_ = std::make_unique<framebuffer>( previous );
+        }
 
 #ifndef OLD_VERSION
     DitheringParameters dp { bars, filters, dither, error_algorithm, stability, error_bleed, error_bidi, watermark };
@@ -533,6 +540,14 @@ static bool generate_initial_frame = false;
     CompressorHelper ch{ d, sb, codecs, fps_, byterate, audio_, group };
     for (auto &big_image:images_)
         ch.add( big_image );
+    //  Trailing images
+    if (loop)
+    {
+        size_t trail_count = 0;
+        while (ch.add(previous)!=1)
+            trail_count++;
+        std::clog << "Added " << trail_count << " frames for perfect looping\n";
+    }
     frames_ = ch.get_frames();
 #else
             //  This is the initial image, all black by default

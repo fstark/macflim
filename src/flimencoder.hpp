@@ -4,301 +4,14 @@
 #include <string>
 
 #include "flimcompressor.hpp"
+#include "flimformat.hpp"
 
 #include "reader.hpp"
 #include "writer.hpp"
-#include <sstream>
+//#include <sstream>
 
 extern bool sDebug;
 
-/**
- * A set of encoding parameters
- */
-class encoding_profile
-{
-protected:
-    size_t W_ = 512;
-    size_t H_ = 342;
-
-    size_t byterate_ = 2000;
-    double stability_ = 0.3;
-    int fps_ratio_ = 1;
-    bool group_ = true;
-    std::string filters_ = "c";
-    bool bars_ = true;              //  Do we put black bars around the image?
-
-    image::dithering dither_ = image::error_diffusion;
-    std::string error_algorithm_ = "floyd";
-    float error_bleed_ = 1;
-    bool error_bidi_ = false;
-
-    bool silent_ = false;
-
-    std::vector<flimcompressor::codec_spec> codecs_;
-
-public:
-
-    size_t width() const { return W_; }
-    size_t height() const { return H_; }
-    void set_size( size_t W, size_t H ) { W_ = W; H_ = H; }
-    void set_width( size_t W ) { W_ = W; }
-    void set_height( size_t H ) { H_ = H; }
-
-
-    size_t byterate() const { return byterate_; }
-    void set_byterate( size_t byterate ) { byterate_ = byterate; }
-
-        //  Technically, we could put the half-rate/fps_ratio mecanism in the reader phase
-        //  to avoid reading unecessary images, but it is more generic to put it here
-        //  as it could allows to extend to dynamic half rate [yagni]
-    int fps_ratio() const { return fps_ratio_; }
-    void set_fps_ratio( int fps_ratio ) { fps_ratio_ = fps_ratio; }
-
-    bool group() const { return group_; }
-    void set_group( bool group ) { group_ = group; }
-
-    std::string filters() const { return filters_; }
-    void set_filters( const std::string filters ) { filters_ = filters; }
-
-    bool bars() const { return bars_; }
-    void set_bars( bool bars ) { bars_ = bars; }
-
-    image::dithering dither() const { return dither_; }
-    bool set_dither( std::string dither )
-    {
-        if (dither=="ordered")
-            dither_ = image::ordered;
-        else if (dither=="error")
-            dither_ = image::error_diffusion;
-        else
-            throw "Wrong dither option : only 'ordered' and 'error' are supported";
-        return true;
-    }
-    void set_dither( image::dithering dither ) { dither_ = dither; }
-
-    std::string error_algorithm() const { return error_algorithm_; }
-    void set_error_algorithm( const std::string algo ) { error_algorithm_ = algo; }
-
-    float error_bleed() const { return error_bleed_; }
-    void set_error_bleed( float bleed ) { error_bleed_ = bleed; }
-
-    bool error_bidi() const { return error_bidi_; }
-    void set_error_bidi( bool error_bidi ) { error_bidi_ = error_bidi; }
-
-    double stability() const { return stability_; }
-    void set_stability( double stability ) { stability_ = stability; }
-
-    const std::vector<flimcompressor::codec_spec> &codecs() const { return codecs_; }
-    void set_codecs( const std::vector<flimcompressor::codec_spec> &codecs ) { codecs_ = codecs; }
-
-    bool silent() const { return silent_; }
-    void set_silent( bool silent ) { silent_ = silent; }
-
-    static bool profile_named( const std::string name, size_t width, size_t height, encoding_profile &result )
-    {
-        result.set_size( width, height );
-        if (name=="128k"s)
-        {
-            result.set_byterate( 380 );
-            result.set_filters( "g1.6bbscz" );
-            result.set_fps_ratio( 4 );
-            result.set_group( false );
-            result.set_stability( 0.5 );
-            result.set_bars( true );
-            result.set_dither( "ordered" );
-            result.set_error_algorithm( "floyd" );
-            result.set_error_bidi( true );
-            result.set_error_bleed( 0.95 );
-            result.codecs_.clear();
-            result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "lines:count=10", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
-            result.set_silent( true );
-            return true;
-        }
-        if (name=="512k"s)
-        {
-            result.set_byterate( 480 );
-            result.set_filters( "g1.6bbscz" );
-            result.set_fps_ratio( 4 );
-            result.set_group( false );
-            result.set_stability( 0.5 );
-            result.set_bars( true );
-            result.set_dither( "ordered" );
-            result.set_error_algorithm( "floyd" );
-            result.set_error_bidi( true );
-            result.set_error_bleed( 0.95 );
-            result.codecs_.clear();
-            result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "lines:count=10", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
-            result.set_silent( true );
-            return true;
-        }
-        if (name=="xl"s)
-        {
-            result.set_byterate( 580 );
-            result.set_filters( "g1.6bbsc" );
-            result.set_fps_ratio( 4 );
-            result.set_group( true );
-            result.set_stability( 0.5 );
-            result.set_bars( true );
-            result.set_dither( "ordered" );
-            result.set_error_algorithm( "floyd" );
-            result.set_error_bidi( true );
-            result.set_error_bleed( 0.95 );
-            result.codecs_.clear();
-            result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "lines:count=10", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
-            result.set_silent( true );
-            return true;
-        }
-        if (name=="plus"s)
-        {
-            result.set_byterate( 1500 );
-            result.set_filters( "g1.6bbscz" );
-            result.set_fps_ratio( 2 );
-            result.set_group( false );
-            result.set_stability( 0.5 );
-            result.set_bars( true );
-            result.set_dither( "ordered" );
-            result.set_error_algorithm( "floyd" );
-            result.set_error_bidi( true );
-            result.set_error_bleed( 0.95 );
-            result.codecs_.clear();
-            result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "lines:count=30", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
-            result.set_silent( false );
-            return true;
-        }
-        if (name=="portable"s)
-        {
-            result.set_byterate( 2500 );
-            result.set_filters( "g1.6bsc" );
-            result.set_fps_ratio( 2 );
-            result.set_group( false );
-            result.set_stability( 0.5 );
-            result.set_bars( true );
-            result.set_dither( "error" );
-            result.set_error_algorithm( "floyd" );
-            result.set_error_bidi( true );
-            result.set_error_bleed( 0.98 );
-            result.codecs_.clear();
-            result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "lines:count=50", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
-            result.set_silent( false );
-            return true;
-        }
-        if (name=="se"s)
-        {
-            result.set_byterate( 2500 );
-            result.set_filters( "g1.6bsc" );
-            result.set_fps_ratio( 2 );
-            result.set_group( false );
-            result.set_stability( 0.5 );
-            result.set_bars( true );
-            result.set_dither( "error" );
-            result.set_error_algorithm( "floyd" );
-            result.set_error_bidi( true );
-            result.set_error_bleed( 0.98 );
-            result.codecs_.clear();
-            result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "lines:count=50", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
-            result.set_silent( false );
-            return true;
-        }
-        if (name=="se30"s)
-        {
-            result.set_byterate( 6000 );
-            result.set_filters( "g1.6sc" );
-            result.set_fps_ratio( 1 );
-            result.set_group( true );
-            result.set_stability( 0.3 );
-            result.set_bars( false );
-            result.set_dither( "error" );
-            result.set_error_algorithm( "floyd" );
-            result.set_error_bidi( true );
-            result.set_error_bleed( 0.99 );
-            result.codecs_.clear();
-            result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "lines:count=70", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
-            result.set_silent( false );
-            return true;
-        }
-        if (name=="perfect"s)
-        {
-            result.set_byterate( 32000 );
-            result.set_filters( "g1.6sc" );
-            result.set_fps_ratio( 1 );
-            result.set_group( true );
-            result.set_stability( 0.3 );
-            result.set_bars( false );
-            result.set_dither( "error" );
-            result.set_error_algorithm( "floyd" );
-            result.set_error_bidi( true );
-            result.set_error_bleed( 1 );
-            result.codecs_.clear();
-            result.codecs_.push_back( flimcompressor::make_codec( "null", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "z32", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "lines:count=342", result.W_, result.H_ ) );
-            result.codecs_.push_back( flimcompressor::make_codec( "invert", result.W_, result.H_ ) );
-            result.set_silent( false );
-            return true;
-        }
-
-        return false;
-    }
-
-    std::string dither_string() const
-    {
-        switch (dither_)
-        {
-            case image::error_diffusion:
-                return "error";
-            case image::ordered:
-                return "ordered";
-        }
-        return "???";
-    }
-
-    std::string description() const
-    {
-        std::ostringstream cmd;
-
-        cmd << "--byterate " << byterate_;
-        cmd << " --fps-ratio " << fps_ratio_;
-        cmd << " --group " << (group_?"true":"false");
-        cmd << " --bars " << (bars_?"true":"false");
-        cmd << " --dither " << dither_string();
-        if (dither_==image::error_diffusion)
-        {
-            cmd << " --error-stability " << stability_;
-            cmd << " --error-algorithm " << error_algorithm_;
-            cmd << " --error-bidi " << error_bidi_;
-            cmd << " --error-bleed " << error_bleed_;
-        }
-        cmd << " --filters " << filters_;
-
-        for (auto &c:codecs_)
-            cmd << " --codec " << c.coder->description();
-
-        cmd << " --silent " << (silent_?"true":"false");
-
-        return cmd.str();
-    }
-};
 
 #include "subtitles.hpp"
 
@@ -330,47 +43,6 @@ class flimencoder
     {
         return ticks_from_frame( n-1, fps_/profile_.fps_ratio() );
     }
-
-#if 0
-    //  Read all images from disk
-    void read_images( size_t from, size_t to, bool half_rate=false )
-    {
-        std::clog << "READ IMAGES ";
-
-        static char symb[] = "123456789.";
-
-        bool skip = false;
-
-        for (int i=from;i!=to+1;i++)
-        {
-            if (half_rate)
-            {
-                if (skip)
-                {
-                    skip = false;
-                    continue;
-                }
-                skip = true;
-            }
-
-            char buffer[1024];
-            sprintf( buffer, in_.c_str(), i );
-
-            image img( profile_.width(), profile_.height() );
-
-            if (!read_image( img, buffer ))
-                return;
-            images_.push_back( img );
-
-            std::clog << symb[i%(sizeof(symb)-1)];
-            if ((i%(sizeof(symb)-1))!=(sizeof(symb)-2))
-                std::clog << (char)0x8;
-            std::clog << std::flush;
-        }
-        std::clog << "\n";
-        std::clog << "VIDEO: READ " << images_.size() << " images\n";
-    }
-#endif
 
     void fix()
     {
@@ -490,12 +162,59 @@ std::cout << "POSTER INDEX: " << poster_index << "\n";
 
         fc.compress( profile_.stability(), profile_.byterate(), profile_.group(), profile_.filters(), watermark_, profile_.codecs(), profile_.dither(), profile_.bars(), profile_.error_algorithm(), profile_.error_bleed(), profile_.error_bidi() );
 
+
+//  Flim file generation
+        auto frames = fc.get_frames();
+        encoded_flim ef{ comment_ };
+        flim_info fi{ profile_, frames };
+        ef.add( fi );
+        ef.add( frames );
+        ef.add_poster( poster_small_bw );
+
+        if (fc.get_initial())
+            ef.add_initial( *fc.get_initial() );
+
+        FILE *movie_file = fopen( flim_pathname.c_str(), "wb" );
+        ef.fwrite( movie_file );
+        fclose( movie_file );
+
+//  Generate mp4 and gif
+        if (writers.size())
+        {
+
+            size_t index = 0;
+
+            for (auto &writer:writers)
+            {
+                auto sound = std::begin(audio_samples_);
+
+                //  Generate the mp4 file
+                for (auto &frame:frames)
+                {
+                    // std::clog << frame.ticks << std::flush;
+                    for (size_t i=0;i!=frame.ticks;i++)
+                    {
+                        index++;
+                        std::clog << "Wrote " << index << " frames\r" << std::flush;
+                        sound_frame_t snd;
+
+                        if (!profile_.silent())
+                            if (sound<std::end(audio_samples_))
+                                snd = *sound++;
+
+                        writer->write_frame( frame.result.as_image(), snd );
+                    }
+                }
+                std::clog << "\n";
+            }
+        }
+
         if (out_pattern_!="") delete_files_of_pattern( out_pattern_ );
         if (diff_pattern_!="") delete_files_of_pattern( diff_pattern_ );
         if (change_pattern_!="") delete_files_of_pattern( change_pattern_ );
         if (target_pattern_!="") delete_files_of_pattern( target_pattern_ );
 
-        auto frames = fc.get_frames();
+        // auto frames = fc.get_frames();
 
         std::vector<uint8_t> movie; //  #### Should be 'frames'
         auto out_movie = std::back_inserter( movie );
@@ -620,9 +339,9 @@ std::cout << "PROFILE BYTERATE " << profile_.byterate() << "\n";
         write2( out_header, 0x1 );                      //  Version
         write2( out_header, 4 );                        //  Entry count
 
-        write2( out_header, 0x00 ); //  Info
-        write4( out_header, 0 );  //  TOC offset
-        write4( out_header, global.size() );            //  Frame count
+        write2( out_header, 0x00 );                     //  Info
+        write4( out_header, 0 );
+        write4( out_header, global.size() );
 
         write2( out_header, 0x01 ); //  MOVIE
         write4( out_header, global.size() );
@@ -639,7 +358,6 @@ std::cout << "PROFILE BYTERATE " << profile_.byterate() << "\n";
         if (sDebug)
             std::clog << "WRITING FLIM FILE\n";
 
-        FILE *movie_file = fopen( flim_pathname.c_str(), "wb" );
 
         char buffer[1024];
         std::fill( std::begin(buffer), std::end(buffer), 0 );
@@ -655,30 +373,42 @@ std::cout << "PROFILE BYTERATE " << profile_.byterate() << "\n";
             fletcher += ((int)(header[i]))*256+header[i+1];
             fletcher %= 65535;
         }
+
+printf( "FLETCHER HEADER == %ld\n", fletcher );
         for (size_t i=0;i!=global.size();i+=2)
         {
             fletcher += ((int)(global[i]))*256+global[i+1];
             fletcher %= 65535;
         }
+printf( "FLETCHER 0 == %ld\n", fletcher );
         for (size_t i=0;i!=movie.size();i+=2)
         {
             fletcher += ((int)(movie[i]))*256+movie[i+1];
             fletcher %= 65535;
         }
+printf( "FLETCHER 1 == %ld\n", fletcher );
         for (size_t i=0;i!=toc.size();i+=2)
         {
             fletcher += ((int)(toc[i]))*256+toc[i+1];
             fletcher %= 65535;
         }
+printf( "FLETCHER 2 == %ld\n", fletcher );
         for (size_t i=0;i!=poster.size();i+=2)
         {
             fletcher += ((int)(poster[i]))*256+poster[i+1];
             fletcher %= 65535;
         }
+printf( "FLETCHER 3 == %ld\n", fletcher );
         uint8_t b = fletcher/256;
         fwrite( &b, 1, 1, movie_file );
         b = fletcher%256;
         fwrite( &b, 1, 1, movie_file );
+
+return;
+
+#if 0
+        FILE *movie_file = fopen( flim_pathname.c_str(), "wb" );
+
 
         fwrite( header.data(), header.size(), 1, movie_file );
         fwrite( global.data(), global.size(), 1, movie_file );
@@ -687,36 +417,6 @@ std::cout << "PROFILE BYTERATE " << profile_.byterate() << "\n";
         fwrite( poster.data(), poster.size(), 1, movie_file );
 
         fclose( movie_file );
-
-        if (writers.size())
-        {
-
-            size_t index = 0;
-
-            for (auto &writer:writers)
-            {
-                auto sound = std::begin(audio_samples_);
-
-                //  Generate the mp4 file
-                for (auto &frame:frames)
-                {
-                    // std::clog << frame.ticks << std::flush;
-                    for (size_t i=0;i!=frame.ticks;i++)
-                    {
-                        index++;
-                        std::clog << "Wrote " << index << " frames\r" << std::flush;
-                        sound_frame_t snd;
-
-                        if (!profile_.silent())
-                            if (sound<std::end(audio_samples_))
-                                snd = *sound++;
-
-                        writer->write_frame( frame.result.as_image(), snd );
-                    }
-                }
-                std::clog << "\n";
-            }
-        }
 
         //  Generating the cover
         for (size_t i=cover_begin_;i<=cover_end_;i++)
@@ -730,6 +430,7 @@ std::cout << "PROFILE BYTERATE " << profile_.byterate() << "\n";
                 write_image( buffer, logimg );
             }
         }
+#endif
     }
 };
 
