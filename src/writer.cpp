@@ -357,6 +357,28 @@ std::unique_ptr<output_writer> make_gif_writer(const std::string &movie_path, [[
     return std::make_unique<gif_writer>(movie_path);
 }
 
+class pgm_writer : public output_writer {
+    std::string pattern_;
+    size_t frame_num_ = 1;
+
+public:
+    pgm_writer(const std::string& pattern) : pattern_{ pattern } {
+        // Clean up old files matching this pattern
+        delete_files_of_pattern(pattern_);
+    }
+
+    virtual void write_frame(const image& img, [[maybe_unused]] const sound_frame_t &snd) override {
+        char buffer[1024];
+        sprintf(buffer, pattern_.c_str(), frame_num_);
+        write_image(buffer, img);
+        frame_num_++;
+    }
+};
+
+std::unique_ptr<output_writer> make_pgm_writer(const std::string& pattern) {
+    return std::make_unique<pgm_writer>(pattern);
+}
+
 class null_writer : public output_writer {
 public:
     virtual void write_frame([[maybe_unused]] const image& img, [[maybe_unused]] const sound_frame_t &snd) {}

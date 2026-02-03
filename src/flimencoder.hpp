@@ -345,17 +345,17 @@ public:
     }
 };
 
+#include "flimformat.hpp"
 #include "subtitles.hpp"
 
 class flimencoder
 {
     const encoding_profile &profile_;
 
-    std::string pgm_poster_pattern_ = "out-%06d.pgm"s;  // Poster thumbnails
-    std::string pgm_pattern_ = ""s;  // Actual encoded frames
-    std::string pgm_change_pattern_ = "change-%06d.pgm"s;
-    std::string pgm_diff_pattern_ = "diff-%06d.pgm"s;
-    std::string pgm_target_pattern_ = "target-%06d.pgm"s;
+    std::unique_ptr<output_writer> pgm_poster_writer_;
+    std::unique_ptr<output_writer> pgm_diff_writer_;
+    std::unique_ptr<output_writer> pgm_change_writer_;
+    std::unique_ptr<output_writer> pgm_target_writer_;
 
     std::vector<subtitle> subtitles_;
 
@@ -466,11 +466,10 @@ public:
     void set_comment( const std::string comment ) { comment_ = comment; }
     void set_cover( size_t cover_begin, size_t cover_end ) { cover_begin_ = cover_begin; cover_end_ = cover_end; }
     void set_watermark( const std::string watermark ) { watermark_ = watermark; }
-    void set_pgm_poster_pattern( const std::string pattern ) { pgm_poster_pattern_ = pattern; }
-    void set_pgm_pattern( const std::string pattern ) { pgm_pattern_ = pattern; }
-    void set_diff_pattern( const std::string pattern ) { pgm_diff_pattern_ = pattern; }
-    void set_change_pattern( const std::string pattern ) { pgm_change_pattern_ = pattern; }
-    void set_target_pattern( const std::string pattern ) { pgm_target_pattern_ = pattern; }
+    void set_pgm_poster_pattern( const std::string& pattern ) { if (pattern != "") pgm_poster_writer_ = make_pgm_writer(pattern); }
+    void set_pgm_diff_pattern( const std::string& pattern ) { if (pattern != "") pgm_diff_writer_ = make_pgm_writer(pattern); }
+    void set_pgm_change_pattern( const std::string& pattern ) { if (pattern != "") pgm_change_writer_ = make_pgm_writer(pattern); }
+    void set_pgm_target_pattern( const std::string& pattern ) { if (pattern != "") pgm_target_writer_ = make_pgm_writer(pattern); }
     void set_poster_ts( double poster_ts ) { poster_ts_ = poster_ts; }
     void set_subtitles( const std::vector<subtitle> &subtitles ) { subtitles_ = subtitles; /* yes, it is a copy */ }
 
@@ -539,34 +538,13 @@ std::cout << "POSTER INDEX: " << poster_index << "\n";
 
         fc.compress( profile_.stability(), profile_.byterate(), profile_.group(), profile_.filters(), watermark_, profile_.codecs(), profile_.dither(), profile_.bars(), profile_.anchor_x(), profile_.anchor_y(), profile_.error_algorithm(), profile_.error_bleed(), profile_.error_bidi() );
 
-        if (pgm_poster_pattern_!="") delete_files_of_pattern( pgm_poster_pattern_ );
-        if (pgm_pattern_!="") delete_files_of_pattern( pgm_pattern_ );
-        if (pgm_diff_pattern_!="") delete_files_of_pattern( pgm_diff_pattern_ );
-        if (pgm_change_pattern_!="") delete_files_of_pattern( pgm_change_pattern_ );
-        if (pgm_target_pattern_!="") delete_files_of_pattern( pgm_target_pattern_ );
-
         auto frames = fc.get_frames();
 
-        std::vector<uint8_t> movie; //  #### Should be 'frames'
-        auto out_movie = std::back_inserter( movie );
-
-        framebuffer previous_frame{ profile_.width(), profile_.height() };
-        previous_frame.fill( 0xff );
-
-        if (sDebug)
-            std::clog << "GENERATING ENCODED MOVIE AND PGM FILES\n";
-
-        std::vector<uint8_t> toc;
-        auto out_toc = std::back_inserter( toc );
-
-        if (pgm_poster_pattern_!="")   //  generate posters samples
+        // Diagnostic PGM generation - poster thumbnails from original images
+        if (pgm_poster_writer_)
         {
             for (auto &poster_source:images_)
             {
-                static int img = 1;
-                char buffer[1024];
-
-                sprintf( buffer, pgm_poster_pattern_.c_str(), img++ );
                 image poster_small( 128, 86 );
                 copy( poster_small, poster_source, false );
 
@@ -575,206 +553,75 @@ std::cout << "POSTER INDEX: " << poster_index << "\n";
                 auto error_diff = get_error_diffusion_by_name( "floyd" );
 
                 error_diffusion( poster_small_bw, poster_small, prev, 0, *error_diff, 0.99, true );
-                write_image( buffer, poster_small_bw );
+                pgm_poster_writer_->write_frame( poster_small_bw, {} );
             }
         }
 
-        auto current_frame = std::begin(frames);
-        while (current_frame!=std::end(frames))
+        // Diagnostic PGM generation - frame analysis
+        if (pgm_diff_writer_ || pgm_change_writer_ || pgm_target_writer_)
         {
-            //  logs current image
+            framebuffer previous_frame{ profile_.width(), profile_.height() };
+            previous_frame.fill( 0xff );
+
+            for (auto &frame:frames)
             {
-                static int img = 1;
-                char buffer[1024];
-                if (pgm_poster_pattern_!="")
+                if (pgm_diff_writer_)
                 {
-                    sprintf( buffer, pgm_poster_pattern_.c_str(), img );
-                    // auto logimg = current_frame->result.as_image();
-                    // write_image( buffer, logimg );
-        // image poster_small( 128, 86 );
-        // copy( poster_small, images_[img-1], false );
-
-        // auto prev = poster_small;
-        // auto poster_small_bw = poster_small;
-        // auto error_diff = get_error_diffusion_by_name( "floyd" );
-
-        // error_diffusion( poster_small_bw, poster_small, prev, 0, *error_diff, 0.99, true );
-        // write_image( buffer, poster_small_bw );
-
+                    auto logimg = (frame.result^frame.source).inverted().as_image();
+                    pgm_diff_writer_->write_frame( logimg, {} );
                 }
-                if (pgm_pattern_!="")
+                if (pgm_change_writer_)
                 {
-                    sprintf( buffer, pgm_pattern_.c_str(), img );
-                    auto logimg = current_frame->result.as_image();
-                    write_image( buffer, logimg );
+                    auto logimg = (frame.result^previous_frame).inverted().as_image();
+                    pgm_change_writer_->write_frame( logimg, {} );
+                    previous_frame = frame.result;
                 }
-                if (pgm_diff_pattern_!="")
+                if (pgm_target_writer_)
                 {
-                    sprintf( buffer, pgm_diff_pattern_.c_str(), img );
-                    auto logimg = (current_frame->result^current_frame->source).inverted().as_image();
-                    write_image( buffer, logimg );
+                    auto logimg = frame.source.as_image();
+                    pgm_target_writer_->write_frame( logimg, {} );
                 }
-                if (pgm_change_pattern_!="")
-                {
-                    sprintf( buffer, pgm_change_pattern_.c_str(), img );
-                    auto logimg = (current_frame->result^previous_frame).inverted().as_image();
-                    write_image( buffer, logimg );
-                    previous_frame = current_frame->result;
-                }
-                if (pgm_target_pattern_!="")
-                {
-                    sprintf( buffer, pgm_target_pattern_.c_str(), img );
-                    auto logimg = current_frame->source.as_image();
-                    write_image( buffer, logimg );
-                }
-                img++;
             }
-
-            size_t frame_start = movie.size();
-
-            write2( out_movie, current_frame->ticks );
-
-            if (!profile_.silent())
-            {
-                write2( out_movie, current_frame->ticks*370+8 );           //  size of sound + header + size itself
-                write2( out_movie, 0 );                       //  ffMode
-                write4( out_movie, 65536 );                   //  rate
-                write( out_movie, current_frame->audio );
-            }
-            else
-            {
-                write2( out_movie, 2 );           //  No sound
-            }
-            write2( out_movie, current_frame->video.size()+2 );
-            write( out_movie, current_frame->video );
-
-            //  TOC entry for current frame
-            write2( out_toc, movie.size()-frame_start );
-
-            current_frame++;
         }
 
-        std::vector<uint8_t> global;
-        auto out_global = std::back_inserter( global );
+        // Generate FLIM file
+        encoded_flim ef{ comment_ };
+        size_t total_ticks = std::accumulate( std::begin(frames), std::end(frames), 0, []( size_t a, const flimcompressor::frame &f ){ return a+f.ticks; } );
+        flim_info fi{ profile_.width(), profile_.height(), profile_.silent(), frames.size(), total_ticks, profile_.byterate() };
+        ef.add( fi );
+        ef.add( frames );
+        ef.add_poster( poster_small_bw );
 
-        write2( out_global, profile_.width() );                      //  width
-        write2( out_global, profile_.height() );                      //  height
-        write2( out_global, profile_.silent() );        //  1 = silent
-        write4( out_global, frames.size() );            //  Framecount
-        size_t total_ticks = std::accumulate( std::begin(frames), std::end(frames), 0, []( size_t a, flimcompressor::frame &f ){ return a+f.ticks; } );
-        write4( out_global, total_ticks );              //  Tick count
-
-std::cout << "PROFILE BYTERATE " << profile_.byterate() << "\n";
-        write2( out_global, profile_.byterate() );      //  Byterate
-
-        framebuffer poster_fb{ poster_small_bw };
-        std::vector<uint8_t> poster = poster_fb.raw_values_natural<uint8_t>();
-
-        std::vector<uint8_t> header;
-        auto out_header = std::back_inserter( header );
-
-        write2( out_header, 0x1 );                      //  Version
-        write2( out_header, 4 );                        //  Entry count
-
-        write2( out_header, 0x00 ); //  Info
-        write4( out_header, 0 );  //  TOC offset
-        write4( out_header, global.size() );            //  Frame count
-
-        write2( out_header, 0x01 ); //  MOVIE
-        write4( out_header, global.size() );
-        write4( out_header, movie.size() );          
-
-        write2( out_header, 0x02 ); //  TOC
-        write4( out_header, global.size()+movie.size() ); 
-        write4( out_header, toc.size() );            
-
-        write2( out_header, 0x03 ); //  POSTER
-        write4( out_header, global.size()+movie.size()+toc.size() );
-        write4( out_header, poster.size() );             
-
-        if (sDebug)
-            std::clog << "WRITING FLIM FILE\n";
+        // TODO: Port initial frame feature from feature/looping-and-flim-refactor
+        // if (fc.get_initial())
+        //     ef.add_initial( *fc.get_initial() );
 
         FILE *movie_file = fopen( flim_pathname.c_str(), "wb" );
-
-        char buffer[1024];
-        std::fill( std::begin(buffer), std::end(buffer), 0 );
-        strcpy( buffer, comment_.c_str() );
-        fwrite( buffer, 1022, 1, movie_file );
-
-            //  Computes checksum
-        long fletcher = 0;
-        if ((movie.size()%2)==1)
-            movie.push_back( 0x00 );
-        for (size_t i=0;i!=header.size();i+=2)
-        {
-            fletcher += ((int)(header[i]))*256+header[i+1];
-            fletcher %= 65535;
-        }
-        for (size_t i=0;i!=global.size();i+=2)
-        {
-            fletcher += ((int)(global[i]))*256+global[i+1];
-            fletcher %= 65535;
-        }
-        for (size_t i=0;i!=movie.size();i+=2)
-        {
-            fletcher += ((int)(movie[i]))*256+movie[i+1];
-            fletcher %= 65535;
-        }
-        for (size_t i=0;i!=toc.size();i+=2)
-        {
-            fletcher += ((int)(toc[i]))*256+toc[i+1];
-            fletcher %= 65535;
-        }
-        for (size_t i=0;i!=poster.size();i+=2)
-        {
-            fletcher += ((int)(poster[i]))*256+poster[i+1];
-            fletcher %= 65535;
-        }
-        uint8_t b = fletcher/256;
-        fwrite( &b, 1, 1, movie_file );
-        b = fletcher%256;
-        fwrite( &b, 1, 1, movie_file );
-
-        fwrite( header.data(), header.size(), 1, movie_file );
-        fwrite( global.data(), global.size(), 1, movie_file );
-        fwrite( movie.data(), movie.size(), 1, movie_file );
-        fwrite( toc.data(), toc.size(), 1, movie_file );
-        fwrite( poster.data(), poster.size(), 1, movie_file );
-
+        ef.fwrite( movie_file );
         fclose( movie_file );
 
+        // Production output via writers (mp4, gif, pgm)
         if (writers.size())
         {
-
-            size_t index = 0;
-
             for (auto &writer:writers)
             {
                 auto sound = std::begin(audio_samples_);
 
-                //  Generate the mp4 file
                 for (auto &frame:frames)
                 {
-                    // std::clog << frame.ticks << std::flush;
                     for (size_t i=0;i!=frame.ticks;i++)
                     {
-                        index++;
-                        std::clog << "Wrote " << index << " frames\r" << std::flush;
                         sound_frame_t snd;
-
                         if (!profile_.silent())
                             if (sound<std::end(audio_samples_))
                                 snd = *sound++;
-
                         writer->write_frame( frame.result.as_image(), snd );
                     }
                 }
-                std::clog << "\n";
             }
         }
 
-        //  Generating the cover
+        // Cover generation
         for (size_t i=cover_begin_;i<=cover_end_;i++)
         {
             if (i<frames.size())

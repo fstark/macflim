@@ -685,6 +685,8 @@ int main(int argc, char **argv)
             w.push_back(make_ffmpeg_writer(mp4_file, custom_profile.width(), custom_profile.height()));
         if (gif_file != "")
             w.push_back(make_gif_writer(gif_file, custom_profile.width(), custom_profile.height()));
+        if (pgm_pattern != "")
+            w.push_back(make_pgm_writer(pgm_pattern));
 
         auto encoder = flimencoder{ custom_profile };
         encoder.set_fps(fps);
@@ -692,10 +694,9 @@ int main(int argc, char **argv)
         encoder.set_cover(cover_from, cover_to + 1);
         encoder.set_watermark(watermark);
         encoder.set_pgm_poster_pattern(pgm_poster_pattern);
-        encoder.set_pgm_pattern(pgm_pattern);
-        encoder.set_diff_pattern(diff_pattern);
-        encoder.set_change_pattern(change_pattern);
-        encoder.set_target_pattern(target_pattern);
+        encoder.set_pgm_diff_pattern(diff_pattern);
+        encoder.set_pgm_change_pattern(change_pattern);
+        encoder.set_pgm_target_pattern(target_pattern);
         encoder.set_poster_ts(poster_ts);
         encoder.set_subtitles(subs);
 
