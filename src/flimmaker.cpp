@@ -634,6 +634,9 @@ int main(int argc, char **argv)
         if (height == 0)
             height = custom_profile.height();
 
+        // Update profile with final dimensions (either natural or user-overridden)
+        custom_profile.set_size(width, height);
+
         if (input_file == "")
         {
             usage(cmd_name);
