@@ -48,6 +48,7 @@ protected:
     bool silent_ = false;
 
     initial_frame_mode initial_mode_ = initial_frame_mode::optional;
+    bool loop_ = false;
 
     std::vector<flimcompressor::codec_spec> codecs_;
 
@@ -133,6 +134,9 @@ public:
             return false;
         return true;
     }
+
+    bool loop() const { return loop_; }
+    void set_loop(bool loop) { loop_ = loop; }
 
     static bool profile_named(const std::string name, size_t width, size_t height, encoding_profile &result)
     {
@@ -358,12 +362,16 @@ public:
             cmd << " --codec " << c.coder->description();
 
         cmd << " --silent " << (silent_ ? "true" : "false");
-        
+
         // Add initial-frame mode to description
-        const char* initial_mode_str = "optional";
-        if (initial_mode_ == initial_frame_mode::none) initial_mode_str = "false";
-        else if (initial_mode_ == initial_frame_mode::required) initial_mode_str = "true";
+        const char *initial_mode_str = "optional";
+        if (initial_mode_ == initial_frame_mode::none)
+            initial_mode_str = "false";
+        else if (initial_mode_ == initial_frame_mode::required)
+            initial_mode_str = "true";
         cmd << " --initial-frame " << initial_mode_str;
+        
+        cmd << " --loop " << (loop_ ? "true" : "false");
 
         return cmd.str();
     }
@@ -581,7 +589,7 @@ public:
 
         flimcompressor fc{profile_.width(), profile_.height(), images_, audio_samples_, fps_ / profile_.fps_ratio(), subtitles_};
 
-        fc.compress(profile_.stability(), profile_.byterate(), profile_.group(), profile_.filters(), watermark_, profile_.codecs(), profile_.dither(), profile_.bars(), profile_.anchor_x(), profile_.anchor_y(), profile_.error_algorithm(), profile_.error_bleed(), profile_.error_bidi(), profile_.initial_mode());
+        fc.compress(profile_.stability(), profile_.byterate(), profile_.group(), profile_.filters(), watermark_, profile_.codecs(), profile_.dither(), profile_.bars(), profile_.anchor_x(), profile_.anchor_y(), profile_.error_algorithm(), profile_.error_bleed(), profile_.error_bidi(), profile_.initial_mode(), profile_.loop());
 
         auto frames = fc.get_frames();
 

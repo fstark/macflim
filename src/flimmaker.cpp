@@ -187,6 +187,7 @@ void usage(const std::string name)
     std::cerr << "    --filters FILTERS           : specifies a set of filters to be applied on image afgter resizing, but before dithering\n";
     std::cerr << "    --codec CODEC               : adds a specific codec to the encoding. The first --codec parameter clears the profile codec list\n";
     std::cerr << "    --initial-frame MODE        : initial frame generation: 'false'=none, 'optional'=backwards compatible (default), 'true'=required\n";
+    std::cerr << "    --loop BOOLEAN              : add trailing frames for perfect loop (default false, requires initial frame)\n";
 
     std::cerr << "\n  Misc options:\n";
     std::cerr << "    --watermark STRING          : adds the string to the upper left corner of the generated flim for identification purposes.\n";
@@ -628,6 +629,12 @@ int main(int argc, char **argv)
                     std::cerr << "Invalid initial-frame mode '" << *argv << "'. Use 'false', 'optional', or 'true'\n";
                     return EXIT_FAILURE;
                 }
+            }
+            else if (!strcmp(*argv, "--loop"))
+            {
+                argc--;
+                argv++;
+                custom_profile.set_loop(bool_from(*argv));
             }
             else if (!strcmp(*argv, "--version"))
             {
