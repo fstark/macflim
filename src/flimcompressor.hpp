@@ -23,6 +23,13 @@ using namespace std::string_literals;
  * The flimcompressor manages higher aspects of the compression
  */
 
+enum class initial_frame_mode
+{
+    none,       // No initial frame written to FLIM
+    optional,   // Initial frame written but encoding starts from black (backwards compatible)
+    required    // Initial frame written and encoding starts from it (not backwards compatible)
+};
+
 class flimcompressor
 {
 public:
@@ -62,11 +69,13 @@ private:
     std::vector<subtitle> subtitles_;
 
     std::vector<frame> frames_;
+    std::optional<framebuffer> initial_fb_;
 
 public:
     flimcompressor( size_t W, size_t H, const std::vector<image> &images, const std::vector<sound_frame_t> &audio, double fps, const std::vector<subtitle> &subtitles ) : W_{W}, H_{H}, images_{images}, audio_{audio}, fps_{fps}, subtitles_{subtitles} {}
 
     const std::vector<frame> &get_frames() const { return frames_; }
+    const std::optional<framebuffer> &get_initial() const { return initial_fb_; }
 
     bool progress_ = true;
 
@@ -504,29 +513,35 @@ public:
     };
 
 
-    void compress( double stability, size_t byterate, bool group, const std::string &filters, const std::string &watermark, const std::vector<codec_spec> &codecs, image::dithering dither, bool bars, double anchor_x, double anchor_y, const std::string error_algorithm, float error_bleed, bool error_bidi )
+    void compress( double stability, size_t byterate, bool group, const std::string &filters, const std::string &watermark, const std::vector<codec_spec> &codecs, image::dithering dither, bool bars, double anchor_x, double anchor_y, const std::string error_algorithm, float error_bleed, bool error_bidi, initial_frame_mode initial_mode = initial_frame_mode::optional )
     {
         image previous( W_, H_ );
         fill( previous, 0 );
 
-static bool generate_initial_frame = false;
-// static bool loop_to_initial = true;
-
-        if (generate_initial_frame)
+        // Generate initial frame if requested
+        if (initial_mode != initial_frame_mode::none)
         {
-            //  #### We painfully extract what the first image should be
+            //  Extract what the first image should be
             image img0( W_,H_ );
-            copy( img0, images_[0], bars, 0.5, 0.5 );
+            copy( img0, images_[0], bars, anchor_x, anchor_y );
             image img1 = filter( img0, filters.c_str() );
             image img2( W_,H_ );
             if (dither==image::error_diffusion)
                 error_diffusion( img2, img1, previous, stability, *get_error_diffusion_by_name( error_algorithm ), error_bleed, error_bidi );
             else if (dither==image::ordered)
                 ordered_dither( img2, img1, previous );
+            else if (dither==image::blue_noise)
+                blue_noise_dither( img2, img1, previous );
             round_corners( img2 );
             ::watermark( img2, watermark );
-            copy( previous, img2 );
-            write_image( "/tmp/start.pgm", previous );
+            
+            // Store the initial framebuffer
+            initial_fb_ = framebuffer{ img2 };
+            
+            // For 'required' mode, start encoding from this image
+            // For 'optional' mode, keep previous as black (backwards compatible)
+            if (initial_mode == initial_frame_mode::required)
+                copy( previous, img2 );
         }
 
 
