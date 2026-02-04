@@ -198,7 +198,7 @@ void usage(const std::string name)
     for (auto n : {"128k", "512k", "xl", "plus", "se", "portable", "se30", "perfect"})
     {
         encoding_profile p;
-        encoding_profile::profile_named(n, 512, 342, p);
+        encoding_profile::profile_named(n, p);
         std::cerr << "        " << n << " : " << p.description() << "\n";
     }
 
@@ -287,7 +287,6 @@ int main(int argc, char **argv)
 
         bool generated_cache = true;
         bool downloaded_file = false;
-        bool profile_set = false;
 
         const std::string cmd_name{argv[0]};
 
@@ -310,12 +309,12 @@ int main(int argc, char **argv)
         comment += version;
         comment += "\n";
 
-        size_t width = 512;
-        size_t height = 342;
+        size_t width = 0;
+        size_t height = 0;
         std::string profile_name = "se30";
 
         encoding_profile custom_profile;
-        if (!encoding_profile::profile_named(profile_name, width, height, custom_profile))
+        if (!encoding_profile::profile_named(profile_name, custom_profile))
         {
             std::cerr << "Cannot find default profile '" << profile_name << "'\n";
             ::exit(EXIT_FAILURE);
@@ -376,51 +375,29 @@ int main(int argc, char **argv)
                 argc--;
                 argv++;
                 profile_name = *argv;
-                if (profile_name == "xl")
-                {
-                    width = (720 / 32) * 32;
-                    height = 364;
-                    std::cerr << "xl -- setting resolution to " << width << "x" << height << "\n";
-                }
-                if (profile_name == "portable")
-                {
-                    width = (640 / 32) * 32;
-                    height = 400;
-                    std::cerr << "portable -- setting resolution to " << width << "x" << height << "\n";
-                }
-                if (!encoding_profile::profile_named(profile_name, width, height, custom_profile))
+                if (!encoding_profile::profile_named(profile_name, custom_profile))
                 {
                     std::cerr << "Cannot find encoding profile '" << *argv << "'\n";
                     ::exit(EXIT_FAILURE);
                 }
-                profile_set = true;
+
             }
             else if (!strcmp(*argv, "--width"))
             {
                 argc--;
                 argv++;
-                if (profile_set)
-                {
-                    std::cerr << "Changing width will reset setting profile to '" << profile_name << "'\n";
-                }
                 width = atoi(*argv);
                 if ((width % 32) != 0)
                 {
                     width = (width / 32) * 32;
                     std::cerr << "Width must be multiple of 32, rounding it down to '" << width << "'\n";
                 }
-                encoding_profile::profile_named(profile_name, width, height, custom_profile);
             }
             else if (!strcmp(*argv, "--height"))
             {
                 argc--;
                 argv++;
-                if (profile_set)
-                {
-                    std::cerr << "Changing height will reset setting profile to '" << profile_name << "'\n";
-                }
                 height = atoi(*argv);
-                encoding_profile::profile_named(profile_name, width, height, custom_profile);
             }
             else if (!strcmp(*argv, "--byterate"))
             {
@@ -650,6 +627,12 @@ int main(int argc, char **argv)
             argc--;
             argv++;
         }
+
+        // Apply profile's natural dimensions if user didn't override them
+        if (width == 0)
+            width = custom_profile.width();
+        if (height == 0)
+            height = custom_profile.height();
 
         if (input_file == "")
         {
