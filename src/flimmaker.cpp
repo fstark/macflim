@@ -292,11 +292,7 @@ int main(int argc, char **argv)
 
         // test_ffmpeg(argv[1]);
 
-        std::vector<flimcompressor::codec_spec> codecs;
-        codecs.push_back({});
-        codecs.back().signature = 0x00;
-        codecs.back().penality = 1;
-        codecs.back().coder = std::make_shared<null_compressor>(0, 0);
+        std::vector<std::string> user_codec_specs;
 
         std::string comment = "FLIM\n";
         for (int i = 0; i != argc; i++)
@@ -559,7 +555,7 @@ int main(int argc, char **argv)
             {
                 argc--;
                 argv++;
-                codecs.push_back(flimcompressor::make_codec(*argv, width, height));
+                user_codec_specs.push_back(*argv);
             }
             else if (!strcmp(*argv, "--dither"))
             {
@@ -637,6 +633,24 @@ int main(int argc, char **argv)
         // Update profile with final dimensions (either natural or user-overridden)
         custom_profile.set_size(width, height);
 
+        // Create codecs from profile's factory with finalized dimensions
+        custom_profile.create_codecs();
+
+        // If user specified custom codecs, create and override profile codecs
+        if (user_codec_specs.size() > 0)
+        {
+            std::vector<flimcompressor::codec_spec> user_codecs;
+            user_codecs.push_back({});
+            user_codecs.back().signature = 0x00;
+            user_codecs.back().penality = 1;
+            user_codecs.back().coder = std::make_shared<null_compressor>(0, 0);
+            for (const auto &spec : user_codec_specs)
+            {
+                user_codecs.push_back(flimcompressor::make_codec(spec, width, height));
+            }
+            custom_profile.set_codecs(user_codecs);
+        }
+
         if (input_file == "")
         {
             usage(cmd_name);
@@ -696,11 +710,6 @@ int main(int argc, char **argv)
 
         if (poster_ts == -1)
             poster_ts = duration / 3;
-
-        if (codecs.size() > 1)
-        {
-            custom_profile.set_codecs(codecs);
-        }
 
         if (auto_watermark)
         {

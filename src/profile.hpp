@@ -3,6 +3,7 @@
 #include "image.hpp"
 #include "flimcompressor.hpp"
 #include <sstream>
+#include <functional>
 
 using namespace std::string_literals;
 
@@ -35,6 +36,8 @@ protected:
     bool loop_ = false;
 
     std::vector<flimcompressor::codec_spec> codecs_;
+    std::function<std::vector<flimcompressor::codec_spec>(const encoding_profile&)> codec_factory_ = 
+        [](const encoding_profile&) { return std::vector<flimcompressor::codec_spec>(); };
 
 public:
     size_t width() const { return W_; }
@@ -100,6 +103,11 @@ public:
 
     const std::vector<flimcompressor::codec_spec> &codecs() const { return codecs_; }
     void set_codecs(const std::vector<flimcompressor::codec_spec> &codecs) { codecs_ = codecs; }
+    
+    void create_codecs()
+    {
+        set_codecs(codec_factory_(*this));
+    }
 
     bool silent() const { return silent_; }
     void set_silent(bool silent) { silent_ = silent; }
@@ -158,11 +166,14 @@ public:
             result.set_error_algorithm("floyd");
             result.set_error_bidi(true);
             result.set_error_bleed(0.95);
-            result.codecs_.clear();
-            result.codecs_.push_back(flimcompressor::make_codec("null", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("z32", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("lines:count=10", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("invert", result.W_, result.H_));
+            result.codec_factory_ = [](const encoding_profile& p) {
+                std::vector<flimcompressor::codec_spec> codecs;
+                codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("lines:count=10", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("invert", p.width(), p.height()));
+                return codecs;
+            };
             result.set_silent(true);
             return true;
         }
@@ -179,11 +190,14 @@ public:
             result.set_error_algorithm("floyd");
             result.set_error_bidi(true);
             result.set_error_bleed(0.95);
-            result.codecs_.clear();
-            result.codecs_.push_back(flimcompressor::make_codec("null", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("z32", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("lines:count=10", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("invert", result.W_, result.H_));
+            result.codec_factory_ = [](const encoding_profile& p) {
+                std::vector<flimcompressor::codec_spec> codecs;
+                codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("lines:count=50", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("invert", p.width(), p.height()));
+                return codecs;
+            };
             result.set_silent(true);
             return true;
         }
@@ -200,11 +214,14 @@ public:
             result.set_error_algorithm("floyd");
             result.set_error_bidi(true);
             result.set_error_bleed(0.95);
-            result.codecs_.clear();
-            result.codecs_.push_back(flimcompressor::make_codec("null", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("z32", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("lines:count=30", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("invert", result.W_, result.H_));
+            result.codec_factory_ = [](const encoding_profile& p) {
+                std::vector<flimcompressor::codec_spec> codecs;
+                codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("lines:count=30", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("invert", p.width(), p.height()));
+                return codecs;
+            };
             result.set_silent(false);
             return true;
         }
@@ -222,11 +239,14 @@ public:
             result.set_error_algorithm("floyd");
             result.set_error_bidi(true);
             result.set_error_bleed(0.95);
-            result.codecs_.clear();
-            result.codecs_.push_back(flimcompressor::make_codec("null", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("z32", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("lines:count=30", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("invert", result.W_, result.H_));
+            result.codec_factory_ = [](const encoding_profile& p) {
+                std::vector<flimcompressor::codec_spec> codecs;
+                codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("lines:count=30", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("invert", p.width(), p.height()));
+                return codecs;
+            };
             result.set_silent(false);
             return true;
         }
@@ -243,11 +263,14 @@ public:
             result.set_error_algorithm("floyd");
             result.set_error_bidi(true);
             result.set_error_bleed(0.98);
-            result.codecs_.clear();
-            result.codecs_.push_back(flimcompressor::make_codec("null", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("z32", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("lines:count=50", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("invert", result.W_, result.H_));
+            result.codec_factory_ = [](const encoding_profile& p) {
+                std::vector<flimcompressor::codec_spec> codecs;
+                codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("lines:count=50", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("invert", p.width(), p.height()));
+                return codecs;
+            };
             result.set_silent(false);
             return true;
         }
@@ -264,11 +287,14 @@ public:
             result.set_error_algorithm("floyd");
             result.set_error_bidi(true);
             result.set_error_bleed(0.98);
-            result.codecs_.clear();
-            result.codecs_.push_back(flimcompressor::make_codec("null", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("z32", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("lines:count=50", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("invert", result.W_, result.H_));
+            result.codec_factory_ = [](const encoding_profile& p) {
+                std::vector<flimcompressor::codec_spec> codecs;
+                codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("lines:count=50", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("invert", p.width(), p.height()));
+                return codecs;
+            };
             result.set_silent(false);
             return true;
         }
@@ -285,11 +311,14 @@ public:
             result.set_error_algorithm("floyd");
             result.set_error_bidi(true);
             result.set_error_bleed(0.99);
-            result.codecs_.clear();
-            result.codecs_.push_back(flimcompressor::make_codec("null", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("z32", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("lines:count=70", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("invert", result.W_, result.H_));
+            result.codec_factory_ = [](const encoding_profile& p) {
+                std::vector<flimcompressor::codec_spec> codecs;
+                codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("lines:count=70", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("invert", p.width(), p.height()));
+                return codecs;
+            };
             result.set_silent(false);
             return true;
         }
@@ -306,11 +335,14 @@ public:
             result.set_error_algorithm("floyd");
             result.set_error_bidi(true);
             result.set_error_bleed(1);
-            result.codecs_.clear();
-            result.codecs_.push_back(flimcompressor::make_codec("null", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("z32", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("lines:count=342", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("invert", result.W_, result.H_));
+            result.codec_factory_ = [](const encoding_profile& p) {
+                std::vector<flimcompressor::codec_spec> codecs;
+                codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("lines:count=70", p.width(), p.height()));
+                codecs.push_back(flimcompressor::make_codec("invert", p.width(), p.height()));
+                return codecs;
+            };
             result.set_silent(false);
             return true;
         }
