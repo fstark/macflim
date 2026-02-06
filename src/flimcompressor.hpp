@@ -506,7 +506,7 @@ public:
         std::vector<frame> get_frames() const { return frames_; }
     };
 
-    void compress( double stability, size_t byterate, bool group, const std::string &filters, const std::string &watermark, const std::vector<codec_spec> &codecs, image::dithering dither, bool bars, double anchor_x, double anchor_y, const std::string error_algorithm, float error_bleed, bool error_bidi, initial_frame_mode initial_mode = initial_frame_mode::optional, bool loop = false )
+    void compress(double stability, size_t byterate, bool group, const std::string &filters, const std::string &watermark, const std::vector<codec_spec> &codecs, image::dithering dither, bool bars, double anchor_x, double anchor_y, const std::string error_algorithm, float error_bleed, bool error_bidi, initial_frame_mode initial_mode = initial_frame_mode::optional, bool loop = false)
     {
         image previous(W_, H_);
         fill(previous, 0);
@@ -544,7 +544,7 @@ public:
         CompressorHelper ch{d, sb, codecs, fps_, byterate, audio_, group};
         for (auto &big_image : images_)
             ch.add(big_image);
-        
+
         // Perfect looping: add trailing frames until we return to initial frame
         if (loop && initial_fb_)
         {
@@ -560,7 +560,7 @@ public:
             else
                 std::clog << "Added " << trailing_count << " trailing frames for perfect loop\n";
         }
-        
+
         frames_ = ch.get_frames();
 #else
         //  This is the initial image, all black by default

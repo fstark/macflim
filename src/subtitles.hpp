@@ -27,4 +27,3 @@ std::vector<subtitle> read_subtitles(std::istream &in);
 
 /// Offset the subtitles of -from seconds and truncate so it is not longer than duration seconds.
 std::vector<subtitle> subtitles_extract(const std::vector<subtitle> &subtitles, timestamp_t from, timestamp_t duration);
-

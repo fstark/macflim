@@ -36,8 +36,9 @@ protected:
     bool loop_ = false;
 
     std::vector<flimcompressor::codec_spec> codecs_;
-    std::function<std::vector<flimcompressor::codec_spec>(const encoding_profile&)> codec_factory_ = 
-        [](const encoding_profile&) { return std::vector<flimcompressor::codec_spec>(); };
+    std::function<std::vector<flimcompressor::codec_spec>(const encoding_profile &)> codec_factory_ =
+        [](const encoding_profile &)
+    { return std::vector<flimcompressor::codec_spec>(); };
 
 public:
     size_t width() const { return W_; }
@@ -103,7 +104,7 @@ public:
 
     const std::vector<flimcompressor::codec_spec> &codecs() const { return codecs_; }
     void set_codecs(const std::vector<flimcompressor::codec_spec> &codecs) { codecs_ = codecs; }
-    
+
     void create_codecs()
     {
         set_codecs(codec_factory_(*this));
@@ -166,7 +167,8 @@ public:
             result.set_error_algorithm("floyd");
             result.set_error_bidi(true);
             result.set_error_bleed(0.95);
-            result.codec_factory_ = [](const encoding_profile& p) {
+            result.codec_factory_ = [](const encoding_profile &p)
+            {
                 std::vector<flimcompressor::codec_spec> codecs;
                 codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
                 codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
@@ -190,7 +192,8 @@ public:
             result.set_error_algorithm("floyd");
             result.set_error_bidi(true);
             result.set_error_bleed(0.95);
-            result.codec_factory_ = [](const encoding_profile& p) {
+            result.codec_factory_ = [](const encoding_profile &p)
+            {
                 std::vector<flimcompressor::codec_spec> codecs;
                 codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
                 codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
@@ -214,7 +217,8 @@ public:
             result.set_error_algorithm("floyd");
             result.set_error_bidi(true);
             result.set_error_bleed(0.95);
-            result.codec_factory_ = [](const encoding_profile& p) {
+            result.codec_factory_ = [](const encoding_profile &p)
+            {
                 std::vector<flimcompressor::codec_spec> codecs;
                 codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
                 codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
@@ -239,7 +243,8 @@ public:
             result.set_error_algorithm("floyd");
             result.set_error_bidi(true);
             result.set_error_bleed(0.95);
-            result.codec_factory_ = [](const encoding_profile& p) {
+            result.codec_factory_ = [](const encoding_profile &p)
+            {
                 std::vector<flimcompressor::codec_spec> codecs;
                 codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
                 codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
@@ -263,7 +268,8 @@ public:
             result.set_error_algorithm("floyd");
             result.set_error_bidi(true);
             result.set_error_bleed(0.98);
-            result.codec_factory_ = [](const encoding_profile& p) {
+            result.codec_factory_ = [](const encoding_profile &p)
+            {
                 std::vector<flimcompressor::codec_spec> codecs;
                 codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
                 codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
@@ -287,7 +293,8 @@ public:
             result.set_error_algorithm("floyd");
             result.set_error_bidi(true);
             result.set_error_bleed(0.98);
-            result.codec_factory_ = [](const encoding_profile& p) {
+            result.codec_factory_ = [](const encoding_profile &p)
+            {
                 std::vector<flimcompressor::codec_spec> codecs;
                 codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
                 codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
@@ -311,7 +318,8 @@ public:
             result.set_error_algorithm("floyd");
             result.set_error_bidi(true);
             result.set_error_bleed(0.99);
-            result.codec_factory_ = [](const encoding_profile& p) {
+            result.codec_factory_ = [](const encoding_profile &p)
+            {
                 std::vector<flimcompressor::codec_spec> codecs;
                 codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
                 codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
@@ -335,7 +343,8 @@ public:
             result.set_error_algorithm("floyd");
             result.set_error_bidi(true);
             result.set_error_bleed(1);
-            result.codec_factory_ = [](const encoding_profile& p) {
+            result.codec_factory_ = [](const encoding_profile &p)
+            {
                 std::vector<flimcompressor::codec_spec> codecs;
                 codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
                 codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
@@ -394,7 +403,7 @@ public:
         else if (initial_mode_ == initial_frame_mode::required)
             initial_mode_str = "true";
         cmd << " --initial-frame " << initial_mode_str;
-        
+
         cmd << " --loop " << (loop_ ? "true" : "false");
 
         return cmd.str();

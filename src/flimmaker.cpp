@@ -376,7 +376,6 @@ int main(int argc, char **argv)
                     std::cerr << "Cannot find encoding profile '" << *argv << "'\n";
                     ::exit(EXIT_FAILURE);
                 }
-
             }
             else if (!strcmp(*argv, "--width"))
             {
