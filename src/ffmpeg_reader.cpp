@@ -10,6 +10,7 @@ extern "C"
 }
 
 #include <array>
+#include <format>
 
 extern bool sDebug;
 
@@ -420,8 +421,13 @@ std::vector<sound_frame_t> decode_audio(const std::string &movie_path, timestamp
         int n_channels = audio_codec_context->ch_layout.nb_channels;
         sound_buffer sound(n_channels, audio_codec_context->sample_rate);
 
+        std::clog << std::format("Audio stream: {}Hz, {} channel(s)\n", 
+                                 audio_codec_context->sample_rate, n_channels);
+
         // Seek to just before the requested start
         timestamp_t seek_to = std::max(from - 10.0, 0.0);
+        std::clog << std::format("Seeking to {:.1f}s (target: {:.1f}s, duration: {:.1f}s, end: {:.1f}s)\n",
+                                 seek_to, from, duration, from + duration);
         if (avformat_seek_file(format_context, -1, seek_to * AV_TIME_BASE,
                                seek_to * AV_TIME_BASE, seek_to * AV_TIME_BASE,
                                AVSEEK_FLAG_ANY) < 0)
@@ -434,6 +440,7 @@ std::vector<sound_frame_t> decode_audio(const std::string &movie_path, timestamp
 
         bool found_sound = false;
         double end_time = from + duration; // Stop decoding audio after this time
+        double last_log_time = from;
 
         // Pass 1: decode all audio packets into the sound_buffer
         std::clog << "Decoding audio...\n";
@@ -457,17 +464,32 @@ std::vector<sound_frame_t> decode_audio(const std::string &movie_path, timestamp
                     double pts = frame->pts * av_q2d(audio_stream->time_base);
                     if (pts >= from && pts < end_time)
                     {
+                        // Log progress every 5 seconds
+                        if (pts - last_log_time >= 5.0)
+                        {
+                            double progress = (pts - from) / duration * 100.0;
+                            std::clog << std::format("  Decoding audio: {:.1f}s / {:.1f}s ({:.0f}%)\r",
+                                                     pts, end_time, progress);
+                            std::clog.flush();
+                            last_log_time = pts;
+                        }
+
                         if (!found_sound)
                         {
                             found_sound = true;
                             auto skip = pts - from;
                             if (skip > 0)
                             {
-                                std::clog << "Inserting " << skip << " seconds of silence\n";
+                                std::clog << std::format("Inserting {:.3f} seconds of silence\n", skip);
                                 sound.append_silence(skip);
                             }
                         }
                         sound.append_samples((float **)frame->extended_data, frame->nb_samples);
+                    }
+                    else if (pts >= end_time)
+                    {
+                        // We've passed the end time, no need to continue
+                        goto done_decoding;
                     }
                 }
             }
@@ -476,8 +498,9 @@ std::vector<sound_frame_t> decode_audio(const std::string &movie_path, timestamp
                 av_packet_unref(pkt);
             }
         }
+        done_decoding:
 
-        // Flush the audio decoder
+        // Flush the audio decoder to get any remaining frames
         avcodec_send_packet(audio_codec_context, nullptr);
         while (true)
         {
@@ -498,13 +521,17 @@ std::vector<sound_frame_t> decode_audio(const std::string &movie_path, timestamp
                 }
                 sound.append_samples((float **)frame->extended_data, frame->nb_samples);
             }
+            else if (pts >= end_time)
+            {
+                break; // Stop flushing once we've passed end_time
+            }
         }
 
         // Normalize (find min/max)
         sound.process();
 
         // Convert to Mac sound frames (370 bytes each at 1/60th second)
-        std::clog << "Converting audio to Mac format...\n";
+        std::clog << "\nConverting audio to Mac format...\n";
         for (size_t i = 0;; i++)
         {
             auto sf = sound.extract(i);
@@ -513,7 +540,8 @@ std::vector<sound_frame_t> decode_audio(const std::string &movie_path, timestamp
             result.push_back(*sf);
         }
 
-        std::clog << "Audio: " << result.size() << " sound frames (" << result.size() / 60.0 << "s)\n";
+        std::clog << std::format("Audio: {} sound frames ({:.2f}s)\n", 
+                                 result.size(), result.size() / 60.0);
 
         // Clean up
         av_frame_free(&frame);
