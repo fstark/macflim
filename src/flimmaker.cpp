@@ -149,7 +149,7 @@ void usage(const std::string name)
 
     std::cerr << "\n  Input options:\n";
     std::cerr << "    --from TIME                 : time offset to start extracting from\n";
-    std::cerr << "    --duration TIME             : time duration of the extracted clip\n";
+    std::cerr << "    --duration TIME             : time duration of the extracted clip (default: full media)\n";
     std::cerr << "    --poster TIME               : frame to extract the poster from (by default 1/3 of duration)ß\n";
     std::cerr << "    --fps FPS                   : for 'pgm' pattern, specifies the framerate to be used\n";
     std::cerr << "    --audio FILE                : for 'pgm', specifices a separate u8 22200 Hz wav file with audio\n";
@@ -271,7 +271,7 @@ int main(int argc, char **argv)
         std::string audio_arg = "audio.raw";
         timestamp_t from_index = 0; // #### This is not an index, it is a timestamp
         timestamp_t to_index = std::numeric_limits<double>::max();
-        double duration = 300; // 5 minutes by default
+        double duration = 4 * 60 * 60; // 4 hours by default (clamped to actual media length)
         timestamp_t poster_ts = -1;
         int cover_from = -1;
         int cover_to = -1;
@@ -707,7 +707,7 @@ int main(int argc, char **argv)
             }
         }
 
-        if (poster_ts == -1)
+        if (poster_ts == -1 && ends_with(input_file, ".pgm"))
             poster_ts = duration / 3;
 
         if (auto_watermark)
@@ -733,6 +733,22 @@ int main(int argc, char **argv)
             fps = r->frame_rate();
         }
 
+        // Pass 1: decode audio separately (before video pass)
+        std::vector<sound_frame_t> audio_samples;
+        if (!custom_profile.silent() && !ends_with(input_file, ".pgm"))
+        {
+            audio_samples = decode_audio(input_file, from_index, duration);
+        }
+
+        // Compute poster timestamp now that we know actual content duration
+        if (poster_ts == -1)
+        {
+            if (!audio_samples.empty())
+                poster_ts = (audio_samples.size() / 60.0) / 3; // 1/3 of actual audio duration
+            else
+                poster_ts = duration / 3;
+        }
+
         std::vector<std::unique_ptr<output_writer>> w;
         if (mp4_file != "")
             w.push_back(make_ffmpeg_writer(mp4_file, custom_profile.width(), custom_profile.height()));
@@ -753,7 +769,7 @@ int main(int argc, char **argv)
         encoder.set_poster_ts(poster_ts);
         encoder.set_subtitles(subs);
 
-        encoder.make_flim(out_arg, r.get(), w);
+        encoder.make_flim(out_arg, r.get(), std::move(audio_samples), w);
 
         if (downloaded_file && generated_cache)
         {

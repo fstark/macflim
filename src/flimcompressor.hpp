@@ -10,6 +10,8 @@
 #include <bitset>
 #include <algorithm>
 #include <memory>
+#include <functional>
+#include <optional>
 
 #include "reader.hpp"
 #include "subtitles.hpp"
@@ -61,7 +63,7 @@ private:
     size_t W_;
     size_t H_;
 
-    const std::vector<image> &images_;
+    std::function<std::optional<image>()> next_image_;
     const std::vector<sound_frame_t> &audio_;
     const double fps_;
     std::vector<subtitle> subtitles_;
@@ -70,7 +72,7 @@ private:
     std::optional<framebuffer> initial_fb_;
 
 public:
-    flimcompressor(size_t W, size_t H, const std::vector<image> &images, const std::vector<sound_frame_t> &audio, double fps, const std::vector<subtitle> &subtitles) : W_{W}, H_{H}, images_{images}, audio_{audio}, fps_{fps}, subtitles_{subtitles} {}
+    flimcompressor(size_t W, size_t H, std::function<std::optional<image>()> next_image, const std::vector<sound_frame_t> &audio, double fps, const std::vector<subtitle> &subtitles) : W_{W}, H_{H}, next_image_{std::move(next_image)}, audio_{audio}, fps_{fps}, subtitles_{subtitles} {}
 
     const std::vector<frame> &get_frames() const { return frames_; }
     const std::optional<framebuffer> &get_initial() const { return initial_fb_; }
@@ -482,7 +484,12 @@ public:
 
                 frames_.push_back(f);
                 if (log_progress_)
-                    std::clog << "Encoded " << frames_.size() << " output frames\r" << std::flush;
+                {
+                    double time_s = current_tick_ / 60.0;
+                    int min = (int)(time_s / 60);
+                    double sec = time_s - min * 60;
+                    fprintf(stderr, "Encoded frame %zu (%d:%05.2fs)\r", frames_.size(), min, sec);
+                }
 
                 current_fb_ = best_result->image();
             }
@@ -511,12 +518,21 @@ public:
         image previous(W_, H_);
         fill(previous, 0);
 
+        // Pull all images from the callback
+        // We need the first image for initial frame generation, so pull it now
+        auto first_opt = next_image_();
+        if (!first_opt)
+        {
+            std::clog << "Warning: no input images\n";
+            return;
+        }
+
         // Generate initial frame if requested or if looping is enabled
         if (loop || initial_mode != initial_frame_mode::none)
         {
             //  Extract what the first image should be
             image img0(W_, H_);
-            copy(img0, images_[0], bars, anchor_x, anchor_y);
+            copy(img0, *first_opt, bars, anchor_x, anchor_y);
             image img1 = filter(img0, filters.c_str());
             image img2(W_, H_);
             if (dither == image::error_diffusion)
@@ -542,8 +558,11 @@ public:
         Ditherer d{previous, dp};
         SubtitleBurner sb{subtitles_};
         CompressorHelper ch{d, sb, codecs, fps_, byterate, audio_, group};
-        for (auto &big_image : images_)
-            ch.add(big_image);
+
+        // Process first image, then pull remaining from callback
+        ch.add(*first_opt);
+        while (auto img = next_image_())
+            ch.add(*img);
 
         // Perfect looping: add trailing frames until we return to initial frame
         if (loop && initial_fb_)

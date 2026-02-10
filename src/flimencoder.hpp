@@ -2,6 +2,8 @@
 
 #include <string>
 #include <cstring>
+#include <functional>
+#include <optional>
 
 #include "profile.hpp"
 #include "flimformat.hpp"
@@ -23,9 +25,6 @@ class flimencoder
 
     std::vector<subtitle> subtitles_;
 
-    std::vector<image> images_;
-    std::vector<sound_frame_t> audio_samples_;
-
     double fps_ = 24;
     double poster_ts_ = 0;
 
@@ -35,11 +34,6 @@ class flimencoder
 
     size_t cover_begin_; /// Begin index of cover image
     size_t cover_end_;   /// End index of cover image
-
-    size_t frame_from_image(size_t n) const
-    {
-        return ticks_from_frame(n - 1, fps_ / profile_.fps_ratio());
-    }
 
 #if 0
     //  Read all images from disk
@@ -81,15 +75,6 @@ class flimencoder
         std::clog << "VIDEO: READ " << images_.size() << " images\n";
     }
 #endif
-
-    void fix()
-    {
-        //  TODO: make sure images and sound size matches
-
-        std::clog << "**** fps               : " << fps_ << "/" << profile_.fps_ratio() << "=" << fps_ / profile_.fps_ratio() << "\n";
-        std::clog << "**** # of input images : " << images_.size() << "\n";
-        std::clog << "**** # of movie ticks  : " << frame_from_image(images_.size() + 1) << "\n";
-    }
 
     int clamp(double v, int a, int b)
     {
@@ -161,41 +146,75 @@ public:
     void set_subtitles(const std::vector<subtitle> &subtitles) { subtitles_ = subtitles; /* yes, it is a copy */ }
 
     //  Encode all the frames
-    void make_flim(const std::string flim_pathname, input_reader *reader, const std::vector<std::unique_ptr<output_writer>> &writers)
+    void make_flim(const std::string flim_pathname, input_reader *reader, std::vector<sound_frame_t> audio_samples, const std::vector<std::unique_ptr<output_writer>> &writers)
     {
         assert(reader);
 
-        int i = 0;
-        while (auto next = reader->next())
-        {
-            if ((i % profile_.fps_ratio()) == 0)
-                images_.push_back(*next);
-            i++;
-        }
-
-        assert(images_.size() > 0);
-
-        //  Poster extraction
-        image poster_image = images_[0];
+        // Build a pull-callback that wraps the reader, applies fps_ratio skipping,
+        // and captures the poster image at the right index.
         size_t poster_index = poster_ts_ * fps_ / profile_.fps_ratio();
-
-        if (poster_index < images_.size())
-            poster_image = images_[poster_index];
-
         std::cout << "POSTER INDEX: " << poster_index << "\n";
 
+        size_t image_count = 0;
+        image poster_image(1, 1);  // Will be overwritten during the sequential pass
+        bool poster_captured = false;
+        int raw_frame_index = 0;
+
+        auto next_image = [&]() -> std::optional<image>
+        {
+            while (true)
+            {
+                auto next = reader->next();
+                if (!next)
+                    return std::nullopt;
+
+                // fps_ratio skipping: keep every Nth frame
+                int idx = raw_frame_index++;
+                if ((idx % profile_.fps_ratio()) != 0)
+                    continue;
+
+                // Capture poster during the sequential pass
+                if (image_count == poster_index || (!poster_captured && image_count == 0))
+                {
+                    poster_image = *next;
+                    poster_captured = true;
+                }
+
+                image_count++;
+                return *next;
+            }
+        };
+
+        // Peek the first image to ensure we have at least one frame
+        auto first = next_image();
+        assert(first.has_value());
+
+        // If poster is frame 0, it's already captured. Wrap in a callback that
+        // yields the first image first, then continues pulling.
+        bool first_consumed = false;
+        auto next_image_with_first = [&]() -> std::optional<image>
+        {
+            if (!first_consumed)
+            {
+                first_consumed = true;
+                return *first;
+            }
+            return next_image();
+        };
+
+        std::clog << "**** fps               : " << fps_ << "/" << profile_.fps_ratio() << "=" << fps_ / profile_.fps_ratio() << "\n";
+
+        //  Poster processing
         auto filters_string = profile_.filters();
-        poster_image = filter(poster_image, filters_string.c_str());
+        image poster_filtered = filter(poster_image, filters_string.c_str());
 
         image poster_small(128, 86);
-        copy(poster_small, poster_image, false, 0.5, 0.5);
+        copy(poster_small, poster_filtered, false, 0.5, 0.5);
 
         image previous(poster_small.W(), poster_small.H());
         fill(previous, 0);
 
-        // auto prev = poster_small;
         auto poster_small_bw = poster_small;
-        // auto error_diff = get_error_diffusion_by_name( "floyd" );
 
         if (profile_.dither() == image::error_diffusion)
             error_diffusion(poster_small_bw, poster_small, previous, 0, *get_error_diffusion_by_name(profile_.error_algorithm()), profile_.error_bleed(), profile_.error_bidi());
@@ -204,45 +223,21 @@ public:
         else if (profile_.dither() == image::blue_noise)
             blue_noise_dither(poster_small_bw, poster_small, previous);
 
-        // error_diffusion( poster_small_bw, poster_small, prev, 0, *error_diff, 0.99, true );
-        write_image("/tmp/poster1.pgm", poster_image);
+        write_image("/tmp/poster1.pgm", poster_filtered);
         write_image("/tmp/poster2.pgm", poster_small);
         write_image("/tmp/poster3.pgm", poster_small_bw);
 
-        if (!profile_.silent())
-            while (auto next = reader->next_sound())
-            {
-                audio_samples_.push_back(*next);
-            }
-
-        // audio_samples_ = normalize_sound( reader->raw_sound(), images_.size()/fps_*60*370 );
-
-        fix();
-
-        flimcompressor fc{profile_.width(), profile_.height(), images_, audio_samples_, fps_ / profile_.fps_ratio(), subtitles_};
+        // Compress
+        flimcompressor fc{profile_.width(), profile_.height(), next_image_with_first, audio_samples, fps_ / profile_.fps_ratio(), subtitles_};
 
         fc.compress(profile_.stability(), profile_.byterate(), profile_.group(), profile_.filters(), watermark_, profile_.codecs(), profile_.dither(), profile_.bars(), profile_.anchor_x(), profile_.anchor_y(), profile_.error_algorithm(), profile_.error_bleed(), profile_.error_bidi(), profile_.initial_mode(), profile_.loop());
 
         auto frames = fc.get_frames();
 
-        // Diagnostic PGM generation - poster thumbnails from original images
-        if (pgm_poster_writer_)
-        {
-            for (auto &poster_source : images_)
-            {
-                image poster_small(128, 86);
-                copy(poster_small, poster_source, false);
-
-                auto prev = poster_small;
-                auto poster_small_bw = poster_small;
-                auto error_diff = get_error_diffusion_by_name("floyd");
-
-                error_diffusion(poster_small_bw, poster_small, prev, 0, *error_diff, 0.99, true);
-                pgm_poster_writer_->write_frame(poster_small_bw, {});
-            }
-        }
+        std::clog << "\n**** # of input images : " << image_count << "\n";
 
         // Diagnostic PGM generation - frame analysis
+        // (pgm_poster_writer_ is no longer supported without images_ vector)
         if (pgm_diff_writer_ || pgm_change_writer_ || pgm_target_writer_)
         {
             framebuffer previous_frame{profile_.width(), profile_.height()};
@@ -289,9 +284,14 @@ public:
         // Production output via writers (mp4, gif, pgm)
         if (writers.size())
         {
+            size_t total_ticks = 0;
+            for (auto &frame : frames)
+                total_ticks += frame.ticks;
+
             for (auto &writer : writers)
             {
-                auto sound = std::begin(audio_samples_);
+                auto sound = std::begin(audio_samples);
+                size_t tick_count = 0;
 
                 for (auto &frame : frames)
                 {
@@ -299,11 +299,22 @@ public:
                     {
                         sound_frame_t snd;
                         if (!profile_.silent())
-                            if (sound < std::end(audio_samples_))
+                            if (sound < std::end(audio_samples))
                                 snd = *sound++;
                         writer->write_frame(frame.result.as_image(), snd);
+                        tick_count++;
+                        if (tick_count % 60 == 0 || tick_count == total_ticks)
+                        {
+                            double secs = tick_count / 60.0;
+                            int mins = (int)(secs / 60);
+                            double rsecs = secs - mins * 60;
+                            fprintf(stderr, "Writing output: tick %zu/%zu (%d:%05.2fs) %zu%%\r",
+                                    tick_count, total_ticks, mins, rsecs,
+                                    tick_count * 100 / total_ticks);
+                        }
                     }
                 }
+                fprintf(stderr, "\n");
             }
         }
 
