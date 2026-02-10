@@ -1,7 +1,7 @@
 #pragma once
 
 #include "flimcompressor.hpp"
-#include "imgcompress.hpp"
+#include "flimformat_types.hpp"
 
 // Forward declaration
 class encoding_profile;
@@ -13,47 +13,10 @@ void fletcher( long &checksum, const std::vector<uint8_t> &data );
 void fletcher( long &checksum, uint16_t data );
 
 
-//  The info component of a flim, as stored on disk
-struct flim_info
-{
-    size_t width_;          //  2 bytes
-    size_t height_;         //  2 bytes
-    bool silent_;           //  2 bytes
-    size_t frame_count_;    //  4 bytes
-    size_t total_ticks_;    //  4 bytes
-    size_t byterate_;       //  2 bytes
-
-    flim_info( size_t width, size_t height, bool silent, size_t frame_count, size_t total_ticks, size_t byterate )
-        : width_(width), height_(height), silent_(silent),
-          frame_count_(frame_count), total_ticks_(total_ticks), byterate_(byterate)
-    {
-    }
-
-    void serialize( std::vector<uint8_t> &out ) const
-    {
-        auto o = std::back_inserter(out);
-        write2( o, width_ );
-        write2( o, height_ );
-        write2( o, silent_?1:0 );
-        write4( o, frame_count_ );
-        write4( o, total_ticks_ );
-        write2( o, byterate_ );
-    }
-};
-
 //  A completeley encoded flim
 class encoded_flim
 {
     std::string comment_;
-
-    typedef enum 
-    {
-        info = 0,
-        movie = 1,
-        toc = 2,
-        poster = 3,
-        initial = 4
-    } eComponentType;
 
     struct flim_component
     {
@@ -94,7 +57,7 @@ public:
     {
         std::vector<uint8_t> data;
         fi.serialize( data );
-        add_component( info, data );
+        add_component( component_info, data );
     }
 
         //  Adds all the frames and generate the movie and toc component
@@ -131,8 +94,8 @@ public:
             prev_size = movie_data.size();
         }
 
-        add_component( movie, movie_data );
-        add_component( toc, toc_data );
+        add_component( component_movie, movie_data );
+        add_component( component_toc, toc_data );
     }
 
     void add_framebuffer( eComponentType type, const framebuffer &fb )
@@ -150,12 +113,12 @@ public:
     void add_poster( const framebuffer &fb )
     {
         std::vector<uint8_t> data = fb.raw_values_natural<uint8_t>();
-        add_component( poster, data );
+        add_component( component_poster, data );
     }
 
     void add_initial( const framebuffer &fb )
     {
-        add_framebuffer( initial, fb );
+        add_framebuffer( component_initial, fb );
     }
 
     std::vector<uint8_t> header() const

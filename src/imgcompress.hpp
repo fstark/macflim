@@ -44,6 +44,20 @@ void write4( T &out, uint32_t v )
     write2( out, v%65536 );
 }
 
+//  Big-endian deserialization helpers (mirror of write2/write4)
+inline uint16_t read2( const uint8_t *&p )
+{
+    uint16_t v = (uint16_t)(p[0]) * 256 + p[1];
+    p += 2;
+    return v;
+}
+
+inline uint32_t read4( const uint8_t *&p )
+{
+    uint32_t v = (uint32_t)read2( p ) * 65536 + read2( p );
+    return v;
+}
+
 template <typename T>
 void write( T &out, const std::vector<uint32_t> &vec )
 {
