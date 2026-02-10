@@ -129,11 +129,31 @@ static Ptr FlimReadStreamNewPtr( FlimPtr flim, int index )
 
 //	-------------------------------------------------------------------
 
+static Size CountAccessEntries( short *toc, long frameCount, Size blockSize )
+{
+	Size blockCount = 1;
+	Size currentSize = 0;
+	long index;
+	
+	for (index = 0; index != frameCount; index++)
+	{
+		if (currentSize + toc[index] >= blockSize)
+		{
+			blockCount++;
+			currentSize = 0;
+		}
+		currentSize += toc[index];
+	}
+	
+	return blockCount;
+}
+
+//	-------------------------------------------------------------------
+
 static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 {
 	Size read_size;
 	FlimPtr flim = (FlimPtr)NewPtrNoFail( sizeof( struct FlimRec ) );
-	Size maxAccessEntries;
 	int i;
 
 	flim->fRefNum = fRefNum;
@@ -160,12 +180,6 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 		FlimDispos( flim );
 		return NULL;
 	}
-
-		//	Note: this could be made completely dynamic with a bit of work
-	if (MachineIsMinimal())
-		maxAccessEntries = 512L;
-	else
-		maxAccessEntries = 4096L;
 
 		//	Read fletcher, version and stream count
 	SetFPos( flim->fRefNum, fsFromStart, 1022 );
@@ -225,10 +239,10 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 
 	{
 		short *toc;
-		int index;
+		Size index;
 		Size currentSize;
 		long frameCount;
-		short blockIndex = 0;
+		Size blockIndex = 0;
 
 		toc = (short *)FlimReadStreamNewPtr( flim, kFlimStreamToc );
 
@@ -262,6 +276,7 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 		else
 #endif
 		{
+			Size maxAccessEntries = CountAccessEntries( toc, flim->info.frameCount, flim->blockSize );
 			flim->accessTable = (struct AccessItem *)NewPtrNoFail( sizeof(struct AccessItem)*maxAccessEntries );
 	
 			frameCount = 0;
@@ -269,19 +284,15 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 			flim->blockCount = 0;
 			for (index=0;index!=flim->info.frameCount;index++)
 			{
+			
 				//	If we need to go to the next block, so be it
 				if (currentSize+toc[index]>=flim->blockSize)
 				{
 					frameCount = 0;
 					currentSize = 0;
 					blockIndex++;
-					if (blockIndex==maxAccessEntries)
-					{
-						MySetPtrSize( flim->accessTable, sizeof(struct AccessItem)*(maxAccessEntries+1024) );
-						if (MemError())
-							Abort( "\pNot enough access entries to load TOC" );
-						maxAccessEntries += 1024;
-					}
+					if ((blockIndex&0x0fff)==0)
+						printf( "%d\n", blockIndex );
 				}
 	
 				frameCount++;
@@ -296,15 +307,11 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 					return NULL;
 				}
 				flim->accessTable[blockIndex].blockSize = currentSize;
-	
-				flim->blockCount = blockIndex+1;
 			}
+			
+			flim->blockCount = maxAccessEntries;
 		}
-
 		MyDisposPtr( (Ptr)toc );
-	
-		//	Give back the extra memory
-		MySetPtrSize( flim->accessTable, flim->blockCount*sizeof(struct AccessItem) );
 	}
 
 	flim->poster = NULL;
