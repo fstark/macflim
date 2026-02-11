@@ -421,7 +421,7 @@ std::vector<sound_frame_t> decode_audio(const std::string &movie_path, timestamp
         int n_channels = audio_codec_context->ch_layout.nb_channels;
         sound_buffer sound(n_channels, audio_codec_context->sample_rate);
 
-        std::clog << std::format("Audio stream: {}Hz, {} channel(s)\n", 
+        std::clog << std::format("Audio stream: {}Hz, {} channel(s)\n",
                                  audio_codec_context->sample_rate, n_channels);
 
         // Seek to just before the requested start
@@ -498,7 +498,7 @@ std::vector<sound_frame_t> decode_audio(const std::string &movie_path, timestamp
                 av_packet_unref(pkt);
             }
         }
-        done_decoding:
+    done_decoding:
 
         // Flush the audio decoder to get any remaining frames
         avcodec_send_packet(audio_codec_context, nullptr);
@@ -540,7 +540,7 @@ std::vector<sound_frame_t> decode_audio(const std::string &movie_path, timestamp
             result.push_back(*sf);
         }
 
-        std::clog << std::format("Audio: {} sound frames ({:.2f}s)\n", 
+        std::clog << std::format("Audio: {} sound frames ({:.2f}s)\n",
                                  result.size(), result.size() / 60.0);
 
         // Clean up

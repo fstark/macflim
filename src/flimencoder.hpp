@@ -156,7 +156,7 @@ public:
         std::cout << "POSTER INDEX: " << poster_index << "\n";
 
         size_t image_count = 0;
-        image poster_image(1, 1);  // Will be overwritten during the sequential pass
+        image poster_image(1, 1); // Will be overwritten during the sequential pass
         bool poster_captured = false;
         int raw_frame_index = 0;
 

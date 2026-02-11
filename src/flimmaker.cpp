@@ -62,7 +62,7 @@ static int sStream = 0;
 #include "subtitles.hpp"
 
 // Declared in flimutil.cpp
-int flimutil_main( int argc, char **argv );
+int flimutil_main(int argc, char **argv);
 
 inline bool ends_with(std::string const &value, std::string const &ending)
 {
@@ -328,8 +328,8 @@ int main(int argc, char **argv)
         argv++;
 
         //  If the first argument is a .flim file, switch to flim utility mode
-        if (argc > 0 && ends_with( std::string(*argv), ".flim" ))
-            return flimutil_main( argc, argv );
+        if (argc > 0 && ends_with(std::string(*argv), ".flim"))
+            return flimutil_main(argc, argv);
 
         while (argc)
         {
