@@ -291,8 +291,6 @@ static FlimPtr FlimOpen( short fRefNum, Size maxBlockSize )
 					frameCount = 0;
 					currentSize = 0;
 					blockIndex++;
-					if ((blockIndex&0x0fff)==0)
-						printf( "%d\n", blockIndex );
 				}
 	
 				frameCount++;
