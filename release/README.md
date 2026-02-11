@@ -3,8 +3,8 @@
 Just add a tag like:
 
 ```
-git tag -a v2.0.18 -m "Release v2.0.18"
-git push origin v2.0.18
+git tag -a v2.0.19 -m "Release v2.0.19"
+git push origin v2.0.19
 ```
 
 This will build everything and create a draft release. Go to [github and publish the release](https://github.com/fstark/macflim/releases) if correct.

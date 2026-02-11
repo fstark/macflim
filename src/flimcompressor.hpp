@@ -1,7 +1,7 @@
 #pragma once
 
 #include "image.hpp"
-#include "framebuffer.hpp"
+#include "frame.hpp"
 #include "imgcompress.hpp"
 #include "compressor.hpp"
 
@@ -34,31 +34,6 @@ enum class initial_frame_mode
 
 class flimcompressor
 {
-public:
-    /// A frame contains encoded video delta and audio data for a single screen update
-    struct frame
-    {
-        frame(size_t W, size_t H) : source{W, H}, result{W, H} {}
-
-        framebuffer source; //  What we wanted to draw
-
-        size_t ticks;               //  Number of ticks image is displayed
-        std::vector<uint8_t> video; //  Encoded flim
-        std::vector<uint8_t> audio;
-
-        framebuffer result; //  What we actually draw
-
-        //  #### passing silent is inelegant: we should not generate audio data when silenced
-        size_t get_size(bool silent) { return video.size() + silent * audio.size(); }
-
-        frame(
-            const framebuffer &s,
-            const size_t t,
-            const std::vector<uint8_t> &v,
-            const std::vector<uint8_t> &a,
-            const framebuffer &r) : source{s}, ticks{t}, video{v}, audio{a}, result{r} {}
-    };
-
 private:
     size_t W_;
     size_t H_;
@@ -494,7 +469,7 @@ public:
                 current_fb_ = best_result->image();
             }
 
-            auto q = frames_.back().result.proximity(fb);
+            auto q = frames_.back().result->proximity(fb);
 
             // std::clog << "Q=" << q << " \n";
 
@@ -767,7 +742,7 @@ public:
                     std::clog << "Encoded " << frames_.size() << " output frames\r" << std::flush;
             }
 
-            auto q = frames_.back().result.proximity(fb);
+            auto q = frames_.back().result->proximity(fb);
 
             std::clog << "Q=" << q << " \n";
 

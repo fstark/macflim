@@ -60,9 +60,7 @@ static int sStream = 0;
 #include "ffmpeg_reader.hpp"
 #include "writer.hpp"
 #include "subtitles.hpp"
-
-// Declared in flimutil.cpp
-int flimutil_main(int argc, char **argv);
+#include "flimutil.hpp"
 
 inline bool ends_with(std::string const &value, std::string const &ending)
 {

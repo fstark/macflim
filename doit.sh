@@ -153,3 +153,4 @@ make flimmaker
 
 # Performer sample:
 # ../flimmaker --profile performer --filters w10k10g1bscZ /mnt/data0/Development/macflim/sample/source/Sweet_Dreams.mp4 --mp4 out.mp4 --flim sweet-dreams-performer.flim && open out.mp4
+./flimmaker /mnt/data0/Development/macflim/sample/source/Sweet_Dreams.mp4 --from 10 --duration 0.3 --pgm frame-%06d.pgm

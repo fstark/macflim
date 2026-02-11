@@ -6,7 +6,7 @@
 #include <optional>
 
 #include "profile.hpp"
-#include "flimformat.hpp"
+#include "flim.hpp"
 #include "subtitles.hpp"
 
 #include "reader.hpp"
@@ -247,26 +247,26 @@ public:
             {
                 if (pgm_diff_writer_)
                 {
-                    auto logimg = (frame.result ^ frame.source).inverted().as_image();
+                    auto logimg = (*frame.result ^ *frame.source).inverted().as_image();
                     pgm_diff_writer_->write_frame(logimg, {});
                 }
                 if (pgm_change_writer_)
                 {
-                    auto logimg = (frame.result ^ previous_frame).inverted().as_image();
+                    auto logimg = (*frame.result ^ previous_frame).inverted().as_image();
                     pgm_change_writer_->write_frame(logimg, {});
-                    previous_frame = frame.result;
+                    previous_frame = *frame.result;
                 }
                 if (pgm_target_writer_)
                 {
-                    auto logimg = frame.source.as_image();
+                    auto logimg = frame.source->as_image();
                     pgm_target_writer_->write_frame(logimg, {});
                 }
             }
         }
 
         // Generate FLIM file
-        encoded_flim ef{comment_};
-        size_t total_ticks = std::accumulate(std::begin(frames), std::end(frames), 0, [](size_t a, const flimcompressor::frame &f)
+        flim ef{comment_};
+        size_t total_ticks = std::accumulate(std::begin(frames), std::end(frames), 0, [](size_t a, const frame &f)
                                              { return a + f.ticks; });
         flim_info fi{profile_.width(), profile_.height(), profile_.silent(), frames.size(), total_ticks, profile_.byterate()};
         ef.add(fi);
@@ -278,7 +278,7 @@ public:
             ef.add_initial(*fc.get_initial());
 
         FILE *movie_file = fopen(flim_pathname.c_str(), "wb");
-        ef.fwrite(movie_file);
+        ef.write(movie_file);
         fclose(movie_file);
 
         // Production output via writers (mp4, gif, pgm)
@@ -301,7 +301,7 @@ public:
                         if (!profile_.silent())
                             if (sound < std::end(audio_samples))
                                 snd = *sound++;
-                        writer->write_frame(frame.result.as_image(), snd);
+                        writer->write_frame(frame.result->as_image(), snd);
                         tick_count++;
                         if (tick_count % 60 == 0 || tick_count == total_ticks)
                         {
@@ -326,7 +326,7 @@ public:
                 char buffer[1024];
                 std::clog << "COVER " << i << "\n";
                 sprintf(buffer, "cover-%06zu.pgm", i - cover_begin_ + 1);
-                auto logimg = frames[i].result.as_image();
+                auto logimg = frames[i].result->as_image();
                 write_image(buffer, logimg);
             }
         }
