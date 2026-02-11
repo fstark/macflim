@@ -41,6 +41,13 @@ void copy_from_value_be(std::vector<uint8_t>::iterator p, T v)
     }
 }
 
+//  Specialization for uint8_t - no conversion needed
+template <>
+inline void copy_from_value_be<uint8_t>(std::vector<uint8_t>::iterator p, uint8_t v)
+{
+    *p = v;
+}
+
 //  Unpack into q, with arbitrary stride, increments p
 template <typename IT>
 void copy_from_values_be(std::vector<uint8_t>::iterator destination, IT source, size_t count, size_t stride)
