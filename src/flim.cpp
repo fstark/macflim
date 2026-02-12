@@ -179,7 +179,7 @@ void flim::write( FILE *f ) const
 
 void flim::add_component( eComponentType type, const std::vector<uint8_t> &data )
 {
-    components_.push_back( { type, 0, static_cast<uint32_t>(data.size()) } );
+    components_.push_back( { static_cast<uint16_t>(type), 0, static_cast<uint32_t>(data.size()) } );
     blobs_.push_back( data );
 }
 
