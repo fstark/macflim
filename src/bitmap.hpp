@@ -1,13 +1,15 @@
 #pragma once
 
 #include <vector>
-#include "grayscale.hpp"
 #include <cstdint>
 #include <cstring>
 #include <bit>
+#include <random>
+
+#include "grayscale.hpp"
 
 template <typename T>
-std::array<uint8_t, sizeof(T)> from_value(T v)
+std::array<uint8_t, sizeof(T)> bytes_from_value_be(T v)
 {
     std::array<uint8_t, sizeof(T)> res;
     for (int i = 0; i != sizeof(T); i++)
@@ -19,12 +21,12 @@ std::array<uint8_t, sizeof(T)> from_value(T v)
 }
 
 template <typename T>
-std::vector<uint8_t> from_values(const std::vector<T> &values)
+std::vector<uint8_t> bytes_from_values_be(const std::vector<T> &values)
 {
     std::vector<uint8_t> res;
     for (auto &v : values)
     {
-        auto a = from_value(v);
+        auto a = bytes_from_value_be(v);
         res.insert(std::end(res), std::begin(a), std::end(a));
     }
     return res;
@@ -32,7 +34,7 @@ std::vector<uint8_t> from_values(const std::vector<T> &values)
 
 //  unpack a single value
 template <typename T>
-void copy_from_value_be(std::vector<uint8_t>::iterator p, T v)
+void copy_bytes_from_value_be(std::vector<uint8_t>::iterator p, T v)
 {
     for (int i = 0; i != sizeof(T); i++)
     {
@@ -43,23 +45,21 @@ void copy_from_value_be(std::vector<uint8_t>::iterator p, T v)
 
 //  Specialization for uint8_t - no conversion needed
 template <>
-inline void copy_from_value_be<uint8_t>(std::vector<uint8_t>::iterator p, uint8_t v)
+inline void copy_bytes_from_value_be<uint8_t>(std::vector<uint8_t>::iterator p, uint8_t v)
 {
     *p = v;
 }
 
 //  Unpack into q, with arbitrary stride, increments p
 template <typename IT>
-void copy_from_values_be(std::vector<uint8_t>::iterator destination, IT source, size_t count, size_t stride)
+void copy_bytes_from_values_be(std::vector<uint8_t>::iterator destination, IT source, size_t count, size_t stride)
 {
     while (count--)
     {
-        copy_from_value_be(destination, *source++);
+        copy_bytes_from_value_be(destination, *source++);
         destination += stride;
     }
 }
-
-#include <random>
 
 ///  A bitmap is a packed black and white screen
 class bitmap
@@ -96,7 +96,7 @@ private:
     template <typename IT>
     void unpack_horizontal_be(std::vector<uint8_t>::iterator destination, IT source) const
     {
-        copy_from_values_be(destination, source, get_size<typename IT::value_type>(), sizeof(typename IT::value_type));
+        copy_bytes_from_values_be(destination, source, get_size<typename IT::value_type>(), sizeof(typename IT::value_type));
     }
 
     //  Unpack the whole buffer vertically
@@ -105,7 +105,7 @@ private:
     {
         for (size_t i = 0; i != get_width<typename IT::value_type>(); i++)
         {
-            copy_from_values_be(destination, source, H_, get_rowbytes());
+            copy_bytes_from_values_be(destination, source, H_, get_rowbytes());
             source += H_;
             destination += sizeof(typename IT::value_type);
         }

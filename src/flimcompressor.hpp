@@ -155,7 +155,7 @@ public:
         const std::string filters_;         //  Filters to apply
         const double anchor_x_;             //  Horizontal anchor for grayscale extraction
         const double anchor_y_;             //  Vertical anchor for grayscale extraction
-        const grayscale::dithering dither_;     //  The kind of dither to apply
+        const grayscale::dithering dither_; //  The kind of dither to apply
         const std::string error_algorithm_; //  Error algo
         const double stability_;            //  Stability of the transform
         const float error_bleed_;
@@ -167,20 +167,18 @@ public:
     /// Size of the output is the same as the size of the initial image
     class Ditherer
     {
-        size_t W_, H_;         //  Width and height of the generated image
+        size_t W_, H_;             //  Width and height of the generated image
         grayscale dithered_image_; //  The currently dithered image
-                               //  The initial grayscale defines the size of all future images
+                                   //  The initial grayscale defines the size of all future images
 
         const DitheringParameters dp_;
 
     public:
-        Ditherer(const grayscale &inital_image, const DitheringParameters &dp) : W_{inital_image.W()},
-                                                                             H_{inital_image.H()},
-                                                                             dithered_image_{W_, H_},
-                                                                             dp_{dp}
+        Ditherer(const grayscale &initial_image, const DitheringParameters &dp) : W_{initial_image.W()},
+                                                                                  H_{initial_image.H()},
+                                                                                  dithered_image_{initial_image},
+                                                                                  dp_{dp}
         {
-            //  Initial dithered grayscale is black, we dither to whatever the initial grayscale is
-            dither(inital_image);
         }
 
         size_t W() const { return W_; }
@@ -207,8 +205,6 @@ public:
             else
                 throw "Unknown dithering option";
 
-            //  note: used to be done *after* (ie: in a local copy)
-            round_corners(dithered_image);
             ::watermark(dithered_image, dp_.watermark_);
 
             // char buffer[1024];
@@ -262,7 +258,7 @@ public:
     class EncodingResult
     {
         const codec_spec &codec_;         //  Used codec
-        bitmap image_;               //  Resulting image
+        bitmap image_;                    //  Resulting image
         const std::vector<uint8_t> data_; //  Resulting data
         const double quality_;            //  Resulting quality
 
@@ -502,40 +498,39 @@ public:
             return;
         }
 
+#ifndef OLD_VERSION
+        // Create dithering parameters
+        DitheringParameters dp{bars, filters, anchor_x, anchor_y, dither, error_algorithm, stability, error_bleed, error_bidi, watermark};
+
+        bool process_first_image = true;
+
         // Generate initial frame if requested or if looping is enabled
         if (loop || initial_mode != initial_frame_mode::none)
         {
-            //  Extract what the first grayscale should be
-            grayscale img0(W_, H_);
-            copy(img0, *first_opt, bars, anchor_x, anchor_y);
-            grayscale img1 = filter(img0, filters.c_str());
-            grayscale img2(W_, H_);
-            if (dither == grayscale::error_diffusion)
-                error_diffusion(img2, img1, previous, stability, *get_error_diffusion_by_name(error_algorithm), error_bleed, error_bidi);
-            else if (dither == grayscale::ordered)
-                ordered_dither(img2, img1, previous);
-            else if (dither == grayscale::blue_noise)
-                blue_noise_dither(img2, img1, previous);
-            round_corners(img2);
-            ::watermark(img2, watermark);
-
-            // Store the initial bitmap
-            initial_fb_ = bitmap{img2};
+            // Create temporary Ditherer to generate initial frame
+            Ditherer temp_d{previous, dp};
+            temp_d.dither(*first_opt);
+            initial_fb_ = bitmap{temp_d.current()};
 
             // For 'required' mode, start encoding from this image
             // For 'optional' mode, keep previous as black (backwards compatible)
             if (initial_mode == initial_frame_mode::required)
-                copy(previous, img2);
+            {
+                copy(previous, temp_d.current());
+                process_first_image = false;
+            }
         }
 
-#ifndef OLD_VERSION
-        DitheringParameters dp{bars, filters, anchor_x, anchor_y, dither, error_algorithm, stability, error_bleed, error_bidi, watermark};
+        // Create dithering infrastructure for encoding
         Ditherer d{previous, dp};
         SubtitleBurner sb{subtitles_};
         CompressorHelper ch{d, sb, codecs, fps_, byterate, audio_, group};
 
-        // Process first image, then pull remaining from callback
-        ch.add(*first_opt);
+        // Process first image if not already used for initial frame
+        if (process_first_image)
+            ch.add(*first_opt);
+
+        // Process remaining images from callback
         while (auto img = next_image_())
             ch.add(*img);
 
@@ -545,7 +540,7 @@ public:
             int trailing_count = 0;
             const int max_trailing = 100;
             double quality = 0.0;
-            while (trailing_count < max_trailing && (quality = ch.add(previous)) < 1.0)
+            while (trailing_count < max_trailing && (quality = ch.add(*first_opt)) < 1.0)
             {
                 trailing_count++;
             }

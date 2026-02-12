@@ -24,24 +24,24 @@ protected:
 
     bool verbose_ = false;
 
-        /// Width in bytes
-    size_t get_bytes_width() const { return W_/8; }
+    /// Width in bytes
+    size_t get_bytes_width() const { return W_ / 8; }
 
-    static size_t size_t_from( const std::string &v )
+    static size_t size_t_from(const std::string &v)
     {
         return atoi(v.c_str());
     }
 
 public:
-    compressor( size_t width, size_t height ) : W_{width}, H_{height} {}
+    compressor(size_t width, size_t height) : W_{width}, H_{height} {}
 
     virtual ~compressor() {}
-    virtual std::vector<uint8_t> compress( bitmap &current, const bitmap &target, /* weigths, */ size_t budget ) const = 0;
+    virtual std::vector<uint8_t> compress(bitmap &current, const bitmap &target, /* weigths, */ size_t budget) const = 0;
 
-    virtual bool set_parameter( const std::string parameter, const std::string value )
+    virtual bool set_parameter(const std::string parameter, const std::string value)
     {
-        if (parameter=="verbose")
-            verbose_ = bool_from( value );
+        if (parameter == "verbose")
+            verbose_ = bool_from(value);
         return false;
     }
 
@@ -56,11 +56,11 @@ public:
 class null_compressor : public compressor
 {
     virtual std::string name() const { return "null"; };
+
 public:
+    null_compressor(size_t width, size_t height) : compressor{width, height} {}
 
-    null_compressor( size_t width, size_t height ) : compressor{ width, height } {}
-
-    virtual std::vector<uint8_t> compress( [[maybe_unused]] bitmap &current, [[maybe_unused]] const bitmap &target, /* weigths, */ [[maybe_unused]] size_t budget ) const
+    virtual std::vector<uint8_t> compress([[maybe_unused]] bitmap &current, [[maybe_unused]] const bitmap &target, /* weigths, */ [[maybe_unused]] size_t budget) const
     {
         return {};
     }
@@ -69,11 +69,11 @@ public:
 class invert_compressor : public compressor
 {
     virtual std::string name() const { return "invert"; };
+
 public:
+    invert_compressor(size_t width, size_t height) : compressor{width, height} {}
 
-    invert_compressor( size_t width, size_t height ) : compressor{ width, height } {}
-
-    virtual std::vector<uint8_t> compress( bitmap &current, [[maybe_unused]] const bitmap &target, /* weigths, */ [[maybe_unused]] size_t budget ) const
+    virtual std::vector<uint8_t> compress(bitmap &current, [[maybe_unused]] const bitmap &target, /* weigths, */ [[maybe_unused]] size_t budget) const
     {
         current = current.inverted();
         return {};
@@ -84,12 +84,12 @@ class copy_line_compressor : public compressor
 {
     virtual std::string name() const { return "lines"; };
 
-    virtual bool set_parameter( const std::string parameter, const std::string value )
+    virtual bool set_parameter(const std::string parameter, const std::string value)
     {
-        return compressor::set_parameter( parameter, value );
+        return compressor::set_parameter(parameter, value);
     }
 
-    virtual std::vector<uint8_t> compress( bitmap &current, const bitmap &target, /* weigths, */ size_t budget ) const
+    virtual std::vector<uint8_t> compress(bitmap &current, const bitmap &target, /* weigths, */ size_t budget) const
     {
         bitmap result{current};
 
@@ -98,17 +98,17 @@ class copy_line_compressor : public compressor
         size_t line_start = 0;
         size_t line_count = 0;
 
-        size_t target_count = budget / get_bytes_width();  //  est. 64 bytes per line
+        size_t target_count = budget / get_bytes_width(); //  est. 64 bytes per line
 
-// std::clog << "Lines: " << budget << " bytes " << target_count << " lines \n";
+        // std::clog << "Lines: " << budget << " bytes " << target_count << " lines \n";
 
-        for (size_t i=0;i<current.H();i+=target_count)
+        for (size_t i = 0; i < current.H(); i += target_count)
         {
             bitmap fb = current;
-            size_t lc = std::min( target_count, current.H()-i );
-            fb.copy_lines_from( target, i, lc );
-            auto res = fb.count_differences( current );
-            if (res>q)
+            size_t lc = std::min(target_count, current.H() - i);
+            fb.copy_lines_from(target, i, lc);
+            auto res = fb.count_differences(current);
+            if (res > q)
             {
                 q = res;
                 result = fb;
@@ -118,24 +118,24 @@ class copy_line_compressor : public compressor
             }
         }
 
-// std::clog << "COPY LINES : line_count == " << line_count << "  line_count " << line_count << "\n";
-// std::clog << "COPY LINES : bytes_count == " << line_count*get_bytes_width() << "  offset " << line_start*get_bytes_width() << "\n";
+        // std::clog << "COPY LINES : line_count == " << line_count << "  line_count " << line_count << "\n";
+        // std::clog << "COPY LINES : bytes_count == " << line_count*get_bytes_width() << "  offset " << line_start*get_bytes_width() << "\n";
 
-        current = result;       //  #### THIS SEEMS VERY WRONG! WE SHOULD APPLY THE LINES TO CURRENT OR RETURN THE BEST FB FROM ABOVE LOOP
+        current = result; //  #### THIS SEEMS VERY WRONG! WE SHOULD APPLY THE LINES TO CURRENT OR RETURN THE BEST FB FROM ABOVE LOOP
 
         std::vector<uint8_t> data;
-        auto out = std::back_inserter( data );
+        auto out = std::back_inserter(data);
 
-        write2( out, line_count*get_bytes_width() );
-        write2( out, line_start*get_bytes_width() );
+        write2(out, line_count * get_bytes_width());
+        write2(out, line_start * get_bytes_width());
 
-        target.extract( out, 0, line_start, line_count*get_bytes_width() );
+        target.extract(out, 0, line_start, line_count * get_bytes_width());
 
         return data;
     }
 
-    public:
-        copy_line_compressor( size_t width, size_t height ) : compressor{ width, height } {}
+public:
+    copy_line_compressor(size_t width, size_t height) : compressor{width, height} {}
 };
 
 /**
@@ -144,37 +144,42 @@ class copy_line_compressor : public compressor
 template <typename T>
 class vertical_compressor : public compressor
 {
-    virtual std::string name() const { char buffer[1024]; sprintf( buffer, "z%zu", sizeof(T)*8 ); return buffer; }
+    virtual std::string name() const
+    {
+        char buffer[1024];
+        sprintf(buffer, "z%zu", sizeof(T) * 8);
+        return buffer;
+    }
 
     const ruler<T> &ruler_;
 
-        /// Width in underlying type
-    size_t get_T_width() const { return get_bytes_width()/sizeof(T); }
+    /// Width in underlying type
+    size_t get_T_width() const { return get_bytes_width() / sizeof(T); }
 
-        /// Number of element of type for the whole screen
-    size_t get_T_size() const { return get_T_width()*H_; }
+    /// Number of element of type for the whole screen
+    size_t get_T_size() const { return get_T_width() * H_; }
 
-    std::vector<run<T>> compress( size_t max_size, const std::vector<T> &target_data_, const std::vector<size_t> &delta_ ) const
+    std::vector<run<T>> compress(size_t max_size, const std::vector<T> &target_data_, const std::vector<size_t> &delta_) const
     {
-        size_t header_size = sizeof(T)==4?4:2;
+        size_t header_size = sizeof(T) == 4 ? 4 : 2;
 
-        packzmap packmap{ get_T_size(), header_size, sizeof(T) };
+        packzmap packmap{get_T_size(), header_size, sizeof(T)};
 
-        auto mx = *std::max_element( std::begin(delta_), std::end(delta_) );
+        auto mx = *std::max_element(std::begin(delta_), std::end(delta_));
 
         std::vector<std::vector<size_t>> deltas;
-        deltas.resize( mx+1 );
+        deltas.resize(mx + 1);
 
-        for (size_t i=0;i!=get_T_size();i++)
+        for (size_t i = 0; i != get_T_size(); i++)
             if (delta_[i])
-                deltas[delta_[i]].push_back( i );
+                deltas[delta_[i]].push_back(i);
 
         bool done = false;
 
-        for (size_t i=deltas.size()-1;i!=0;i--)
+        for (size_t i = deltas.size() - 1; i != 0; i--)
         {
-            for (auto ix:deltas[i])
-                if (packmap.set(ix)>=max_size)
+            for (auto ix : deltas[i])
+                if (packmap.set(ix) >= max_size)
                 {
                     // std::clog << "Clearing at delta " << i << " size " << packmap.size() << " (index was:" << ix << ")\n";
                     packmap.clear(ix);
@@ -186,10 +191,10 @@ class vertical_compressor : public compressor
                 break;
 
             //  We add the borders of the packmap if not "expensive"
-            for (size_t ix=0;ix!=get_T_size();ix++)
-                if (((ix%H_)!=0) && ((ix%H_)!=H_-1) && packmap.empty_border(ix))
-                    if (delta_[ix]*2>=i)
-                        if (packmap.set(ix)>=max_size)
+            for (size_t ix = 0; ix != get_T_size(); ix++)
+                if (((ix % H_) != 0) && ((ix % H_) != H_ - 1) && packmap.empty_border(ix))
+                    if (delta_[ix] * 2 >= i)
+                        if (packmap.set(ix) >= max_size)
                         {
                             packmap.clear(ix);
                             done = true;
@@ -201,167 +206,168 @@ class vertical_compressor : public compressor
         }
 
         auto res = pack<T>(
-            std::begin( target_data_ ),
-            std::begin( packmap.mask() ),
-            std::end( packmap.mask() ),
+            std::begin(target_data_),
+            std::begin(packmap.mask()),
+            std::end(packmap.mask()),
             max_size,
-            W_/8/sizeof(T),
-            H_
-        );
+            W_ / 8 / sizeof(T),
+            H_);
 
         if (verbose_)
-            std::clog << "=> z" << sizeof(T)*8 << " Generated " << res.size() << " runs\n";
+            std::clog << "=> z" << sizeof(T) * 8 << " Generated " << res.size() << " runs\n";
 
         return res;
     }
 
 public:
-    vertical_compressor( size_t W, size_t H, const ruler<T> &ruler ) :  compressor{ W, H }, ruler_{ruler}
+    vertical_compressor(size_t W, size_t H, const ruler<T> &ruler) : compressor{W, H}, ruler_{ruler}
     {
     }
 
-size_t vertical_from_horizontal( size_t h ) const
-{
-    size_t offset = h*sizeof(T);
-
-    assert( h<get_T_size() );
-
-    size_t scr_x = offset%get_bytes_width();
-    size_t scr_y = offset/get_bytes_width();
-
-    scr_x /= sizeof(T);
-
-    offset = scr_x * H_ + scr_y;
-
-    return offset;
-}
-
-
-    virtual std::vector<uint8_t> compress( bitmap &current, const bitmap &target, /* weigths, */ size_t budget ) const
+    size_t vertical_from_horizontal(size_t h) const
     {
-// std::cerr << "BUDGET:" << budget << "\n";
+        size_t offset = h * sizeof(T);
 
-            //  transient
-        auto current_data_ = current.raw_values<T>();    //  The data present on screen (for optimisation purposes) (vertical)
-        auto target_data_ = target.raw_values<T>();      //  The data we are trying to converge to
-        std::vector<size_t> delta_(get_T_size());        //  0: it is sync'ed
+        assert(h < get_T_size());
 
-        for (size_t i=0;i!=get_T_size();i++)
+        size_t scr_x = offset % get_bytes_width();
+        size_t scr_y = offset / get_bytes_width();
+
+        scr_x /= sizeof(T);
+
+        offset = scr_x * H_ + scr_y;
+
+        return offset;
+    }
+
+    virtual std::vector<uint8_t> compress(bitmap &current, const bitmap &target, /* weigths, */ size_t budget) const
+    {
+        // std::cerr << "BUDGET:" << budget << "\n";
+
+        //  transient
+        auto current_data_ = current.raw_values<T>(); //  The data present on screen (for optimisation purposes) (vertical)
+        auto target_data_ = target.raw_values<T>();   //  The data we are trying to converge to
+        std::vector<size_t> delta_(get_T_size());     //  0: it is sync'ed
+
+        for (size_t i = 0; i != get_T_size(); i++)
         {
-            if (current_data_[i]==target_data_[i])
-                    //  Data is identical, we don't care about updating this
+            if (current_data_[i] == target_data_[i])
+                //  Data is identical, we don't care about updating this
                 delta_[i] = 0;
             else
             {
-                    //  Let's increase the importance of updating this
+                //  Let's increase the importance of updating this
                 // delta_[i] += countbits( target_data_[i] ^ current_data_[i] );
-                delta_[i] = ruler_.distance( target_data_[i], current_data_[i] );
+                delta_[i] = ruler_.distance(target_data_[i], current_data_[i]);
             }
-
         }
-            //  Display delta map in correct order
+        //  Display delta map in correct order
         if (verbose_)
         {
             std::clog << "DELTA LIST OF " << get_T_size() << " elements: [\n";
-            for (size_t y=0;y!=H_;y++)
+            for (size_t y = 0; y != H_; y++)
             {
-                fprintf( stderr, "    " );
-                for (size_t x=0;x!=get_T_width();x++)
-                    fprintf( stderr, "%3lld ", (long long)delta_[x*H_+y] );
-                fprintf( stderr, "\n" );
+                fprintf(stderr, "    ");
+                for (size_t x = 0; x != get_T_width(); x++)
+                    fprintf(stderr, "%3lld ", (long long)delta_[x * H_ + y]);
+                fprintf(stderr, "\n");
             }
         }
         if (verbose_)
             std::clog << "]\n";
 
-        auto runs = compress( budget, target_data_, delta_ );
+        auto runs = compress(budget, target_data_, delta_);
 
-        for (auto &run:runs)
-            if (run.offset>=get_T_size())
+        for (auto &run : runs)
+            if (run.offset >= get_T_size())
             {
-                std::clog << "\n\n" << sizeof(T) << ": at " << run.offset << " " << run.data.size() << " data elements\n";
-                assert( run.offset<get_T_size() );
+                std::clog << "\n\n"
+                          << sizeof(T) << ": at " << run.offset << " " << run.data.size() << " data elements\n";
+                assert(run.offset < get_T_size());
             }
 
-            //  Encode the runs
+        //  Encode the runs
         std::vector<uint8_t> res;
 
         const int max_run_len = 127;
-            //  Runs must not contain more than 256 bytes
+        //  Runs must not contain more than 256 bytes
         std::vector<run<T>> smaller;
-        for (auto &run:runs)
+        for (auto &run : runs)
         {
-                //  #### : FIXME 32 words on screen
-            auto rs = run.split( max_run_len, get_T_width() );
+            //  #### : FIXME 32 words on screen
+            auto rs = run.split(max_run_len, get_T_width());
 
-            for (auto &run2:rs)
-                if (run2.offset>=get_T_size())
+            for (auto &run2 : rs)
+                if (run2.offset >= get_T_size())
                 {
-                    std::clog << "\n" << sizeof(T) << ": at " << run.offset << " " << run.data.size() << " data elements split:\n";
+                    std::clog << "\n"
+                              << sizeof(T) << ": at " << run.offset << " " << run.data.size() << " data elements split:\n";
                     std::clog << "" << sizeof(T) << ": at " << run2.offset << " " << run2.data.size() << " data elements\n";
                 }
 
-            smaller.insert( std::end(smaller), std::begin(rs), std::end(rs) );
+            smaller.insert(std::end(smaller), std::begin(rs), std::end(rs));
         }
 
-        for (auto &run:smaller)
+        for (auto &run : smaller)
         {
-            if (run.offset>=get_T_size())
-                std::clog << "\n\n" << sizeof(T) << ": at " << run.offset << " " << run.data.size() << " data elements\n";
-            assert( run.offset<get_T_size() );
+            if (run.offset >= get_T_size())
+                std::clog << "\n\n"
+                          << sizeof(T) << ": at " << run.offset << " " << run.data.size() << " data elements\n";
+            assert(run.offset < get_T_size());
         }
 
-            //  Sorts the runs
-        std::sort( std::begin(smaller), std::end(smaller), [](auto &a, auto &b) {return a.offset < b.offset; } );
+        //  Sorts the runs
+        std::sort(std::begin(smaller), std::end(smaller), [](auto &a, auto &b)
+                  { return a.offset < b.offset; });
 
-            //  Runs must be separated by at most 255 items
+        //  Runs must be separated by at most 255 items
         std::vector<run<T>> closer;
         size_t offset = 0;
-        for (auto &run:smaller)
+        for (auto &run : smaller)
         {
-            while (run.offset-offset>255)
+            while (run.offset - offset > 255)
             {
                 offset += 255;
-                closer.push_back( { offset, {} } );
+                closer.push_back({offset, {}});
             }
-            closer.push_back( run );
+            closer.push_back(run);
             offset = run.offset;
         }
 
-        for (auto &run:closer)
-            assert( run.offset<get_T_size() );
+        for (auto &run : closer)
+            assert(run.offset < get_T_size());
 
-        if (sizeof(T)==4)
+        if (sizeof(T) == 4)
             closer = runs;
 
         if (verbose_)
         {
-            std::sort( std::begin(closer), std::end(closer), [](auto &a, auto &b) {return a.offset < b.offset; } );
+            std::sort(std::begin(closer), std::end(closer), [](auto &a, auto &b)
+                      { return a.offset < b.offset; });
 
-            std::clog << closer.size() << " runs of " << sizeof(T)*8 << "bytes = ";
+            std::clog << closer.size() << " runs of " << sizeof(T) * 8 << "bytes = ";
             size_t item_count = 0;
             size_t bits_changed = 0;
-            
-            for (auto &run:closer)
+
+            for (auto &run : closer)
             {
-                std::clog << "@" << run.offset*sizeof(T) << ":[ ";
-                for (size_t i=0;i!=run.data.size();i++)
+                std::clog << "@" << run.offset * sizeof(T) << ":[ ";
+                for (size_t i = 0; i != run.data.size(); i++)
                 {
 
-                    auto offset = vertical_from_horizontal( run.offset )+i;
+                    auto offset = vertical_from_horizontal(run.offset) + i;
 
-                    if (sizeof(T)==2)
-                        fprintf( stderr, "%04x ", run.data[i]^current_data_[offset] );
+                    if (sizeof(T) == 2)
+                        fprintf(stderr, "%04x ", run.data[i] ^ current_data_[offset]);
                     else
                     {
                         fprintf(
                             stderr,
                             "%08x ",
-                            run.data[i]^current_data_[offset]
-                            );
+                            run.data[i] ^ current_data_[offset]);
                     }
 
-                    bits_changed += mypopcount( (T)(run.data[i]^current_data_[offset]) );
+                    bits_changed += mypopcount((T)(run.data[i] ^ current_data_[offset]));
                 }
                 std::clog << "]  ";
                 item_count += run.data.size();
@@ -369,59 +375,59 @@ size_t vertical_from_horizontal( size_t h ) const
             std::clog << "=> " << item_count << " changed " << bits_changed << " bits\n";
         }
 
-            //  Encode Z32
-        if (sizeof(T)==4)
+        //  Encode Z32
+        if (sizeof(T) == 4)
         {
-            for (auto &run:closer)
+            for (auto &run : closer)
             {
-                uint32_t header = ((run.data.size()-1)<<16)+((run.offset+1)*sizeof(T));
+                uint32_t header = ((run.data.size() - 1) << 16) + ((run.offset + 1) * sizeof(T));
 
-                auto v = from_value( header );
-                res.insert( std::end(res), std::begin(v), std::end(v) );
-                auto vs = from_values( run.data );
-                res.insert( std::end(res), std::begin(vs), std::end(vs) );
+                auto v = bytes_from_value_be(header);
+                res.insert(std::end(res), std::begin(v), std::end(v));
+                auto vs = bytes_from_values_be(run.data);
+                res.insert(std::end(res), std::begin(vs), std::end(vs));
             }
-            res.push_back( 0x00 );
-            res.push_back( 0x00 );
-            res.push_back( 0x00 );
-            res.push_back( 0x00 );
+            res.push_back(0x00);
+            res.push_back(0x00);
+            res.push_back(0x00);
+            res.push_back(0x00);
         }
 
-            //  Encode Z16
-        if (sizeof(T)==2)
+        //  Encode Z16
+        if (sizeof(T) == 2)
         {
             size_t current = 0;
-            for (auto &run:closer)
+            for (auto &run : closer)
             {
-                uint16_t header = ((run.offset-current)<<8)+run.data.size();    //  oooooooo 0 sssssss
+                uint16_t header = ((run.offset - current) << 8) + run.data.size(); //  oooooooo 0 sssssss
                 current = run.offset;
 
-                auto v = from_value( header );
-                res.insert( std::end(res), std::begin(v), std::end(v) );
-                auto vs = from_values( run.data );
-                res.insert( std::end(res), std::begin(vs), std::end(vs) );
+                auto v = bytes_from_value_be(header);
+                res.insert(std::end(res), std::begin(v), std::end(v));
+                auto vs = bytes_from_values_be(run.data);
+                res.insert(std::end(res), std::begin(vs), std::end(vs));
             }
-            res.push_back( 0x00 );
-            res.push_back( 0x00 );
+            res.push_back(0x00);
+            res.push_back(0x00);
         }
 
-            //  #### Decompresses -- needs to be moved to the right object
-        for (auto &run:closer)
+        //  #### Decompresses -- needs to be moved to the right object
+        for (auto &run : closer)
         {
-            size_t offset = run.offset*sizeof(T);
+            size_t offset = run.offset * sizeof(T);
 
-            assert( run.offset<get_T_size() );
+            assert(run.offset < get_T_size());
 
-            size_t scr_x = offset%get_bytes_width();
-            size_t scr_y = offset/get_bytes_width();
+            size_t scr_x = offset % get_bytes_width();
+            size_t scr_y = offset / get_bytes_width();
 
             scr_x /= sizeof(T);
 
             offset = scr_x * target.H() + scr_y;
 
-            for (auto &v:run.data)
+            for (auto &v : run.data)
             {
-                assert( offset<get_T_size() );
+                assert(offset < get_T_size());
                 current_data_[offset] = v;
                 delta_[offset] = 0;
                 offset++;

@@ -5,17 +5,17 @@
 
 //  --- Fletcher checksum ---
 
-void fletcher( long &checksum, const std::vector<uint8_t> &data )
+void fletcher(long &checksum, const std::vector<uint8_t> &data)
 {
-    assert( (data.size()%2)==0 );
-    for (size_t i=0;i!=data.size();i+=2)
+    assert((data.size() % 2) == 0);
+    for (size_t i = 0; i != data.size(); i += 2)
     {
-        checksum += ((int)(data[i]))*256+data[i+1];
+        checksum += ((int)(data[i])) * 256 + data[i + 1];
         checksum %= 65535;
     }
 }
 
-void fletcher( long &checksum, uint16_t data )
+void fletcher(long &checksum, uint16_t data)
 {
     checksum += data;
     checksum %= 65535;
@@ -23,12 +23,12 @@ void fletcher( long &checksum, uint16_t data )
 
 //  --- flim constructor ---
 
-flim::flim( const std::string &comment ) : comment_{ comment }
+flim::flim(const std::string &comment) : comment_{comment}
 {
     if (comment_.size() < COMMENT_SIZE)
-        comment_.resize( COMMENT_SIZE, 0x00 );
+        comment_.resize(COMMENT_SIZE, 0x00);
     else
-        comment_ = comment_.substr( 0, COMMENT_SIZE );
+        comment_ = comment_.substr(0, COMMENT_SIZE);
 
     comment_[0] = 'F';
     comment_[1] = 'L';
@@ -39,7 +39,7 @@ flim::flim( const std::string &comment ) : comment_{ comment }
 
 //  --- flim::read ---
 
-bool flim::read( FILE *f )
+bool flim::read(FILE *f)
 {
     //  Read comment block
     char comment_buf[COMMENT_SIZE + 1];
@@ -65,7 +65,7 @@ bool flim::read( FILE *f )
         return false;
     }
     const uint8_t *cp = checksum_bytes;
-    /*uint16_t stored_checksum =*/ read2(cp);
+    /*uint16_t stored_checksum =*/read2(cp);
 
     //  Read header: version (2 bytes) + component count (2 bytes)
     uint8_t header_prefix[4];
@@ -119,15 +119,15 @@ std::vector<uint8_t> flim::serialize_header() const
     std::vector<uint8_t> header;
     auto o = std::back_inserter(header);
 
-    write2( o, version_ );
-    write2( o, components_.size() );
+    write2(o, version_);
+    write2(o, components_.size());
 
     size_t offset = 0;
     for (size_t i = 0; i < components_.size(); i++)
     {
-        write2( o, components_[i].type );
-        write4( o, offset );
-        write4( o, blobs_[i].size() );
+        write2(o, components_[i].type);
+        write4(o, offset);
+        write4(o, blobs_[i].size());
         offset += blobs_[i].size();
     }
 
@@ -139,13 +139,13 @@ std::vector<uint8_t> flim::serialize_header() const
 uint16_t flim::compute_checksum() const
 {
     long checksum = 0;
-    ::fletcher( checksum, serialize_header() );
+    ::fletcher(checksum, serialize_header());
 
-    printf( "HEADER: %ld\n", checksum );
+    printf("HEADER: %ld\n", checksum);
     for (auto &blob : blobs_)
     {
-        ::fletcher( checksum, blob );
-        printf( "-> : %ld\n", checksum );
+        ::fletcher(checksum, blob);
+        printf("-> : %ld\n", checksum);
     }
 
     return checksum;
@@ -153,44 +153,44 @@ uint16_t flim::compute_checksum() const
 
 //  --- flim::write ---
 
-void flim::write_u16( FILE *f, uint16_t v )
+void flim::write_u16(FILE *f, uint16_t v)
 {
     uint8_t b = v / 256;
-    ::fwrite( &b, 1, 1, f );
+    ::fwrite(&b, 1, 1, f);
     b = v % 256;
-    ::fwrite( &b, 1, 1, f );
+    ::fwrite(&b, 1, 1, f);
 }
 
-void flim::write_bytes( FILE *f, const std::vector<uint8_t> &v )
+void flim::write_bytes(FILE *f, const std::vector<uint8_t> &v)
 {
-    ::fwrite( v.data(), v.size(), 1, f );
+    ::fwrite(v.data(), v.size(), 1, f);
 }
 
-void flim::write( FILE *f ) const
+void flim::write(FILE *f) const
 {
-    ::fwrite( comment_.c_str(), COMMENT_SIZE, 1, f );
-    write_u16( f, compute_checksum() );
-    write_bytes( f, serialize_header() );
+    ::fwrite(comment_.c_str(), COMMENT_SIZE, 1, f);
+    write_u16(f, compute_checksum());
+    write_bytes(f, serialize_header());
     for (auto &blob : blobs_)
-        write_bytes( f, blob );
+        write_bytes(f, blob);
 }
 
 //  --- Building helpers ---
 
-void flim::add_component( eComponentType type, const std::vector<uint8_t> &data )
+void flim::add_component(eComponentType type, const std::vector<uint8_t> &data)
 {
-    components_.push_back( { static_cast<uint16_t>(type), 0, static_cast<uint32_t>(data.size()) } );
-    blobs_.push_back( data );
+    components_.push_back({static_cast<uint16_t>(type), 0, static_cast<uint32_t>(data.size())});
+    blobs_.push_back(data);
 }
 
-void flim::add( const flim_info &fi )
+void flim::add(const flim_info &fi)
 {
     std::vector<uint8_t> data;
-    fi.serialize( data );
-    add_component( component_info, data );
+    fi.serialize(data);
+    add_component(component_info, data);
 }
 
-void flim::add( const std::vector<frame> &frames )
+void flim::add(const std::vector<frame> &frames)
 {
     std::vector<uint8_t> movie_data;
     std::vector<uint8_t> toc_data;
@@ -200,33 +200,33 @@ void flim::add( const std::vector<frame> &frames )
     for (auto &f : frames)
     {
         size_t prev_size = movie_data.size();
-        f.serialize( movie_data );
-        write2( ot, movie_data.size() - prev_size );
+        f.serialize(movie_data);
+        write2(ot, movie_data.size() - prev_size);
     }
 
-    add_component( component_movie, movie_data );
-    add_component( component_toc, toc_data );
+    add_component(component_movie, movie_data);
+    add_component(component_toc, toc_data);
 }
 
-void flim::add_framebuffer( eComponentType type, const bitmap &fb )
+void flim::add_framebuffer(eComponentType type, const bitmap &fb)
 {
     std::vector<uint8_t> data;
     auto bi = std::back_inserter(data);
-    write2( bi, 0x00 );         //  Framebuffer
-    write2( bi, fb.W() );
-    write2( bi, fb.H() );
+    write2(bi, 0x00); //  Framebuffer
+    write2(bi, fb.W());
+    write2(bi, fb.H());
     auto img_data = fb.raw_values_natural<uint8_t>();
-    data.insert( std::end(data), std::begin(img_data), std::end(img_data) );
-    add_component( type, data );
+    data.insert(std::end(data), std::begin(img_data), std::end(img_data));
+    add_component(type, data);
 }
 
-void flim::add_poster( const bitmap &fb )
+void flim::add_poster(const bitmap &fb)
 {
     std::vector<uint8_t> data = fb.raw_values_natural<uint8_t>();
-    add_component( component_poster, data );
+    add_component(component_poster, data);
 }
 
-void flim::add_initial( const bitmap &fb )
+void flim::add_initial(const bitmap &fb)
 {
-    add_framebuffer( component_initial, fb );
+    add_framebuffer(component_initial, fb);
 }
