@@ -6,6 +6,7 @@
 #include <optional>
 
 #include "profile.hpp"
+#include "flimcompressor.hpp"
 #include "flim.hpp"
 #include "subtitles.hpp"
 
@@ -230,7 +231,7 @@ public:
         // Compress
         flimcompressor fc{profile_.width(), profile_.height(), next_image_with_first, audio_samples, fps_ / profile_.fps_ratio(), subtitles_};
 
-        fc.compress(profile_.stability(), profile_.byterate(), profile_.group(), profile_.filters(), watermark_, profile_.codecs(), profile_.dither(), profile_.bars(), profile_.anchor_x(), profile_.anchor_y(), profile_.error_algorithm(), profile_.error_bleed(), profile_.error_bidi(), profile_.initial_mode(), profile_.loop());
+        fc.compress(profile_, watermark_, profile_.initial_mode(), profile_.loop());
 
         auto frames = fc.get_frames();
 

@@ -4,12 +4,14 @@
 
 `flimcompressor.hpp` (799 lines), `compressor.hpp` (~350 lines), `flimencoder.hpp` (~280 lines), and `profile.hpp` (412 lines) contain ~1,840 lines of non-template implementation code in headers. This means any change to the compression logic recompiles *everything*. Several of these also have `using namespace std;` at file scope in a header, which pollutes the namespace of every includer. Moving the implementations into `.cpp` files would dramatically improve build times and make the codebase easier to navigate — each header becomes a concise interface description.
 
-## 2. Pass the `profile` object instead of 15 individual parameters
+## ~~2. Pass the `profile` object instead of 15 individual parameters~~ ✅ COMPLETED
 
-The `compress()` method in `flimcompressor.hpp` takes 15 separate parameters — stability, byterate, group, filters, watermark, codecs, dither, bars, anchor_x, anchor_y, error_algorithm, error_bleed, error_bidi, initial_mode, loop — all of which already live inside the `profile` object that the caller has on hand. The call site in `flimencoder.hpp` is a wall of `profile_.xxx()` getters. Simply passing `const profile&` would:
-- Shrink the signature from 15 params to 1
-- Make adding new encoding options trivial (no signature changes)
-- Eliminate the tight coupling between the caller's knowledge of profile internals and the compressor
+~~The `compress()` method in `flimcompressor.hpp` takes 15 separate parameters — stability, byterate, group, filters, watermark, codecs, dither, bars, anchor_x, anchor_y, error_algorithm, error_bleed, error_bidi, initial_mode, loop — all of which already live inside the `profile` object that the caller has on hand. The call site in `flimencoder.hpp` is a wall of `profile_.xxx()` getters. Simply passing `const profile&` would:~~
+- ~~Shrink the signature from 15 params to 1~~
+- ~~Make adding new encoding options trivial (no signature changes)~~
+- ~~Eliminate the tight coupling between the caller's knowledge of profile internals and the compressor~~
+
+**Actual change:** +33/-46 lines. Signature changed from 15 parameters to `compress(const encoding_profile &profile, const std::string &watermark, ...)`. Architectural improvement: profile.hpp no longer depends on flimcompressor.hpp (eliminated circular dependency). Profile now stores codec specifications as strings; compressor parses them on demand. Created initial_frame_mode.hpp to share enum definition without circular includes.
 
 ## 3. ~~Remove dead code~~ ✅ COMPLETED
 

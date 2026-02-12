@@ -13,6 +13,8 @@
 #include <functional>
 #include <optional>
 
+class encoding_profile;
+
 #include "reader.hpp"
 #include "subtitles.hpp"
 #include "watermark.hpp"
@@ -24,13 +26,6 @@ using namespace std::string_literals;
 /**
  * The flimcompressor manages higher aspects of the compression
  */
-
-enum class initial_frame_mode
-{
-    none,     // No initial frame written to FLIM
-    optional, // Initial frame written but encoding starts from black (backwards compatible)
-    required  // Initial frame written and encoding starts from it (not backwards compatible)
-};
 
 class flimcompressor
 {
@@ -484,8 +479,15 @@ public:
         std::vector<frame> get_frames() const { return frames_; }
     };
 
-    void compress(double stability, size_t byterate, bool group, const std::string &filters, const std::string &watermark, const std::vector<codec_spec> &codecs, grayscale::dithering dither, bool bars, double anchor_x, double anchor_y, const std::string error_algorithm, float error_bleed, bool error_bidi, initial_frame_mode initial_mode = initial_frame_mode::optional, bool loop = false)
+    void compress(const encoding_profile &profile, const std::string &watermark, initial_frame_mode initial_mode = initial_frame_mode::optional, bool loop = false)
     {
+        // Parse codec specs into codec objects
+        std::vector<codec_spec> codecs;
+        for (const auto &spec_str : profile.codec_specs())
+        {
+            codecs.push_back(make_codec(spec_str, W_, H_));
+        }
+
         grayscale previous(W_, H_);
         fill(previous, 0);
 
@@ -499,7 +501,7 @@ public:
         }
 
         // Create dithering parameters
-        DitheringParameters dp{bars, filters, anchor_x, anchor_y, dither, error_algorithm, stability, error_bleed, error_bidi, watermark};
+        DitheringParameters dp{profile.bars(), profile.filters(), profile.anchor_x(), profile.anchor_y(), profile.dither(), profile.error_algorithm(), profile.stability(), profile.error_bleed(), profile.error_bidi(), watermark};
 
         bool process_first_image = true;
 
@@ -523,7 +525,7 @@ public:
         // Create dithering infrastructure for encoding
         Ditherer d{previous, dp};
         SubtitleBurner sb{subtitles_};
-        CompressorHelper ch{d, sb, codecs, fps_, byterate, audio_, group};
+        CompressorHelper ch{d, sb, codecs, fps_, profile.byterate(), audio_, profile.group()};
 
         // Process first image if not already used for initial frame
         if (process_first_image)
@@ -552,3 +554,5 @@ public:
         frames_ = ch.get_frames();
     }
 };
+
+#include "profile.hpp"

@@ -1,11 +1,18 @@
 #pragma once
 
 #include "grayscale.hpp"
-#include "flimcompressor.hpp"
 #include <sstream>
-#include <functional>
+#include <vector>
+#include <string>
 
 using namespace std::string_literals;
+
+enum class initial_frame_mode
+{
+    none,     // No initial frame generated
+    optional, // Generate initial frame but don't use for encoding
+    required  // Generate and use initial frame for first comparison
+};
 
 /**
  * A set of encoding parameters
@@ -35,10 +42,7 @@ protected:
     initial_frame_mode initial_mode_ = initial_frame_mode::optional;
     bool loop_ = false;
 
-    std::vector<flimcompressor::codec_spec> codecs_;
-    std::function<std::vector<flimcompressor::codec_spec>(const encoding_profile &)> codec_factory_ =
-        [](const encoding_profile &)
-    { return std::vector<flimcompressor::codec_spec>(); };
+    std::vector<std::string> codec_specs_;
 
 public:
     size_t width() const { return W_; }
@@ -102,13 +106,8 @@ public:
     double stability() const { return stability_; }
     void set_stability(double stability) { stability_ = stability; }
 
-    const std::vector<flimcompressor::codec_spec> &codecs() const { return codecs_; }
-    void set_codecs(const std::vector<flimcompressor::codec_spec> &codecs) { codecs_ = codecs; }
-
-    void create_codecs()
-    {
-        set_codecs(codec_factory_(*this));
-    }
+    const std::vector<std::string> &codec_specs() const { return codec_specs_; }
+    void set_codec_specs(const std::vector<std::string> &specs) { codec_specs_ = specs; }
 
     bool silent() const { return silent_; }
     void set_silent(bool silent) { silent_ = silent; }
@@ -165,15 +164,15 @@ private:
         {"perfect",   512, 342, 32000, "g1.6sc",    1,  true,  0.3,  false, "error",   "floyd", true,  1.0f,  false, {"null", "z32", "lines:count=70", "invert"}},
     };
 
-    static std::vector<flimcompressor::codec_spec> parse_codecs(const char *const *codec_array, size_t width, size_t height)
+    static std::vector<std::string> parse_codec_array(const char *const *codec_array)
     {
-        std::vector<flimcompressor::codec_spec> codecs;
+        std::vector<std::string> specs;
         for (size_t i = 0; i < MAX_CODECS; ++i)
         {
             if (codec_array[i] != nullptr)
-                codecs.push_back(flimcompressor::make_codec(codec_array[i], width, height));
+                specs.push_back(codec_array[i]);
         }
-        return codecs;
+        return specs;
     }
 
 public:
@@ -194,10 +193,7 @@ public:
                 result.set_error_algorithm(config.error_algorithm);
                 result.set_error_bidi(config.error_bidi);
                 result.set_error_bleed(config.error_bleed);
-                result.codec_factory_ = [codec_array = config.codecs](const encoding_profile &p)
-                {
-                    return parse_codecs(codec_array, p.width(), p.height());
-                };
+                result.set_codec_specs(parse_codec_array(config.codecs));
                 result.set_silent(config.silent);
                 return true;
             }
@@ -238,8 +234,8 @@ public:
         }
         cmd << " --filters " << filters_;
 
-        for (auto &c : codecs_)
-            cmd << " --codec " << c.coder->description();
+        for (const auto &spec : codec_specs_)
+            cmd << " --codec " << spec;
 
         cmd << " --silent " << (silent_ ? "true" : "false");
 

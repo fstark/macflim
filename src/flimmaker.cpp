@@ -637,22 +637,12 @@ int main(int argc, char **argv)
         // Update profile with final dimensions (either natural or user-overridden)
         custom_profile.set_size(width, height);
 
-        // Create codecs from profile's factory with finalized dimensions
-        custom_profile.create_codecs();
-
-        // If user specified custom codecs, create and override profile codecs
+        // If user specified custom codecs, override profile codec specs
         if (user_codec_specs.size() > 0)
         {
-            std::vector<flimcompressor::codec_spec> user_codecs;
-            user_codecs.push_back({});
-            user_codecs.back().signature = 0x00;
-            user_codecs.back().penality = 1;
-            user_codecs.back().coder = std::make_shared<null_compressor>(0, 0);
-            for (const auto &spec : user_codec_specs)
-            {
-                user_codecs.push_back(flimcompressor::make_codec(spec, width, height));
-            }
-            custom_profile.set_codecs(user_codecs);
+            std::vector<std::string> specs = {"null"};
+            specs.insert(specs.end(), user_codec_specs.begin(), user_codec_specs.end());
+            custom_profile.set_codec_specs(specs);
         }
 
         if (input_file == "")
