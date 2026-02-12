@@ -48,3 +48,5 @@ tmp/
 *.mp4
 
 release/debug-*.png
+MacFlimData.dsk
+

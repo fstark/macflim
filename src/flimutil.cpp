@@ -1,5 +1,5 @@
 #include "flim.hpp"
-#include "framebuffer.hpp"
+#include "bitmap.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -78,8 +78,8 @@ static bool extract_poster(const flim &fl, const std::string &outpath)
     size_t width = 128;
     size_t height = data->size() / (width / 8);
 
-    framebuffer fb(*data, width, height, false);
-    write_image(outpath.c_str(), fb.as_image());
+    bitmap fb(*data, width, height, false);
+    write_grayscale(outpath.c_str(), fb.as_image());
 
     printf("\nPoster extracted to '%s' (%zux%zu)\n", outpath.c_str(), width, height);
     return true;
@@ -88,7 +88,7 @@ static bool extract_poster(const flim &fl, const std::string &outpath)
 static void dump_frame_data(const std::vector<uint8_t> &frame_data, size_t frame_number, bool raw)
 {
     printf("\nFrame %zu (size: %zu bytes):\n", frame_number, frame_data.size());
-    
+
     //  Raw mode: just dump hex bytes
     if (raw)
     {
@@ -102,7 +102,7 @@ static void dump_frame_data(const std::vector<uint8_t> &frame_data, size_t frame
         }
         return;
     }
-    
+
     frame f = frame::deserialize(frame_data.data(), frame_data.size());
 
     printf("  Ticks: %zu\n", f.ticks);
@@ -146,11 +146,21 @@ static void dump_frame_data(const std::vector<uint8_t> &frame_data, size_t frame
         const char *codec_name = "unknown";
         switch (codec_sig)
         {
-            case 0x00: codec_name = "null"; break;
-            case 0x01: codec_name = "z16"; break;
-            case 0x02: codec_name = "z32"; break;
-            case 0x03: codec_name = "invert"; break;
-            case 0x04: codec_name = "lines"; break;
+        case 0x00:
+            codec_name = "null";
+            break;
+        case 0x01:
+            codec_name = "z16";
+            break;
+        case 0x02:
+            codec_name = "z32";
+            break;
+        case 0x03:
+            codec_name = "invert";
+            break;
+        case 0x04:
+            codec_name = "lines";
+            break;
         }
         printf("  Codec: 0x%02x (%s)\n", codec_sig, codec_name);
 
@@ -233,13 +243,13 @@ static bool extract_initial(const flim &fl, const std::string &outpath)
         return false;
     }
     const uint8_t *p = data->data();
-    /*uint16_t type =*/read2(p); //  0x00 = framebuffer
+    /*uint16_t type =*/read2(p); //  0x00 = bitmap
     uint16_t width = read2(p);
     uint16_t height = read2(p);
 
-    std::vector<uint8_t> bitmap(p, p + (data->size() - 6));
-    framebuffer fb(bitmap, width, height, false);
-    write_image(outpath.c_str(), fb.as_image());
+    std::vector<uint8_t> bitmap_data(p, p + (data->size() - 6));
+    bitmap fb(bitmap_data, width, height, false);
+    write_grayscale(outpath.c_str(), fb.as_image());
 
     printf("\nInitial frame extracted to '%s' (%ux%u)\n", outpath.c_str(), width, height);
     return true;

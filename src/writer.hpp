@@ -1,6 +1,6 @@
 #pragma once
 
-#include "image.hpp"
+#include "grayscale.hpp"
 
 #include <cstdint>
 #include <memory>
@@ -14,7 +14,7 @@ class output_writer
 public:
     virtual ~output_writer() {}
 
-    virtual void write_frame(const image &img, const sound_frame_t &snd) = 0;
+    virtual void write_frame(const grayscale &img, const sound_frame_t &snd) = 0;
 };
 
 std::unique_ptr<output_writer> make_ffmpeg_writer(const std::string &movie_path, size_t w, size_t h);

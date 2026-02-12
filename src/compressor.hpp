@@ -10,7 +10,7 @@
 #include <limits>
 
 #include "common.hpp"
-#include "framebuffer.hpp"
+#include "bitmap.hpp"
 #include "ruler.hpp"
 
 /**
@@ -36,7 +36,7 @@ public:
     compressor( size_t width, size_t height ) : W_{width}, H_{height} {}
 
     virtual ~compressor() {}
-    virtual std::vector<uint8_t> compress( framebuffer &current, const framebuffer &target, /* weigths, */ size_t budget ) const = 0;
+    virtual std::vector<uint8_t> compress( bitmap &current, const bitmap &target, /* weigths, */ size_t budget ) const = 0;
 
     virtual bool set_parameter( const std::string parameter, const std::string value )
     {
@@ -60,7 +60,7 @@ public:
 
     null_compressor( size_t width, size_t height ) : compressor{ width, height } {}
 
-    virtual std::vector<uint8_t> compress( [[maybe_unused]] framebuffer &current, [[maybe_unused]] const framebuffer &target, /* weigths, */ [[maybe_unused]] size_t budget ) const
+    virtual std::vector<uint8_t> compress( [[maybe_unused]] bitmap &current, [[maybe_unused]] const bitmap &target, /* weigths, */ [[maybe_unused]] size_t budget ) const
     {
         return {};
     }
@@ -73,7 +73,7 @@ public:
 
     invert_compressor( size_t width, size_t height ) : compressor{ width, height } {}
 
-    virtual std::vector<uint8_t> compress( framebuffer &current, [[maybe_unused]] const framebuffer &target, /* weigths, */ [[maybe_unused]] size_t budget ) const
+    virtual std::vector<uint8_t> compress( bitmap &current, [[maybe_unused]] const bitmap &target, /* weigths, */ [[maybe_unused]] size_t budget ) const
     {
         current = current.inverted();
         return {};
@@ -89,9 +89,9 @@ class copy_line_compressor : public compressor
         return compressor::set_parameter( parameter, value );
     }
 
-    virtual std::vector<uint8_t> compress( framebuffer &current, const framebuffer &target, /* weigths, */ size_t budget ) const
+    virtual std::vector<uint8_t> compress( bitmap &current, const bitmap &target, /* weigths, */ size_t budget ) const
     {
-        framebuffer result{current};
+        bitmap result{current};
 
         size_t q = 0;
 
@@ -104,7 +104,7 @@ class copy_line_compressor : public compressor
 
         for (size_t i=0;i<current.H();i+=target_count)
         {
-            framebuffer fb = current;
+            bitmap fb = current;
             size_t lc = std::min( target_count, current.H()-i );
             fb.copy_lines_from( target, i, lc );
             auto res = fb.count_differences( current );
@@ -139,7 +139,7 @@ class copy_line_compressor : public compressor
 };
 
 /**
- * Compresses an image using vertical strips of various width
+ * Compresses an grayscale using vertical strips of various width
  */
 template <typename T>
 class vertical_compressor : public compressor
@@ -237,7 +237,7 @@ size_t vertical_from_horizontal( size_t h ) const
 }
 
 
-    virtual std::vector<uint8_t> compress( framebuffer &current, const framebuffer &target, /* weigths, */ size_t budget ) const
+    virtual std::vector<uint8_t> compress( bitmap &current, const bitmap &target, /* weigths, */ size_t budget ) const
     {
 // std::cerr << "BUDGET:" << budget << "\n";
 
@@ -428,7 +428,7 @@ size_t vertical_from_horizontal( size_t h ) const
             }
         }
 
-        current = framebuffer{current_data_, W_, H_};
+        current = bitmap{current_data_, W_, H_};
 
         return res;
     }

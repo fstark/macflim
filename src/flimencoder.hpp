@@ -60,7 +60,7 @@ class flimencoder
             char buffer[1024];
             sprintf( buffer, in_.c_str(), i );
 
-            image img( profile_.width(), profile_.height() );
+            grayscale img( profile_.width(), profile_.height() );
 
             if (!read_image( img, buffer ))
                 return;
@@ -151,16 +151,16 @@ public:
         assert(reader);
 
         // Build a pull-callback that wraps the reader, applies fps_ratio skipping,
-        // and captures the poster image at the right index.
+        // and captures the poster grayscale at the right index.
         size_t poster_index = poster_ts_ * fps_ / profile_.fps_ratio();
         std::cout << "POSTER INDEX: " << poster_index << "\n";
 
         size_t image_count = 0;
-        image poster_image(1, 1); // Will be overwritten during the sequential pass
+        grayscale poster_image(1, 1); // Will be overwritten during the sequential pass
         bool poster_captured = false;
         int raw_frame_index = 0;
 
-        auto next_image = [&]() -> std::optional<image>
+        auto next_image = [&]() -> std::optional<grayscale>
         {
             while (true)
             {
@@ -185,14 +185,14 @@ public:
             }
         };
 
-        // Peek the first image to ensure we have at least one frame
+        // Peek the first grayscale to ensure we have at least one frame
         auto first = next_image();
         assert(first.has_value());
 
         // If poster is frame 0, it's already captured. Wrap in a callback that
-        // yields the first image first, then continues pulling.
+        // yields the first grayscale first, then continues pulling.
         bool first_consumed = false;
-        auto next_image_with_first = [&]() -> std::optional<image>
+        auto next_image_with_first = [&]() -> std::optional<grayscale>
         {
             if (!first_consumed)
             {
@@ -206,26 +206,26 @@ public:
 
         //  Poster processing
         auto filters_string = profile_.filters();
-        image poster_filtered = filter(poster_image, filters_string.c_str());
+        grayscale poster_filtered = filter(poster_image, filters_string.c_str());
 
-        image poster_small(128, 86);
+        grayscale poster_small(128, 86);
         copy(poster_small, poster_filtered, false, 0.5, 0.5);
 
-        image previous(poster_small.W(), poster_small.H());
+        grayscale previous(poster_small.W(), poster_small.H());
         fill(previous, 0);
 
         auto poster_small_bw = poster_small;
 
-        if (profile_.dither() == image::error_diffusion)
+        if (profile_.dither() == grayscale::error_diffusion)
             error_diffusion(poster_small_bw, poster_small, previous, 0, *get_error_diffusion_by_name(profile_.error_algorithm()), profile_.error_bleed(), profile_.error_bidi());
-        else if (profile_.dither() == image::ordered)
+        else if (profile_.dither() == grayscale::ordered)
             ordered_dither(poster_small_bw, poster_small, previous);
-        else if (profile_.dither() == image::blue_noise)
+        else if (profile_.dither() == grayscale::blue_noise)
             blue_noise_dither(poster_small_bw, poster_small, previous);
 
-        write_image("/tmp/poster1.pgm", poster_filtered);
-        write_image("/tmp/poster2.pgm", poster_small);
-        write_image("/tmp/poster3.pgm", poster_small_bw);
+        write_grayscale("/tmp/poster1.pgm", poster_filtered);
+        write_grayscale("/tmp/poster2.pgm", poster_small);
+        write_grayscale("/tmp/poster3.pgm", poster_small_bw);
 
         // Compress
         flimcompressor fc{profile_.width(), profile_.height(), next_image_with_first, audio_samples, fps_ / profile_.fps_ratio(), subtitles_};
@@ -240,7 +240,7 @@ public:
         // (pgm_poster_writer_ is no longer supported without images_ vector)
         if (pgm_diff_writer_ || pgm_change_writer_ || pgm_target_writer_)
         {
-            framebuffer previous_frame{profile_.width(), profile_.height()};
+            bitmap previous_frame{profile_.width(), profile_.height()};
             previous_frame.fill(0xff);
 
             for (auto &frame : frames)
@@ -327,7 +327,7 @@ public:
                 std::clog << "COVER " << i << "\n";
                 sprintf(buffer, "cover-%06zu.pgm", i - cover_begin_ + 1);
                 auto logimg = frames[i].result->as_image();
-                write_image(buffer, logimg);
+                write_grayscale(buffer, logimg);
             }
         }
     }

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "image.hpp"
+#include "grayscale.hpp"
 #include <cstdint>
 #include <cstring>
 #include <bit>

@@ -155,7 +155,7 @@ public:
     //  Adds all the frames and generates the movie and toc components
     void add( const std::vector<frame> &frames );
 
-    void add_framebuffer( eComponentType type, const framebuffer &fb );
-    void add_poster( const framebuffer &fb );
-    void add_initial( const framebuffer &fb );
+    void add_framebuffer( eComponentType type, const bitmap &fb );
+    void add_poster( const bitmap &fb );
+    void add_initial( const bitmap &fb );
 };

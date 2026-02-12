@@ -3,7 +3,7 @@
 //  A frame is the unit of data passed between the compressor and the flim file.
 //  It contains encoded video delta and audio data for a single screen update.
 
-#include "framebuffer.hpp"
+#include "bitmap.hpp"
 #include "imgcompress.hpp"
 
 #include <cstdint>
@@ -14,23 +14,23 @@ struct frame
 {
     frame( size_t W, size_t H ) : source{std::in_place, W, H}, result{std::in_place, W, H} {}
 
-    std::optional<framebuffer> source;  //  What we wanted to draw
+    std::optional<bitmap> source;  //  What we wanted to draw
 
-    size_t ticks = 0;                   //  Number of ticks image is displayed
+    size_t ticks = 0;                   //  Number of ticks grayscale is displayed
     std::vector<uint8_t> video;         //  Encoded video delta
     std::vector<uint8_t> audio;         //  Encoded audio
 
-    std::optional<framebuffer> result;  //  What we actually drew
+    std::optional<bitmap> result;  //  What we actually drew
 
     //  #### passing silent is inelegant: we should not generate audio data when silenced
     size_t get_size( bool silent ) { return video.size() + silent * audio.size(); }
 
     frame(
-        const framebuffer &s,
+        const bitmap &s,
         const size_t t,
         const std::vector<uint8_t> &v,
         const std::vector<uint8_t> &a,
-        const framebuffer &r ) : source{s}, ticks{t}, video{v}, audio{a}, result{r} {}
+        const bitmap &r ) : source{s}, ticks{t}, video{v}, audio{a}, result{r} {}
 
     //  --- Binary serialization (movie component format) ---
 

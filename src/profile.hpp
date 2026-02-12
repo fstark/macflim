@@ -1,6 +1,6 @@
 #pragma once
 
-#include "image.hpp"
+#include "grayscale.hpp"
 #include "flimcompressor.hpp"
 #include <sstream>
 #include <functional>
@@ -25,7 +25,7 @@ protected:
     double anchor_x_ = 0.5; //  Horizontal anchor: 0=left, 0.5=center, 1=right
     double anchor_y_ = 0.5; //  Vertical anchor: 0=top, 0.5=center, 1=bottom
 
-    image::dithering dither_ = image::error_diffusion;
+    grayscale::dithering dither_ = grayscale::error_diffusion;
     std::string error_algorithm_ = "floyd";
     float error_bleed_ = 1;
     bool error_bidi_ = false;
@@ -75,20 +75,20 @@ public:
     double anchor_y() const { return anchor_y_; }
     void set_anchor_y(double anchor_y) { anchor_y_ = anchor_y; }
 
-    image::dithering dither() const { return dither_; }
+    grayscale::dithering dither() const { return dither_; }
     bool set_dither(std::string dither)
     {
         if (dither == "ordered")
-            dither_ = image::ordered;
+            dither_ = grayscale::ordered;
         else if (dither == "error")
-            dither_ = image::error_diffusion;
+            dither_ = grayscale::error_diffusion;
         else if (dither == "blue")
-            dither_ = image::blue_noise;
+            dither_ = grayscale::blue_noise;
         else
             throw "Wrong dither option : only 'ordered', 'error', and 'blue' are supported";
         return true;
     }
-    void set_dither(image::dithering dither) { dither_ = dither; }
+    void set_dither(grayscale::dithering dither) { dither_ = dither; }
 
     std::string error_algorithm() const { return error_algorithm_; }
     void set_error_algorithm(const std::string algo) { error_algorithm_ = algo; }
@@ -363,11 +363,11 @@ public:
     {
         switch (dither_)
         {
-        case image::error_diffusion:
+        case grayscale::error_diffusion:
             return "error";
-        case image::ordered:
+        case grayscale::ordered:
             return "ordered";
-        case image::blue_noise:
+        case grayscale::blue_noise:
             return "blue";
         }
         return "???";
@@ -382,7 +382,7 @@ public:
         cmd << " --group " << (group_ ? "true" : "false");
         cmd << " --bars " << (bars_ ? "true" : "false");
         cmd << " --dither " << dither_string();
-        if (dither_ == image::error_diffusion)
+        if (dither_ == grayscale::error_diffusion)
         {
             cmd << " --error-stability " << stability_;
             cmd << " --error-algorithm " << error_algorithm_;

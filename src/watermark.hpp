@@ -1,7 +1,7 @@
 #include <string>
 
-#include "image.hpp"
+#include "grayscale.hpp"
 
-void watermark( image &img, const std::string &s );
-void burn_subtitle( image &img, const std::string &sub );
+void watermark( grayscale &img, const std::string &s );
+void burn_subtitle( grayscale &img, const std::string &sub );
 

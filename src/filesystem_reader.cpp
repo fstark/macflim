@@ -20,21 +20,20 @@ class filesystem_reader : public input_reader
     }
 
 public:
-    filesystem_reader(const std::string &file_pattern, double frame_rate, const std::string &audio_path, size_t from_frame, size_t count) :
-		file_pattern_{file_pattern},
-		frame_rate_{frame_rate},
-		audio_path_{audio_path},
-		from_frame_{from_frame},
-		count_{count}
+    filesystem_reader(const std::string &file_pattern, double frame_rate, const std::string &audio_path, size_t from_frame, size_t count) : file_pattern_{file_pattern},
+                                                                                                                                            frame_rate_{frame_rate},
+                                                                                                                                            audio_path_{audio_path},
+                                                                                                                                            from_frame_{from_frame},
+                                                                                                                                            count_{count}
     {
         current_image_index_ = from_frame_;
     }
 
     virtual double frame_rate() { return frame_rate_; }
 
-    virtual std::unique_ptr<image> next()
+    virtual std::unique_ptr<grayscale> next()
     {
-        auto img = std::make_unique<image>(512, 342); //  'cause read_image don't support anything else for now
+        auto img = std::make_unique<grayscale>(512, 342); //  'cause read_grayscale don't support anything else for now
 
         if (image_read_)
             return nullptr;
@@ -48,7 +47,7 @@ public:
         char buffer[1024];
         sprintf(buffer, file_pattern_.c_str(), current_image_index_);
 
-        if (!read_image(*(img.get()), buffer))
+        if (!read_grayscale(*(img.get()), buffer))
         {
             image_read_ = true;
             return nullptr;
@@ -69,7 +68,7 @@ public:
             std::vector<uint8_t> audio_samples;
 
             long audio_start = frame_from_image(from_frame_)*370;    //  Images are one-based
-            long audio_end = frame_from_image(from_frame_+count_)*370;      //  Last image is included?
+            long audio_end = frame_from_image(from_frame_+count_)*370;      //  Last grayscale is included?
             long audio_size = audio_end-audio_start;
 
             FILE *f = fopen( audio_path_.c_str(), "rb" );
@@ -104,13 +103,11 @@ public:
 };
 
 std::unique_ptr<input_reader> make_filesystem_reader(
-	std::string &input_file,
-	double fps,
-	std::string &audio_arg,
-	size_t from_index,	//	bad name, is a timestamp
-	size_t to_index
-)
+    std::string &input_file,
+    double fps,
+    std::string &audio_arg,
+    size_t from_index, //	bad name, is a timestamp
+    size_t to_index)
 {
-	return std::make_unique<filesystem_reader>(input_file, fps, audio_arg, from_index, to_index);
+    return std::make_unique<filesystem_reader>(input_file, fps, audio_arg, from_index, to_index);
 }
-

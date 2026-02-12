@@ -54,7 +54,7 @@ bool sDebug = false;
 static int sStream = 0;
 #endif
 
-#include "image.hpp"
+#include "grayscale.hpp"
 #include "reader.hpp"
 #include "filesystem_reader.hpp"
 #include "ffmpeg_reader.hpp"
@@ -160,7 +160,7 @@ void usage(const std::string name)
     std::cerr << "    --flim FILE                 : name of the flim file to create (by default 'out.flim')\n";
     std::cerr << "    --mp4 FILE                  : outputs a 60fps mp4 file with the result\n";
     std::cerr << "    --gif FILE                  : outputs a 20fps gif file with the result\n";
-    std::cerr << "    --pgm PATTERN               : output every generated image in a pgm file\n";
+    std::cerr << "    --pgm PATTERN               : output every generated grayscale in a pgm file\n";
     std::cerr << "    --pgm-poster PATTERN        : output poster thumbnails (128x86) of input images\n";
     std::cerr << "    --pgm-diff PATTERN          : output difference between encoded result and source\n";
     std::cerr << "    --pgm-change PATTERN        : output difference between consecutive frames\n";
@@ -173,9 +173,9 @@ void usage(const std::string name)
     std::cerr << "    --byterate BYTERATE         : bytes per ticks available for video compression\n";
     std::cerr << "    --fps-ratio BOOLEAN         : ratio of images from the source to drop.\n";
     std::cerr << "    --group BOOLEAN             : if true, packs ticks together to present screen updates at the same rate as the input media. Only works on a se30.\n";
-    std::cerr << "    --bars BOOLEAN              : if false, image is zoomed in so there are no black bars.\n";
-    std::cerr << "    --anchor-x FLOAT            : horizontal anchor point for image extraction (0=left, 0.5=center, 1=right)\n";
-    std::cerr << "    --anchor-y FLOAT            : vertical anchor point for image extraction (0=top, 0.5=center, 1=bottom)\n";
+    std::cerr << "    --bars BOOLEAN              : if false, grayscale is zoomed in so there are no black bars.\n";
+    std::cerr << "    --anchor-x FLOAT            : horizontal anchor point for grayscale extraction (0=left, 0.5=center, 1=right)\n";
+    std::cerr << "    --anchor-y FLOAT            : vertical anchor point for grayscale extraction (0=top, 0.5=center, 1=bottom)\n";
     std::cerr << "    --dither DITHER             : specifies the type of dithering to be used.\n";
     std::cerr << "      'ordered' will use a 4x4 ordered dither matrix.\n";
     std::cerr << "      'error' will use an error diffusion algorithm.\n";
@@ -185,7 +185,7 @@ void usage(const std::string name)
     std::cerr << "    --error-stability FLOAT     : amount of error to be accumulated before changing a screen pixel\n";
     std::cerr << "    --error-bidi BOOLEAN        : if true, error diffusion is applied in different direction for even and odd scanlines.\n";
     std::cerr << "    --error-bleed PERCENT       : how much error is moved from a pixel to the neighbours.\n";
-    std::cerr << "    --filters FILTERS           : specifies a set of filters to be applied on image afgter resizing, but before dithering\n";
+    std::cerr << "    --filters FILTERS           : specifies a set of filters to be applied on grayscale afgter resizing, but before dithering\n";
     std::cerr << "    --codec CODEC               : adds a specific codec to the encoding. The first --codec parameter clears the profile codec list\n";
     std::cerr << "    --initial-frame MODE        : initial frame generation: 'false'=none, 'optional'=backwards compatible (default), 'true'=required\n";
     std::cerr << "    --loop BOOLEAN              : add trailing frames for perfect loop (default false, requires initial frame)\n";

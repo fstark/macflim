@@ -1,6 +1,6 @@
 #pragma once
 
-#include "image.hpp"
+#include "grayscale.hpp"
 #include "frame.hpp"
 #include "imgcompress.hpp"
 #include "compressor.hpp"
@@ -38,19 +38,19 @@ private:
     size_t W_;
     size_t H_;
 
-    std::function<std::optional<image>()> next_image_;
+    std::function<std::optional<grayscale>()> next_image_;
     const std::vector<sound_frame_t> &audio_;
     const double fps_;
     std::vector<subtitle> subtitles_;
 
     std::vector<frame> frames_;
-    std::optional<framebuffer> initial_fb_;
+    std::optional<bitmap> initial_fb_;
 
 public:
-    flimcompressor(size_t W, size_t H, std::function<std::optional<image>()> next_image, const std::vector<sound_frame_t> &audio, double fps, const std::vector<subtitle> &subtitles) : W_{W}, H_{H}, next_image_{std::move(next_image)}, audio_{audio}, fps_{fps}, subtitles_{subtitles} {}
+    flimcompressor(size_t W, size_t H, std::function<std::optional<grayscale>()> next_image, const std::vector<sound_frame_t> &audio, double fps, const std::vector<subtitle> &subtitles) : W_{W}, H_{H}, next_image_{std::move(next_image)}, audio_{audio}, fps_{fps}, subtitles_{subtitles} {}
 
     const std::vector<frame> &get_frames() const { return frames_; }
-    const std::optional<framebuffer> &get_initial() const { return initial_fb_; }
+    const std::optional<bitmap> &get_initial() const { return initial_fb_; }
 
     bool progress_ = true;
 
@@ -151,11 +151,11 @@ public:
 
     struct DitheringParameters
     {
-        const bool bars_;                   //  Do we add bars when we resize the added image?  (note: maybe do some image normalizer class that does all conversion work)
+        const bool bars_;                   //  Do we add bars when we resize the added image?  (note: maybe do some grayscale normalizer class that does all conversion work)
         const std::string filters_;         //  Filters to apply
-        const double anchor_x_;             //  Horizontal anchor for image extraction
-        const double anchor_y_;             //  Vertical anchor for image extraction
-        const image::dithering dither_;     //  The kind of dither to apply
+        const double anchor_x_;             //  Horizontal anchor for grayscale extraction
+        const double anchor_y_;             //  Vertical anchor for grayscale extraction
+        const grayscale::dithering dither_;     //  The kind of dither to apply
         const std::string error_algorithm_; //  Error algo
         const double stability_;            //  Stability of the transform
         const float error_bleed_;
@@ -168,41 +168,41 @@ public:
     class Ditherer
     {
         size_t W_, H_;         //  Width and height of the generated image
-        image dithered_image_; //  The currently dithered image
-                               //  The initial image defines the size of all future images
+        grayscale dithered_image_; //  The currently dithered image
+                               //  The initial grayscale defines the size of all future images
 
         const DitheringParameters dp_;
 
     public:
-        Ditherer(const image &inital_image, const DitheringParameters &dp) : W_{inital_image.W()},
+        Ditherer(const grayscale &inital_image, const DitheringParameters &dp) : W_{inital_image.W()},
                                                                              H_{inital_image.H()},
                                                                              dithered_image_{W_, H_},
                                                                              dp_{dp}
         {
-            //  Initial dithered image is black, we dither to whatever the initial image is
+            //  Initial dithered grayscale is black, we dither to whatever the initial grayscale is
             dither(inital_image);
         }
 
         size_t W() const { return W_; }
         size_t H() const { return H_; }
 
-        /// Dither the image according to the parameters
+        /// Dither the grayscale according to the parameters
         /// Passed
-        void dither(const image &img)
+        void dither(const grayscale &img)
         {
-            image resized_image(W_, H_); //  note: was 512x342
+            grayscale resized_image(W_, H_); //  note: was 512x342
             copy(resized_image, img, dp_.bars_, dp_.anchor_x_, dp_.anchor_y_);
 
-            //  We filter the image of the "right size", for things like corners, etc...
-            image filtered_image = filter(resized_image, dp_.filters_.c_str());
+            //  We filter the grayscale of the "right size", for things like corners, etc...
+            grayscale filtered_image = filter(resized_image, dp_.filters_.c_str());
 
-            image dithered_image(W_, H_); //  The next dithered image
+            grayscale dithered_image(W_, H_); //  The next dithered image
 
-            if (dp_.dither_ == image::error_diffusion)
+            if (dp_.dither_ == grayscale::error_diffusion)
                 error_diffusion(dithered_image, filtered_image, dithered_image_, dp_.stability_, *get_error_diffusion_by_name(dp_.error_algorithm_), dp_.error_bleed_, dp_.error_bidi_);
-            else if (dp_.dither_ == image::ordered)
+            else if (dp_.dither_ == grayscale::ordered)
                 ordered_dither(dithered_image, filtered_image, dithered_image_);
-            else if (dp_.dither_ == image::blue_noise)
+            else if (dp_.dither_ == grayscale::blue_noise)
                 blue_noise_dither(dithered_image, filtered_image, dithered_image_);
             else
                 throw "Unknown dithering option";
@@ -215,14 +215,14 @@ public:
             // static int num = 0;
             // sprintf( buffer, "/tmp/foo-%04d.pgm", num );
             // num++;
-            // write_image( buffer, dithered_image );
+            // write_grayscale( buffer, dithered_image );
 
-            //  The new dithered image is the previous one
+            //  The new dithered grayscale is the previous one
             dithered_image_ = dithered_image;
         }
 
         //  The current dithered image
-        const image current()
+        const grayscale current()
         {
             return dithered_image_;
         }
@@ -239,7 +239,7 @@ public:
         }
 
         //  Burn the subtitle for time into the image;
-        void burn_into(image &img, double time)
+        void burn_into(grayscale &img, double time)
         {
             if (subtitles_.size() > 0)
             {
@@ -262,15 +262,15 @@ public:
     class EncodingResult
     {
         const codec_spec &codec_;         //  Used codec
-        framebuffer image_;               //  Resulting image
+        bitmap image_;               //  Resulting image
         const std::vector<uint8_t> data_; //  Resulting data
         const double quality_;            //  Resulting quality
 
     public:
         EncodingResult(
             const codec_spec &codec,
-            const framebuffer &current,
-            const framebuffer &target,
+            const bitmap &current,
+            const bitmap &target,
             const size_t budget) : codec_{codec},
                                    image_{current},
                                    data_{codec_.coder->compress(image_, target, budget * codec_.penality)},
@@ -280,7 +280,7 @@ public:
             // static int num = 0;
             // sprintf( buffer, "/tmp/foo-%04d.pgm", num );
             // num++;
-            // write_image( buffer, image_.as_image() );
+            // write_grayscale( buffer, image_.as_image() );
         }
 
         //  Encoded video with codec signature and trailer (#### why trailer?)
@@ -292,14 +292,14 @@ public:
         }
 
         double quality() const { return quality_; }
-        const framebuffer &image() const { return image_; }
+        const bitmap &image() const { return image_; }
     };
 
     class CompressorHelper
     {
         Ditherer &ditherer_;
         SubtitleBurner &subtitle_burner_;
-        framebuffer current_fb_; //  The framebuffer displayed on screen at each step [#### check creation]
+        bitmap current_fb_; //  The bitmap displayed on screen at each step [#### check creation]
         const std::vector<codec_spec> &codecs_;
         const double fps_; //  Input fps
         const size_t byterate_;
@@ -396,17 +396,17 @@ public:
             current_audio_ = std::begin(audio_);
         }
 
-        // Adds one image to the generated video, keep track of previous
+        // Adds one grayscale to the generated video, keep track of previous
         // Returns the quality metric (proximity to target)
-        double add(const image &source)
+        double add(const grayscale &source)
         {
             //  Dither the new image
             ditherer_.dither(source);
-            image dest = ditherer_.current();
+            grayscale dest = ditherer_.current();
             subtitle_burner_.burn_into(dest, in_fr_ / fps_);
 
             //  True B&W packed image
-            framebuffer fb{dest};
+            bitmap fb{dest};
 
             //  Let's see how many ticks we have to display this image
             in_fr_++;
@@ -432,8 +432,8 @@ public:
                     std::copy(snd.begin(), snd.end(), std::back_inserter(audio));
                 }
 
-                // write_image( "/tmp/a.pgm", fb.as_image() );
-                // write_image( "/tmp/b.pgm", dest );
+                // write_grayscale( "/tmp/a.pgm", fb.as_image() );
+                // write_grayscale( "/tmp/b.pgm", dest );
 
                 //  Compute the video budget?
                 size_t video_budget = byterate_ * local_ticks;
@@ -451,7 +451,7 @@ public:
                 auto best_result = std::max_element(encoding_results.begin(), encoding_results.end(), [](const EncodingResult &r1, const EncodingResult &r2)
                                                     { return r1.quality() < r2.quality(); });
 
-                // write_image( "/tmp/img1.pgm", best_result->image().as_image() );
+                // write_grayscale( "/tmp/img1.pgm", best_result->image().as_image() );
                 // exit(0);
 
                 //  Construct the frame with best video and audio
@@ -488,13 +488,13 @@ public:
         std::vector<frame> get_frames() const { return frames_; }
     };
 
-    void compress(double stability, size_t byterate, bool group, const std::string &filters, const std::string &watermark, const std::vector<codec_spec> &codecs, image::dithering dither, bool bars, double anchor_x, double anchor_y, const std::string error_algorithm, float error_bleed, bool error_bidi, initial_frame_mode initial_mode = initial_frame_mode::optional, bool loop = false)
+    void compress(double stability, size_t byterate, bool group, const std::string &filters, const std::string &watermark, const std::vector<codec_spec> &codecs, grayscale::dithering dither, bool bars, double anchor_x, double anchor_y, const std::string error_algorithm, float error_bleed, bool error_bidi, initial_frame_mode initial_mode = initial_frame_mode::optional, bool loop = false)
     {
-        image previous(W_, H_);
+        grayscale previous(W_, H_);
         fill(previous, 0);
 
         // Pull all images from the callback
-        // We need the first image for initial frame generation, so pull it now
+        // We need the first grayscale for initial frame generation, so pull it now
         auto first_opt = next_image_();
         if (!first_opt)
         {
@@ -505,22 +505,22 @@ public:
         // Generate initial frame if requested or if looping is enabled
         if (loop || initial_mode != initial_frame_mode::none)
         {
-            //  Extract what the first image should be
-            image img0(W_, H_);
+            //  Extract what the first grayscale should be
+            grayscale img0(W_, H_);
             copy(img0, *first_opt, bars, anchor_x, anchor_y);
-            image img1 = filter(img0, filters.c_str());
-            image img2(W_, H_);
-            if (dither == image::error_diffusion)
+            grayscale img1 = filter(img0, filters.c_str());
+            grayscale img2(W_, H_);
+            if (dither == grayscale::error_diffusion)
                 error_diffusion(img2, img1, previous, stability, *get_error_diffusion_by_name(error_algorithm), error_bleed, error_bidi);
-            else if (dither == image::ordered)
+            else if (dither == grayscale::ordered)
                 ordered_dither(img2, img1, previous);
-            else if (dither == image::blue_noise)
+            else if (dither == grayscale::blue_noise)
                 blue_noise_dither(img2, img1, previous);
             round_corners(img2);
             ::watermark(img2, watermark);
 
-            // Store the initial framebuffer
-            initial_fb_ = framebuffer{img2};
+            // Store the initial bitmap
+            initial_fb_ = bitmap{img2};
 
             // For 'required' mode, start encoding from this image
             // For 'optional' mode, keep previous as black (backwards compatible)
@@ -558,9 +558,9 @@ public:
         frames_ = ch.get_frames();
 #else
         //  This is the initial image, all black by default
-        image initial_image(previous);
+        grayscale initial_image(previous);
 
-        framebuffer current_fb{previous}; //  The framebuffer displayed on screen at each step
+        bitmap current_fb{previous}; //  The bitmap displayed on screen at each step
 
         int in_fr = 0;
 
@@ -577,16 +577,16 @@ public:
 
         for (auto &big_image : images_)
         {
-            image dest(W_, H_);
+            grayscale dest(W_, H_);
 
-            image source_image(W_, H_); //  note: was 512x342
+            grayscale source_image(W_, H_); //  note: was 512x342
             copy(source_image, big_image, bars, 0.5, 0.5);
 
-            image img = filter(source_image, filters.c_str());
+            grayscale img = filter(source_image, filters.c_str());
 
-            if (dither == image::error_diffusion)
+            if (dither == grayscale::error_diffusion)
                 error_diffusion(dest, img, previous, stability, *get_error_diffusion_by_name(error_algorithm), error_bleed, error_bidi);
-            else if (dither == image::ordered)
+            else if (dither == grayscale::ordered)
                 ordered_dither(dest, img, previous);
             else
                 throw "Unknown dithering option";
@@ -619,7 +619,7 @@ public:
             //     sprintf( buffer, "%zu", current_tick );
             //     ::watermark( dest, buffer );
             // }
-            framebuffer fb{dest};
+            bitmap fb{dest};
 
             //  Let's see how many ticks we have to display this image
             in_fr++;
@@ -657,9 +657,9 @@ public:
 
                 std::vector<std::vector<uint8_t>> encoded_datas;
                 std::vector<double> qualities;
-                std::vector<framebuffer> encoded_framebuffers;
+                std::vector<bitmap> encoded_framebuffers;
 
-                // write_image( "/tmp/img2.pgm", fb.as_image() );
+                // write_grayscale( "/tmp/img2.pgm", fb.as_image() );
 
                 for (auto &codec : codecs)
                 {
@@ -693,15 +693,15 @@ public:
                         char buffer[1024];
                         sprintf(buffer, "codec-%06d-img-%d.pgm", img, (int)codecs[i].signature);
                         auto logimg = encoded_framebuffers[i].as_image();
-                        write_image(buffer, logimg);
+                        write_grayscale(buffer, logimg);
 
                         sprintf(buffer, "codec-%06d-xor-%d.pgm", img, (int)codecs[i].signature);
                         auto logimg2 = (encoded_framebuffers[i] ^ current_fb).inverted().as_image();
-                        write_image(buffer, logimg2);
+                        write_grayscale(buffer, logimg2);
 
                         sprintf(buffer, "codec-%06d-yor-%d.pgm", img, (int)codecs[i].signature);
                         auto logimg3 = (encoded_framebuffers[i] ^ fb).inverted().as_image();
-                        write_image(buffer, logimg3);
+                        write_grayscale(buffer, logimg3);
 
                         std::clog << "  "
                                   << codecs[i].coder->name()
@@ -717,7 +717,7 @@ public:
                     char buffer[1024];
                     sprintf(buffer, "codec-%06d-img-target.pgm", img);
                     auto logimg = fb.as_image();
-                    write_image(buffer, logimg);
+                    write_grayscale(buffer, logimg);
                     fprintf(stderr, "\n");
                 }
 
@@ -731,7 +731,7 @@ public:
 
                 current_fb = encoded_framebuffers[best_ix];
 
-                // write_image( "/tmp/img0.pgm", current_fb.as_image() );
+                // write_grayscale( "/tmp/img0.pgm", current_fb.as_image() );
                 // exit(0);
 
                 f.source = fb;

@@ -142,7 +142,7 @@ uint8_t sFont[128][8] = {
 };
 
 //  Draws a single 8x9 character
-static void putc( image &img, char c, size_t posx, size_t posy )
+static void putc( grayscale &img, char c, size_t posx, size_t posy )
 {
     c &= 0x7f;
 
@@ -158,7 +158,7 @@ static void putc( image &img, char c, size_t posx, size_t posy )
             img.at(posx+x,y+posy) = (sFont[(int)c][y] & (1<<(x))) ? 1 : 0;
 }
 
-void watermark( image &img, const std::string &s )
+void watermark( grayscale &img, const std::string &s )
 {
     int x = 0;
     int y = 0;
@@ -185,7 +185,7 @@ void watermark( image &img, const std::string &s )
 
 using namespace std::string_literals;
 
-void burn_subtitle( image &img, const std::string &sub )
+void burn_subtitle( grayscale &img, const std::string &sub )
 {
     size_t char_width = img.W()/8;
     auto s = " "s + sub + " "s;

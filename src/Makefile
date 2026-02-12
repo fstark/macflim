@@ -50,7 +50,7 @@ test: $(TARGET)
 	cd ../tests && bash run_tests.sh $(UNAME_M)
 
 # List of object files
-OBJS = image.o reader.o writer.o ruler.o watermark.o imgcompress.o filesystem_reader.o ffmpeg_reader.o flimmaker.o common.o flim.o subtitles.o flimutil.o
+OBJS = grayscale.o reader.o writer.o ruler.o watermark.o imgcompress.o filesystem_reader.o ffmpeg_reader.o flimmaker.o common.o flim.o subtitles.o flimutil.o
 
 # Include the dependency files
 -include $(OBJS:.o=.d)

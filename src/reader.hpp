@@ -9,7 +9,7 @@
 
 #include "common.hpp"
 
-#include "image.hpp"
+#include "grayscale.hpp"
 
 /// A macintosh formatted sound frame (370 bytes)
 class sound_frame_t
@@ -33,25 +33,25 @@ public:
     std::array<uint8_t, size>::const_iterator end() const { return std::cend(data_); }
 };
 
-/// Bundles together an image and all the sound frames that are played during the display of the image
+/// Bundles together an grayscale and all the sound frames that are played during the display of the image
 /// A frame has an audio timestamp (the ts at which the audio starts)
-//  and a video timestamp (the ts at which the image is displayed)
+//  and a video timestamp (the ts at which the grayscale is displayed)
 //  (hopefully the video timestamp occurs within the audio timestamp)
 class frame_t
 {
 public:
     timestamp_t audio_ts = 0;
     timestamp_t video_ts = 0;
-    std::vector<sound_frame_t> sounds;      //  A vector of 1/60th of a second sound frames
-    std::unique_ptr<image> img;
+    std::vector<sound_frame_t> sounds; //  A vector of 1/60th of a second sound frames
+    std::unique_ptr<grayscale> img;
 
     timestamp_t audio_end() const { return audio_ts + sounds.size() / 60.0; }
 
     //  Makes one frame from two consecutive frames
     //  First frame is deleted
-    void append( frame_t &other )
+    void append(frame_t &other)
     {
-        assert( equals( audio_end(), other.audio_ts ) );
+        assert(equals(audio_end(), other.audio_ts));
         sounds.insert(sounds.end(), other.sounds.begin(), other.sounds.end());
         img = std::move(other.img);
         // audio_ts does not move
@@ -63,9 +63,8 @@ public:
 class frame_accumulator
 {
     std::vector<sound_frame_t> audio_;
-    std::vector<std::unique_ptr<image>> images_;
+    std::vector<std::unique_ptr<grayscale>> images_;
 };
-
 
 /*
 #include <generator>
@@ -91,8 +90,8 @@ public:
     //  Frame rate of the returned images
     virtual double frame_rate() = 0;
 
-    //  Return next image until no more images are available
-    virtual std::unique_ptr<image> next() = 0;
+    //  Return next grayscale until no more images are available
+    virtual std::unique_ptr<grayscale> next() = 0;
     // virtual std::vector<image> images() = 0;
 
     //  Get the next sound sample, mac format

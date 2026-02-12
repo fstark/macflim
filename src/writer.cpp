@@ -46,7 +46,7 @@ class ffmpeg_writer : public output_writer
     size_t audio_pos = 0;
     int audio_frame_counter = 0;
 
-    void pushFrame(const image &img, const sound_frame_t &snd)
+    void pushFrame(const grayscale &img, const sound_frame_t &snd)
     {
         int err;
         if (!videoFrame)
@@ -361,7 +361,7 @@ public:
             std::clog << "#### End of video stream\n";
     }
 
-    virtual void write_frame(const image &img, const sound_frame_t &snd)
+    virtual void write_frame(const grayscale &img, const sound_frame_t &snd)
     {
         pushFrame(img, snd);
     }
@@ -376,13 +376,13 @@ class gif_writer : public output_writer
 public:
     gif_writer(const std::string filename) : filename_{filename} {}
 
-    virtual void write_frame(const image &img, [[maybe_unused]] const sound_frame_t &snd)
+    virtual void write_frame(const grayscale &img, [[maybe_unused]] const sound_frame_t &snd)
     {
         if ((count_ % 3) == 0)
         {
             char buffer[1024];
             sprintf(buffer, "/tmp/gif-%06zu.pgm", num_);
-            write_image(buffer, img);
+            write_grayscale(buffer, img);
             num_++;
         }
         count_++;
@@ -425,11 +425,11 @@ public:
         delete_files_of_pattern(pattern_);
     }
 
-    virtual void write_frame(const image &img, [[maybe_unused]] const sound_frame_t &snd) override
+    virtual void write_frame(const grayscale &img, [[maybe_unused]] const sound_frame_t &snd) override
     {
         char buffer[1024];
         sprintf(buffer, pattern_.c_str(), frame_num_);
-        write_image(buffer, img);
+        write_grayscale(buffer, img);
         frame_num_++;
     }
 };
@@ -442,7 +442,7 @@ std::unique_ptr<output_writer> make_pgm_writer(const std::string &pattern)
 class null_writer : public output_writer
 {
 public:
-    virtual void write_frame([[maybe_unused]] const image &img, [[maybe_unused]] const sound_frame_t &snd) {}
+    virtual void write_frame([[maybe_unused]] const grayscale &img, [[maybe_unused]] const sound_frame_t &snd) {}
 };
 
 std::unique_ptr<output_writer> make_null_writer()

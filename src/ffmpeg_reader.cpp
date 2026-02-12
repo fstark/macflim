@@ -100,14 +100,14 @@ class ffmpeg_reader : public input_reader
     AVFrame *frame_;
     int ixv; //  Video stream index
     size_t video_frame_count_ = 0;
-    std::unique_ptr<image> video_image_;   //  Size of the video input
-    std::unique_ptr<image> default_image_; //  Size of our output
+    std::unique_ptr<grayscale> video_image_;   //  Size of the video input
+    std::unique_ptr<grayscale> default_image_; //  Size of our output
     double first_frame_second_;
     size_t frame_to_extract_;
     bool done_ = false; //  No more frames to decode
 
     /// Try to receive one decoded video frame.  Returns true if a frame was produced.
-    bool receive_video_frame(image &out)
+    bool receive_video_frame(grayscale &out)
     {
         for (;;)
         {
@@ -236,14 +236,14 @@ public:
         if (bufsize < 0)
             throw "CANNOT ALLOCATE IMAGE";
 
-        video_image_ = std::make_unique<image>(video_codec_context_->width, video_codec_context_->height);
+        video_image_ = std::make_unique<grayscale>(video_codec_context_->width, video_codec_context_->height);
 
         // #### need to clarify what size we want when extracting. Why the hard-coded 512x342?
         double aspect = video_codec_context_->width / (double)video_codec_context_->height;
         if (aspect > 512 / 342.0)
-            default_image_ = std::make_unique<image>(342 * aspect, 342);
+            default_image_ = std::make_unique<grayscale>(342 * aspect, 342);
         else
-            default_image_ = std::make_unique<image>(512, 512 / aspect);
+            default_image_ = std::make_unique<grayscale>(512, 512 / aspect);
 
         if (sDebug)
         {
@@ -286,7 +286,7 @@ public:
     }
 
     /// Lazily decode and return the next video frame, or nullptr when done.
-    virtual std::unique_ptr<image> next()
+    virtual std::unique_ptr<grayscale> next()
     {
         if (done_)
             return nullptr;
@@ -297,7 +297,7 @@ public:
             return nullptr;
         }
 
-        auto result = std::make_unique<image>(default_image_->W(), default_image_->H());
+        auto result = std::make_unique<grayscale>(default_image_->W(), default_image_->H());
 
         // Try to get a frame from already-sent packets
         if (receive_video_frame(*result))

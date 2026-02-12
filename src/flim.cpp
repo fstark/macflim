@@ -208,7 +208,7 @@ void flim::add( const std::vector<frame> &frames )
     add_component( component_toc, toc_data );
 }
 
-void flim::add_framebuffer( eComponentType type, const framebuffer &fb )
+void flim::add_framebuffer( eComponentType type, const bitmap &fb )
 {
     std::vector<uint8_t> data;
     auto bi = std::back_inserter(data);
@@ -220,13 +220,13 @@ void flim::add_framebuffer( eComponentType type, const framebuffer &fb )
     add_component( type, data );
 }
 
-void flim::add_poster( const framebuffer &fb )
+void flim::add_poster( const bitmap &fb )
 {
     std::vector<uint8_t> data = fb.raw_values_natural<uint8_t>();
     add_component( component_poster, data );
 }
 
-void flim::add_initial( const framebuffer &fb )
+void flim::add_initial( const bitmap &fb )
 {
     add_framebuffer( component_initial, fb );
 }
