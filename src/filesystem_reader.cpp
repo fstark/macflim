@@ -60,45 +60,6 @@ public:
         return img;
     }
 
-    /*
-        virtual size_t sample_rate() { return 370*60; };
-
-        virtual std::vector<double> raw_sound()
-        {
-            std::vector<uint8_t> audio_samples;
-
-            long audio_start = frame_from_image(from_frame_)*370;    //  Images are one-based
-            long audio_end = frame_from_image(from_frame_+count_)*370;      //  Last grayscale is included?
-            long audio_size = audio_end-audio_start;
-
-            FILE *f = fopen( audio_path_.c_str(), "rb" );
-            if (f)
-            {
-                audio_samples.resize( audio_size );
-                for (auto &v:audio_samples)
-                    v = 0x80;
-
-                fseek( f, audio_start, SEEK_SET );
-                auto res = fread( audio_samples.data(), 1, audio_size, f );
-                if (res!=audio_size)
-                    std::clog << "AUDIO: added " << audio_size-res << " bytes of silence\n";
-                fclose( f );
-            }
-            else
-                std::cerr << "**** ERROR: CANNOT OPEN AUDIO FILE [" << audio_path_ << "]\n";
-            std::clog << "AUDIO: READ " << audio_size << " bytes from offset " << audio_start << "\n";
-
-            auto min_sample = *std::min_element( std::begin(audio_samples), std::end(audio_samples) );
-            auto max_sample = *std::max_element( std::begin(audio_samples), std::end(audio_samples) );
-            std::clog << " SAMPLE MIN:" << (int)min_sample << " SAMPLE MAX:" << (int)max_sample << "\n";
-
-            std::vector<double> res;
-            for (auto s:audio_samples)
-                res.push_back( (s-128.0)/128.0 );
-
-            return res;
-        }
-    */
     virtual std::unique_ptr<sound_frame_t> next_sound() { return nullptr; } //  #### THIS IS COMPLETELY WRONG
 };
 

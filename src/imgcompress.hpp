@@ -10,8 +10,6 @@
 #include <memory.h>
 
 int packbits( uint8_t *out, const uint8_t *buffer, int length );
-int packzeroes( uint8_t *out, const uint8_t *const buffer, int length );
-void unpackzeroesx( char *d, const char *s, size_t maxlen );
 
 //  #### Note: Using uint8_t (standard C++) instead of uint8_t (BSD)
 

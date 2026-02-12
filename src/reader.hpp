@@ -59,27 +59,6 @@ public:
     }
 };
 
-/// Accumulates audio and video
-class frame_accumulator
-{
-    std::vector<sound_frame_t> audio_;
-    std::vector<std::unique_ptr<grayscale>> images_;
-};
-
-/*
-#include <generator>
-
-std::generator<unsigned int> f()
-{
-    unsigned int i = 1;
-    while (1)
-    {
-        co_yield i;
-        i *= 2;
-    }
-}
-*/
-
 //  Abstract class to read data from a source
 //  Sources can be list of still images in the filesystem or a movie file
 class input_reader
