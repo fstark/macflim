@@ -30,9 +30,9 @@ The `compress()` method in `flimcompressor.hpp` takes 15 separate parameters —
 
 `flim.cpp` prints `HEADER: ...` and `-> : ...` to stdout on every file write, which pollutes program output. There are also scattered `printf`/`fprintf` debug statements throughout `compressor.hpp` and `flimcompressor.hpp`. Meanwhile, `flimmaker.cpp` already has a `verbose` flag. The fix is straightforward: gate all diagnostic output behind the existing verbose flag (or just delete the leftover debug prints).
 
-## 5. Make `profile.hpp` data-driven instead of copy-paste
+## 5. ~~Make `profile.hpp` data-driven instead of copy-paste~~
 
-The `profile::from_string()` method in `profile.hpp` contains ~10 nearly identical blocks of ~25 lines each, one per Mac model profile (128k, 512k, Plus, SE, Classic, etc.), differing only in parameter values. This could be replaced with a small table of structs, shrinking ~220 lines of repetitive code down to ~30, and making adding a new profile a single line instead of a copy-paste-modify exercise.
+~~The `profile::from_string()` method in `profile.hpp` contains ~10 nearly identical blocks of ~25 lines each, one per Mac model profile (128k, 512k, Plus, SE, Classic, etc.), differing only in parameter values. This could be replaced with a small table of structs, shrinking ~220 lines of repetitive code down to ~30, and making adding a new profile a single line instead of a copy-paste-modify exercise.~~
 
 ## 6. Replace `throw "string literal"` with proper exceptions
 

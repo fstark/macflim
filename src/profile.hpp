@@ -131,229 +131,76 @@ public:
     bool loop() const { return loop_; }
     void set_loop(bool loop) { loop_ = loop; }
 
+private:
+    static constexpr size_t MAX_CODECS = 8;
+
+    struct profile_config
+    {
+        const char *name;
+        size_t width, height;
+        size_t byterate;
+        const char *filters;
+        int fps_ratio;
+        bool group;
+        double stability;
+        bool bars;
+        const char *dither;
+        const char *error_algorithm;
+        bool error_bidi;
+        float error_bleed;
+        bool silent;
+        const char *codecs[MAX_CODECS];
+    };
+
+    static constexpr profile_config profile_table[] = {
+        //  name       w    h     rate  filters   ratio  grp   stab  bars   dithering  error    bidi   bleed  silent   codecs
+        {"128k",      512, 342,   380, "g1.6bbscz", 4,  false, 0.5,  true,  "ordered", "floyd", true,  0.95f, true,  {"null", "z32", "lines:count=10", "invert"}},
+        {"512k",      512, 342,   480, "g1.6bbscz", 4,  false, 0.5,  true,  "ordered", "floyd", true,  0.95f, true,  {"null", "z32", "lines:count=10", "invert"}},
+        {"xl",        704, 364,   580, "g1.6bbsc",  4,  true,  0.5,  true,  "ordered", "floyd", true,  0.95f, true,  {"null", "z32", "lines:count=50", "invert"}},
+        {"plus",      512, 342,  1500, "g1.6bbscz", 2,  false, 0.5,  true,  "ordered", "floyd", true,  0.95f, false, {"null", "z32", "lines:count=30", "invert"}},
+        {"performer", 512, 342,  5000, "g1.6bsc",   2,  false, 0.5,  true,  "blue",    "floyd", true,  0.95f, false, {"null", "z32", "lines:count=30", "invert"}},
+        {"portable",  640, 400,  2500, "g1.6bsc",   2,  false, 0.5,  true,  "error",   "floyd", true,  0.98f, false, {"null", "z32", "lines:count=50", "invert"}},
+        {"se",        512, 342,  2500, "g1.6bsc",   2,  false, 0.5,  true,  "error",   "floyd", true,  0.98f, false, {"null", "z32", "lines:count=50", "invert"}},
+        {"se30",      512, 342,  6000, "g1.6sc",    1,  true,  0.3,  false, "error",   "floyd", true,  0.99f, false, {"null", "z32", "lines:count=70", "invert"}},
+        {"perfect",   512, 342, 32000, "g1.6sc",    1,  true,  0.3,  false, "error",   "floyd", true,  1.0f,  false, {"null", "z32", "lines:count=70", "invert"}},
+    };
+
+    static std::vector<flimcompressor::codec_spec> parse_codecs(const char *const *codec_array, size_t width, size_t height)
+    {
+        std::vector<flimcompressor::codec_spec> codecs;
+        for (size_t i = 0; i < MAX_CODECS; ++i)
+        {
+            if (codec_array[i] != nullptr)
+                codecs.push_back(flimcompressor::make_codec(codec_array[i], width, height));
+        }
+        return codecs;
+    }
+
+public:
     static bool profile_named(const std::string name, encoding_profile &result)
     {
-        if (name == "128k"s)
+        for (const auto &config : profile_table)
         {
-            result.set_size(512, 342);
-            result.set_byterate(380);
-            result.set_filters("g1.6bbscz");
-            result.set_fps_ratio(4);
-            result.set_group(false);
-            result.set_stability(0.5);
-            result.set_bars(true);
-            result.set_dither("ordered");
-            result.set_error_algorithm("floyd");
-            result.set_error_bidi(true);
-            result.set_error_bleed(0.95);
-            result.codecs_.clear();
-            result.codecs_.push_back(flimcompressor::make_codec("null", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("z32", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("lines:count=10", result.W_, result.H_));
-            result.codecs_.push_back(flimcompressor::make_codec("invert", result.W_, result.H_));
-            result.set_silent(true);
-            return true;
-        }
-        if (name == "512k"s)
-        {
-            result.set_size(512, 342);
-            result.set_byterate(480);
-            result.set_filters("g1.6bbscz");
-            result.set_fps_ratio(4);
-            result.set_group(false);
-            result.set_stability(0.5);
-            result.set_bars(true);
-            result.set_dither("ordered");
-            result.set_error_algorithm("floyd");
-            result.set_error_bidi(true);
-            result.set_error_bleed(0.95);
-            result.codec_factory_ = [](const encoding_profile &p)
+            if (name == config.name)
             {
-                std::vector<flimcompressor::codec_spec> codecs;
-                codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("lines:count=10", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("invert", p.width(), p.height()));
-                return codecs;
-            };
-            result.set_silent(true);
-            return true;
-        }
-        if (name == "xl"s)
-        {
-            result.set_size(704, 364);
-            result.set_byterate(580);
-            result.set_filters("g1.6bbsc");
-            result.set_fps_ratio(4);
-            result.set_group(true);
-            result.set_stability(0.5);
-            result.set_bars(true);
-            result.set_dither("ordered");
-            result.set_error_algorithm("floyd");
-            result.set_error_bidi(true);
-            result.set_error_bleed(0.95);
-            result.codec_factory_ = [](const encoding_profile &p)
-            {
-                std::vector<flimcompressor::codec_spec> codecs;
-                codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("lines:count=50", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("invert", p.width(), p.height()));
-                return codecs;
-            };
-            result.set_silent(true);
-            return true;
-        }
-        if (name == "plus"s)
-        {
-            result.set_size(512, 342);
-            result.set_byterate(1500);
-            result.set_filters("g1.6bbscz");
-            result.set_fps_ratio(2);
-            result.set_group(false);
-            result.set_stability(0.5);
-            result.set_bars(true);
-            result.set_dither("ordered");
-            result.set_error_algorithm("floyd");
-            result.set_error_bidi(true);
-            result.set_error_bleed(0.95);
-            result.codec_factory_ = [](const encoding_profile &p)
-            {
-                std::vector<flimcompressor::codec_spec> codecs;
-                codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("lines:count=30", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("invert", p.width(), p.height()));
-                return codecs;
-            };
-            result.set_silent(false);
-            return true;
-        }
-        //  The MicroMac Performer accelerator (16MHz 68030 on a plus)
-        if (name == "performer"s)
-        {
-            result.set_size(512, 342);
-            result.set_byterate(5000);
-            result.set_filters("g1.6bsc");
-            result.set_fps_ratio(2);
-            result.set_group(false);
-            result.set_stability(0.5);
-            result.set_bars(true);
-            result.set_dither("blue");
-            result.set_error_algorithm("floyd");
-            result.set_error_bidi(true);
-            result.set_error_bleed(0.95);
-            result.codec_factory_ = [](const encoding_profile &p)
-            {
-                std::vector<flimcompressor::codec_spec> codecs;
-                codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("lines:count=30", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("invert", p.width(), p.height()));
-                return codecs;
-            };
-            result.set_silent(false);
-            return true;
-        }
-        if (name == "portable"s)
-        {
-            result.set_size(640, 400);
-            result.set_byterate(2500);
-            result.set_filters("g1.6bsc");
-            result.set_fps_ratio(2);
-            result.set_group(false);
-            result.set_stability(0.5);
-            result.set_bars(true);
-            result.set_dither("error");
-            result.set_error_algorithm("floyd");
-            result.set_error_bidi(true);
-            result.set_error_bleed(0.98);
-            result.codec_factory_ = [](const encoding_profile &p)
-            {
-                std::vector<flimcompressor::codec_spec> codecs;
-                codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("lines:count=50", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("invert", p.width(), p.height()));
-                return codecs;
-            };
-            result.set_silent(false);
-            return true;
-        }
-        if (name == "se"s)
-        {
-            result.set_size(512, 342);
-            result.set_byterate(2500);
-            result.set_filters("g1.6bsc");
-            result.set_fps_ratio(2);
-            result.set_group(false);
-            result.set_stability(0.5);
-            result.set_bars(true);
-            result.set_dither("error");
-            result.set_error_algorithm("floyd");
-            result.set_error_bidi(true);
-            result.set_error_bleed(0.98);
-            result.codec_factory_ = [](const encoding_profile &p)
-            {
-                std::vector<flimcompressor::codec_spec> codecs;
-                codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("lines:count=50", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("invert", p.width(), p.height()));
-                return codecs;
-            };
-            result.set_silent(false);
-            return true;
-        }
-        if (name == "se30"s)
-        {
-            result.set_size(512, 342);
-            result.set_byterate(6000);
-            result.set_filters("g1.6sc");
-            result.set_fps_ratio(1);
-            result.set_group(true);
-            result.set_stability(0.3);
-            result.set_bars(false);
-            result.set_dither("error");
-            result.set_error_algorithm("floyd");
-            result.set_error_bidi(true);
-            result.set_error_bleed(0.99);
-            result.codec_factory_ = [](const encoding_profile &p)
-            {
-                std::vector<flimcompressor::codec_spec> codecs;
-                codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("lines:count=70", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("invert", p.width(), p.height()));
-                return codecs;
-            };
-            result.set_silent(false);
-            return true;
-        }
-        if (name == "perfect"s)
-        {
-            result.set_size(512, 342);
-            result.set_byterate(32000);
-            result.set_filters("g1.6sc");
-            result.set_fps_ratio(1);
-            result.set_group(true);
-            result.set_stability(0.3);
-            result.set_bars(false);
-            result.set_dither("error");
-            result.set_error_algorithm("floyd");
-            result.set_error_bidi(true);
-            result.set_error_bleed(1);
-            result.codec_factory_ = [](const encoding_profile &p)
-            {
-                std::vector<flimcompressor::codec_spec> codecs;
-                codecs.push_back(flimcompressor::make_codec("null", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("z32", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("lines:count=70", p.width(), p.height()));
-                codecs.push_back(flimcompressor::make_codec("invert", p.width(), p.height()));
-                return codecs;
-            };
-            result.set_silent(false);
-            return true;
+                result.set_size(config.width, config.height);
+                result.set_byterate(config.byterate);
+                result.set_filters(config.filters);
+                result.set_fps_ratio(config.fps_ratio);
+                result.set_group(config.group);
+                result.set_stability(config.stability);
+                result.set_bars(config.bars);
+                result.set_dither(config.dither);
+                result.set_error_algorithm(config.error_algorithm);
+                result.set_error_bidi(config.error_bidi);
+                result.set_error_bleed(config.error_bleed);
+                result.codec_factory_ = [codec_array = config.codecs](const encoding_profile &p)
+                {
+                    return parse_codecs(codec_array, p.width(), p.height());
+                };
+                result.set_silent(config.silent);
+                return true;
+            }
         }
 
         return false;
