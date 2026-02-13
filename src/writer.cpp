@@ -13,6 +13,31 @@ extern "C"
 
 extern bool sDebug;
 
+// RAII wrappers for FFmpeg resources
+namespace {
+    struct AVFormatContextDeleter {
+        void operator()(AVFormatContext* ctx) const {
+            if (ctx) avformat_free_context(ctx);
+        }
+    };
+    
+    struct AVCodecContextDeleter {
+        void operator()(AVCodecContext* ctx) const {
+            if (ctx) avcodec_free_context(&ctx);
+        }
+    };
+    
+    struct AVFrameDeleter {
+        void operator()(AVFrame* frame) const {
+            if (frame) av_frame_free(&frame);
+        }
+    };
+
+    using AVFormatContextPtr = std::unique_ptr<AVFormatContext, AVFormatContextDeleter>;
+    using AVCodecContextPtr = std::unique_ptr<AVCodecContext, AVCodecContextDeleter>;
+    using AVFramePtr = std::unique_ptr<AVFrame, AVFrameDeleter>;
+}
+
 class ffmpeg_writer : public output_writer
 {
     size_t W_; // Should be in output_writer
@@ -33,12 +58,12 @@ class ffmpeg_writer : public output_writer
         return 0;
     }
 
-    AVFrame *videoFrame = nullptr;
-    AVFrame *audio_frame = nullptr;
-    AVCodecContext *video_context = nullptr;
-    AVCodecContext *audio_context = nullptr;
+    AVFramePtr videoFrame;
+    AVFramePtr audio_frame;
+    AVCodecContextPtr video_context;
+    AVCodecContextPtr audio_context;
     int frameCounter = 0;
-    AVFormatContext *ofctx = nullptr;
+    AVFormatContextPtr ofctx;
     const AVOutputFormat *oformat = nullptr;
 
     // Small state for audio encoding (22100 in 370 u8 sample to 44200 in 1024 flt samples)
@@ -51,7 +76,7 @@ class ffmpeg_writer : public output_writer
         int err;
         if (!videoFrame)
         {
-            videoFrame = av_frame_alloc();
+            videoFrame.reset(av_frame_alloc());
             if (!videoFrame)
             {
                 throw "Failed to allocate video frame";
@@ -59,12 +84,12 @@ class ffmpeg_writer : public output_writer
             videoFrame->format = AV_PIX_FMT_YUV420P;
             videoFrame->width = video_context->width;
             videoFrame->height = video_context->height;
-            if ((err = av_frame_get_buffer(videoFrame, 32)) < 0)
+            if ((err = av_frame_get_buffer(videoFrame.get(), 32)) < 0)
             {
                 std::cout << "Failed to allocate picture buffer: " << err << std::endl;
                 return;
             }
-            av_frame_make_writable(videoFrame);
+            av_frame_make_writable(videoFrame.get());
 
             memset(videoFrame->data[1], 128, H_ / 2 * videoFrame->linesize[1]);
             memset(videoFrame->data[2], 128, H_ / 2 * videoFrame->linesize[2]);
@@ -82,7 +107,7 @@ class ffmpeg_writer : public output_writer
 
         videoFrame->pts = 1500 * frameCounter;
 
-        if ((err = avcodec_send_frame(video_context, videoFrame)) < 0)
+        if ((err = avcodec_send_frame(video_context.get(), videoFrame.get())) < 0)
         {
             std::cout << "Failed to send frame: " << err << std::endl;
             return;
@@ -93,9 +118,9 @@ class ffmpeg_writer : public output_writer
         pkt.data = NULL;
         pkt.size = 0;
         pkt.flags |= AV_PKT_FLAG_KEY;
-        if (avcodec_receive_packet(video_context, &pkt) == 0)
+        if (avcodec_receive_packet(video_context.get(), &pkt) == 0)
         {
-            av_interleaved_write_frame(ofctx, &pkt);
+            av_interleaved_write_frame(ofctx.get(), &pkt);
             av_packet_unref(&pkt);
         }
 
@@ -116,11 +141,11 @@ class ffmpeg_writer : public output_writer
             audio_frame->pts = audio_frame_counter * 1024;
             audio_frame_counter++;
 
-            err = avcodec_send_frame(audio_context, audio_frame);
+            err = avcodec_send_frame(audio_context.get(), audio_frame.get());
             if (err < 0)
                 throw "Error sending the frame to the encoder";
 
-            err = avcodec_receive_packet(audio_context, &pkt);
+            err = avcodec_receive_packet(audio_context.get(), &pkt);
             if (err == AVERROR(EAGAIN) || err == AVERROR_EOF)
                 return;
             else if (err < 0)
@@ -128,7 +153,7 @@ class ffmpeg_writer : public output_writer
 
             pkt.stream_index = 1; // Corrected this line
 
-            av_interleaved_write_frame(ofctx, &pkt);
+            av_interleaved_write_frame(ofctx.get(), &pkt);
             av_packet_unref(&pkt);
 
             memcpy(audio_p, audio_44 + 1024 - audio_pos, (735 - 1024 + audio_pos) * sizeof(float));
@@ -168,11 +193,13 @@ public:
             throw "Can't create output format";
         }
 
-        int err = avformat_alloc_output_context2(&ofctx, oformat, nullptr, filename.c_str());
+        AVFormatContext *raw_ofctx = nullptr;
+        int err = avformat_alloc_output_context2(&raw_ofctx, oformat, nullptr, filename.c_str());
         if (err < 0)
         {
             throw "can't create output context";
         }
+        ofctx.reset(raw_ofctx);
 
         const AVCodec *video_codec = nullptr;
         video_codec = avcodec_find_encoder(oformat->video_codec);
@@ -181,13 +208,13 @@ public:
             throw "Can't create video codec";
         }
 
-        AVStream *stream = avformat_new_stream(ofctx, video_codec);
+        AVStream *stream = avformat_new_stream(ofctx.get(), video_codec);
         if (!stream)
         {
             std::cout << "can't find format" << std::endl;
         }
 
-        video_context = avcodec_alloc_context3(video_codec);
+        video_context.reset(avcodec_alloc_context3(video_codec));
 
         if (!video_context)
         {
@@ -201,7 +228,7 @@ public:
         stream->codecpar->format = AV_PIX_FMT_YUV420P;
         stream->codecpar->bit_rate = 60 * 6000 * 8;
 
-        int ret = avcodec_parameters_to_context(video_context, stream->codecpar);
+        int ret = avcodec_parameters_to_context(video_context.get(), stream->codecpar);
         if (ret < 0)
         {
             throw "Failed to copy codec parameters to context";
@@ -214,16 +241,16 @@ public:
 
         if (stream->codecpar->codec_id == AV_CODEC_ID_H264)
         {
-            av_opt_set(video_context, "preset", "ultrafast", 0);
+            av_opt_set(video_context.get(), "preset", "ultrafast", 0);
         }
         else if (stream->codecpar->codec_id == AV_CODEC_ID_H265)
         {
-            av_opt_set(video_context, "preset", "ultrafast", 0);
+            av_opt_set(video_context.get(), "preset", "ultrafast", 0);
         }
 
-        avcodec_parameters_from_context(stream->codecpar, video_context);
+        avcodec_parameters_from_context(stream->codecpar, video_context.get());
 
-        if ((err = avcodec_open2(video_context, video_codec, NULL)) < 0)
+        if ((err = avcodec_open2(video_context.get(), video_codec, NULL)) < 0)
         {
             throw "Failed to open codec";
         }
@@ -233,7 +260,7 @@ public:
         if (!audio_codec)
             throw "Audio codec not found";
 
-        audio_context = avcodec_alloc_context3(audio_codec);
+        audio_context.reset(avcodec_alloc_context3(audio_codec));
         if (!audio_context)
             throw "Could not allocate audio codec context";
 
@@ -245,13 +272,13 @@ public:
         audio_context->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
         audio_context->ch_layout.nb_channels = 1;
 
-        ret = avcodec_open2(audio_context, audio_codec, NULL);
+        ret = avcodec_open2(audio_context.get(), audio_codec, NULL);
         if (ret < 0)
         {
             throw "Could not open audio codec";
         }
 
-        AVStream *audio_stream = avformat_new_stream(ofctx, audio_codec);
+        AVStream *audio_stream = avformat_new_stream(ofctx.get(), audio_codec);
         if (!audio_stream)
         {
             throw "Cannot create audio stream";
@@ -260,9 +287,9 @@ public:
         audio_stream->id = 1;
 
         audio_stream->time_base = (AVRational){1, 44100};
-        avcodec_parameters_from_context(audio_stream->codecpar, audio_context);
+        avcodec_parameters_from_context(audio_stream->codecpar, audio_context.get());
 
-        audio_frame = av_frame_alloc();
+        audio_frame.reset(av_frame_alloc());
         if (!audio_frame)
             throw "Error allocating an audio frame";
 
@@ -270,7 +297,7 @@ public:
         audio_frame->ch_layout = audio_context->ch_layout;
         audio_frame->sample_rate = audio_context->sample_rate;
         audio_frame->nb_samples = 1024; // 44100/60
-        err = av_frame_get_buffer(audio_frame, 0);
+        err = av_frame_get_buffer(audio_frame.get(), 0);
         if (err < 0)
         {
             throw "Error allocating an audio buffer";
@@ -290,7 +317,7 @@ public:
             }
         }
 
-        if ((err = avformat_write_header(ofctx, NULL)) < 0)
+        if ((err = avformat_write_header(ofctx.get(), NULL)) < 0)
         {
             char buffer[1025];
             av_strerror(err, buffer, 1024);
@@ -298,7 +325,7 @@ public:
             throw "Failed to write header";
         }
 
-        av_dump_format(ofctx, 0, filename.c_str(), 1);
+        av_dump_format(ofctx.get(), 0, filename.c_str(), 1);
     }
 
     ~ffmpeg_writer()
@@ -314,10 +341,10 @@ public:
 
         for (;;)
         {
-            avcodec_send_frame(video_context, NULL);
-            if (avcodec_receive_packet(video_context, &pkt) == 0)
+            avcodec_send_frame(video_context.get(), NULL);
+            if (avcodec_receive_packet(video_context.get(), &pkt) == 0)
             {
-                av_interleaved_write_frame(ofctx, &pkt);
+                av_interleaved_write_frame(ofctx.get(), &pkt);
                 av_packet_unref(&pkt);
             }
             else
@@ -326,7 +353,7 @@ public:
             }
         }
 
-        av_write_trailer(ofctx);
+        av_write_trailer(ofctx.get());
         if (!(oformat->flags & AVFMT_NOFILE))
         {
             int err = avio_close(ofctx->pb);
@@ -336,26 +363,7 @@ public:
             }
         }
 
-        if (videoFrame)
-        {
-            av_frame_free(&videoFrame);
-        }
-        if (audio_frame)
-        {
-            av_frame_free(&audio_frame);
-        }
-        if (video_context)
-        {
-            avcodec_free_context(&video_context);
-        }
-        if (audio_context)
-        {
-            avcodec_free_context(&audio_context);
-        }
-        if (ofctx)
-        {
-            avformat_free_context(ofctx);
-        }
+        // Smart pointers automatically clean up videoFrame, audio_frame, video_context, audio_context, ofctx
 
         if (sDebug)
             std::clog << "#### End of video stream\n";
