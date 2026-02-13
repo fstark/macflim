@@ -1,5 +1,6 @@
 #pragma once
 
+#include <format>
 #include <string>
 #include <cstring>
 #include <functional>
@@ -40,7 +41,7 @@ class flimencoder
     //  Read all images from disk
     void read_images( size_t from, size_t to, bool half_rate=false )
     {
-        std::clog << "READ IMAGES ";
+        std::clog << std::format("READ IMAGES ");
 
         static char symb[] = "123456789.";
 
@@ -58,22 +59,21 @@ class flimencoder
                 skip = true;
             }
 
-            char buffer[1024];
-            sprintf( buffer, in_.c_str(), i );
+            std::string buffer = std::vformat(in_, std::make_format_args(i));
 
             grayscale img( profile_.width(), profile_.height() );
 
-            if (!read_image( img, buffer ))
+            if (!read_image( img, buffer.c_str() ))
                 return;
             images_.push_back( img );
 
-            std::clog << symb[i%(sizeof(symb)-1)];
+            std::clog << std::format("{}", symb[i%(sizeof(symb)-1)]);
             if ((i%(sizeof(symb)-1))!=(sizeof(symb)-2))
-                std::clog << (char)0x8;
+                std::clog << std::format("{}", (char)0x8);
             std::clog << std::flush;
         }
-        std::clog << "\n";
-        std::clog << "VIDEO: READ " << images_.size() << " images\n";
+        std::clog << std::format("\n");
+        std::clog << std::format("VIDEO: READ {} images\n", images_.size());
     }
 #endif
 
@@ -99,13 +99,14 @@ class flimencoder
             double scale = std::max(::fabs(*mi), ::fabs(*ma));
             std::transform(std::begin(sound_samples), std::end(sound_samples), std::back_inserter(res), [&](double v)
                            { return clamp((v / scale) * 128 + 128, 0, 255); });
-            std::clog << "Normalized  sound : [" << *mi << "," << *ma << "] => ["
-                      << (int)*std::min_element(std::begin(res), std::end(res)) << ","
-                      << (int)*std::max_element(std::begin(res), std::end(res)) << "]\n";
+            std::clog << std::format("Normalized sound: [{},{}] => [{},{}]\n",
+                                     *mi, *ma,
+                                     (int)*std::min_element(std::begin(res), std::end(res)),
+                                     (int)*std::max_element(std::begin(res), std::end(res)));
         }
         else
         {
-            std::clog << "SOUND IS EMPTY\n";
+            std::clog << std::format("SOUND IS EMPTY\n");
         }
 
         return res;
@@ -154,7 +155,7 @@ public:
         // Build a pull-callback that wraps the reader, applies fps_ratio skipping,
         // and captures the poster grayscale at the right index.
         size_t poster_index = poster_ts_ * fps_ / profile_.fps_ratio();
-        std::cout << "POSTER INDEX: " << poster_index << "\n";
+        std::clog << std::format("POSTER INDEX: {}\n", poster_index);
 
         size_t image_count = 0;
         grayscale poster_image(1, 1); // Will be overwritten during the sequential pass
@@ -203,7 +204,8 @@ public:
             return next_image();
         };
 
-        std::clog << "**** fps               : " << fps_ << "/" << profile_.fps_ratio() << "=" << fps_ / profile_.fps_ratio() << "\n";
+        std::clog << std::format("**** fps: {}/{}={}\n",
+                                 fps_, profile_.fps_ratio(), fps_ / profile_.fps_ratio());
 
         //  Poster processing
         auto filters_string = profile_.filters();
@@ -235,7 +237,7 @@ public:
 
         auto frames = fc.get_frames();
 
-        std::clog << "\n**** # of input images : " << image_count << "\n";
+        std::clog << std::format("\n**** # of input images: {}\n", image_count);
 
         // Diagnostic PGM generation - frame analysis
         // (pgm_poster_writer_ is no longer supported without images_ vector)
@@ -309,13 +311,13 @@ public:
                             double secs = tick_count / 60.0;
                             int mins = (int)(secs / 60);
                             double rsecs = secs - mins * 60;
-                            fprintf(stderr, "Writing output: tick %zu/%zu (%d:%05.2fs) %zu%%\r",
-                                    tick_count, total_ticks, mins, rsecs,
-                                    tick_count * 100 / total_ticks);
+                            std::cerr << std::format("Writing output: tick {}/{} ({}:{:05.2f}s) {}%\r",
+                                                     tick_count, total_ticks, mins, rsecs,
+                                                     tick_count * 100 / total_ticks);
                         }
                     }
                 }
-                fprintf(stderr, "\n");
+                std::cerr << std::format("\n");
             }
         }
 
@@ -324,11 +326,10 @@ public:
         {
             if (i < frames.size())
             {
-                char buffer[1024];
-                std::clog << "COVER " << i << "\n";
-                sprintf(buffer, "cover-%06zu.pgm", i - cover_begin_ + 1);
+                std::clog << std::format("COVER {}\n", i);
+                std::string buffer = std::format("cover-{:06}.pgm", i - cover_begin_ + 1);
                 auto logimg = frames[i].result->as_image();
-                write_grayscale(buffer, logimg);
+                write_grayscale(buffer.c_str(), logimg);
             }
         }
     }

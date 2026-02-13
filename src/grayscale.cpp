@@ -1,7 +1,11 @@
 #include "grayscale.hpp"
+#include "errors.hpp"
 
+#include <format>
 #include <iostream>
 #include <math.h>
+
+using namespace macflim;
 
 //  ------------------------------------------------------------------
 //  Copy image (#### : is operator=?)
@@ -422,7 +426,7 @@ grayscale filter(const grayscale &from, eFilters filter, double arg = 0)
             return blur3(from);
         if (arg == 5)
             return blur5(from);
-        throw "Blur filter can have 3 or 5 as an argument";
+        throw config_error("Blur filter can have 3 or 5 as an argument", std::to_string((int)arg));
     }
     case kSharpen:
         return sharpen(from);
@@ -447,8 +451,8 @@ grayscale filter(const grayscale &from, eFilters filter, double arg = 0)
     case kDebug:
         return debug_filter(from);
     }
-    std::cerr << "**** ERROR: filter ['" << (char)filter << "'] (" << (int)filter << ") unknown\n";
-    throw "Unknown filter";
+    std::cerr << std::format("**** ERROR: filter ['{}'] ({}) unknown\n", (char)filter, (int)filter);
+    throw config_error("Unknown filter", std::string(1, (char)filter));
 }
 
 inline bool extract_filter(const char *&p, char &f, double &arg)
@@ -569,7 +573,7 @@ void write_grayscale(const char *file, const grayscale &img)
 
     if (!f)
     {
-        fprintf(stderr, "Cannot open [%s]\n", file);
+        std::cerr << std::format("Cannot open [{}]\n", file);
         return;
     }
 

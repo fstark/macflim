@@ -1,4 +1,5 @@
 #include "ffmpeg_reader.hpp"
+#include "errors.hpp"
 
 extern "C"
 {
@@ -11,6 +12,8 @@ extern "C"
 
 #include <array>
 #include <format>
+
+using namespace macflim;
 
 extern bool sDebug;
 
@@ -178,25 +181,27 @@ class ffmpeg_reader : public input_reader
     {
         video_codec_context_.reset(avcodec_alloc_context3(video_decoder_));
         if (!video_codec_context_)
-            throw "CANNOT ALLOCATE VIDEO CODEC CONTEXT";
+            throw flim_error("Cannot allocate video codec context");
 
-        if (avcodec_parameters_to_context(video_codec_context_.get(), video_stream_->codecpar) < 0)
-            throw "FAILED TO COPY VIDEO CODEC PARAMETERS";
+        int ret = avcodec_parameters_to_context(video_codec_context_.get(), video_stream_->codecpar);
+        if (ret < 0)
+            throw ffmpeg_error("Failed to copy video codec parameters", ret);
 
         AVDictionary *opts = NULL;
         av_dict_set(&opts, "refcounted_frames", "0", 0); //  Do not refcount
 
-        if (avcodec_open2(video_codec_context_.get(), video_decoder_, &opts) < 0)
-            throw "CANNOT OPEN VIDEO CODEC";
+        int ret2 = avcodec_open2(video_codec_context_.get(), video_decoder_, &opts);
+        if (ret2 < 0)
+            throw ffmpeg_error("Cannot open video codec", ret2);
 
         if (sDebug)
         {
-            std::clog << "VIDEO CODEC OPENED WITH PIXEL FORMAT "
-                      << av_get_pix_fmt_name(video_codec_context_->pix_fmt) << "\n";
+            std::clog << std::format("VIDEO CODEC OPENED WITH PIXEL FORMAT {}\n",
+                                     av_get_pix_fmt_name(video_codec_context_->pix_fmt));
         }
 
         if (video_codec_context_->pix_fmt != AV_PIX_FMT_YUV420P)
-            throw "WAS EXPECTING A YUV420P PIXEL FORMAT";
+            throw flim_error("Expected YUV420P pixel format");
     }
 
 public:
@@ -205,53 +210,57 @@ public:
         av_log_set_level(AV_LOG_WARNING);
 
         AVFormatContext *raw_ctx = nullptr;
-        if (avformat_open_input(&raw_ctx, movie_path.c_str(), NULL, NULL) != 0)
-            throw "Cannot open input file";
+        int ret = avformat_open_input(&raw_ctx, movie_path.c_str(), NULL, NULL);
+        if (ret != 0)
+            throw ffmpeg_error("Cannot open input file", ret, movie_path);
         format_context_.reset(raw_ctx);
 
-        if (avformat_find_stream_info(format_context_.get(), NULL) < 0)
-            throw "Cannot find stream information";
+        int ret2 = avformat_find_stream_info(format_context_.get(), NULL);
+        if (ret2 < 0)
+            throw ffmpeg_error("Cannot find stream information", ret2, movie_path);
 
         if (sDebug)
         {
-            std::clog << "Searching for video in " << format_context_->nb_streams << " streams\n";
+            std::clog << std::format("Searching for video in {} streams\n", format_context_->nb_streams);
         }
 
         ixv = av_find_best_stream(format_context_.get(), AVMEDIA_TYPE_VIDEO, -1, -1, &video_decoder_, 0);
 
         if (ixv == AVERROR_STREAM_NOT_FOUND)
-            throw "NO VIDEO IN FILE";
+            throw ffmpeg_error("No video stream found in file", ixv, movie_path);
 
         if (ixv == AVERROR_DECODER_NOT_FOUND)
-            throw "NO SUITABLE VIDEO DECODER AVAILABLE";
+            throw ffmpeg_error("No suitable video decoder available", ixv, movie_path);
 
         if (sDebug)
         {
-            std::clog << "Video stream index :" << ixv << "\n";
+            std::clog << std::format("Video stream index: {}\n", ixv);
         }
 
         timestamp_t actual_duration = format_context_->duration / (double)AV_TIME_BASE;
         if (duration > actual_duration)
         {
-            std::clog << "Warning: Requested duration (" << duration << "s) exceeds video length ("
-                      << actual_duration << "s). Trimming to video length.\n";
+            std::clog << std::format("Warning: Requested duration ({}s) exceeds video length ({}s). Trimming to video length.\n",
+                                     duration, actual_duration);
             duration = actual_duration;
         }
 
         timestamp_t seek_to = std::max(from - 10.0, 0.0); //  We seek to 10 seconds earlier, if we can
-        if (avformat_seek_file(format_context_.get(), -1, seek_to * AV_TIME_BASE,
+        int ret3 = avformat_seek_file(format_context_.get(), -1, seek_to * AV_TIME_BASE,
                                seek_to * AV_TIME_BASE, seek_to * AV_TIME_BASE,
-                               AVSEEK_FLAG_ANY) < 0)
-            throw "CANNOT SEEK IN FILE";
+                               AVSEEK_FLAG_ANY);
+        if (ret3 < 0)
+            throw ffmpeg_error("Cannot seek in file", ret3, movie_path);
 
         video_stream_ = format_context_->streams[ixv];
 
         if (sDebug)
         {
-            std::clog << "Video : " << video_stream_->codecpar->width << "x"
-                      << video_stream_->codecpar->height << "@"
-                      << av_q2d(video_stream_->r_frame_rate) << " fps"
-                      << " timebase:" << av_q2d(video_stream_->time_base) << "\n";
+            std::clog << std::format("Video: {}x{}@{} fps timebase:{}\n",
+                                     video_stream_->codecpar->width,
+                                     video_stream_->codecpar->height,
+                                     av_q2d(video_stream_->r_frame_rate),
+                                     av_q2d(video_stream_->time_base));
         }
 
         first_frame_second_ = from;
@@ -268,7 +277,7 @@ public:
             1);
 
         if (bufsize < 0)
-            throw "CANNOT ALLOCATE IMAGE";
+            throw ffmpeg_error("Cannot allocate image buffer", bufsize);
 
         video_image_ = std::make_unique<grayscale>(video_codec_context_->width, video_codec_context_->height);
 
@@ -281,21 +290,20 @@ public:
 
         if (sDebug)
         {
-            std::clog << "Image structure:\n";
-            std::clog << video_dst_linesize_[0] << " " << video_dst_linesize_[1] << " "
-                      << video_dst_linesize_[2] << " " << video_dst_linesize_[3] << "\n";
-            std::clog << (video_dst_linesize_[0] + video_dst_linesize_[1] +
-                          video_dst_linesize_[2] + video_dst_linesize_[3]) *
-                             video_codec_context_->height
-                      << "\n";
-            std::clog << bufsize << "\n";
+            std::clog << std::format("Image structure:\n{} {} {} {}\n{}\n{}\n",
+                                     video_dst_linesize_[0], video_dst_linesize_[1],
+                                     video_dst_linesize_[2], video_dst_linesize_[3],
+                                     (video_dst_linesize_[0] + video_dst_linesize_[1] +
+                                      video_dst_linesize_[2] + video_dst_linesize_[3]) *
+                                         video_codec_context_->height,
+                                     bufsize);
         }
 
         frame_.reset(av_frame_alloc());
 
         pkt_.reset(av_packet_alloc());
         if (!pkt_)
-            throw "Failed to allocate packet";
+            throw flim_error("Failed to allocate packet");
     }
 
     ~ffmpeg_reader()
@@ -304,7 +312,7 @@ public:
         av_freep(&video_dst_data_[0]);
         if (sDebug)
         {
-            std::clog << "Closed media file\n";
+            std::clog << std::format("Closed media file\n");
         }
     }
 
@@ -382,9 +390,9 @@ std::unique_ptr<input_reader> make_ffmpeg_reader(const std::string &movie_path, 
     {
         return std::make_unique<ffmpeg_reader>(movie_path, from, duration);
     }
-    catch (const char *e)
+    catch (const std::exception& e)
     {
-        std::clog << "**** ERROR : " << e << "\n";
+        std::cerr << std::format("**** ERROR: {}\n", e.what());
         return nullptr;
     }
 }
@@ -397,45 +405,49 @@ std::vector<sound_frame_t> decode_audio(const std::string &movie_path, timestamp
     av_log_set_level(AV_LOG_WARNING);
 
     AVFormatContext *raw_ctx = nullptr;
-    if (avformat_open_input(&raw_ctx, movie_path.c_str(), NULL, NULL) != 0)
-        throw "Cannot open input file for audio";
+    int ret = avformat_open_input(&raw_ctx, movie_path.c_str(), NULL, NULL);
+    if (ret != 0)
+        throw ffmpeg_error("Cannot open input file for audio", ret, movie_path);
     AVFormatContextPtr format_context(raw_ctx);
 
-    if (avformat_find_stream_info(format_context.get(), NULL) < 0)
-        throw "Cannot find stream information for audio";
+    int ret2 = avformat_find_stream_info(format_context.get(), NULL);
+    if (ret2 < 0)
+        throw ffmpeg_error("Cannot find stream information for audio", ret2, movie_path);
 
     const AVCodec *audio_decoder = nullptr;
     int ixa = av_find_best_stream(format_context.get(), AVMEDIA_TYPE_AUDIO, -1, -1, &audio_decoder, 0);
 
     if (ixa == AVERROR_STREAM_NOT_FOUND)
     {
-        std::cerr << "NO SOUND -- INSERTING SILENCE\n";
+        std::cerr << std::format("NO SOUND -- INSERTING SILENCE\n");
         return result;
     }
 
     if (ixa == AVERROR_DECODER_NOT_FOUND)
-        throw "NO SUITABLE AUDIO DECODER AVAILABLE";
+        throw ffmpeg_error("No suitable audio decoder available", ixa, movie_path);
 
     AVStream *audio_stream = format_context->streams[ixa];
 
     AVCodecContextPtr audio_codec_context(avcodec_alloc_context3(audio_decoder));
     if (!audio_codec_context)
-        throw "CANNOT ALLOCATE AUDIO CODEC CONTEXT";
+        throw flim_error("Cannot allocate audio codec context");
 
-    if (avcodec_parameters_to_context(audio_codec_context.get(), audio_stream->codecpar) < 0)
-        throw "FAILED TO COPY AUDIO CODEC PARAMETERS";
+    int ret3 = avcodec_parameters_to_context(audio_codec_context.get(), audio_stream->codecpar);
+    if (ret3 < 0)
+        throw ffmpeg_error("Failed to copy audio codec parameters", ret3);
 
-    if (avcodec_open2(audio_codec_context.get(), audio_decoder, nullptr) < 0)
-        throw "CANNOT OPEN AUDIO CODEC";
+    int ret4 = avcodec_open2(audio_codec_context.get(), audio_decoder, nullptr);
+    if (ret4 < 0)
+        throw ffmpeg_error("Cannot open audio codec", ret4);
 
     if (sDebug)
     {
-        std::clog << "AUDIO CODEC: " << avcodec_get_name(audio_codec_context->codec_id) << "\n";
+        std::clog << std::format("AUDIO CODEC: {}\n", avcodec_get_name(audio_codec_context->codec_id));
         AVSampleFormat sfmt = audio_codec_context->sample_fmt;
         int n_channels = audio_codec_context->ch_layout.nb_channels;
-        std::clog << "SAMPLE FORMAT:" << av_get_sample_fmt_name(sfmt) << "\n";
-        std::clog << "# CHANNELS   :" << n_channels << "\n";
-        std::clog << "SAMPLE RATE  :" << audio_codec_context->sample_rate << "\n";
+        std::clog << std::format("SAMPLE FORMAT: {}\n", av_get_sample_fmt_name(sfmt));
+        std::clog << std::format("# CHANNELS: {}\n", n_channels);
+        std::clog << std::format("SAMPLE RATE: {}\n", audio_codec_context->sample_rate);
     }
 
     int n_channels = audio_codec_context->ch_layout.nb_channels;
@@ -448,15 +460,16 @@ std::vector<sound_frame_t> decode_audio(const std::string &movie_path, timestamp
     timestamp_t seek_to = std::max(from - 10.0, 0.0);
     std::clog << std::format("Seeking to {:.1f}s (target: {:.1f}s, duration: {:.1f}s, end: {:.1f}s)\n",
                              seek_to, from, duration, from + duration);
-    if (avformat_seek_file(format_context.get(), -1, seek_to * AV_TIME_BASE,
+    int ret5 = avformat_seek_file(format_context.get(), -1, seek_to * AV_TIME_BASE,
                            seek_to * AV_TIME_BASE, seek_to * AV_TIME_BASE,
-                           AVSEEK_FLAG_ANY) < 0)
-        throw "CANNOT SEEK IN FILE FOR AUDIO";
+                           AVSEEK_FLAG_ANY);
+    if (ret5 < 0)
+        throw ffmpeg_error("Cannot seek in file for audio", ret5, movie_path);
 
     AVFramePtr frame(av_frame_alloc());
     AVPacketPtr pkt(av_packet_alloc());
     if (!pkt)
-        throw "Failed to allocate packet for audio";
+        throw flim_error("Failed to allocate packet for audio");
 
     bool found_sound = false;
     double end_time = from + duration; // Stop decoding audio after this time
@@ -464,7 +477,7 @@ std::vector<sound_frame_t> decode_audio(const std::string &movie_path, timestamp
     bool reached_end = false;
 
     // Pass 1: decode all audio packets into the sound_buffer
-    std::clog << "Decoding audio...\n";
+    std::clog << std::format("Decoding audio...\n");
     while (!reached_end && av_read_frame(format_context.get(), pkt.get()) >= 0)
     {
         if (pkt->stream_index == ixa)
@@ -552,7 +565,7 @@ std::vector<sound_frame_t> decode_audio(const std::string &movie_path, timestamp
     sound.process();
 
     // Convert to Mac sound frames (370 bytes each at 1/60th second)
-    std::clog << "\nConverting audio to Mac format...\n";
+    std::clog << std::format("\nConverting audio to Mac format...\n");
     for (size_t i = 0;; i++)
     {
         auto sf = sound.extract(i);

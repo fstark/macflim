@@ -1,5 +1,7 @@
 #pragma once
 
+#include <format>
+
 //  ------------------------------------------------------------------
 //  Compression utilities for B&W images
 //  ------------------------------------------------------------------
@@ -207,7 +209,7 @@ inline std::vector<run<T>> pack(
     while (pack_begin!=pack_end)
         err_count += *pack_begin++;
 
-    std::clog << "UNPACKED = " << err_count << "\n";
+    std::clog << std::format("UNPACKED = {}\n", err_count);
 #endif
 
     return output_buffer;
@@ -343,10 +345,10 @@ public:
     {
         if (byte_size_>header_cost_+N*elem_cost_)
         {
-            std::cerr << "Byte size  : " << byte_size_ << "\n";
-            std::cerr << "Header Cost: " << header_cost_ << "\n";
-            std::cerr << "Elem Cost  : " << elem_cost_ << "\n";
-            std::cerr << "N          : " << N << "\n";
+            std::cerr << std::format("Byte size  : {}\n", byte_size_);
+            std::cerr << std::format("Header Cost: {}\n", header_cost_);
+            std::cerr << std::format("Elem Cost  : {}\n", elem_cost_);
+            std::cerr << std::format("N          : {}\n", N);
         }
         assert( byte_size_<=header_cost_*2+N*elem_cost_ );
         return byte_size_;

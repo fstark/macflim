@@ -1,5 +1,6 @@
 #include "common.hpp"
 
+#include <format>
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -111,11 +112,11 @@ void delete_files_of_pattern(const std::string &pattern)
 {
     int i = 0;
     std::string filepath;
-    std::clog << "Deleting files of pattern [" << pattern << "] ..." << std::flush;
+    std::clog << std::format("Deleting files of pattern [{}] ...", pattern) << std::flush;
     do
     {
         i++;
         filepath = simplesprintf(pattern,i);
     } while (!remove(filepath.c_str()));
-    std::clog << i << " files deleted\n";
+    std::clog << std::format("{} files deleted\n", i);
 }

@@ -1,5 +1,7 @@
 #include "writer.hpp"
+#include "errors.hpp"
 
+#include <format>
 #include <iostream>
 
 extern "C"
@@ -10,6 +12,8 @@ extern "C"
 #include <libavutil/time.h>
 #include <libavutil/opt.h>
 }
+
+using namespace macflim;
 
 extern bool sDebug;
 
@@ -50,7 +54,7 @@ class ffmpeg_writer : public output_writer
         while (*p != AV_SAMPLE_FMT_NONE)
         {
             if (sDebug)
-                std::clog << "[ " << av_get_sample_fmt_name(*p) << "] ";
+                std::clog << std::format("[{}] ", av_get_sample_fmt_name(*p));
             if (*p == sample_fmt)
                 return 1;
             p++;
@@ -79,14 +83,14 @@ class ffmpeg_writer : public output_writer
             videoFrame.reset(av_frame_alloc());
             if (!videoFrame)
             {
-                throw "Failed to allocate video frame";
+                throw flim_error("Failed to allocate video frame");
             }
             videoFrame->format = AV_PIX_FMT_YUV420P;
             videoFrame->width = video_context->width;
             videoFrame->height = video_context->height;
             if ((err = av_frame_get_buffer(videoFrame.get(), 32)) < 0)
             {
-                std::cout << "Failed to allocate picture buffer: " << err << std::endl;
+                std::cerr << std::format("Failed to allocate picture buffer: {}\n", err);
                 return;
             }
             av_frame_make_writable(videoFrame.get());
@@ -109,7 +113,7 @@ class ffmpeg_writer : public output_writer
 
         if ((err = avcodec_send_frame(video_context.get(), videoFrame.get())) < 0)
         {
-            std::cout << "Failed to send frame: " << err << std::endl;
+            std::cerr << std::format("Failed to send frame: {}\n", err);
             return;
         }
 
@@ -143,13 +147,13 @@ class ffmpeg_writer : public output_writer
 
             err = avcodec_send_frame(audio_context.get(), audio_frame.get());
             if (err < 0)
-                throw "Error sending the frame to the encoder";
+                throw ffmpeg_error("Error sending the frame to the encoder", err);
 
             err = avcodec_receive_packet(audio_context.get(), &pkt);
             if (err == AVERROR(EAGAIN) || err == AVERROR_EOF)
                 return;
             else if (err < 0)
-                throw "Error encoding audio frame";
+                throw ffmpeg_error("Error encoding audio frame", err);
 
             pkt.stream_index = 1; // Corrected this line
 
@@ -175,10 +179,10 @@ class ffmpeg_writer : public output_writer
 
         while ((p = av_codec_iterate(&i)))
         {
-            std::clog << p->name << " ";
+            std::clog << std::format("{} ", p->name);
         }
 
-        std::clog << "\n";
+        std::clog << std::format("\n");
     }
 
 public:
@@ -190,14 +194,14 @@ public:
         oformat = av_guess_format(nullptr, filename.c_str(), nullptr);
         if (!oformat)
         {
-            throw "Can't create output format";
+            throw io_error("Can't create output format", filename);
         }
 
         AVFormatContext *raw_ofctx = nullptr;
         int err = avformat_alloc_output_context2(&raw_ofctx, oformat, nullptr, filename.c_str());
         if (err < 0)
         {
-            throw "can't create output context";
+            throw ffmpeg_error("Can't create output context", err, filename);
         }
         ofctx.reset(raw_ofctx);
 
@@ -205,20 +209,20 @@ public:
         video_codec = avcodec_find_encoder(oformat->video_codec);
         if (!video_codec)
         {
-            throw "Can't create video codec";
+            throw flim_error("Can't create video codec");
         }
 
         AVStream *stream = avformat_new_stream(ofctx.get(), video_codec);
         if (!stream)
         {
-            std::cout << "can't find format" << std::endl;
+            std::cerr << std::format("Can't find format\n");
         }
 
         video_context.reset(avcodec_alloc_context3(video_codec));
 
         if (!video_context)
         {
-            throw "Can't create video codec context";
+            throw flim_error("Can't create video codec context");
         }
 
         stream->codecpar->codec_id = oformat->video_codec;
@@ -231,7 +235,7 @@ public:
         int ret = avcodec_parameters_to_context(video_context.get(), stream->codecpar);
         if (ret < 0)
         {
-            throw "Failed to copy codec parameters to context";
+            throw ffmpeg_error("Failed to copy codec parameters to context", ret);
         }
 
         video_context->time_base = (AVRational){1, 30};
@@ -252,21 +256,21 @@ public:
 
         if ((err = avcodec_open2(video_context.get(), video_codec, NULL)) < 0)
         {
-            throw "Failed to open codec";
+            throw ffmpeg_error("Failed to open codec", err);
         }
 
         // AUDIO
         auto audio_codec = avcodec_find_encoder(oformat->audio_codec);
         if (!audio_codec)
-            throw "Audio codec not found";
+            throw flim_error("Audio codec not found");
 
         audio_context.reset(avcodec_alloc_context3(audio_codec));
         if (!audio_context)
-            throw "Could not allocate audio codec context";
+            throw flim_error("Could not allocate audio codec context");
 
         audio_context->sample_fmt = AV_SAMPLE_FMT_FLTP;
         if (!check_sample_fmt(audio_codec, audio_context->sample_fmt))
-            throw "Encoder does not support FLT planar samples";
+            throw flim_error("Encoder does not support FLT planar samples");
 
         audio_context->sample_rate = 44100;
         audio_context->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
@@ -275,13 +279,13 @@ public:
         ret = avcodec_open2(audio_context.get(), audio_codec, NULL);
         if (ret < 0)
         {
-            throw "Could not open audio codec";
+            throw ffmpeg_error("Could not open audio codec", ret);
         }
 
         AVStream *audio_stream = avformat_new_stream(ofctx.get(), audio_codec);
         if (!audio_stream)
         {
-            throw "Cannot create audio stream";
+            throw flim_error("Cannot create audio stream");
         }
 
         audio_stream->id = 1;
@@ -291,7 +295,7 @@ public:
 
         audio_frame.reset(av_frame_alloc());
         if (!audio_frame)
-            throw "Error allocating an audio frame";
+            throw flim_error("Error allocating an audio frame");
 
         audio_frame->format = audio_context->sample_fmt;
         audio_frame->ch_layout = audio_context->ch_layout;
@@ -300,20 +304,20 @@ public:
         err = av_frame_get_buffer(audio_frame.get(), 0);
         if (err < 0)
         {
-            throw "Error allocating an audio buffer";
+            throw ffmpeg_error("Error allocating an audio buffer", err);
         }
 
         if (sDebug)
         {
-            std::clog << "Line size = " << audio_frame->linesize[0] << "\n";
-            std::clog << "Frame size = " << audio_context->frame_size << "\n";
+            std::clog << std::format("Line size = {}\n", audio_frame->linesize[0]);
+            std::clog << std::format("Frame size = {}\n", audio_context->frame_size);
         }
 
         if (!(oformat->flags & AVFMT_NOFILE))
         {
             if ((err = avio_open(&ofctx->pb, filename.c_str(), AVIO_FLAG_WRITE)) < 0)
             {
-                throw "Failed to open file";
+                throw ffmpeg_error("Failed to open file", err, filename);
             }
         }
 
@@ -321,8 +325,8 @@ public:
         {
             char buffer[1025];
             av_strerror(err, buffer, 1024);
-            std::clog << err << ": " << buffer << "\n";
-            throw "Failed to write header";
+            std::cerr << std::format("{}: {}\n", err, buffer);
+            throw ffmpeg_error("Failed to write header", err, filename);
         }
 
         av_dump_format(ofctx.get(), 0, filename.c_str(), 1);
@@ -331,7 +335,7 @@ public:
     ~ffmpeg_writer()
     {
         if (sDebug)
-            std::clog << "~ffmpeg_writer()\n";
+            std::clog << std::format("~ffmpeg_writer()\n");
 
         // DELAYED FRAMES
         AVPacket pkt;
@@ -359,14 +363,14 @@ public:
             int err = avio_close(ofctx->pb);
             if (err < 0)
             {
-                std::cout << "Failed to close file: " << err << std::endl;
+                std::cerr << std::format("Failed to close file: {}\n", err);
             }
         }
 
         // Smart pointers automatically clean up videoFrame, audio_frame, video_context, audio_context, ofctx
 
         if (sDebug)
-            std::clog << "#### End of video stream\n";
+            std::clog << std::format("#### End of video stream\n");
     }
 
     virtual void write_frame(const grayscale &img, const sound_frame_t &snd)
@@ -388,9 +392,8 @@ public:
     {
         if ((count_ % 3) == 0)
         {
-            char buffer[1024];
-            sprintf(buffer, "/tmp/gif-%06zu.pgm", num_);
-            write_grayscale(buffer, img);
+            std::string buffer = std::format("/tmp/gif-{:06}.pgm", num_);
+            write_grayscale(buffer.c_str(), img);
             num_++;
         }
         count_++;
@@ -398,15 +401,14 @@ public:
 
     ~gif_writer()
     {
-        char buffer[1024];
-        sprintf(buffer, "convert -delay 5 -loop 0 /tmp/gif-*.pgm '%s'", filename_.c_str());
-        std::clog << "GENERATING GIF FILE\n";
-        int res = system(buffer);
+        std::string buffer = std::format("convert -delay 5 -loop 0 /tmp/gif-*.pgm '{}'", filename_);
+        std::clog << std::format("GENERATING GIF FILE\n");
+        int res = system(buffer.c_str());
         if (res != 0)
         {
-            std::cerr << "**** FAILED TO GENERATE GIF FILE (retcode=" << res << ")\n";
+            std::cerr << std::format("**** FAILED TO GENERATE GIF FILE (retcode={})\n", res);
         }
-        std::clog << "DONE\n";
+        std::clog << std::format("DONE\n");
         delete_files_of_pattern("/tmp/gif-%06d.pgm");
     }
 };
@@ -435,9 +437,8 @@ public:
 
     virtual void write_frame(const grayscale &img, [[maybe_unused]] const sound_frame_t &snd) override
     {
-        char buffer[1024];
-        sprintf(buffer, pattern_.c_str(), frame_num_);
-        write_grayscale(buffer, img);
+        std::string buffer = std::vformat(pattern_, std::make_format_args(frame_num_));
+        write_grayscale(buffer.c_str(), img);
         frame_num_++;
     }
 };

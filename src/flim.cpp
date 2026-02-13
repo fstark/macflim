@@ -1,5 +1,7 @@
 #include "flim.hpp"
 
+#include <format>
+#include <iostream>
 #include <cstdio>
 #include <cstring>
 
@@ -45,14 +47,14 @@ bool flim::read(FILE *f)
     char comment_buf[COMMENT_SIZE + 1];
     if (fread(comment_buf, 1, COMMENT_SIZE, f) != COMMENT_SIZE)
     {
-        fprintf(stderr, "Failed to read comment block\n");
+        std::cerr << std::format("Failed to read comment block\n");
         return false;
     }
     comment_buf[COMMENT_SIZE] = 0;
 
     if (memcmp(comment_buf, "FLIM\n", 5) != 0)
     {
-        fprintf(stderr, "Not a valid flim file (bad signature)\n");
+        std::cerr << std::format("Not a valid flim file (bad signature)\n");
         return false;
     }
     comment_ = comment_buf;
@@ -61,7 +63,7 @@ bool flim::read(FILE *f)
     uint8_t checksum_bytes[CHECKSUM_SIZE];
     if (fread(checksum_bytes, 1, CHECKSUM_SIZE, f) != CHECKSUM_SIZE)
     {
-        fprintf(stderr, "Failed to read checksum\n");
+        std::cerr << std::format("Failed to read checksum\n");
         return false;
     }
     const uint8_t *cp = checksum_bytes;
@@ -71,7 +73,7 @@ bool flim::read(FILE *f)
     uint8_t header_prefix[4];
     if (fread(header_prefix, 1, 4, f) != 4)
     {
-        fprintf(stderr, "Failed to read header\n");
+        std::cerr << std::format("Failed to read header\n");
         return false;
     }
     const uint8_t *hp = header_prefix;
@@ -83,7 +85,7 @@ bool flim::read(FILE *f)
     std::vector<uint8_t> dir_data(component_count * 10);
     if (fread(dir_data.data(), 1, dir_data.size(), f) != dir_data.size())
     {
-        fprintf(stderr, "Failed to read component directory\n");
+        std::cerr << std::format("Failed to read component directory\n");
         return false;
     }
 
@@ -104,7 +106,7 @@ bool flim::read(FILE *f)
         fseek(f, data_start + components_[i].offset, SEEK_SET);
         if (fread(blobs_[i].data(), 1, blobs_[i].size(), f) != blobs_[i].size())
         {
-            fprintf(stderr, "Failed to read component %d data\n", i);
+            std::cerr << std::format("Failed to read component {} data\n", i);
             return false;
         }
     }
@@ -141,11 +143,9 @@ uint16_t flim::compute_checksum() const
     long checksum = 0;
     ::fletcher(checksum, serialize_header());
 
-    printf("HEADER: %ld\n", checksum);
     for (auto &blob : blobs_)
     {
         ::fletcher(checksum, blob);
-        printf("-> : %ld\n", checksum);
     }
 
     return checksum;

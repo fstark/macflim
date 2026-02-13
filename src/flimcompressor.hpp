@@ -1,5 +1,7 @@
 #pragma once
 
+#include <format>
+#include "errors.hpp"
 #include "grayscale.hpp"
 #include "frame.hpp"
 #include "imgcompress.hpp"
@@ -12,6 +14,8 @@
 #include <memory>
 #include <functional>
 #include <optional>
+
+using namespace macflim;
 
 class encoding_profile;
 
@@ -126,8 +130,8 @@ public:
         }
         else
         {
-            std::clog << "Unknown codec : [" << name << "]\n";
-            throw "Unknown codec";
+            std::clog << std::format("Unknown codec: [{}]\n", name);
+            throw config_error("Unknown codec", name);
         }
 
         for (auto &param_string : split(parameters_string, ","))
@@ -198,7 +202,7 @@ public:
             else if (dp_.dither_ == grayscale::blue_noise)
                 blue_noise_dither(dithered_image, filtered_image, dithered_image_);
             else
-                throw "Unknown dithering option";
+                throw config_error("Unknown dithering option", std::to_string(dp_.dither_));
 
             ::watermark(dithered_image, dp_.watermark_);
 
@@ -331,9 +335,9 @@ public:
             {
                 if (verbose_)
                 {
-                    std::clog << "+----------+--------+----------+----------+\n";
-                    std::clog << "|     Q    | Frames |   Perc.  |  Cumul.  |\n";
-                    std::clog << "|----------|--------|----------|----------|\n";
+                    std::clog << std::format("+----------+--------+----------+----------+\n");
+                    std::clog << std::format("|     Q    | Frames |   Perc.  |  Cumul.  |\n");
+                    std::clog << std::format("|----------|--------|----------|----------|\n");
                 }
 
                 size_t cumulative = 0;
@@ -352,13 +356,15 @@ public:
                         var95 = i * 1.0 / N;
                     if (verbose_)
                         if (samples_[i])
-                            fprintf(stderr, "| %7.3f%% | %6zu | %7.3f%% | %7.3f%% |\n", i * 1.0 / N * 100, samples_[i], (samples_[i] * 1.0 / total_) * 100, percent * 100);
+                            std::cerr << std::format("| {:7.3f}% | {:6} | {:7.3f}% | {:7.3f}% |\n",
+                                                     i * 1.0 / N * 100, samples_[i],
+                                                     (samples_[i] * 1.0 / total_) * 100, percent * 100);
                 }
                 if (verbose_)
-                    std::clog << "+----------+--------+----------+----------+\n";
-                std::clog << "99% of the frames are within " << var99 * 100 << "% of the target pixels\n";
-                std::clog << "98% of the frames are within " << var98 * 100 << "% of the target pixels\n";
-                std::clog << "95% of the frames are within " << var95 * 100 << "% of the target pixels\n";
+                    std::clog << std::format("+----------+--------+----------+----------+\n");
+                std::clog << std::format("99% of the frames are within {}% of the target pixels\n", var99 * 100);
+                std::clog << std::format("98% of the frames are within {}% of the target pixels\n", var98 * 100);
+                std::clog << std::format("95% of the frames are within {}% of the target pixels\n", var95 * 100);
             }
         };
 
@@ -454,7 +460,7 @@ public:
                     double time_s = current_tick_ / 60.0;
                     int min = (int)(time_s / 60);
                     double sec = time_s - min * 60;
-                    fprintf(stderr, "Encoded frame %zu (%d:%05.2fs)\r", frames_.size(), min, sec);
+                    std::cerr << std::format("Encoded frame {} ({}:{:05.2f}s)\r", frames_.size(), min, sec);
                 }
 
                 current_fb_ = best_result->image();
@@ -465,12 +471,6 @@ public:
             // std::clog << "Q=" << q << " \n";
 
             // total_q_ += q;
-            /*
-                        if (q!=1)
-                        {
-                            fprintf( stderr, "# %4d (%5.3fs) \u001b[%sm%05.3f%%\u001b[0m\n", in_fr, current_tick/60.0, q<.9?"91":"0", q*100 );
-                        }
-            */
             histo_.add(q);
             current_tick_ = next_tick;
             return q;
@@ -496,7 +496,7 @@ public:
         auto first_opt = next_image_();
         if (!first_opt)
         {
-            std::clog << "Warning: no input images\n";
+            std::clog << std::format("Warning: no input images\n");
             return;
         }
 
@@ -546,9 +546,10 @@ public:
                 trailing_count++;
             }
             if (quality < 1.0)
-                std::clog << "Warning: Loop did not achieve perfect quality after " << max_trailing << " trailing frames (quality: " << quality << ")\n";
+                std::clog << std::format("Warning: Loop did not achieve perfect quality after {} trailing frames (quality: {})\n",
+                                         max_trailing, quality);
             else
-                std::clog << "Added " << trailing_count << " trailing frames for perfect loop\n";
+                std::clog << std::format("Added {} trailing frames for perfect loop\n", trailing_count);
         }
 
         frames_ = ch.get_frames();

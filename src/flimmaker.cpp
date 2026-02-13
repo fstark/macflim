@@ -18,6 +18,8 @@
  *      flimutil
  */
 
+#include "errors.hpp"
+
 #include <stdlib.h>
 #ifndef _WIN32
 #include <unistd.h>
@@ -35,6 +37,7 @@
 #include <array>
 #include <memory>
 #include <filesystem>
+#include <format>
 #define noLZG
 #ifdef LZG
 #include "lzg.h"
@@ -43,6 +46,7 @@
 #include "flimencoder.hpp"
 
 using namespace std::string_literals;
+using namespace macflim;
 
 // True if the global '-g' option was set
 bool sDebug = false;
@@ -144,71 +148,71 @@ const char *version = VERSION;
 
 void usage(const std::string name)
 {
-    std::cerr << "Usage\n";
-    std::cerr << name << " INPUT [OPTIONS ...]\n";
-    std::cerr << "  INPUT can be either a mp4 file name, a movie URL or a 'pgm' pattern.'\n";
+    std::cerr << std::format("Usage\n");
+    std::cerr << std::format("{} INPUT [OPTIONS ...]\n", name);
+    std::cerr << std::format("  INPUT can be either a mp4 file name, a movie URL or a 'pgm' pattern.'\n");
 
-    std::cerr << "\n  Input options:\n";
-    std::cerr << "    --from TIME                 : time offset to start extracting from\n";
-    std::cerr << "    --duration TIME             : time duration of the extracted clip (default: full media)\n";
-    std::cerr << "    --poster TIME               : frame to extract the poster from (by default 1/3 of duration)ß\n";
-    std::cerr << "    --fps FPS                   : for 'pgm' pattern, specifies the framerate to be used\n";
-    std::cerr << "    --audio FILE                : for 'pgm', specifices a separate u8 22200 Hz wav file with audio\n";
-    std::cerr << "    --srt FILE                  : burns the subtitle file into the flim\n";
+    std::cerr << std::format("\n  Input options:\n");
+    std::cerr << std::format("    --from TIME                 : time offset to start extracting from\n");
+    std::cerr << std::format("    --duration TIME             : time duration of the extracted clip (default: full media)\n");
+    std::cerr << std::format("    --poster TIME               : frame to extract the poster from (by default 1/3 of duration)ß\n");
+    std::cerr << std::format("    --fps FPS                   : for 'pgm' pattern, specifies the framerate to be used\n");
+    std::cerr << std::format("    --audio FILE                : for 'pgm', specifices a separate u8 22200 Hz wav file with audio\n");
+    std::cerr << std::format("    --srt FILE                  : burns the subtitle file into the flim\n");
 
-    std::cerr << "\n  Output options:\n";
-    std::cerr << "    --flim FILE                 : name of the flim file to create (by default 'out.flim')\n";
-    std::cerr << "    --mp4 FILE                  : outputs a 60fps mp4 file with the result\n";
-    std::cerr << "    --gif FILE                  : outputs a 20fps gif file with the result\n";
-    std::cerr << "    --pgm PATTERN               : output every generated grayscale in a pgm file\n";
-    std::cerr << "    --pgm-poster PATTERN        : output poster thumbnails (128x86) of input images\n";
-    std::cerr << "    --pgm-diff PATTERN          : output difference between encoded result and source\n";
-    std::cerr << "    --pgm-change PATTERN        : output difference between consecutive frames\n";
-    std::cerr << "    --pgm-target PATTERN        : output target source images\n";
+    std::cerr << std::format("\n  Output options:\n");
+    std::cerr << std::format("    --flim FILE                 : name of the flim file to create (by default 'out.flim')\n");
+    std::cerr << std::format("    --mp4 FILE                  : outputs a 60fps mp4 file with the result\n");
+    std::cerr << std::format("    --gif FILE                  : outputs a 20fps gif file with the result\n");
+    std::cerr << std::format("    --pgm PATTERN               : output every generated grayscale in a pgm file\n");
+    std::cerr << std::format("    --pgm-poster PATTERN        : output poster thumbnails (128x86) of input images\n");
+    std::cerr << std::format("    --pgm-diff PATTERN          : output difference between encoded result and source\n");
+    std::cerr << std::format("    --pgm-change PATTERN        : output difference between consecutive frames\n");
+    std::cerr << std::format("    --pgm-target PATTERN        : output target source images\n");
 
-    std::cerr << "\n  Encoding options:\n";
-    std::cerr << "    --profile PROFILE           : presents the specific encoding profile, which sets a suitable default for all encoding options\n";
-    std::cerr << "      Default is 'se30'. See below for description of profiles.\n";
-    std::cerr << "    --silent BOOLEAN            : set to true for silent flims\n";
-    std::cerr << "    --byterate BYTERATE         : bytes per ticks available for video compression\n";
-    std::cerr << "    --fps-ratio BOOLEAN         : ratio of images from the source to drop.\n";
-    std::cerr << "    --group BOOLEAN             : if true, packs ticks together to present screen updates at the same rate as the input media. Only works on a se30.\n";
-    std::cerr << "    --bars BOOLEAN              : if false, grayscale is zoomed in so there are no black bars.\n";
-    std::cerr << "    --anchor-x FLOAT            : horizontal anchor point for grayscale extraction (0=left, 0.5=center, 1=right)\n";
-    std::cerr << "    --anchor-y FLOAT            : vertical anchor point for grayscale extraction (0=top, 0.5=center, 1=bottom)\n";
-    std::cerr << "    --dither DITHER             : specifies the type of dithering to be used.\n";
-    std::cerr << "      'ordered' will use a 4x4 ordered dither matrix.\n";
-    std::cerr << "      'error' will use an error diffusion algorithm.\n";
-    std::cerr << "      'blue' will use blue noise dithering.\n";
-    std::cerr << "    --error-algorithm ALGORITHM : error diffusion algorithm to be used\n";
-    std::cerr << "      Default 'floyd'. See below for the list of valid error dithering algorithms.\n";
-    std::cerr << "    --error-stability FLOAT     : amount of error to be accumulated before changing a screen pixel\n";
-    std::cerr << "    --error-bidi BOOLEAN        : if true, error diffusion is applied in different direction for even and odd scanlines.\n";
-    std::cerr << "    --error-bleed PERCENT       : how much error is moved from a pixel to the neighbours.\n";
-    std::cerr << "    --filters FILTERS           : specifies a set of filters to be applied on grayscale afgter resizing, but before dithering\n";
-    std::cerr << "    --codec CODEC               : adds a specific codec to the encoding. The first --codec parameter clears the profile codec list\n";
-    std::cerr << "    --initial-frame MODE        : initial frame generation: 'false'=none, 'optional'=backwards compatible (default), 'true'=required\n";
-    std::cerr << "    --loop BOOLEAN              : add trailing frames for perfect loop (default false, requires initial frame)\n";
+    std::cerr << std::format("\n  Encoding options:\n");
+    std::cerr << std::format("    --profile PROFILE           : presents the specific encoding profile, which sets a suitable default for all encoding options\n");
+    std::cerr << std::format("      Default is 'se30'. See below for description of profiles.\n");
+    std::cerr << std::format("    --silent BOOLEAN            : set to true for silent flims\n");
+    std::cerr << std::format("    --byterate BYTERATE         : bytes per ticks available for video compression\n");
+    std::cerr << std::format("    --fps-ratio BOOLEAN         : ratio of images from the source to drop.\n");
+    std::cerr << std::format("    --group BOOLEAN             : if true, packs ticks together to present screen updates at the same rate as the input media. Only works on a se30.\n");
+    std::cerr << std::format("    --bars BOOLEAN              : if false, grayscale is zoomed in so there are no black bars.\n");
+    std::cerr << std::format("    --anchor-x FLOAT            : horizontal anchor point for grayscale extraction (0=left, 0.5=center, 1=right)\n");
+    std::cerr << std::format("    --anchor-y FLOAT            : vertical anchor point for grayscale extraction (0=top, 0.5=center, 1=bottom)\n");
+    std::cerr << std::format("    --dither DITHER             : specifies the type of dithering to be used.\n");
+    std::cerr << std::format("      'ordered' will use a 4x4 ordered dither matrix.\n");
+    std::cerr << std::format("      'error' will use an error diffusion algorithm.\n");
+    std::cerr << std::format("      'blue' will use blue noise dithering.\n");
+    std::cerr << std::format("    --error-algorithm ALGORITHM : error diffusion algorithm to be used\n");
+    std::cerr << std::format("      Default 'floyd'. See below for the list of valid error dithering algorithms.\n");
+    std::cerr << std::format("    --error-stability FLOAT     : amount of error to be accumulated before changing a screen pixel\n");
+    std::cerr << std::format("    --error-bidi BOOLEAN        : if true, error diffusion is applied in different direction for even and odd scanlines.\n");
+    std::cerr << std::format("    --error-bleed PERCENT       : how much error is moved from a pixel to the neighbours.\n");
+    std::cerr << std::format("    --filters FILTERS           : specifies a set of filters to be applied on grayscale afgter resizing, but before dithering\n");
+    std::cerr << std::format("    --codec CODEC               : adds a specific codec to the encoding. The first --codec parameter clears the profile codec list\n");
+    std::cerr << std::format("    --initial-frame MODE        : initial frame generation: 'false'=none, 'optional'=backwards compatible (default), 'true'=required\n");
+    std::cerr << std::format("    --loop BOOLEAN              : add trailing frames for perfect loop (default false, requires initial frame)\n");
 
-    std::cerr << "\n  Misc options:\n";
-    std::cerr << "    --watermark STRING          : adds the string to the upper left corner of the generated flim for identification purposes.\n";
-    std::cerr << "      use 'auto' to use the encoding parameters as watermark\n";
-    std::cerr << "    --debug BOOLEAN             : enables various debug options\n";
+    std::cerr << std::format("\n  Misc options:\n");
+    std::cerr << std::format("    --watermark STRING          : adds the string to the upper left corner of the generated flim for identification purposes.\n");
+    std::cerr << std::format("      use 'auto' to use the encoding parameters as watermark\n");
+    std::cerr << std::format("    --debug BOOLEAN             : enables various debug options\n");
 
-    std::cerr << "\nList of profiles names for the --profile option (default 'se30'):\n";
+    std::cerr << std::format("\nList of profiles names for the --profile option (default 'se30'):\n");
     for (auto n : {"128k", "512k", "xl", "plus", "se", "portable", "se30", "perfect"})
     {
         encoding_profile p;
         encoding_profile::profile_named(n, p);
-        std::cerr << "        " << n << " : " << p.description() << "\n";
+        std::cerr << std::format("        {} : {}\n", n, p.description());
     }
 
-    std::cerr << "\nList of error diffusion algorithms for the --error_diffusion option (default 'floyd'):\n";
+    std::cerr << std::format("\nList of error diffusion algorithms for the --error_diffusion option (default 'floyd'):\n");
 
     error_diffusion_algorithms([](const std::string name, const std::string description)
-                               { fprintf(stderr, "               %16s : %s\n", name.c_str(), description.c_str()); });
+                               { std::cerr << std::format("               {:>16} : {}\n", name, description); });
 
-    std::cerr << "use '" << name << " --help' for displaying this help page.\n";
+    std::cerr << std::format("use '{}' --help' for displaying this help page.\n", name);
 }
 
 #ifndef _WIN32
@@ -313,7 +317,7 @@ int main(int argc, char **argv)
         encoding_profile custom_profile;
         if (!encoding_profile::profile_named(profile_name, custom_profile))
         {
-            std::cerr << "Cannot find default profile '" << profile_name << "'\n";
+            std::cerr << std::format("Cannot find default profile '{}'\n", profile_name);
             ::exit(EXIT_FAILURE);
         }
 
@@ -341,7 +345,7 @@ int main(int argc, char **argv)
             {
                 if (input_file != "")
                 {
-                    std::cerr << "Input file specified twice: '" << input_file << "' and '" << *argv << "'\n";
+                    std::cerr << std::format("Input file specified twice: '{}' and '{}'\n", input_file, *argv);
                     ::exit(EXIT_FAILURE);
                 }
                 input_file = *argv;
@@ -679,16 +683,15 @@ int main(int argc, char **argv)
             }
             else
             {
-                char buffer[1024];
                 auto input_url = input_file;
 
-                sprintf(buffer, "yt-dlp '%s' -f mp4 --output '%s'", input_file.c_str(), cache_file.c_str());
-                int res = system(buffer);
+                std::string buffer = std::format("yt-dlp '{}' -f mp4 --output '{}'", input_file, cache_file);
+                int res = system(buffer.c_str());
                 if (res != 0)
                 {
                     std::clog << "yt-dlp not installed or failing, falling back to youtube-dl (code " << res << ")\n";
-                    sprintf(buffer, "youtube-dl '%s' -f mp4 --output '%s'", input_file.c_str(), cache_file.c_str());
-                    res = system(buffer);
+                    buffer = std::format("youtube-dl '{}' -f mp4 --output '{}'", input_file, cache_file);
+                    res = system(buffer.c_str());
                     if (res != 0)
                     {
                         std::clog << "youtube-dl failed with error " << res << "\n";
@@ -772,9 +775,9 @@ int main(int argc, char **argv)
             unlink(cache_file.c_str());
         }
     }
-    catch (const char *error)
+    catch (const std::exception& error)
     {
-        std::cerr << "**** ERROR: [" << error << "]\n";
+        std::cerr << "**** ERROR: [" << error.what() << "]\n";
         return EXIT_FAILURE;
     }
 

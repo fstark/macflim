@@ -1,11 +1,13 @@
 #pragma once
 
+#include "errors.hpp"
 #include "grayscale.hpp"
 #include <sstream>
 #include <vector>
 #include <string>
 
 using namespace std::string_literals;
+using namespace macflim;
 
 enum class initial_frame_mode
 {
@@ -89,7 +91,7 @@ public:
         else if (dither == "blue")
             dither_ = grayscale::blue_noise;
         else
-            throw "Wrong dither option : only 'ordered', 'error', and 'blue' are supported";
+            throw config_error("Wrong dither option : only 'ordered', 'error', and 'blue' are supported", dither);
         return true;
     }
     void set_dither(grayscale::dithering dither) { dither_ = dither; }

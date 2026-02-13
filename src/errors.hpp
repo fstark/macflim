@@ -1,0 +1,85 @@
+#pragma once
+
+#include <stdexcept>
+#include <string>
+
+extern "C" {
+#include <libavutil/error.h>
+}
+
+namespace macflim {
+
+// Base exception class for all MacFlim errors
+class flim_error : public std::runtime_error {
+public:
+    explicit flim_error(const std::string& message)
+        : std::runtime_error(message) {}
+};
+
+// FFmpeg-specific errors with error code translation
+class ffmpeg_error : public flim_error {
+private:
+    int error_code_;
+    std::string full_message_;
+
+public:
+    ffmpeg_error(const std::string& message, int error_code)
+        : flim_error(message), error_code_(error_code) {
+        char errbuf[AV_ERROR_MAX_STRING_SIZE];
+        av_strerror(error_code, errbuf, sizeof(errbuf));
+        full_message_ = message + ": " + errbuf;
+    }
+
+    ffmpeg_error(const std::string& message, int error_code, const std::string& path)
+        : flim_error(message), error_code_(error_code) {
+        char errbuf[AV_ERROR_MAX_STRING_SIZE];
+        av_strerror(error_code, errbuf, sizeof(errbuf));
+        full_message_ = message + " '" + path + "': " + errbuf;
+    }
+
+    const char* what() const noexcept override {
+        return full_message_.c_str();
+    }
+
+    int error_code() const noexcept { return error_code_; }
+};
+
+// I/O errors with file path context
+class io_error : public flim_error {
+private:
+    std::string path_;
+    std::string full_message_;
+
+public:
+    io_error(const std::string& message, const std::string& path)
+        : flim_error(message), path_(path) {
+        full_message_ = message + ": " + path;
+    }
+
+    const char* what() const noexcept override {
+        return full_message_.c_str();
+    }
+
+    const std::string& path() const noexcept { return path_; }
+};
+
+// Configuration/validation errors with option context
+class config_error : public flim_error {
+private:
+    std::string option_;
+    std::string full_message_;
+
+public:
+    config_error(const std::string& message, const std::string& option)
+        : flim_error(message), option_(option) {
+        full_message_ = message + ": " + option;
+    }
+
+    const char* what() const noexcept override {
+        return full_message_.c_str();
+    }
+
+    const std::string& option() const noexcept { return option_; }
+};
+
+} // namespace macflim

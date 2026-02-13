@@ -1,27 +1,30 @@
 #include "flim.hpp"
 #include "bitmap.hpp"
+#include "errors.hpp"
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
+#include <iostream>
+#include <format>
 
 static void print_summary(const flim &fl)
 {
     //  Comment starts after "FLIM\n"
     const auto &comment = fl.comment();
     if (comment.size() > 5)
-        printf("Comment: %s\n", comment.c_str() + 5);
-    printf("Version: %d\n", fl.version());
-    printf("Components: %zu\n\n", fl.component_count());
+        std::cout << std::format("Comment: {}\n", comment.c_str() + 5);
+    std::cout << std::format("Version: {}\n", fl.version());
+    std::cout << std::format("Components: {}\n\n", fl.component_count());
 
-    printf("%-6s  %-10s  %-10s  %-10s\n", "Index", "Type", "Offset", "Size");
-    printf("%-6s  %-10s  %-10s  %-10s\n", "-----", "----------", "----------", "----------");
+    std::cout << std::format("{:<6}  {:<10}  {:<10}  {:<10}\n", "Index", "Type", "Offset", "Size");
+    std::cout << std::format("{:<6}  {:<10}  {:<10}  {:<10}\n", "-----", "----------", "----------", "----------");
     for (size_t i = 0; i < fl.component_count(); i++)
     {
         auto &c = fl.component(i);
-        printf("%-6zu  %-10s  %-10u  %-10u\n",
+        std::cout << std::format("{:<6}  {:<10}  {:<10}  {:<10}\n",
                i, c.type_name(), c.offset, c.size);
     }
 }
@@ -35,12 +38,12 @@ static void print_info(const flim &fl)
     flim_info fi;
     fi.deserialize(data->data(), data->size());
 
-    printf("\nInfo:\n");
-    printf("  Dimensions: %zux%zu\n", fi.width_, fi.height_);
-    printf("  Silent: %s\n", fi.silent_ ? "yes" : "no");
-    printf("  Frames: %zu\n", fi.frame_count_);
-    printf("  Total ticks: %zu\n", fi.total_ticks_);
-    printf("  Byterate: %zu\n", fi.byterate_);
+    std::cout << std::format("\nInfo:\n");
+    std::cout << std::format("  Dimensions: {}x{}\n", fi.width_, fi.height_);
+    std::cout << std::format("  Silent: {}\n", fi.silent_ ? "yes" : "no");
+    std::cout << std::format("  Frames: {}\n", fi.frame_count_);
+    std::cout << std::format("  Total ticks: {}\n", fi.total_ticks_);
+    std::cout << std::format("  Byterate: {}\n", fi.byterate_);
 }
 
 static void print_toc(const flim &fl)
@@ -52,15 +55,15 @@ static void print_toc(const flim &fl)
     size_t frame_count = data->size() / 2;
     const uint8_t *tp = data->data();
 
-    printf("\nTOC (%zu frames):\n", frame_count);
-    printf("  %-8s  %-10s  %-10s\n", "Frame", "Size", "Offset");
-    printf("  %-8s  %-10s  %-10s\n", "--------", "----------", "----------");
+    std::cout << std::format("\nTOC ({} frames):\n", frame_count);
+    std::cout << std::format("  {:<8}  {:<10}  {:<10}\n", "Frame", "Size", "Offset");
+    std::cout << std::format("  {:<8}  {:<10}  {:<10}\n", "--------", "----------", "----------");
 
     size_t offset = 0;
     for (size_t frame = 0; frame < frame_count; frame++)
     {
         uint16_t frame_size = read2(tp);
-        printf("  %-8zu  %-10u  %-10zu\n", frame, frame_size, offset);
+        std::cout << std::format("  {:<8}  {:<10}  {:<10}\n", frame, frame_size, offset);
         offset += frame_size;
     }
 }
@@ -70,7 +73,7 @@ static bool extract_poster(const flim &fl, const std::string &outpath)
     auto *data = fl.find_component_data(component_poster);
     if (!data)
     {
-        fprintf(stderr, "No poster component found\n");
+        std::cerr << "No poster component found\n";
         return false;
     }
 
@@ -81,13 +84,13 @@ static bool extract_poster(const flim &fl, const std::string &outpath)
     bitmap fb(*data, width, height, false);
     write_grayscale(outpath.c_str(), fb.as_image());
 
-    printf("\nPoster extracted to '%s' (%zux%zu)\n", outpath.c_str(), width, height);
+    std::cout << std::format("\nPoster extracted to '{}' ({}x{})\n", outpath, width, height);
     return true;
 }
 
 static void dump_frame_data(const std::vector<uint8_t> &frame_data, size_t frame_number, bool raw)
 {
-    printf("\nFrame %zu (size: %zu bytes):\n", frame_number, frame_data.size());
+    std::cout << std::format("\nFrame {} (size: {} bytes):\n", frame_number, frame_data.size());
 
     //  Raw mode: just dump hex bytes
     if (raw)
@@ -95,30 +98,30 @@ static void dump_frame_data(const std::vector<uint8_t> &frame_data, size_t frame
         for (size_t i = 0; i < frame_data.size(); i++)
         {
             if (i % 16 == 0)
-                printf("  %04zx: ", i);
-            printf("%02x ", frame_data[i]);
+                std::cout << std::format("  {:04x}: ", i);
+            std::cout << std::format("{:02x} ", frame_data[i]);
             if (i % 16 == 15 || i == frame_data.size() - 1)
-                printf("\n");
+                std::cout << std::format("\n");
         }
         return;
     }
 
     frame f = frame::deserialize(frame_data.data(), frame_data.size());
 
-    printf("  Ticks: %zu\n", f.ticks);
+    std::cout << std::format("  Ticks: {}\n", f.ticks);
 
     //  Sound
     if (f.audio.empty())
     {
-        printf("  Sound block size: 2 bytes\n");
+        std::cout << std::format("  Sound block size: 2 bytes\n");
     }
     else
     {
         size_t sound_block_size = f.ticks * 370 + 8;
-        printf("  Sound block size: %zu bytes\n", sound_block_size);
-        printf("    ffMode: 0x0000\n");
-        printf("    Rate: 65536 (0x00010000)\n");
-        printf("    Audio data: %zu bytes\n", f.audio.size());
+        std::cout << std::format("  Sound block size: {} bytes\n", sound_block_size);
+        std::cout << std::format("    ffMode: 0x0000\n");
+        std::cout << std::format("    Rate: 65536 (0x00010000)\n");
+        std::cout << std::format("    Audio data: {} bytes\n", f.audio.size());
 
         size_t bytes_per_tick = 370;
         size_t num_ticks = (f.audio.size() + bytes_per_tick - 1) / bytes_per_tick;
@@ -127,18 +130,18 @@ static void dump_frame_data(const std::vector<uint8_t> &frame_data, size_t frame
             size_t tick_offset = tick * bytes_per_tick;
             size_t tick_size = (tick_offset + bytes_per_tick <= f.audio.size()) ? bytes_per_tick : (f.audio.size() - tick_offset);
 
-            printf("    tick %zu: [", tick);
+            std::cout << std::format("    tick {}: [", tick);
             size_t preview_bytes = tick_size < 8 ? tick_size : 8;
             for (size_t i = 0; i < preview_bytes; i++)
-                printf("%02x ", f.audio[tick_offset + i]);
+                std::cout << std::format("{:02x} ", f.audio[tick_offset + i]);
             if (tick_size > preview_bytes)
-                printf("... ");
-            printf("] (%zu bytes)\n", tick_size);
+                std::cout << std::format("... ");
+            std::cout << std::format("] ({} bytes)\n", tick_size);
         }
     }
 
     //  Video
-    printf("  Video block size: %zu bytes\n", f.video.size());
+    std::cout << std::format("  Video block size: {} bytes\n", f.video.size());
 
     if (f.video.size() >= 4)
     {
@@ -162,21 +165,21 @@ static void dump_frame_data(const std::vector<uint8_t> &frame_data, size_t frame
             codec_name = "lines";
             break;
         }
-        printf("  Codec: 0x%02x (%s)\n", codec_sig, codec_name);
+        std::cout << std::format("  Codec: 0x{:02x} ({})\n", codec_sig, codec_name);
 
         size_t ops_size = f.video.size() - 4;
-        printf("  Operations: %zu bytes\n", ops_size);
+        std::cout << std::format("  Operations: {} bytes\n", ops_size);
 
         if (ops_size > 0)
         {
-            printf("  Data:\n");
+            std::cout << std::format("  Data:\n");
             for (size_t i = 0; i < ops_size; i++)
             {
                 if (i % 16 == 0)
-                    printf("    %04zx: ", i);
-                printf("%02x ", f.video[4 + i]);
+                    std::cout << std::format("    {:04x}: ", i);
+                std::cout << std::format("{:02x} ", f.video[4 + i]);
                 if (i % 16 == 15 || i == ops_size - 1)
-                    printf("\n");
+                    std::cout << std::format("\n");
             }
         }
     }
@@ -189,20 +192,20 @@ static bool dump_frame(const flim &fl, size_t frame_number, bool raw)
 
     if (!toc_data)
     {
-        fprintf(stderr, "No TOC component found\n");
+        std::cerr << std::format("No TOC component found\n");
         return false;
     }
 
     if (!movie_data)
     {
-        fprintf(stderr, "No movie component found\n");
+        std::cerr << std::format("No movie component found\n");
         return false;
     }
 
     size_t frame_count = toc_data->size() / 2;
     if (frame_number >= frame_count)
     {
-        fprintf(stderr, "Frame %zu out of range (total frames: %zu)\n", frame_number, frame_count);
+        std::cerr << std::format("Frame {} out of range (total frames: {})\n", frame_number, frame_count);
         return false;
     }
 
@@ -232,14 +235,14 @@ static bool extract_initial(const flim &fl, const std::string &outpath)
     auto *data = fl.find_component_data(component_initial);
     if (!data)
     {
-        fprintf(stderr, "No initial frame component found\n");
+        std::cerr << std::format("No initial frame component found\n");
         return false;
     }
 
     //  Initial frame has a 6-byte header: type(2) + width(2) + height(2)
     if (data->size() < 6)
     {
-        fprintf(stderr, "Initial component too small\n");
+        std::cerr << std::format("Initial component too small\n");
         return false;
     }
     const uint8_t *p = data->data();
@@ -251,15 +254,17 @@ static bool extract_initial(const flim &fl, const std::string &outpath)
     bitmap fb(bitmap_data, width, height, false);
     write_grayscale(outpath.c_str(), fb.as_image());
 
-    printf("\nInitial frame extracted to '%s' (%ux%u)\n", outpath.c_str(), width, height);
+    std::cout << std::format("\nInitial frame extracted to '{}' ({}x{})\n", outpath, width, height);
     return true;
 }
 
 int flimutil_main(int argc, char **argv)
 {
-    std::string path = *argv;
-    argc--;
-    argv++;
+    try
+    {
+        std::string path = *argv;
+        argc--;
+        argv++;
 
     //  Parse options
     bool show_info = false;
@@ -303,7 +308,7 @@ int flimutil_main(int argc, char **argv)
             argv++;
             if (!argc)
             {
-                fprintf(stderr, "--frame requires a frame number\n");
+                std::cerr << std::format("--frame requires a frame number\n");
                 return EXIT_FAILURE;
             }
             frame_number = atoi(*argv);
@@ -312,7 +317,7 @@ int flimutil_main(int argc, char **argv)
             raw = true;
         else
         {
-            fprintf(stderr, "Unknown option '%s'\n", *argv);
+            std::cerr << std::format("Unknown option '{}'\n", *argv);
             return EXIT_FAILURE;
         }
         argc--;
@@ -322,7 +327,7 @@ int flimutil_main(int argc, char **argv)
     FILE *f = fopen(path.c_str(), "rb");
     if (!f)
     {
-        fprintf(stderr, "Cannot open '%s'\n", path.c_str());
+        std::cerr << std::format("Cannot open '{}'\n", path);
         return EXIT_FAILURE;
     }
 
@@ -352,4 +357,10 @@ int flimutil_main(int argc, char **argv)
         dump_frame(fl, frame_number, raw);
 
     return EXIT_SUCCESS;
+    }
+    catch (const std::exception& error)
+    {
+        std::cerr << "**** ERROR: [" << error.what() << "]\n";
+        return EXIT_FAILURE;
+    }
 }

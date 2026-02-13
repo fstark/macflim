@@ -1,5 +1,7 @@
 #include "filesystem_reader.hpp"
 
+#include <format>
+
 /*
  * A filesystem reader can read 512x342 8 bits pgm files numbered from 1. Audio has to be raw 8 bits unsigned.
  */
@@ -44,10 +46,9 @@ public:
             return nullptr;
         }
 
-        char buffer[1024];
-        sprintf(buffer, file_pattern_.c_str(), current_image_index_);
+        std::string buffer = std::vformat(file_pattern_, std::make_format_args(current_image_index_));
 
-        if (!read_grayscale(*(img.get()), buffer))
+        if (!read_grayscale(*(img.get()), buffer.c_str()))
         {
             image_read_ = true;
             return nullptr;

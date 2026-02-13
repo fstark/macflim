@@ -1,5 +1,6 @@
 #pragma once
 
+#include <format>
 #include <vector>
 #include <bitset>
 #include <iostream>
@@ -146,9 +147,7 @@ class vertical_compressor : public compressor
 {
     virtual std::string name() const
     {
-        char buffer[1024];
-        sprintf(buffer, "z%zu", sizeof(T) * 8);
-        return buffer;
+        return std::format("z{}", sizeof(T) * 8);
     }
 
     const ruler<T> &ruler_;
@@ -214,7 +213,7 @@ class vertical_compressor : public compressor
             H_);
 
         if (verbose_)
-            std::clog << "=> z" << sizeof(T) * 8 << " Generated " << res.size() << " runs\n";
+            std::clog << std::format("=> z{} Generated {} runs\n", sizeof(T) * 8, res.size());
 
         return res;
     }
@@ -264,25 +263,25 @@ public:
         //  Display delta map in correct order
         if (verbose_)
         {
-            std::clog << "DELTA LIST OF " << get_T_size() << " elements: [\n";
+            std::clog << std::format("DELTA LIST OF {} elements: [\n", get_T_size());
             for (size_t y = 0; y != H_; y++)
             {
-                fprintf(stderr, "    ");
+                std::cerr << std::format("    ");
                 for (size_t x = 0; x != get_T_width(); x++)
-                    fprintf(stderr, "%3lld ", (long long)delta_[x * H_ + y]);
-                fprintf(stderr, "\n");
+                    std::cerr << std::format("{:3d} ", (long long)delta_[x * H_ + y]);
+                std::cerr << std::format("\n");
             }
         }
         if (verbose_)
-            std::clog << "]\n";
+            std::clog << std::format("]\n");
 
         auto runs = compress(budget, target_data_, delta_);
 
         for (auto &run : runs)
             if (run.offset >= get_T_size())
             {
-                std::clog << "\n\n"
-                          << sizeof(T) << ": at " << run.offset << " " << run.data.size() << " data elements\n";
+                std::clog << std::format("\n\n{}: at {} {} data elements\n",
+                                         sizeof(T), run.offset, run.data.size());
                 assert(run.offset < get_T_size());
             }
 
@@ -300,9 +299,10 @@ public:
             for (auto &run2 : rs)
                 if (run2.offset >= get_T_size())
                 {
-                    std::clog << "\n"
-                              << sizeof(T) << ": at " << run.offset << " " << run.data.size() << " data elements split:\n";
-                    std::clog << "" << sizeof(T) << ": at " << run2.offset << " " << run2.data.size() << " data elements\n";
+                    std::clog << std::format("\n{}: at {} {} data elements split:\n",
+                                             sizeof(T), run.offset, run.data.size());
+                    std::clog << std::format("{}: at {} {} data elements\n",
+                                             sizeof(T), run2.offset, run2.data.size());
                 }
 
             smaller.insert(std::end(smaller), std::begin(rs), std::end(rs));
@@ -345,34 +345,32 @@ public:
             std::sort(std::begin(closer), std::end(closer), [](auto &a, auto &b)
                       { return a.offset < b.offset; });
 
-            std::clog << closer.size() << " runs of " << sizeof(T) * 8 << "bytes = ";
+            std::clog << std::format("{} runs of {} bytes = ", closer.size(), sizeof(T) * 8);
             size_t item_count = 0;
             size_t bits_changed = 0;
 
             for (auto &run : closer)
             {
-                std::clog << "@" << run.offset * sizeof(T) << ":[ ";
+                std::clog << std::format("@{}: [ ", run.offset * sizeof(T));
                 for (size_t i = 0; i != run.data.size(); i++)
                 {
 
                     auto offset = vertical_from_horizontal(run.offset) + i;
 
                     if (sizeof(T) == 2)
-                        fprintf(stderr, "%04x ", run.data[i] ^ current_data_[offset]);
+                        std::cerr << std::format("{:04x} ", run.data[i] ^ current_data_[offset]);
                     else
                     {
-                        fprintf(
-                            stderr,
-                            "%08x ",
-                            run.data[i] ^ current_data_[offset]);
+                        std::cerr << std::format("{:08x} ",
+                                                 run.data[i] ^ current_data_[offset]);
                     }
 
                     bits_changed += mypopcount((T)(run.data[i] ^ current_data_[offset]));
                 }
-                std::clog << "]  ";
+                std::clog << std::format("]  ");
                 item_count += run.data.size();
             }
-            std::clog << "=> " << item_count << " changed " << bits_changed << " bits\n";
+            std::clog << std::format("=> {} changed {} bits\n", item_count, bits_changed);
         }
 
         //  Encode Z32
