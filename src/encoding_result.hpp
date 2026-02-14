@@ -23,7 +23,7 @@ namespace macflim
             const bitmap &target,
             const size_t budget) : codec_{codec},
                                    image_{current},
-                                   data_{codec_.coder->compress(image_, target, budget * codec_.penality)},
+                                   data_{codec_.coder->compress(image_, target, budget * codec_.penalty)},
                                    quality_{image_.proximity(target)}
         {
         }

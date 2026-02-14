@@ -42,11 +42,3 @@ The outer `for (size_t i = ...)` at line 87 and inner `for (size_t i = ...)` at 
 ## 9. `dithering_parameters.hpp` and `ditherer.hpp`: Delete `DitheringParameters` and pass `const encoding_profile &` to `Ditherer`
 
 `DitheringParameters` is a 10-field struct where 9 fields are mechanically copied 1:1 from `encoding_profile` getters. Every new dithering knob added to the profile must be mirrored into the struct, its aggregate init, and every read site. Instead, have `Ditherer` hold a `const encoding_profile &` plus the one outlier (`watermark`) as a separate `std::string` member. This deletes ~20 lines of boilerplate and a maintenance hazard.
-
-## 10. `codec_spec.hpp`: Rename `penality` to `penalty`
-
-The field name `penality` appears in `codec_spec` (line 18), `make_codec` (lines 33, 39, 45, 51, 57, 63), and `EncodingResult` (line 27 in encoding_result.hpp) — it's consistently misspelled throughout. Rename to `penalty` for clarity.
-
-## 11. Header files: Remove `using namespace` at file scope
-
-Several headers may have `using namespace` declarations at file scope. `flimcompressor.hpp` now uses scoped `using` declarations (lines 18-23) which is acceptable, but check `compressor.hpp`, `profile.hpp`, `flimencoder.hpp` for `using namespace std;` or similar anti-patterns that pollute the namespace of every includer.

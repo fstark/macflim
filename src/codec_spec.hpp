@@ -16,7 +16,7 @@ namespace macflim
     struct codec_spec
     {
         uint8_t signature;
-        double penality;
+        double penalty;
         std::shared_ptr<compressor> coder;
     };
 
@@ -31,44 +31,44 @@ namespace macflim
 
         codec_spec spec;
         spec.signature = 0x00;
-        spec.penality = 1;
+        spec.penalty = 1;
         spec.coder = std::make_shared<null_compressor>(W, H);
 
         if (name == "z16")
         {
             spec.signature = 0x01;
-            spec.penality = 0.45;
+            spec.penalty = 0.45;
             spec.coder = std::make_shared<vertical_compressor<uint16_t>>(W, H, uint16_ruler::ruler);
         }
         else if (name == "z32")
         {
             spec.signature = 0x02;
-            spec.penality = 1.00;
+            spec.penalty = 1.00;
             spec.coder = std::make_shared<vertical_compressor<uint32_t>>(W, H, uint32_ruler::ruler);
         }
         else if (name == "z32old")
         {
             static bit_ruler<uint32_t> br32;
             spec.signature = 0x02;
-            spec.penality = 1.00;
+            spec.penalty = 1.00;
             spec.coder = std::make_shared<vertical_compressor<uint32_t>>(W, H, br32);
         }
         else if (name == "invert")
         {
             spec.signature = 0x03;
-            spec.penality = 1.00;
+            spec.penalty = 1.00;
             spec.coder = std::make_shared<invert_compressor>(W, H);
         }
         else if (name == "lines")
         {
             spec.signature = 0x04;
-            spec.penality = 1.00;
+            spec.penalty = 1.00;
             spec.coder = std::make_shared<copy_line_compressor>(W, H);
         }
         else if (name == "null")
         {
             spec.signature = 0x00;
-            spec.penality = 1.00;
+            spec.penalty = 1.00;
             spec.coder = std::make_shared<null_compressor>(W, H);
         }
         else
