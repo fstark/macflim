@@ -69,8 +69,8 @@ public:
             return;
         }
 
-        // Create dithering parameters
-        DitheringParameters dp{profile.bars(), profile.filters(), profile.anchor_x(), profile.anchor_y(), profile.dither(), profile.error_algorithm(), profile.stability(), profile.error_bleed(), profile.error_bidi(), watermark};
+        // Create dithering parameters from profile
+        DitheringParameters dp = DitheringParameters::from_profile(profile, watermark);
 
         bool process_first_image = true;
 

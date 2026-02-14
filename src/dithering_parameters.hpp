@@ -3,12 +3,15 @@
 #include <string>
 #include "grayscale.hpp"
 
+// Forward declaration
+class encoding_profile;
+
 namespace macflim
 {
 
     struct DitheringParameters
     {
-        const bool bars_;                   //  Do we add bars when we resize the added image?  (note: maybe do some grayscale normalizer class that does all conversion work)
+        const bool bars_;                   //  Do we add bars when we resize the added image?
         const std::string filters_;         //  Filters to apply
         const double anchor_x_;             //  Horizontal anchor for grayscale extraction
         const double anchor_y_;             //  Vertical anchor for grayscale extraction
@@ -17,7 +20,10 @@ namespace macflim
         const double stability_;            //  Stability of the transform
         const float error_bleed_;
         const bool error_bidi_;
-        const std::string watermark_; //  Unsure if this should be here or higher
+        const std::string watermark_;
+
+        // Factory method to construct from encoding profile
+        static DitheringParameters from_profile(const encoding_profile &profile, const std::string &watermark);
     };
 
 } // namespace macflim

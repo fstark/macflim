@@ -53,7 +53,7 @@ test-reference: release
 	cd ../tests && bash run_tests.sh --make-reference
 
 # List of object files
-OBJS = grayscale.o writer.o ruler.o watermark.o imgcompress.o filesystem_reader.o ffmpeg_reader.o flimmaker.o common.o flim.o subtitles.o flimutil.o
+OBJS = grayscale.o writer.o ruler.o watermark.o imgcompress.o filesystem_reader.o ffmpeg_reader.o flimmaker.o common.o flim.o subtitles.o flimutil.o dithering_parameters.o
 
 # Include the dependency files
 -include $(OBJS:.o=.d)

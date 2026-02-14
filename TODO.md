@@ -38,7 +38,3 @@ In `CompressorHelper::add` (line 113), the budget is already scaled by `codec.pe
 ## 8. `compressor_helper.hpp`: Simplify tick-grouping double loop and fix shadowed `i`
 
 The outer `for (size_t i = ...)` at line 87 and inner `for (size_t i = ...)` at line 91 shadow the same variable — a latent bug. The `group_` flag makes the outer loop run either once or N times and the inner loop does the inverse, so they always process the same total ticks. Replace with a single loop iterating over sub-frames (count = `ticks / local_ticks`), each gathering `local_ticks` audio frames via `std::copy_n`. This eliminates the shadowing, removes a nesting level, and makes the grouping semantics self-documenting.
-
-## 9. `dithering_parameters.hpp` and `ditherer.hpp`: Delete `DitheringParameters` and pass `const encoding_profile &` to `Ditherer`
-
-`DitheringParameters` is a 10-field struct where 9 fields are mechanically copied 1:1 from `encoding_profile` getters. Every new dithering knob added to the profile must be mirrored into the struct, its aggregate init, and every read site. Instead, have `Ditherer` hold a `const encoding_profile &` plus the one outlier (`watermark`) as a separate `std::string` member. This deletes ~20 lines of boilerplate and a maintenance hazard.
