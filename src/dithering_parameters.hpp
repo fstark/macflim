@@ -9,7 +9,7 @@ class encoding_profile;
 namespace macflim
 {
 
-    struct DitheringParameters
+    struct dithering_parameters
     {
         const bool bars_;                   //  Do we add bars when we resize the added image?
         const std::string filters_;         //  Filters to apply
@@ -23,7 +23,7 @@ namespace macflim
         const std::string watermark_;
 
         // Factory method to construct from encoding profile
-        static DitheringParameters from_profile(const encoding_profile &profile, const std::string &watermark);
+        static dithering_parameters from_profile(const encoding_profile &profile, const std::string &watermark);
     };
 
 } // namespace macflim

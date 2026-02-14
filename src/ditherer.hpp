@@ -17,13 +17,13 @@ namespace macflim
         grayscale dithered_image_; //  The currently dithered image
                                    //  The initial grayscale defines the size of all future images
 
-        const DitheringParameters dp_;
+        const dithering_parameters dp_;
 
     public:
-        Ditherer(const grayscale &initial_image, const DitheringParameters &dp) : W_{initial_image.W()},
-                                                                                  H_{initial_image.H()},
-                                                                                  dithered_image_{initial_image},
-                                                                                  dp_{dp}
+        Ditherer(const grayscale &initial_image, const dithering_parameters &dp) : W_{initial_image.W()},
+                                                                                   H_{initial_image.H()},
+                                                                                   dithered_image_{initial_image},
+                                                                                   dp_{dp}
         {
         }
 

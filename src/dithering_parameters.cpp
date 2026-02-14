@@ -4,9 +4,9 @@
 namespace macflim
 {
 
-    DitheringParameters DitheringParameters::from_profile(const encoding_profile &profile, const std::string &watermark)
+    dithering_parameters dithering_parameters::from_profile(const encoding_profile &profile, const std::string &watermark)
     {
-        return DitheringParameters{
+        return dithering_parameters{
             profile.bars(),
             profile.filters(),
             profile.anchor_x(),

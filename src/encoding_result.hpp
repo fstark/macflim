@@ -9,7 +9,7 @@
 namespace macflim
 {
 
-    class EncodingResult
+    class encoding_result
     {
         const codec_spec &codec_;         //  Used codec
         bitmap image_;                    //  Resulting image
@@ -17,7 +17,7 @@ namespace macflim
         const double quality_;            //  Resulting quality
 
     public:
-        EncodingResult(
+        encoding_result(
             const codec_spec &codec,
             const bitmap &current,
             const bitmap &target,

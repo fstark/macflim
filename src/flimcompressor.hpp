@@ -16,9 +16,9 @@
 #include "compressor_helper.hpp"
 
 using macflim::codec_spec;
-using macflim::CompressorHelper;
+using macflim::compressor_helper;
 using macflim::Ditherer;
-using macflim::DitheringParameters;
+using macflim::dithering_parameters;
 using macflim::make_codec;
 using macflim::SubtitleBurner;
 
@@ -70,7 +70,7 @@ public:
         }
 
         // Create dithering parameters from profile
-        DitheringParameters dp = DitheringParameters::from_profile(profile, watermark);
+        dithering_parameters dp = dithering_parameters::from_profile(profile, watermark);
 
         bool process_first_image = true;
 
@@ -94,7 +94,7 @@ public:
         // Create dithering infrastructure for encoding
         Ditherer d{previous, dp};
         SubtitleBurner sb{subtitles_};
-        CompressorHelper ch{d, sb, codecs, fps_, profile.byterate(), audio_, profile.group()};
+        compressor_helper ch{d, sb, codecs, fps_, profile.byterate(), audio_, profile.group()};
 
         // Process first image if not already used for initial frame
         if (process_first_image)

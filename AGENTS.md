@@ -1,3 +1,7 @@
+## class naming:
+
+Classes and structs should use snake_case naming (e.g., `encoding_profile`, ...)
+
 ## logging strategy:
 
 1. Stream selection by purpose:

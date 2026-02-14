@@ -19,7 +19,7 @@
 namespace macflim
 {
 
-    class CompressorHelper
+    class compressor_helper
     {
         Ditherer &ditherer_;
         SubtitleBurner &subtitle_burner_;
@@ -40,7 +40,7 @@ namespace macflim
         qhistogram<BucketCount> histo_;
 
     public:
-        CompressorHelper(
+        compressor_helper(
             Ditherer &ditherer,
             SubtitleBurner &subtitle_burner,
             const std::vector<codec_spec> &codecs,
@@ -103,16 +103,16 @@ namespace macflim
                 size_t video_budget = byterate_ * local_ticks;
 
                 //  Encode within that budget with every codec
-                std::vector<EncodingResult> encoding_results;
-                std::transform(std::begin(codecs_), std::end(codecs_), std::back_inserter(encoding_results), [&](auto &codec) -> EncodingResult
-                               { return EncodingResult(
+                std::vector<encoding_result> encoding_results;
+                std::transform(std::begin(codecs_), std::end(codecs_), std::back_inserter(encoding_results), [&](auto &codec) -> encoding_result
+                               { return encoding_result(
                                      codec,
                                      current_fb_,
                                      fb,
                                      video_budget); });
 
                 //  Find the result with highest quality
-                auto best_result = std::max_element(encoding_results.begin(), encoding_results.end(), [](const EncodingResult &r1, const EncodingResult &r2)
+                auto best_result = std::max_element(encoding_results.begin(), encoding_results.end(), [](const encoding_result &r1, const encoding_result &r2)
                                                     { return r1.quality() < r2.quality(); });
 
                 //  Construct the frame with best video and audio
