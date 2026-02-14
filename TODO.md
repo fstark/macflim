@@ -31,10 +31,6 @@ Defining these as named constants (e.g. `constexpr size_t kMacScreenW = 512`) in
 
 In `CompressorHelper::add` (line 113), the budget is already scaled by `codec.penality` before being passed to `EncodingResult`, whose constructor (line 27) *also* scales by `codec_.penality` — applying the factor twice. Remove one of these multiplications to make penalty application explicit in exactly one place.
 
-## 7. `subtitle_burner.hpp`: Replace copy-and-erase with an index
-
-`SubtitleBurner` copies the entire subtitle vector, then calls `erase(begin())` — an O(n) operation per subtitle. Replace with a `const` reference (or `std::span`) plus a `size_t` index to advance through the list in O(1), avoiding both the copy and the repeated shuffle.
-
-## 8. `compressor_helper.hpp`: Simplify tick-grouping double loop and fix shadowed `i`
+## 7. `compressor_helper.hpp`: Simplify tick-grouping double loop and fix shadowed `i`
 
 The outer `for (size_t i = ...)` at line 87 and inner `for (size_t i = ...)` at line 91 shadow the same variable — a latent bug. The `group_` flag makes the outer loop run either once or N times and the inner loop does the inverse, so they always process the same total ticks. Replace with a single loop iterating over sub-frames (count = `ticks / local_ticks`), each gathering `local_ticks` audio frames via `std::copy_n`. This eliminates the shadowing, removes a nesting level, and makes the grouping semantics self-documenting.
