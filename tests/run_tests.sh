@@ -2,9 +2,32 @@
 
 set -e  # Exit on any error
 
-ARCH="${1:-x86_64}"  # Default to x86_64 if no argument provided
+# Detect current architecture and OS
+detect_arch() {
+	local os=$(uname -s)
+	local arch=$(uname -m)
+	
+	# Normalize OS name
+	case "$os" in
+		Darwin)
+			os="macos"
+			;;
+		Linux)
+			os="linux"
+			;;
+		MINGW*|MSYS*|CYGWIN*)
+			os="windows"
+			;;
+		*)
+			os=$(echo "$os" | tr '[:upper:]' '[:lower:]')
+			;;
+	esac
+	
+	echo "${os}-${arch}"
+}
 
-echo "Running tests for architecture: $ARCH"
+ARCH=$(detect_arch)
+MODE="${1:-test}"  # 'test' or '--make-reference'
 
 # Find the binary (flimmaker or flimmaker.exe)
 if [ -f ../flimmaker.exe ]; then
@@ -13,46 +36,59 @@ else
 	FLIMMAKER=../flimmaker
 fi
 
-$FLIMMAKER test_01.mp4 --flim test_01.flim
-
-# Check if we're on Windows (MSYS/MinGW) by looking for .exe
-if [ -f ../flimmaker.exe ]; then
-	IS_WINDOWS=true
-else
-	IS_WINDOWS=false
+# Generate reference file mode
+if [ "$MODE" = "--make-reference" ]; then
+	echo "Generating reference file for architecture: $ARCH"
+	
+	$FLIMMAKER test_01.mp4 --flim test_01.flim
+	
+	if [ ! -f test_01.flim ] || [ ! -s test_01.flim ]; then
+		echo "ERROR: Failed to generate test_01.flim"
+		rm -f test_01.flim
+		exit 1
+	fi
+	
+	# Compress reference file with architecture-specific name
+	REFERENCE_FILE="test_01-${ARCH}.flim.gz"
+	gzip -c test_01.flim > "$REFERENCE_FILE"
+	rm -f test_01.flim
+	
+	echo "Reference file created: $REFERENCE_FILE"
+	exit 0
 fi
 
-if [ "$ARCH" = "arm64" ] || [ "$IS_WINDOWS" = "true" ]; then
-	# On ARM64 or Windows, just verify the file was created (due to floating point differences)
-	if [ -f test_01.flim ] && [ -s test_01.flim ]; then
-		if [ "$IS_WINDOWS" = "true" ]; then
-			echo "TEST PASSED (Windows - file generated successfully)"
-		else
-			echo "TEST PASSED (ARM64 - file generated successfully)"
-		fi
-		rm -f test_01.flim
+# Normal test mode
+echo "Running tests for architecture: $ARCH"
+
+$FLIMMAKER test_01.mp4 --flim test_01.flim
+
+# Check if file was generated
+if [ ! -f test_01.flim ] || [ ! -s test_01.flim ]; then
+	echo "TEST FAILED - file not generated or empty"
+	rm -f test_01.flim
+	exit 1
+fi
+
+# Look for architecture-specific reference file
+REFERENCE_FILE="test_01-${ARCH}.flim.gz"
+
+if [ -f "$REFERENCE_FILE" ]; then
+	# Reference file exists - do byte-for-byte comparison
+	gunzip -c "$REFERENCE_FILE" > test_01.flim.reference
+	if cmp -s test_01.flim test_01.flim.reference; then
+		echo "TEST PASSED ($ARCH - exact match)"
+		rm -f test_01.flim.reference test_01.flim
 		exit 0
 	else
-		if [ "$IS_WINDOWS" = "true" ]; then
-			echo "TEST FAILED (Windows - file not generated or empty)"
-		else
-			echo "TEST FAILED (ARM64 - file not generated or empty)"
-		fi
-		rm -f test_01.flim
+		echo "TEST FAILED ($ARCH - files differ)"
+		rm -f test_01.flim.reference test_01.flim
 		exit 1
 	fi
 else
-	# On x86_64 Linux/macOS, do full byte-for-byte comparison
-	gunzip -c test_01.flim.gz > test_01.flim.decompressed
-	if cmp -s test_01.flim test_01.flim.decompressed; then
-		echo "TEST PASSED (x86_64 - exact match)"
-		rm -f test_01.flim.decompressed
-		rm -f test_01.flim
-		exit 0
-	else
-		echo "TEST FAILED (x86_64 - files differ)"
-		rm -f test_01.flim.decompressed
-		rm -f test_01.flim
-		exit 1
-	fi
+	# No reference file - fallback to smoke test
+	echo "WARNING: No reference file for $ARCH, using smoke test"
+	echo "  (to create: make test-reference)"
+	echo "TEST PASSED ($ARCH - smoke test: file generated successfully)"
+	rm -f test_01.flim
+	exit 0
 fi
