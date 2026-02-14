@@ -33,25 +33,26 @@ inline std::vector<std::string> split(const std::string &s, const std::string &d
 }
 
 /// Alternate implementation of std::popcount, to support non compliant C++20 compilers (MacOS 10.15)
-inline int mypopcount( unsigned n )
+inline int mypopcount(unsigned n)
 {
     int count = 0;
-    while (n) {
-        count ++;
-        n &= n-1;
+    while (n)
+    {
+        count++;
+        n &= n - 1;
     }
     return count;
 }
 
 /// Boolean from string
-inline bool bool_from( const std::string &v )
+inline bool bool_from(const std::string &v)
 {
-    if (v=="true")
+    if (v == "true")
         return true;
     return false;
 }
 
 ///  Delete files matching pattern
-void delete_files_of_pattern( const std::string &pattern );
+void delete_files_of_pattern(const std::string &pattern);
 
 void test_simplesprintf();

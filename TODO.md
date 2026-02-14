@@ -23,42 +23,30 @@ The codebase has many unexplained numeric literals scattered across files:
 
 Defining these as named constants (e.g. `constexpr size_t kMacScreenW = 512`) in a shared header would make the code self-documenting and ensure consistency when the same value is used in multiple places.
 
-## 5. `flimcompressor.hpp`: Extract inner classes into separate files
-
-`Ditherer`, `SubtitleBurner`, `CompressorHelper`, `EncodingResult`, and `qhistogram` are self-contained classes nested inside `flimcompressor`. Moving each to its own header (e.g. `ditherer.hpp`, `subtitle_burner.hpp`, `compressor_helper.hpp`) would reduce `flimcompressor.hpp` to ~80 lines of orchestration, improve compile times, and make each piece independently testable.
-
-## 6. `flimcompressor.hpp`: Replace `make_codec` if/else chain with a data-driven registry
+## 5. `codec_spec.hpp`: Replace `make_codec` if/else chain with a data-driven registry
 
 `make_codec` is a ~60-line `if/else if` ladder mapping codec name strings to constructors. Replace it with a `static const std::map<std::string, ...>` mapping names to factory lambdas + signature + penalty. This eliminates repetitive branching, makes adding codecs a one-liner, and respects the Open/Closed principle.
 
-## 7. `flimcompressor.hpp`: Fix double-penalty bug and move compression out of `EncodingResult` constructor
+## 6. `encoding_result.hpp` and `compressor_helper.hpp`: Fix double-penalty bug
 
-In `CompressorHelper::add`, the budget is already scaled by `codec.penality` before being passed to `EncodingResult`, whose constructor *also* scales by `codec_.penality` — applying the factor twice. Refactor `EncodingResult` into a plain data struct populated by a static factory or free function, making the penalty application explicit in exactly one place.
+In `CompressorHelper::add` (line 113), the budget is already scaled by `codec.penality` before being passed to `EncodingResult`, whose constructor (line 27) *also* scales by `codec_.penality` — applying the factor twice. Remove one of these multiplications to make penalty application explicit in exactly one place.
 
-## 8. `flimcompressor.hpp`: Move `split()` to `common.hpp` and delete dead code
-
-The generic string `split()` utility inside `flimcompressor` has nothing to do with compression — move it to `common.hpp`. Also remove the unused public field `progress_` and the unused `#define VERBOSE`, which are dead code.
-
-## 9. `flimcompressor.hpp`: Replace `SubtitleBurner`'s copy-and-erase with an index
+## 7. `subtitle_burner.hpp`: Replace copy-and-erase with an index
 
 `SubtitleBurner` copies the entire subtitle vector, then calls `erase(begin())` — an O(n) operation per subtitle. Replace with a `const` reference (or `std::span`) plus a `size_t` index to advance through the list in O(1), avoiding both the copy and the repeated shuffle.
 
-## 10. `flimcompressor.hpp`: Simplify tick-grouping double loop and fix shadowed `i` in `CompressorHelper::add`
+## 8. `compressor_helper.hpp`: Simplify tick-grouping double loop and fix shadowed `i`
 
-The outer `for (size_t i = ...)` and inner `for (size_t i = ...)` shadow the same variable — a latent bug. The `group_` flag makes the outer loop run either once or N times and the inner loop does the inverse, so they always process the same total ticks. Replace with a single loop iterating over sub-frames (count = `ticks / local_ticks`), each gathering `local_ticks` audio frames via `std::copy_n`. This eliminates the shadowing, removes a nesting level, and makes the grouping semantics self-documenting.
+The outer `for (size_t i = ...)` at line 87 and inner `for (size_t i = ...)` at line 91 shadow the same variable — a latent bug. The `group_` flag makes the outer loop run either once or N times and the inner loop does the inverse, so they always process the same total ticks. Replace with a single loop iterating over sub-frames (count = `ticks / local_ticks`), each gathering `local_ticks` audio frames via `std::copy_n`. This eliminates the shadowing, removes a nesting level, and makes the grouping semantics self-documenting.
 
-## 11. `flimcompressor.hpp`: Delete `DitheringParameters` and pass `const encoding_profile &` to `Ditherer`
+## 9. `dithering_parameters.hpp` and `ditherer.hpp`: Delete `DitheringParameters` and pass `const encoding_profile &` to `Ditherer`
 
 `DitheringParameters` is a 10-field struct where 9 fields are mechanically copied 1:1 from `encoding_profile` getters. Every new dithering knob added to the profile must be mirrored into the struct, its aggregate init, and every read site. Instead, have `Ditherer` hold a `const encoding_profile &` plus the one outlier (`watermark`) as a separate `std::string` member. This deletes ~20 lines of boilerplate and a maintenance hazard.
 
-## 12. `flimcompressor.hpp`: Rename `penality` to `penalty`
+## 10. `codec_spec.hpp`: Rename `penality` to `penalty`
 
-The field name `penality` appears in `codec_spec`, `make_codec`, and `EncodingResult` — it's consistently misspelled throughout. Rename to `penalty` for clarity.
+The field name `penality` appears in `codec_spec` (line 18), `make_codec` (lines 33, 39, 45, 51, 57, 63), and `EncodingResult` (line 27 in encoding_result.hpp) — it's consistently misspelled throughout. Rename to `penalty` for clarity.
 
-## 13. `flimcompressor.hpp`: Remove `using namespace` at file scope in headers
+## 11. Header files: Remove `using namespace` at file scope
 
-`flimcompressor.hpp` has `using namespace macflim;` and `using namespace std::string_literals;` at file scope, polluting the namespace of every translation unit that includes it. Replace with qualified names or move the `using` declarations into function/class scope.
-
-## 14. `flimcompressor.hpp`: Fix `#include "profile.hpp"` at the bottom of the file
-
-`profile.hpp` is included *after* the class definition due to a circular dependency (the `compress` method body needs the full `encoding_profile` type, but only a forward declaration is available at the top). The file split from item 5 would naturally resolve this; otherwise, moving the `compress` implementation into a `.cpp` file eliminates the need for the bottom-of-file include hack.
+Several headers may have `using namespace` declarations at file scope. `flimcompressor.hpp` now uses scoped `using` declarations (lines 18-23) which is acceptable, but check `compressor.hpp`, `profile.hpp`, `flimencoder.hpp` for `using namespace std;` or similar anti-patterns that pollute the namespace of every includer.

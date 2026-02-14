@@ -16,11 +16,11 @@
 #include "compressor_helper.hpp"
 
 using macflim::codec_spec;
-using macflim::make_codec;
-using macflim::DitheringParameters;
-using macflim::Ditherer;
-using macflim::SubtitleBurner;
 using macflim::CompressorHelper;
+using macflim::Ditherer;
+using macflim::DitheringParameters;
+using macflim::make_codec;
+using macflim::SubtitleBurner;
 
 class encoding_profile;
 
