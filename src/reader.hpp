@@ -76,5 +76,3 @@ public:
     //  Get the next sound sample, mac format
     virtual std::unique_ptr<sound_frame_t> next_sound() = 0;
 };
-
-inline size_t ticks_from_frame(size_t n, double fps) { return n / fps * 60 + .5; }
