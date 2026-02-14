@@ -46,10 +46,10 @@ release: CXXFLAGS += -O3
 debug: $(TARGET)
 release: $(TARGET)
 
-test: $(TARGET)
+test: release
 	cd ../tests && bash run_tests.sh
 
-test-reference: $(TARGET)
+test-reference: release
 	cd ../tests && bash run_tests.sh --make-reference
 
 # List of object files

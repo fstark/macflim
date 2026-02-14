@@ -74,8 +74,9 @@ REFERENCE_FILE="test_01-${ARCH}.flim.gz"
 
 if [ -f "$REFERENCE_FILE" ]; then
 	# Reference file exists - do byte-for-byte comparison
+	# Skip first 1024 bytes (comment section with version info)
 	gunzip -c "$REFERENCE_FILE" > test_01.flim.reference
-	if cmp -s test_01.flim test_01.flim.reference; then
+	if cmp -s -i 1024 test_01.flim test_01.flim.reference; then
 		echo "TEST PASSED ($ARCH - exact match)"
 		rm -f test_01.flim.reference test_01.flim
 		exit 0
