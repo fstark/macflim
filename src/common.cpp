@@ -9,7 +9,7 @@
 /** Replaces the format by the value v
  * Format can use %d and %0nd (%01d, %02d, etc...)
  * Result is similar to sprintf
-*/
+ */
 std::string simplesprintf(const std::string &format, int v)
 {
     std::ostringstream result;
@@ -93,10 +93,13 @@ void test_simplesprintf()
     assert(result == "v=42!");
 
     // Test invalid format
-    try {
+    try
+    {
         result = simplesprintf("%s", 42);
         assert(false); // Should not reach here
-    } catch (const std::runtime_error& e) {
+    }
+    catch (const std::runtime_error &e)
+    {
         assert(true); // Expected exception
     }
 
@@ -108,6 +111,85 @@ void test_simplesprintf()
     assert(result == "Value: 042");
 }
 
+std::vector<std::string> split(const std::string &s, const std::string &delimiter)
+{
+    size_t pos_start = 0, pos_end, delim_len = delimiter.length();
+    std::string token;
+    std::vector<std::string> res;
+
+    while ((pos_end = s.find(delimiter, pos_start)) != std::string::npos)
+    {
+        token = s.substr(pos_start, pos_end - pos_start);
+        pos_start = pos_end + delim_len;
+        res.push_back(token);
+    }
+
+    res.push_back(s.substr(pos_start));
+    return res;
+}
+
+bool bool_from(const std::string &v)
+{
+    if (v == "true")
+        return true;
+    return false;
+}
+
+bool ends_with(std::string const &value, std::string const &ending)
+{
+    if (ending.size() > value.size())
+        return false;
+
+    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
+
+static int num_from_string(const char **s)
+{
+    int n = 0;
+    while (**s >= '0' && **s <= '9')
+    {
+        n = n * 10 + (**s - '0');
+        (*s)++;
+    }
+    return n;
+}
+
+timestamp_t seconds_from_string(const char *s)
+{
+    double d = 0;
+    for (;;)
+    {
+        if (*s >= '0' && *s <= '9')
+            d = d * 60 + num_from_string(&s);
+        if (*s != ':')
+            break;
+        s++;
+    }
+    if (!*s)
+        return d;
+    if (*s == '.')
+    {
+        double f = 1;
+        s++;
+        while (*s >= '0' && *s <= '9')
+        {
+            f /= 10;
+            d += f * (*s++ - '0');
+        }
+    }
+    return d;
+}
+
+void test_seconds_from_string()
+{
+    assert(seconds_from_string("42") == 42);
+    assert(seconds_from_string("05:31") == 331);
+    assert(seconds_from_string("2:4") == 124);
+    assert(seconds_from_string("02:04.470") == 124.47);
+    assert(seconds_from_string("1230.2") == 1230.2);
+    assert(seconds_from_string("0001:1:1:3.1toto") == 219663.1);
+}
+
 void delete_files_of_pattern(const std::string &pattern)
 {
     int i = 0;
@@ -116,7 +198,7 @@ void delete_files_of_pattern(const std::string &pattern)
     do
     {
         i++;
-        filepath = simplesprintf(pattern,i);
+        filepath = simplesprintf(pattern, i);
     } while (!remove(filepath.c_str()));
     std::clog << std::format("{} files deleted\n", i);
 }

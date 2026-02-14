@@ -3,6 +3,7 @@
 #include <math.h>
 #include <string>
 #include <vector>
+#include <assert.h>
 
 ///  A timestamps in seconds
 typedef double timestamp_t;
@@ -15,22 +16,7 @@ inline bool equals(timestamp_t a, timestamp_t b) { return std::fabs(a - b) < 1.0
 inline size_t ticks_from_frame(size_t n, double fps) { return n / fps * 60 + .5; }
 
 /// Split a string by delimiter
-inline std::vector<std::string> split(const std::string &s, const std::string &delimiter)
-{
-    size_t pos_start = 0, pos_end, delim_len = delimiter.length();
-    std::string token;
-    std::vector<std::string> res;
-
-    while ((pos_end = s.find(delimiter, pos_start)) != std::string::npos)
-    {
-        token = s.substr(pos_start, pos_end - pos_start);
-        pos_start = pos_end + delim_len;
-        res.push_back(token);
-    }
-
-    res.push_back(s.substr(pos_start));
-    return res;
-}
+std::vector<std::string> split(const std::string &s, const std::string &delimiter);
 
 /// Alternate implementation of std::popcount, to support non compliant C++20 compilers (MacOS 10.15)
 inline int mypopcount(unsigned n)
@@ -45,14 +31,24 @@ inline int mypopcount(unsigned n)
 }
 
 /// Boolean from string
-inline bool bool_from(const std::string &v)
-{
-    if (v == "true")
-        return true;
-    return false;
-}
+bool bool_from(const std::string &v);
+
+/// Check if string ends with suffix
+bool ends_with(std::string const &value, std::string const &ending);
+
+/// Converts a timestamp into a second count
+/// 42 => 42
+/// 05:31 => 331
+/// 2:4 => 124
+/// 02:04.470 => 124.47
+/// 1230.2 => 1230.2
+/// 0001:1:1:3.1toto => 219663.1
+timestamp_t seconds_from_string(const char *s);
 
 ///  Delete files matching pattern
 void delete_files_of_pattern(const std::string &pattern);
 
 void test_simplesprintf();
+
+/// Test seconds_from_string function
+void test_seconds_from_string();

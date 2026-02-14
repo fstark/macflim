@@ -1,3 +1,7 @@
+## Testing
+
+Test the code using ``cd src && make test``
+
 ## class naming:
 
 Classes and structs should use snake_case naming (e.g., `encoding_profile`, ...)
