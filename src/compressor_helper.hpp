@@ -106,7 +106,7 @@ namespace macflim
                                      codec,
                                      current_fb_,
                                      fb,
-                                     video_budget * codec.penalty); });
+                                     video_budget); });
 
                 //  Find the result with highest quality
                 auto best_result = std::max_element(encoding_results.begin(), encoding_results.end(), [](const EncodingResult &r1, const EncodingResult &r2)
