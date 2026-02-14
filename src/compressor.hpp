@@ -13,6 +13,7 @@
 #include "common.hpp"
 #include "bitmap.hpp"
 #include "ruler.hpp"
+#include "imgcompress.hpp"
 
 /**
  * Encapsulate a way to compress a single frame transition

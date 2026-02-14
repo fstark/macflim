@@ -65,6 +65,7 @@ static int sStream = 0;
 #include "writer.hpp"
 #include "subtitles.hpp"
 #include "flimutil.hpp"
+#include "imgcompress.hpp"
 
 inline bool ends_with(std::string const &value, std::string const &ending)
 {
@@ -775,7 +776,7 @@ int main(int argc, char **argv)
             unlink(cache_file.c_str());
         }
     }
-    catch (const std::exception& error)
+    catch (const std::exception &error)
     {
         std::cerr << "**** ERROR: [" << error.what() << "]\n";
         return EXIT_FAILURE;
