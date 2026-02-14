@@ -84,11 +84,14 @@ namespace macflim
             if (group_)
                 local_ticks = ticks;
 
-            for (size_t i = 0; i != ticks; i += local_ticks)
+            size_t num_subframes = ticks / local_ticks;
+            assert(num_subframes * local_ticks == ticks); // Verify no remainder
+
+            for (size_t subframe = 0; subframe < num_subframes; subframe++)
             {
                 //  Add as much audio as we have for the local ticks
                 std::vector<uint8_t> audio;
-                for (size_t i = 0; i != local_ticks; i++)
+                for (size_t tick = 0; tick < local_ticks; tick++)
                 {
                     sound_frame_t snd;
                     if (current_audio_ < std::end(audio_))

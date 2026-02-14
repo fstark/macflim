@@ -23,6 +23,3 @@ The codebase has many unexplained numeric literals scattered across files:
 
 Defining these as named constants (e.g. `constexpr size_t kMacScreenW = 512`) in a shared header would make the code self-documenting and ensure consistency when the same value is used in multiple places.
 
-## 5. `compressor_helper.hpp`: Simplify tick-grouping double loop and fix shadowed `i`
-
-The outer `for (size_t i = ...)` at line 87 and inner `for (size_t i = ...)` at line 91 shadow the same variable — a latent bug. The `group_` flag makes the outer loop run either once or N times and the inner loop does the inverse, so they always process the same total ticks. Replace with a single loop iterating over sub-frames (count = `ticks / local_ticks`), each gathering `local_ticks` audio frames via `std::copy_n`. This eliminates the shadowing, removes a nesting level, and makes the grouping semantics self-documenting.
