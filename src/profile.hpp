@@ -6,9 +6,6 @@
 #include <vector>
 #include <string>
 
-using namespace std::string_literals;
-using namespace macflim;
-
 enum class initial_frame_mode
 {
     none,     // No initial frame generated
@@ -91,7 +88,7 @@ public:
         else if (dither == "blue")
             dither_ = grayscale::blue_noise;
         else
-            throw config_error("Wrong dither option : only 'ordered', 'error', and 'blue' are supported", dither);
+            throw macflim::config_error("Wrong dither option : only 'ordered', 'error', and 'blue' are supported", dither);
         return true;
     }
     void set_dither(grayscale::dithering dither) { dither_ = dither; }
@@ -155,15 +152,15 @@ private:
 
     static constexpr profile_config profile_table[] = {
         //  name       w    h     rate  filters   ratio  grp   stab  bars   dithering  error    bidi   bleed  silent   codecs
-        {"128k",      512, 342,   380, "g1.6bbscz", 4,  false, 0.5,  true,  "ordered", "floyd", true,  0.95f, true,  {"null", "z32", "lines:count=10", "invert"}},
-        {"512k",      512, 342,   480, "g1.6bbscz", 4,  false, 0.5,  true,  "ordered", "floyd", true,  0.95f, true,  {"null", "z32", "lines:count=10", "invert"}},
-        {"xl",        704, 364,   580, "g1.6bbsc",  4,  true,  0.5,  true,  "ordered", "floyd", true,  0.95f, true,  {"null", "z32", "lines:count=50", "invert"}},
-        {"plus",      512, 342,  1500, "g1.6bbscz", 2,  false, 0.5,  true,  "ordered", "floyd", true,  0.95f, false, {"null", "z32", "lines:count=30", "invert"}},
-        {"performer", 512, 342,  5000, "g1.6bsc",   2,  false, 0.5,  true,  "blue",    "floyd", true,  0.95f, false, {"null", "z32", "lines:count=30", "invert"}},
-        {"portable",  640, 400,  2500, "g1.6bsc",   2,  false, 0.5,  true,  "error",   "floyd", true,  0.98f, false, {"null", "z32", "lines:count=50", "invert"}},
-        {"se",        512, 342,  2500, "g1.6bsc",   2,  false, 0.5,  true,  "error",   "floyd", true,  0.98f, false, {"null", "z32", "lines:count=50", "invert"}},
-        {"se30",      512, 342,  6000, "g1.6sc",    1,  true,  0.3,  false, "error",   "floyd", true,  0.99f, false, {"null", "z32", "lines:count=70", "invert"}},
-        {"perfect",   512, 342, 32000, "g1.6sc",    1,  true,  0.3,  false, "error",   "floyd", true,  1.0f,  false, {"null", "z32", "lines:count=70", "invert"}},
+        {"128k", 512, 342, 380, "g1.6bbscz", 4, false, 0.5, true, "ordered", "floyd", true, 0.95f, true, {"null", "z32", "lines:count=10", "invert"}},
+        {"512k", 512, 342, 480, "g1.6bbscz", 4, false, 0.5, true, "ordered", "floyd", true, 0.95f, true, {"null", "z32", "lines:count=10", "invert"}},
+        {"xl", 704, 364, 580, "g1.6bbsc", 4, true, 0.5, true, "ordered", "floyd", true, 0.95f, true, {"null", "z32", "lines:count=50", "invert"}},
+        {"plus", 512, 342, 1500, "g1.6bbscz", 2, false, 0.5, true, "ordered", "floyd", true, 0.95f, false, {"null", "z32", "lines:count=30", "invert"}},
+        {"performer", 512, 342, 5000, "g1.6bsc", 2, false, 0.5, true, "blue", "floyd", true, 0.95f, false, {"null", "z32", "lines:count=30", "invert"}},
+        {"portable", 640, 400, 2500, "g1.6bsc", 2, false, 0.5, true, "error", "floyd", true, 0.98f, false, {"null", "z32", "lines:count=50", "invert"}},
+        {"se", 512, 342, 2500, "g1.6bsc", 2, false, 0.5, true, "error", "floyd", true, 0.98f, false, {"null", "z32", "lines:count=50", "invert"}},
+        {"se30", 512, 342, 6000, "g1.6sc", 1, true, 0.3, false, "error", "floyd", true, 0.99f, false, {"null", "z32", "lines:count=70", "invert"}},
+        {"perfect", 512, 342, 32000, "g1.6sc", 1, true, 0.3, false, "error", "floyd", true, 1.0f, false, {"null", "z32", "lines:count=70", "invert"}},
     };
 
     static std::vector<std::string> parse_codec_array(const char *const *codec_array)
