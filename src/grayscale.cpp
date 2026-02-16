@@ -8,649 +8,646 @@
 namespace macflim
 {
 
-    //  ------------------------------------------------------------------
-    //  Copy image (#### : is operator=?)
-    //  ------------------------------------------------------------------
-    void copy_grayscale(grayscale &dest, const grayscale &source)
-    {
-        dest = source;
-    }
+//  ------------------------------------------------------------------
+//  Copy image (#### : is operator=?)
+//  ------------------------------------------------------------------
+void copy_grayscale(grayscale &dest, const grayscale &source)
+{
+    dest = source;
+}
 
-    void copy_scale(grayscale &destination, const grayscale &source, double scale, double anchor_x = 0.5, double anchor_y = 0.5)
-    {
-        for (size_t y = 0; y != destination.H(); y++)
-            for (size_t x = 0; x != destination.W(); x++)
-            {
-                int fromx = anchor_x * (source.W() - scale * destination.W()) + (int)x * scale;
-                int fromy = anchor_y * (source.H() - scale * destination.H()) + (int)y * scale;
-
-                if (fromx < 0 || (int)source.W() <= fromx || fromy < 0 || (int)source.H() <= fromy)
-                    destination.at(x, y) = 0; // #### Should be settable (used by --bars)
-                else
-                    destination.at(x, y) = source.at(fromx, fromy);
-            }
-    }
-
-    //  ------------------------------------------------------------------
-    //  Resize an image
-    //  ------------------------------------------------------------------
-    void copy(grayscale &destination, const grayscale &source, bool black_bars, double anchor_x, double anchor_y)
-    {
-        if (destination.W() == source.W() && destination.H() == source.H())
+void copy_scale(grayscale &destination, const grayscale &source, double scale, double anchor_x = 0.5,
+                double anchor_y = 0.5)
+{
+    for (size_t y = 0; y != destination.H(); y++)
+        for (size_t x = 0; x != destination.W(); x++)
         {
-            copy_grayscale(destination, source);
-            return;
+            int fromx = anchor_x * (source.W() - scale * destination.W()) + (int)x * scale;
+            int fromy = anchor_y * (source.H() - scale * destination.H()) + (int)y * scale;
+
+            if (fromx < 0 || (int)source.W() <= fromx || fromy < 0 || (int)source.H() <= fromy)
+                destination.at(x, y) = 0; // #### Should be settable (used by --bars)
+            else
+                destination.at(x, y) = source.at(fromx, fromy);
         }
+}
 
-        double scalex = source.W() / (double)destination.W();
-        double scaley = source.H() / (double)destination.H();
-
-        //  This one is also an interesting compromise
-        // copy_scale( destination, source, (scalex + scaley)/2 );
-
-        if (!black_bars)
-            copy_scale(destination, source, std::min(scalex, scaley), anchor_x, anchor_y);
-        else
-            copy_scale(destination, source, std::max(scalex, scaley), anchor_x, anchor_y);
+//  ------------------------------------------------------------------
+//  Resize an image
+//  ------------------------------------------------------------------
+void copy(grayscale &destination, const grayscale &source, bool black_bars, double anchor_x, double anchor_y)
+{
+    if (destination.W() == source.W() && destination.H() == source.H())
+    {
+        copy_grayscale(destination, source);
+        return;
     }
 
-    //  ------------------------------------------------------------------
-    //  Fills grayscale with constant color, 50% gray by default
-    //  ------------------------------------------------------------------
-    void fill(grayscale &img, float value)
-    {
-        for (size_t y = 0; y != img.H(); y++)
-            for (size_t x = 0; x != img.W(); x++)
-                img.at(x, y) = value;
-    }
+    double scalex = source.W() / (double)destination.W();
+    double scaley = source.H() / (double)destination.H();
 
-    //  ------------------------------------------------------------------
-    //  Sharpens the image
-    //  ------------------------------------------------------------------
-    grayscale sharpen(const grayscale &src)
-    {
-        float kernel[3][3] = {
-            {0.0, -1.0, 0.0},
-            {-1.0, 5.0, -1.0},
-            {0.0, -1.0, 0.0},
-        };
+    //  This one is also an interesting compromise
+    // copy_scale( destination, source, (scalex + scaley)/2 );
 
-        auto res = src;
+    if (!black_bars)
+        copy_scale(destination, source, std::min(scalex, scaley), anchor_x, anchor_y);
+    else
+        copy_scale(destination, source, std::max(scalex, scaley), anchor_x, anchor_y);
+}
 
-        for (size_t x = 1; x != src.W() - 1; x++)
-            for (size_t y = 1; y != src.H() - 1; y++)
-            {
-                float v = 0;
-                for (size_t x0 = 0; x0 != 3; x0++)
-                    for (size_t y0 = 0; y0 != 3; y0++)
-                    {
-                        v += src.at(x + x0 - 1, y + y0 - 1) * kernel[x0][y0];
-                    }
-                res.at(x, y) = v;
-            }
+//  ------------------------------------------------------------------
+//  Fills grayscale with constant color, 50% gray by default
+//  ------------------------------------------------------------------
+void fill(grayscale &img, float value)
+{
+    for (size_t y = 0; y != img.H(); y++)
+        for (size_t x = 0; x != img.W(); x++)
+            img.at(x, y) = value;
+}
 
-        return res;
-    }
+//  ------------------------------------------------------------------
+//  Sharpens the image
+//  ------------------------------------------------------------------
+grayscale sharpen(const grayscale &src)
+{
+    float kernel[3][3] = {
+        {0.0, -1.0, 0.0},
+        {-1.0, 5.0, -1.0},
+        {0.0, -1.0, 0.0},
+    };
 
-    //  ------------------------------------------------------------------
-    //  Blurs the grayscale with a 3x3 kernel
-    //  ------------------------------------------------------------------
-    grayscale blur3(const grayscale &src)
-    {
-        static float kernel[3][3] = {
-            {1.0 / 9, 1.0 / 9, 1.0 / 9},
-            {1.0 / 9, 1.0 / 9, 1.0 / 9},
-            {1.0 / 9, 1.0 / 9, 1.0 / 9},
-        };
+    auto res = src;
 
-        auto res = src;
-
-        for (size_t x = 1; x != src.W() - 1; x++)
-            for (size_t y = 1; y != src.H() - 1; y++)
-            {
-                float v = 0;
-                for (size_t x0 = 0; x0 != 3; x0++)
-                    for (size_t y0 = 0; y0 != 3; y0++)
-                    {
-                        v += src.at(x + x0 - 1, y + y0 - 1) * kernel[x0][y0];
-                    }
-                if (v < 0)
-                    v = 0;
-                if (v > 1)
-                    v = 1;
-                res.at(x, y) = v;
-            }
-
-        return res;
-    }
-
-    //  ------------------------------------------------------------------
-    //  Blurs the grayscale more with a 5x5 kernel
-    //  ------------------------------------------------------------------
-    grayscale blur5(const grayscale &src)
-    {
-        float kernel[5][5] = {
-            {1.0 / 256, 4.0 / 256, 6.0 / 256, 4.0 / 256, 1.0 / 256},
-            {4.0 / 256, 16.0 / 256, 24.0 / 256, 16.0 / 256, 4.0 / 256},
-            {6.0 / 256, 24.0 / 256, 36.0 / 256, 24.0 / 256, 6.0 / 256},
-            {4.0 / 256, 16.0 / 256, 24.0 / 256, 16.0 / 256, 4.0 / 256},
-            {1.0 / 256, 4.0 / 256, 6.0 / 256, 4.0 / 256, 1.0 / 256},
-        };
-
-        auto res = src;
-
-        for (size_t x = 2; x != src.W() - 2; x++)
-            for (size_t y = 2; y != src.H() - 2; y++)
-            {
-                float v = 0;
-                for (size_t x0 = 0; x0 != 5; x0++)
-                    for (size_t y0 = 0; y0 != 5; y0++)
-                    {
-                        v += src.at(x + x0 - 2, y + y0 - 2) * kernel[x0][y0];
-                    }
-                res.at(x, y) = v;
-            }
-
-        return res;
-    }
-
-    //  ------------------------------------------------------------------
-    //  Horizontal flip the image
-    //  ------------------------------------------------------------------
-    grayscale flip(const grayscale &src)
-    {
-        grayscale res = src;
-
-        for (size_t x = 0; x != src.W() / 2; x++)
-            for (size_t y = 0; y != src.H(); y++)
-            {
-                std::swap(res.at(x, y), res.at(res.W() - 1 - x, y));
-            }
-
-        return res;
-    }
-
-    //  ------------------------------------------------------------------
-    //  Inverts the image
-    //  ------------------------------------------------------------------
-    grayscale invert(const grayscale &src)
-    {
-        grayscale res = src;
-
-        for (size_t x = 0; x != src.W(); x++)
-            for (size_t y = 0; y != src.H(); y++)
-            {
-                res.at(x, y) = 1 - res.at(x, y);
-            }
-
-        return res;
-    }
-
-    //  ------------------------------------------------------------------
-    //  Adds a debug border aroudn the image
-    //  ------------------------------------------------------------------
-
-    grayscale debug_filter(const grayscale &src)
-    {
-        grayscale res = src;
-
-        for (size_t x = 0; x != src.W(); x++)
-        {
-            res.at(x, 0) = 1;
-            res.at(x, 1) = 0;
-            res.at(x, src.H() - 1) = 1;
-            res.at(x, src.H() - 2) = 0;
-        }
-
+    for (size_t x = 1; x != src.W() - 1; x++)
         for (size_t y = 1; y != src.H() - 1; y++)
         {
-            res.at(0, y) = 1;
-            res.at(1, y) = 0;
-            res.at(src.W() - 1, y) = 1;
-            res.at(src.W() - 2, y) = 0;
+            float v = 0;
+            for (size_t x0 = 0; x0 != 3; x0++)
+                for (size_t y0 = 0; y0 != 3; y0++)
+                {
+                    v += src.at(x + x0 - 1, y + y0 - 1) * kernel[x0][y0];
+                }
+            res.at(x, y) = v;
         }
 
-        return res;
-    }
+    return res;
+}
 
-    //  ------------------------------------------------------------------
-    //  Removes all a precentage of black pixels, scales the rest
-    //  ------------------------------------------------------------------
-    grayscale black(const grayscale &src, double percent)
-    {
-        grayscale res = src;
+//  ------------------------------------------------------------------
+//  Blurs the grayscale with a 3x3 kernel
+//  ------------------------------------------------------------------
+grayscale blur3(const grayscale &src)
+{
+    static float kernel[3][3] = {
+        {1.0 / 9, 1.0 / 9, 1.0 / 9},
+        {1.0 / 9, 1.0 / 9, 1.0 / 9},
+        {1.0 / 9, 1.0 / 9, 1.0 / 9},
+    };
 
-        percent /= 100;
+    auto res = src;
 
-        for (size_t x = 0; x != src.W(); x++)
-            for (size_t y = 0; y != src.H(); y++)
-            {
-                // if (res.at(x,y)<1.0/256.0*16)
-                //     res.at(x,y) = 0;
-                double v = res.at(x, y);
-                // 1/16 -> 0
-                // 1 -> 1
-                v = (v - percent) / (1 - percent);
-                if (v < 0)
-                    v = 0;
-                res.at(x, y) = v;
-            }
+    for (size_t x = 1; x != src.W() - 1; x++)
+        for (size_t y = 1; y != src.H() - 1; y++)
+        {
+            float v = 0;
+            for (size_t x0 = 0; x0 != 3; x0++)
+                for (size_t y0 = 0; y0 != 3; y0++)
+                {
+                    v += src.at(x + x0 - 1, y + y0 - 1) * kernel[x0][y0];
+                }
+            if (v < 0)
+                v = 0;
+            if (v > 1)
+                v = 1;
+            res.at(x, y) = v;
+        }
 
-        return res;
-    }
+    return res;
+}
 
-    //  ------------------------------------------------------------------
-    //  Removes all a precentage of white pixels, scales the rest
-    //  ------------------------------------------------------------------
-    grayscale white(const grayscale &src, double percent)
-    {
-        grayscale res = src;
+//  ------------------------------------------------------------------
+//  Blurs the grayscale more with a 5x5 kernel
+//  ------------------------------------------------------------------
+grayscale blur5(const grayscale &src)
+{
+    float kernel[5][5] = {
+        {1.0 / 256, 4.0 / 256, 6.0 / 256, 4.0 / 256, 1.0 / 256},
+        {4.0 / 256, 16.0 / 256, 24.0 / 256, 16.0 / 256, 4.0 / 256},
+        {6.0 / 256, 24.0 / 256, 36.0 / 256, 24.0 / 256, 6.0 / 256},
+        {4.0 / 256, 16.0 / 256, 24.0 / 256, 16.0 / 256, 4.0 / 256},
+        {1.0 / 256, 4.0 / 256, 6.0 / 256, 4.0 / 256, 1.0 / 256},
+    };
 
-        percent /= 100;
+    auto res = src;
 
-        for (size_t x = 0; x != src.W(); x++)
-            for (size_t y = 0; y != src.H(); y++)
-            {
-                // if (res.at(x,y)<1.0/256.0*16)
-                //     res.at(x,y) = 0;
-                double v = res.at(x, y);
-                // 1/16 -> 0
-                // 1 -> 1
-                v = v * (1 + percent);
-                if (v > 1)
-                    v = 1;
-                res.at(x, y) = v;
-            }
+    for (size_t x = 2; x != src.W() - 2; x++)
+        for (size_t y = 2; y != src.H() - 2; y++)
+        {
+            float v = 0;
+            for (size_t x0 = 0; x0 != 5; x0++)
+                for (size_t y0 = 0; y0 != 5; y0++)
+                {
+                    v += src.at(x + x0 - 2, y + y0 - 2) * kernel[x0][y0];
+                }
+            res.at(x, y) = v;
+        }
 
-        return res;
-    }
+    return res;
+}
 
-    //  ------------------------------------------------------------------
-    //  Gamma corrects the image
-    //  ------------------------------------------------------------------
-    grayscale gamma(const grayscale &src, double gamma)
-    {
-        grayscale res = src;
+//  ------------------------------------------------------------------
+//  Horizontal flip the image
+//  ------------------------------------------------------------------
+grayscale flip(const grayscale &src)
+{
+    grayscale res = src;
 
-        for (size_t x = 0; x != src.W(); x++)
-            for (size_t y = 0; y != src.H(); y++)
-            {
-                res.at(x, y) = pow(src.at(x, y), gamma);
-            }
-
-        return res;
-    }
-
-    //  ------------------------------------------------------------------
-    grayscale zoom_out(const grayscale &src, double bx)
-    {
-        const double a = ((src.W() / 2) - bx) / (src.W() / 2);
-        const double by = src.H() / 2 - a * (src.H() / 2);
-
-        grayscale res = src;
+    for (size_t x = 0; x != src.W() / 2; x++)
         for (size_t y = 0; y != src.H(); y++)
-            for (size_t x = 0; x != src.W(); x++)
-            {
-                int from_x = (x - bx) / a;
-                int from_y = (y - by) / a;
+        {
+            std::swap(res.at(x, y), res.at(res.W() - 1 - x, y));
+        }
 
-                if (from_x > 0 && from_x < (int)src.W() && from_y > 0 && from_y < (int)src.H())
-                    res.at(x, y) = src.at(from_x, from_y);
-                else
-                    res.at(x, y) = 0;
-            }
+    return res;
+}
 
-        return res;
+//  ------------------------------------------------------------------
+//  Inverts the image
+//  ------------------------------------------------------------------
+grayscale invert(const grayscale &src)
+{
+    grayscale res = src;
+
+    for (size_t x = 0; x != src.W(); x++)
+        for (size_t y = 0; y != src.H(); y++)
+        {
+            res.at(x, y) = 1 - res.at(x, y);
+        }
+
+    return res;
+}
+
+//  ------------------------------------------------------------------
+//  Adds a debug border aroudn the image
+//  ------------------------------------------------------------------
+
+grayscale debug_filter(const grayscale &src)
+{
+    grayscale res = src;
+
+    for (size_t x = 0; x != src.W(); x++)
+    {
+        res.at(x, 0) = 1;
+        res.at(x, 1) = 0;
+        res.at(x, src.H() - 1) = 1;
+        res.at(x, src.H() - 2) = 0;
     }
 
-    grayscale zoom_in(const grayscale &src, size_t pixels) //  #### Not wise
+    for (size_t y = 1; y != src.H() - 1; y++)
     {
-        const double bx = pixels;
-        const double a = ((src.W() / 2) - bx) / (src.W() / 2);
+        res.at(0, y) = 1;
+        res.at(1, y) = 0;
+        res.at(src.W() - 1, y) = 1;
+        res.at(src.W() - 2, y) = 0;
+    }
 
-        grayscale res = src;
+    return res;
+}
+
+//  ------------------------------------------------------------------
+//  Removes all a precentage of black pixels, scales the rest
+//  ------------------------------------------------------------------
+grayscale black(const grayscale &src, double percent)
+{
+    grayscale res = src;
+
+    percent /= 100;
+
+    for (size_t x = 0; x != src.W(); x++)
         for (size_t y = 0; y != src.H(); y++)
-            for (size_t x = 0; x != src.W(); x++)
-            {
-                int from_x = ((int)x - (int)src.W() / 2) * a + src.W() / 2;
-                int from_y = ((int)y - (int)src.H() / 2) * a + src.H() / 2;
+        {
+            // if (res.at(x,y)<1.0/256.0*16)
+            //     res.at(x,y) = 0;
+            double v = res.at(x, y);
+            // 1/16 -> 0
+            // 1 -> 1
+            v = (v - percent) / (1 - percent);
+            if (v < 0)
+                v = 0;
+            res.at(x, y) = v;
+        }
 
-                // (512-256)*(256-32)/256+256
+    return res;
+}
 
-                // std::clog << x << "->" << from_x << " (" << a << ") " << (x-(int)src.W()/2) << " " << std::flush;
+//  ------------------------------------------------------------------
+//  Removes all a precentage of white pixels, scales the rest
+//  ------------------------------------------------------------------
+grayscale white(const grayscale &src, double percent)
+{
+    grayscale res = src;
 
+    percent /= 100;
+
+    for (size_t x = 0; x != src.W(); x++)
+        for (size_t y = 0; y != src.H(); y++)
+        {
+            // if (res.at(x,y)<1.0/256.0*16)
+            //     res.at(x,y) = 0;
+            double v = res.at(x, y);
+            // 1/16 -> 0
+            // 1 -> 1
+            v = v * (1 + percent);
+            if (v > 1)
+                v = 1;
+            res.at(x, y) = v;
+        }
+
+    return res;
+}
+
+//  ------------------------------------------------------------------
+//  Gamma corrects the image
+//  ------------------------------------------------------------------
+grayscale gamma(const grayscale &src, double gamma)
+{
+    grayscale res = src;
+
+    for (size_t x = 0; x != src.W(); x++)
+        for (size_t y = 0; y != src.H(); y++)
+        {
+            res.at(x, y) = pow(src.at(x, y), gamma);
+        }
+
+    return res;
+}
+
+//  ------------------------------------------------------------------
+grayscale zoom_out(const grayscale &src, double bx)
+{
+    const double a = ((src.W() / 2) - bx) / (src.W() / 2);
+    const double by = src.H() / 2 - a * (src.H() / 2);
+
+    grayscale res = src;
+    for (size_t y = 0; y != src.H(); y++)
+        for (size_t x = 0; x != src.W(); x++)
+        {
+            int from_x = (x - bx) / a;
+            int from_y = (y - by) / a;
+
+            if (from_x > 0 && from_x < (int)src.W() && from_y > 0 && from_y < (int)src.H())
                 res.at(x, y) = src.at(from_x, from_y);
-            }
-
-        return res;
-    }
-
-    //  ------------------------------------------------------------------
-    //  Reduce an grayscale to half the size
-    //  ------------------------------------------------------------------
-    void reduce_grayscale_half(grayscale &dest, const grayscale &source)
-    {
-        for (size_t y = 0; y != dest.H(); y++)
-            for (size_t x = 0; x != dest.W(); x++)
-                dest.at(x, y) = (source.at(2 * x, 2 * y) + source.at(2 * x + 1, 2 * y) + source.at(2 * x, 2 * y + 1) + source.at(2 * x + 1, 2 * y + 1)) / 4;
-    }
-
-    //  ------------------------------------------------------------------
-    //  Copies source into dest, with resize
-    //  ------------------------------------------------------------------
-
-    void copy_resize(grayscale &dest, const grayscale &source)
-    {
-        double rw = source.W() * 1.0 / dest.W();
-        double rh = source.H() * 1.0 / dest.H();
-        for (size_t y = 0; y != dest.H(); y++)
-            for (size_t x = 0; x != dest.W(); x++)
-                dest.at(x, y) = source.at(x * rw, y * rh);
-    }
-
-    //  ------------------------------------------------------------------
-    //  Adds a pixel in the 4 corners of the image
-    //  ------------------------------------------------------------------
-    void plot4(grayscale &img, int x, int y, int c)
-    {
-        img.at(x, y) = c;
-        img.at(img.W() - 1 - x, y) = c;
-        img.at(x, img.H() - 1 - y) = c;
-        img.at(img.W() - 1 - x, img.H() - 1 - y) = c;
-    }
-
-    //  ------------------------------------------------------------------
-    //  Draw a horizonal line in the 4 corners of the image
-    //  ------------------------------------------------------------------
-    void hlin4(grayscale &img, int x0, int x1, int y, int c)
-    {
-        while (x0 < x1)
-            plot4(img, x0++, y, c);
-    }
-
-    //  ------------------------------------------------------------------
-    //  As Steve Jobs asked for Mac desktops to have round corners, forces rounded corners on generated flims.
-    //  ------------------------------------------------------------------
-    void round_corners(grayscale &img)
-    {
-        hlin4(img, 0, 5, 0, 0);
-        hlin4(img, 0, 3, 1, 0);
-        hlin4(img, 0, 2, 2, 0);
-        hlin4(img, 0, 1, 3, 0);
-        hlin4(img, 0, 1, 4, 0);
-    }
-
-    grayscale round_corners(const grayscale &img)
-    {
-        grayscale res = img;
-        round_corners(res);
-        return res;
-    }
-
-    grayscale quantize(const grayscale &img, int n)
-    {
-        grayscale res = img;
-
-        for (size_t y = 0; y != res.H(); y++)
-            for (size_t x = 0; x != res.W(); x++)
-                res.at(x, y) = ((int)(img.at(x, y) * (n - 1) + .5)) / (double)(n - 1);
-
-        return res;
-    }
-
-    //  ------------------------------------------------------------------
-    //  Apply a filter on an image
-    //  ------------------------------------------------------------------
-    typedef enum
-    {
-        kBlur = 'b',
-        kSharpen = 's',
-        kGamma = 'g',
-        kRoundCorners = 'c',
-        kZoomOut = 'z',
-        kZoomIn = 'Z',
-        kQuantize16 = 'q',
-        kFlip = 'f',
-        kInvert = 'i',
-        kBlack = 'k', //  Remove the darkest x%
-        kWhite = 'w', //  Remove the whitest x%
-        kDebug = '@'
-    } eFilters;
-
-    grayscale filter(const grayscale &from, eFilters filter, double arg = 0)
-    {
-        switch (filter)
-        {
-        case kBlur:
-        {
-            if (!arg || arg == 3)
-                return blur3(from);
-            if (arg == 5)
-                return blur5(from);
-            throw config_error("Blur filter can have 3 or 5 as an argument", std::to_string((int)arg));
+            else
+                res.at(x, y) = 0;
         }
-        case kSharpen:
-            return sharpen(from);
-        case kGamma:
-            return gamma(from, arg ? arg : 1.6);
-        case kRoundCorners:
-            return round_corners(from);
-        case kZoomOut:
-            return zoom_out(from, arg ? arg : 32);
-        case kZoomIn:
-            return zoom_in(from, arg ? arg : 32);
-        case kQuantize16:
-            return quantize(from, arg ? arg : 17);
-        case kFlip:
-            return flip(from);
-        case kInvert:
-            return invert(from);
-        case kBlack:
-            return black(from, arg ? arg : 1 / 16.0);
-        case kWhite:
-            return white(from, arg ? arg : 1 / 16.0);
-        case kDebug:
-            return debug_filter(from);
+
+    return res;
+}
+
+grayscale zoom_in(const grayscale &src, size_t pixels) //  #### Not wise
+{
+    const double bx = pixels;
+    const double a = ((src.W() / 2) - bx) / (src.W() / 2);
+
+    grayscale res = src;
+    for (size_t y = 0; y != src.H(); y++)
+        for (size_t x = 0; x != src.W(); x++)
+        {
+            int from_x = ((int)x - (int)src.W() / 2) * a + src.W() / 2;
+            int from_y = ((int)y - (int)src.H() / 2) * a + src.H() / 2;
+
+            // (512-256)*(256-32)/256+256
+
+            // std::clog << x << "->" << from_x << " (" << a << ") " << (x-(int)src.W()/2) << " " << std::flush;
+
+            res.at(x, y) = src.at(from_x, from_y);
         }
-        std::cerr << std::format("**** ERROR: filter ['{}'] ({}) unknown\n", (char)filter, (int)filter);
-        throw config_error("Unknown filter", std::string(1, (char)filter));
-    }
 
-    inline bool extract_filter(const char *&p, char &f, double &arg)
+    return res;
+}
+
+//  ------------------------------------------------------------------
+//  Reduce an grayscale to half the size
+//  ------------------------------------------------------------------
+void reduce_grayscale_half(grayscale &dest, const grayscale &source)
+{
+    for (size_t y = 0; y != dest.H(); y++)
+        for (size_t x = 0; x != dest.W(); x++)
+            dest.at(x, y) = (source.at(2 * x, 2 * y) + source.at(2 * x + 1, 2 * y) + source.at(2 * x, 2 * y + 1) +
+                             source.at(2 * x + 1, 2 * y + 1)) /
+                            4;
+}
+
+//  ------------------------------------------------------------------
+//  Copies source into dest, with resize
+//  ------------------------------------------------------------------
+
+void copy_resize(grayscale &dest, const grayscale &source)
+{
+    double rw = source.W() * 1.0 / dest.W();
+    double rh = source.H() * 1.0 / dest.H();
+    for (size_t y = 0; y != dest.H(); y++)
+        for (size_t x = 0; x != dest.W(); x++)
+            dest.at(x, y) = source.at(x * rw, y * rh);
+}
+
+//  ------------------------------------------------------------------
+//  Adds a pixel in the 4 corners of the image
+//  ------------------------------------------------------------------
+void plot4(grayscale &img, int x, int y, int c)
+{
+    img.at(x, y) = c;
+    img.at(img.W() - 1 - x, y) = c;
+    img.at(x, img.H() - 1 - y) = c;
+    img.at(img.W() - 1 - x, img.H() - 1 - y) = c;
+}
+
+//  ------------------------------------------------------------------
+//  Draw a horizonal line in the 4 corners of the image
+//  ------------------------------------------------------------------
+void hlin4(grayscale &img, int x0, int x1, int y, int c)
+{
+    while (x0 < x1)
+        plot4(img, x0++, y, c);
+}
+
+//  ------------------------------------------------------------------
+//  As Steve Jobs asked for Mac desktops to have round corners, forces rounded corners on generated flims.
+//  ------------------------------------------------------------------
+void round_corners(grayscale &img)
+{
+    hlin4(img, 0, 5, 0, 0);
+    hlin4(img, 0, 3, 1, 0);
+    hlin4(img, 0, 2, 2, 0);
+    hlin4(img, 0, 1, 3, 0);
+    hlin4(img, 0, 1, 4, 0);
+}
+
+grayscale round_corners(const grayscale &img)
+{
+    grayscale res = img;
+    round_corners(res);
+    return res;
+}
+
+grayscale quantize(const grayscale &img, int n)
+{
+    grayscale res = img;
+
+    for (size_t y = 0; y != res.H(); y++)
+        for (size_t x = 0; x != res.W(); x++)
+            res.at(x, y) = ((int)(img.at(x, y) * (n - 1) + .5)) / (double)(n - 1);
+
+    return res;
+}
+
+//  ------------------------------------------------------------------
+//  Apply a filter on an image
+//  ------------------------------------------------------------------
+typedef enum
+{
+    kBlur = 'b',
+    kSharpen = 's',
+    kGamma = 'g',
+    kRoundCorners = 'c',
+    kZoomOut = 'z',
+    kZoomIn = 'Z',
+    kQuantize16 = 'q',
+    kFlip = 'f',
+    kInvert = 'i',
+    kBlack = 'k', //  Remove the darkest x%
+    kWhite = 'w', //  Remove the whitest x%
+    kDebug = '@'
+} eFilters;
+
+grayscale filter(const grayscale &from, eFilters filter, double arg = 0)
+{
+    switch (filter)
     {
-        arg = 0;
-        if (!*p)
-            return 0;
+    case kBlur:
+    {
+        if (!arg || arg == 3)
+            return blur3(from);
+        if (arg == 5)
+            return blur5(from);
+        throw config_error("Blur filter can have 3 or 5 as an argument", std::to_string((int)arg));
+    }
+    case kSharpen:
+        return sharpen(from);
+    case kGamma:
+        return gamma(from, arg ? arg : 1.6);
+    case kRoundCorners:
+        return round_corners(from);
+    case kZoomOut:
+        return zoom_out(from, arg ? arg : 32);
+    case kZoomIn:
+        return zoom_in(from, arg ? arg : 32);
+    case kQuantize16:
+        return quantize(from, arg ? arg : 17);
+    case kFlip:
+        return flip(from);
+    case kInvert:
+        return invert(from);
+    case kBlack:
+        return black(from, arg ? arg : 1 / 16.0);
+    case kWhite:
+        return white(from, arg ? arg : 1 / 16.0);
+    case kDebug:
+        return debug_filter(from);
+    }
+    std::cerr << std::format("**** ERROR: filter ['{}'] ({}) unknown\n", (char)filter, (int)filter);
+    throw config_error("Unknown filter", std::string(1, (char)filter));
+}
 
-        //  Filter name
-        f = *p++;
+inline bool extract_filter(const char *&p, char &f, double &arg)
+{
+    arg = 0;
+    if (!*p)
+        return 0;
 
-        //  Filter argument (int)
+    //  Filter name
+    f = *p++;
+
+    //  Filter argument (int)
+    while (*p >= '0' && *p <= '9')
+        arg = arg * 10 + (*p++) - '0';
+
+    //  Decimal part of filter argument
+    if (*p == '.')
+    {
+        p++;
+        double scale = 0.1;
         while (*p >= '0' && *p <= '9')
-            arg = arg * 10 + (*p++) - '0';
-
-        //  Decimal part of filter argument
-        if (*p == '.')
         {
-            p++;
-            double scale = 0.1;
-            while (*p >= '0' && *p <= '9')
-            {
-                arg += ((*p++) - '0') * scale;
-                scale /= 10;
-            }
+            arg += ((*p++) - '0') * scale;
+            scale /= 10;
+        }
+    }
+
+    // printf( "filter==%c arg==%f\n", f, arg );
+
+    return true;
+}
+
+//  ------------------------------------------------------------------
+//  Apply a sequence of filters
+//  ------------------------------------------------------------------
+
+grayscale filter(const grayscale &from, const char *filters)
+{
+    grayscale res = from;
+    char f;
+    double arg;
+
+    while (extract_filter(filters, f, arg))
+        res = filter(res, (eFilters)f, arg);
+
+    return res;
+}
+
+//  ------------------------------------------------------------------
+//  Reads an grayscale from a grayscale PGM file of the right size
+//  ------------------------------------------------------------------
+inline int correct(int v)
+{
+    if (v <= 0x01)
+        v = 0;
+    if (v >= 0xfc)
+        v = 0xff;
+    return v;
+}
+
+// int correct( int v )
+// {
+//     v = ((v+8)/16)*16;
+//     if (v>=255)
+//         v = 255;
+//     return v;
+// }
+
+bool read_grayscale(grayscale &result, const char *file)
+{
+    // fprintf( stderr, "Reading [%s]\n", file );
+
+    grayscale image(512, 342);
+    fill(image, 0);
+
+    FILE *f = fopen(file, "rb");
+
+    if (!f)
+        return false;
+
+    for (int i = 0; i != 15; i++)
+        fgetc(f);
+
+    for (size_t y = 0; y != image.H(); y++)
+        for (size_t x = 0; x != image.W(); x++)
+        { // img[x][y] = ((int)(fgetc(f)/255.0*16))/16.0;
+            image.at(x, y) = correct(fgetc(f)) / 255.0;
         }
 
-        // printf( "filter==%c arg==%f\n", f, arg );
+    fclose(f);
 
-        return true;
+    result = image;
+
+    //  result = sharpen( image );
+    //  result = blur5(blur5(blur5(blur5( image ))));
+    // result = sharpen(sharpen(blur5( image )));
+
+    // result = blur5( image );
+
+    //    result = gamma( image, 1.6 );
+    //    result = blur5( image );
+    //    result = sharpen( result );
+    //    result = sharpen( result );
+    //    result = zoom_out( result );
+    //  result = filter( image, "gs" );
+
+    return true;
+}
+
+//  ------------------------------------------------------------------
+//  Generates a PGM image
+//  ------------------------------------------------------------------
+void write_grayscale(const char *file, const grayscale &img)
+{
+    // fprintf( stderr, "Writing [%s]\n", file );
+
+    FILE *f = fopen(file, "wb");
+
+    if (!f)
+    {
+        std::cerr << std::format("Cannot open [{}]\n", file);
+        return;
     }
 
-    //  ------------------------------------------------------------------
-    //  Apply a sequence of filters
-    //  ------------------------------------------------------------------
+    fprintf(f, "P5\n%zu %zu\n255\n", img.W(), img.H());
+    for (size_t y = 0; y != img.H(); y++)
+        for (size_t x = 0; x != img.W(); x++)
+            fputc(img.at(x, y) * 255, f);
 
-    grayscale filter(const grayscale &from, const char *filters)
-    {
-        grayscale res = from;
-        char f;
-        double arg;
+    fclose(f);
+}
 
-        while (extract_filter(filters, f, arg))
-            res = filter(res, (eFilters)f, arg);
+//  ------------------------------------------------------------------
+//  Basic "standard" floyd-steinberg, suitable for static images
+//  Dest will only contain 0 or 1, corresponding to the dithering of the source
+//  Here for reference, not used
+//  ------------------------------------------------------------------
+void quantize(grayscale &dest, const grayscale &source)
+{
+    dest = source;
 
-        return res;
-    }
-
-    //  ------------------------------------------------------------------
-    //  Reads an grayscale from a grayscale PGM file of the right size
-    //  ------------------------------------------------------------------
-    inline int correct(int v)
-    {
-        if (v <= 0x01)
-            v = 0;
-        if (v >= 0xfc)
-            v = 0xff;
-        return v;
-    }
-
-    // int correct( int v )
-    // {
-    //     v = ((v+8)/16)*16;
-    //     if (v>=255)
-    //         v = 255;
-    //     return v;
-    // }
-
-    bool read_grayscale(grayscale &result, const char *file)
-    {
-        // fprintf( stderr, "Reading [%s]\n", file );
-
-        grayscale image(512, 342);
-        fill(image, 0);
-
-        FILE *f = fopen(file, "rb");
-
-        if (!f)
-            return false;
-
-        for (int i = 0; i != 15; i++)
-            fgetc(f);
-
-        for (size_t y = 0; y != image.H(); y++)
-            for (size_t x = 0; x != image.W(); x++)
-            { // img[x][y] = ((int)(fgetc(f)/255.0*16))/16.0;
-                image.at(x, y) = correct(fgetc(f)) / 255.0;
-            }
-
-        fclose(f);
-
-        result = image;
-
-        //  result = sharpen( image );
-        //  result = blur5(blur5(blur5(blur5( image ))));
-        // result = sharpen(sharpen(blur5( image )));
-
-        // result = blur5( image );
-
-        //    result = gamma( image, 1.6 );
-        //    result = blur5( image );
-        //    result = sharpen( result );
-        //    result = sharpen( result );
-        //    result = zoom_out( result );
-        //  result = filter( image, "gs" );
-
-        return true;
-    }
-
-    //  ------------------------------------------------------------------
-    //  Generates a PGM image
-    //  ------------------------------------------------------------------
-    void write_grayscale(const char *file, const grayscale &img)
-    {
-        // fprintf( stderr, "Writing [%s]\n", file );
-
-        FILE *f = fopen(file, "wb");
-
-        if (!f)
+    for (size_t y = 0; y != source.H(); y++)
+        for (size_t x = 0; x != source.W(); x++)
         {
-            std::cerr << std::format("Cannot open [{}]\n", file);
-            return;
+            float source_color = dest.at(x, y);
+            float color;
+            float error;
+            color = source_color <= 0.5 ? 0 : 1;
+            error = source_color - color;
+            dest.at(x, y) = color;
+            float e0 = error * 7 / 16;
+            float e1 = error * 3 / 16;
+            float e2 = error * 5 / 16;
+            float e3 = error * 1 / 16;
+            if (x < source.W() - 1)
+                dest.at(x + 1, y) = dest.at(x + 1, y) + e0;
+            if (x > 0 && y < source.H() - 1)
+                dest.at(x - 1, y + 1) = dest.at(x - 1, y + 1) + e1;
+            if (y < source.H() - 1)
+                dest.at(x, y + 1) = dest.at(x, y + 1) + e2;
+            if (x < source.W() - 1 && y < source.H() - 1)
+                dest.at(x + 1, y + 1) = dest.at(x + 1, y + 1) + e3;
         }
+}
 
-        fprintf(f, "P5\n%zu %zu\n255\n", img.W(), img.H());
-        for (size_t y = 0; y != img.H(); y++)
-            for (size_t x = 0; x != img.W(); x++)
-                fputc(img.at(x, y) * 255, f);
+static int dither[8][8] = {{0, 32, 8, 40, 2, 34, 10, 42},  {48, 16, 56, 24, 50, 18, 58, 26},
+                           {12, 44, 4, 36, 14, 46, 6, 38}, {60, 28, 52, 20, 62, 30, 54, 22},
+                           {3, 35, 11, 43, 1, 33, 9, 41},  {51, 19, 59, 27, 49, 17, 57, 25},
+                           {15, 47, 7, 39, 13, 45, 5, 37}, {63, 31, 55, 23, 61, 29, 53, 21}};
 
-        fclose(f);
-    }
-
-    //  ------------------------------------------------------------------
-    //  Basic "standard" floyd-steinberg, suitable for static images
-    //  Dest will only contain 0 or 1, corresponding to the dithering of the source
-    //  Here for reference, not used
-    //  ------------------------------------------------------------------
-    void quantize(grayscale &dest, const grayscale &source)
-    {
-        dest = source;
-
-        for (size_t y = 0; y != source.H(); y++)
-            for (size_t x = 0; x != source.W(); x++)
-            {
-                float source_color = dest.at(x, y);
-                float color;
-                float error;
-                color = source_color <= 0.5 ? 0 : 1;
-                error = source_color - color;
-                dest.at(x, y) = color;
-                float e0 = error * 7 / 16;
-                float e1 = error * 3 / 16;
-                float e2 = error * 5 / 16;
-                float e3 = error * 1 / 16;
-                if (x < source.W() - 1)
-                    dest.at(x + 1, y) = dest.at(x + 1, y) + e0;
-                if (x > 0 && y < source.H() - 1)
-                    dest.at(x - 1, y + 1) = dest.at(x - 1, y + 1) + e1;
-                if (y < source.H() - 1)
-                    dest.at(x, y + 1) = dest.at(x, y + 1) + e2;
-                if (x < source.W() - 1 && y < source.H() - 1)
-                    dest.at(x + 1, y + 1) = dest.at(x + 1, y + 1) + e3;
-            }
-    }
-
-    static int dither[8][8] =
+void ordered_dither(grayscale &dest, const grayscale &source, [[maybe_unused]] const grayscale &previous)
+{
+    for (size_t y = 0; y != source.H(); y++)
+        for (size_t x = 0; x != source.W(); x++)
         {
-            {0, 32, 8, 40, 2, 34, 10, 42},
-            {48, 16, 56, 24, 50, 18, 58, 26},
-            {12, 44, 4, 36, 14, 46, 6, 38},
-            {60, 28, 52, 20, 62, 30, 54, 22},
-            {3, 35, 11, 43, 1, 33, 9, 41},
-            {51, 19, 59, 27, 49, 17, 57, 25},
-            {15, 47, 7, 39, 13, 45, 5, 37},
-            {63, 31, 55, 23, 61, 29, 53, 21}};
+            //  The color we'd like this pixel to be
+            float color = source.at(x, y);
 
-    void ordered_dither(grayscale &dest, const grayscale &source, [[maybe_unused]] const grayscale &previous)
-    {
-        for (size_t y = 0; y != source.H(); y++)
-            for (size_t x = 0; x != source.W(); x++)
-            {
-                //  The color we'd like this pixel to be
-                float color = source.at(x, y);
+            //  We look at our position in the dithering matrix
+            int xd = x % 8;
+            int yd = y % 8;
 
-                //  We look at our position in the dithering matrix
-                int xd = x % 8;
-                int yd = y % 8;
+            //  We look if we are in the threshold
+            bool threshold = dither[xd][yd] < color * 64;
 
-                //  We look if we are in the threshold
-                bool threshold = dither[xd][yd] < color * 64;
-
-                if (threshold)
-                    dest.at(x, y) = 1;
-                else
-                    dest.at(x, y) = 0;
-            }
-    }
+            if (threshold)
+                dest.at(x, y) = 1;
+            else
+                dest.at(x, y) = 0;
+        }
+}
 
 // Blue noise dithering implementation
 // The blue noise texture is stored in blue_noise_256x256.bin (256x256 uint8_t values 0-255)
@@ -660,288 +657,283 @@ namespace macflim
 // };
 #include "blue_noise_256x256.h"
 
-    void blue_noise_dither(grayscale &dest, const grayscale &source, [[maybe_unused]] const grayscale &previous)
-    {
-        constexpr size_t BLUE_NOISE_SIZE = 256;
+void blue_noise_dither(grayscale &dest, const grayscale &source, [[maybe_unused]] const grayscale &previous)
+{
+    constexpr size_t BLUE_NOISE_SIZE = 256;
 
-        for (size_t y = 0; y != source.H(); y++)
-            for (size_t x = 0; x != source.W(); x++)
-            {
-                //  The color we'd like this pixel to be
-                float color = source.at(x, y);
-
-                //  We look at our position in the blue noise texture (tiling)
-                size_t xn = x % BLUE_NOISE_SIZE;
-                size_t yn = y % BLUE_NOISE_SIZE;
-
-                //  Get threshold from blue noise texture (center in each bin: 0.5/256, 1.5/256, ..., 255.5/256)
-                float threshold = (blue_noise_256x256_bin[yn * BLUE_NOISE_SIZE + xn] + 0.5f) / 256.0f;
-
-                if (color >= threshold)
-                    dest.at(x, y) = 1;
-                else
-                    dest.at(x, y) = 0;
-            }
-    }
-
-    struct dither_target
-    {
-        float amount; //  The amount of error to spread
-        int dx;       //  The position where we spread the error
-        int dy;       //  (in x and y, with dx<0 => dy>0 and dy==0 => dx>0)
-    };
-
-    struct dither_algorithm
-    {
-        std::string name;
-        std::string description;
-        std::vector<dither_target> targets;
-    };
-
-    dither_algorithm algos[] =
+    for (size_t y = 0; y != source.H(); y++)
+        for (size_t x = 0; x != source.W(); x++)
         {
-            {"floyd",
-             "Original Floyd-Steinberg algorithm",
-             {
-                 {7 / 16.0, 1, 0},
-                 {3 / 16.0, -1, 1},
-                 {5 / 16.0, 0, 1},
-                 {1 / 16.0, 1, 1},
-             }},
-            {"false-floyd",
-             "Simplified Floyd-Steinberg algorithm, no advantage over original",
-             {
-                 {3 / 8.0, 1, 0},
-                 {3 / 8.0, 0, 1},
-                 {2 / 8.0, 1, 1},
-             }},
-            {"jarvis",
-             "Jarvis, Judice, and Ninke algorithm, conceptually similar to the original Floyd-Steinberg, but diffuse the error over a larger surface, getting a nicer result",
-             {{7 / 48.0, 1, 0},
-              {5 / 48.0, 2, 0},
-              {3 / 48.0, -2, 1},
-              {5 / 48.0, -1, 1},
-              {7 / 48.0, 0, 1},
-              {5 / 48.0, 1, 1},
-              {3 / 48.0, 2, 1},
-              {1 / 48.0, -2, 2},
-              {3 / 48.0, -1, 2},
-              {5 / 48.0, 0, 2},
-              {3 / 48.0, 1, 2},
-              {1 / 48.0, 2, 2}}},
-            {"stucki",
-             "Stucki is in practice indiscernable from Jarvis, Judice, and Ninke",
-             {{8 / 42.0, 1, 0},
-              {4 / 42.0, 2, 0},
-              {2 / 42.0, -2, 1},
-              {4 / 42.0, -1, 1},
-              {8 / 42.0, 0, 1},
-              {4 / 42.0, 1, 1},
-              {2 / 42.0, 2, 1},
-              {1 / 42.0, -2, 2},
-              {2 / 42.0, -1, 2},
-              {4 / 42.0, 0, 2},
-              {2 / 42.0, 1, 2},
-              {1 / 42.0, 2, 2}}},
-            {"burkes",
-             "Burkes algorithm is a slightly faster but worse version of Stucki",
-             {{8 / 32.0, 1, 0},
-              {4 / 32.0, 2, 0},
-              {2 / 32.0, -2, 1},
-              {4 / 32.0, -1, 1},
-              {8 / 32.0, 0, 1},
-              {4 / 32.0, 1, 1},
-              {2 / 32.0, 2, 1}}},
-            {"atkinson",
-             "Atkinson (original Quickdraw, MacPaint and HyperCard creator) algorithm includes a 0.75 bleed reduction that washes the grayscale out, but helps compression",
-             {{1 / 8.0, 1, 0},
-              {1 / 8.0, 2, 0},
-              {1 / 8.0, -1, 1},
-              {1 / 8.0, 0, 1},
-              {1 / 8.0, 1, 1},
-              {1 / 8.0, 0, 2}}},
-            {"sierra",
-             "Similar to Jarvis, slightly faster",
-             {{5 / 32.0, 1, 0},
-              {3 / 32.0, 2, 0},
-              {2 / 32.0, -2, 1},
-              {4 / 32.0, -1, 1},
-              {5 / 32.0, 0, 1},
-              {4 / 32.0, 1, 1},
-              {2 / 32.0, 2, 1},
-              {2 / 32.0, -1, 2},
-              {3 / 32.0, 0, 2},
-              {2 / 32.0, 1, 2}}},
-            {"twosierra",
-             "A faster, slightly worse version of Sierra",
-             {{4 / 16.0, 1, 0},
-              {3 / 16.0, 2, 0},
-              {1 / 16.0, -2, 1},
-              {2 / 16.0, -1, 1},
-              {3 / 16.0, 0, 1},
-              {2 / 16.0, 1, 1},
-              {1 / 16.0, 2, 1}}},
-            {
-                "sierra-lite",
-                "A quicker but coarse dithering algorithm",
-                {{2 / 4.0, 1, 0},
-                 {1 / 4.0, -1, 1},
-                 {1 / 4.0, 0, 1}},
-            }};
+            //  The color we'd like this pixel to be
+            float color = source.at(x, y);
 
-    const dither_algorithm *get_error_diffusion_by_name(const std::string &name)
+            //  We look at our position in the blue noise texture (tiling)
+            size_t xn = x % BLUE_NOISE_SIZE;
+            size_t yn = y % BLUE_NOISE_SIZE;
+
+            //  Get threshold from blue noise texture (center in each bin: 0.5/256, 1.5/256, ..., 255.5/256)
+            float threshold = (blue_noise_256x256_bin[yn * BLUE_NOISE_SIZE + xn] + 0.5f) / 256.0f;
+
+            if (color >= threshold)
+                dest.at(x, y) = 1;
+            else
+                dest.at(x, y) = 0;
+        }
+}
+
+struct dither_target
+{
+    float amount; //  The amount of error to spread
+    int dx;       //  The position where we spread the error
+    int dy;       //  (in x and y, with dx<0 => dy>0 and dy==0 => dx>0)
+};
+
+struct dither_algorithm
+{
+    std::string name;
+    std::string description;
+    std::vector<dither_target> targets;
+};
+
+dither_algorithm algos[] = {
+    {"floyd",
+     "Original Floyd-Steinberg algorithm",
+     {
+         {7 / 16.0, 1, 0},
+         {3 / 16.0, -1, 1},
+         {5 / 16.0, 0, 1},
+         {1 / 16.0, 1, 1},
+     }},
+    {"false-floyd",
+     "Simplified Floyd-Steinberg algorithm, no advantage over original",
+     {
+         {3 / 8.0, 1, 0},
+         {3 / 8.0, 0, 1},
+         {2 / 8.0, 1, 1},
+     }},
+    {"jarvis",
+     "Jarvis, Judice, and Ninke algorithm, conceptually similar to the original Floyd-Steinberg, but diffuse the error "
+     "over a larger surface, getting a nicer result",
+     {{7 / 48.0, 1, 0},
+      {5 / 48.0, 2, 0},
+      {3 / 48.0, -2, 1},
+      {5 / 48.0, -1, 1},
+      {7 / 48.0, 0, 1},
+      {5 / 48.0, 1, 1},
+      {3 / 48.0, 2, 1},
+      {1 / 48.0, -2, 2},
+      {3 / 48.0, -1, 2},
+      {5 / 48.0, 0, 2},
+      {3 / 48.0, 1, 2},
+      {1 / 48.0, 2, 2}}},
+    {"stucki",
+     "Stucki is in practice indiscernable from Jarvis, Judice, and Ninke",
+     {{8 / 42.0, 1, 0},
+      {4 / 42.0, 2, 0},
+      {2 / 42.0, -2, 1},
+      {4 / 42.0, -1, 1},
+      {8 / 42.0, 0, 1},
+      {4 / 42.0, 1, 1},
+      {2 / 42.0, 2, 1},
+      {1 / 42.0, -2, 2},
+      {2 / 42.0, -1, 2},
+      {4 / 42.0, 0, 2},
+      {2 / 42.0, 1, 2},
+      {1 / 42.0, 2, 2}}},
+    {"burkes",
+     "Burkes algorithm is a slightly faster but worse version of Stucki",
+     {{8 / 32.0, 1, 0},
+      {4 / 32.0, 2, 0},
+      {2 / 32.0, -2, 1},
+      {4 / 32.0, -1, 1},
+      {8 / 32.0, 0, 1},
+      {4 / 32.0, 1, 1},
+      {2 / 32.0, 2, 1}}},
+    {"atkinson",
+     "Atkinson (original Quickdraw, MacPaint and HyperCard creator) algorithm includes a 0.75 bleed reduction that "
+     "washes the grayscale out, but helps compression",
+     {{1 / 8.0, 1, 0}, {1 / 8.0, 2, 0}, {1 / 8.0, -1, 1}, {1 / 8.0, 0, 1}, {1 / 8.0, 1, 1}, {1 / 8.0, 0, 2}}},
+    {"sierra",
+     "Similar to Jarvis, slightly faster",
+     {{5 / 32.0, 1, 0},
+      {3 / 32.0, 2, 0},
+      {2 / 32.0, -2, 1},
+      {4 / 32.0, -1, 1},
+      {5 / 32.0, 0, 1},
+      {4 / 32.0, 1, 1},
+      {2 / 32.0, 2, 1},
+      {2 / 32.0, -1, 2},
+      {3 / 32.0, 0, 2},
+      {2 / 32.0, 1, 2}}},
+    {"twosierra",
+     "A faster, slightly worse version of Sierra",
+     {{4 / 16.0, 1, 0},
+      {3 / 16.0, 2, 0},
+      {1 / 16.0, -2, 1},
+      {2 / 16.0, -1, 1},
+      {3 / 16.0, 0, 1},
+      {2 / 16.0, 1, 1},
+      {1 / 16.0, 2, 1}}},
     {
-        for (const auto &a : algos)
-            if (a.name == name)
-                return &a;
+        "sierra-lite",
+        "A quicker but coarse dithering algorithm",
+        {{2 / 4.0, 1, 0}, {1 / 4.0, -1, 1}, {1 / 4.0, 0, 1}},
+    }};
 
-        return nullptr;
-    }
+const dither_algorithm *get_error_diffusion_by_name(const std::string &name)
+{
+    for (const auto &a : algos)
+        if (a.name == name)
+            return &a;
 
-    void error_diffusion_algorithms(std::function<void(const std::string name, const std::string desciption)> f)
-    {
-        for (const auto &a : algos)
-            f(a.name, a.description);
-    }
+    return nullptr;
+}
+
+void error_diffusion_algorithms(std::function<void(const std::string name, const std::string desciption)> f)
+{
+    for (const auto &a : algos)
+        f(a.name, a.description);
+}
 
 #if 1
-    //  ------------------------------------------------------------------
-    //  Motion floyd-steinberg
-    //  This will create a black/white 'dest' grayscale from a grayscale 'source'
-    //  while trying to respect the placement of pixels
-    //  from the black/white 'previous' image
-    //  ------------------------------------------------------------------
-    void old_quantize(grayscale &dest, const grayscale &source, const grayscale &previous, float stability)
-    {
-        dest = source;
+//  ------------------------------------------------------------------
+//  Motion floyd-steinberg
+//  This will create a black/white 'dest' grayscale from a grayscale 'source'
+//  while trying to respect the placement of pixels
+//  from the black/white 'previous' image
+//  ------------------------------------------------------------------
+void old_quantize(grayscale &dest, const grayscale &source, const grayscale &previous, float stability)
+{
+    dest = source;
 
-        for (size_t y = 0; y != source.H(); y++)
-            for (size_t x = 0; x != source.W(); x++)
-            {
-                //  The color we'd like this pixel to be
-                float source_color = dest.at(x, y);
+    for (size_t y = 0; y != source.H(); y++)
+        for (size_t x = 0; x != source.W(); x++)
+        {
+            //  The color we'd like this pixel to be
+            float source_color = dest.at(x, y);
 
-                //  Increasing the stability value will makes the grayscale choose previous frame's pixel more often
-                //  Images will be "stable", but there will be some "ghosting artifacts"
+            //  Increasing the stability value will makes the grayscale choose previous frame's pixel more often
+            //  Images will be "stable", but there will be some "ghosting artifacts"
 
-                double stability2 = stability;
+            double stability2 = stability;
 
-                /*
-                            //  We lookup at the real color we are targetting
-                            float real_color = source[x][y];
+            /*
+                        //  We lookup at the real color we are targetting
+                        float real_color = source[x][y];
 
-                            //  We look at our position in the dithering matrix
-                            int xd = x%8;
-                            int yd = y%8;
+                        //  We look at our position in the dithering matrix
+                        int xd = x%8;
+                        int yd = y%8;
 
-                            //  We look if we are in the threshold
-                            bool threshold = dither[xd][yd]<real_color*63;
+                        //  We look if we are in the threshold
+                        bool threshold = dither[xd][yd]<real_color*63;
 
-                            if (threshold)
-                                stability2 *= 1.5;
-                            else
-                                stability2 /= 1.5;
-                */
+                        if (threshold)
+                            stability2 *= 1.5;
+                        else
+                            stability2 /= 1.5;
+            */
 
-                //  We chose either back or white for this pixel
-                //  Starting with the current color, including error propagated form previous pixels,
-                //  we decide that:
-                //  If previous frame pixel was black, we stay back if color<0.5+stability/2
-                //  If previous frame pixel was white, we stay white if color>0.5-stability/2
-                float color = source_color <= 0.5 - (previous.at(x, y) - 0.5) * stability2 ? 0 : 1;
-                dest.at(x, y) = color;
+            //  We chose either back or white for this pixel
+            //  Starting with the current color, including error propagated form previous pixels,
+            //  we decide that:
+            //  If previous frame pixel was black, we stay back if color<0.5+stability/2
+            //  If previous frame pixel was white, we stay white if color>0.5-stability/2
+            float color = source_color <= 0.5 - (previous.at(x, y) - 0.5) * stability2 ? 0 : 1;
+            dest.at(x, y) = color;
 
-                //  By doing this, we made an error (too much white or too much black)
-                //  that we need to keep track of
-                float error = source_color - color;
+            //  By doing this, we made an error (too much white or too much black)
+            //  that we need to keep track of
+            float error = source_color - color;
 
-                // if (fabs(error)<0.10)
-                //     error = 0;
+            // if (fabs(error)<0.10)
+            //     error = 0;
 
-                //  We now distribute the error between the 4 next values
-                //  (if they exist). The values may over or underflow
-                //  but it is fine as pixels can be <0 or >1
-                float e0 = error * 7 / 16;
-                float e1 = error * 3 / 16;
-                float e2 = error * 5 / 16;
-                float e3 = error * 1 / 16;
+            //  We now distribute the error between the 4 next values
+            //  (if they exist). The values may over or underflow
+            //  but it is fine as pixels can be <0 or >1
+            float e0 = error * 7 / 16;
+            float e1 = error * 3 / 16;
+            float e2 = error * 5 / 16;
+            float e3 = error * 1 / 16;
 
-                if (x < source.W() - 1)
-                    dest.at(x + 1, y) = dest.at(x + 1, y) + e0;
-                if (x > 0 && y < source.H() - 1)
-                    dest.at(x - 1, y + 1) = dest.at(x - 1, y + 1) + e1;
-                if (y < source.H() - 1)
-                    dest.at(x, y + 1) = dest.at(x, y + 1) + e2;
-                if (x < source.W() - 1 && y < source.H() - 1)
-                    dest.at(x + 1, y + 1) = dest.at(x + 1, y + 1) + e3;
-            }
-    }
+            if (x < source.W() - 1)
+                dest.at(x + 1, y) = dest.at(x + 1, y) + e0;
+            if (x > 0 && y < source.H() - 1)
+                dest.at(x - 1, y + 1) = dest.at(x - 1, y + 1) + e1;
+            if (y < source.H() - 1)
+                dest.at(x, y + 1) = dest.at(x, y + 1) + e2;
+            if (x < source.W() - 1 && y < source.H() - 1)
+                dest.at(x + 1, y + 1) = dest.at(x + 1, y + 1) + e3;
+        }
+}
 #endif
 
-    //  ------------------------------------------------------------------
-    //  Error diffusion quantization, with bleed and motion stability
-    //  This will create a black/white 'dest' grayscale from a grayscale 'source'
-    //  while trying to respect the placement of pixels
-    //  from the black/white 'previous' image
-    //  ------------------------------------------------------------------
-    void error_diffusion(grayscale &dest, const grayscale &source, const grayscale &previous, float stability, const dither_algorithm &algo, float bleed, bool two_ways)
+//  ------------------------------------------------------------------
+//  Error diffusion quantization, with bleed and motion stability
+//  This will create a black/white 'dest' grayscale from a grayscale 'source'
+//  while trying to respect the placement of pixels
+//  from the black/white 'previous' image
+//  ------------------------------------------------------------------
+void error_diffusion(grayscale &dest, const grayscale &source, const grayscale &previous, float stability,
+                     const dither_algorithm &algo, float bleed, bool two_ways)
+{
+    dest = source;
+
+    int dir = 1;
+
+    for (size_t y = 0; y != source.H(); y++)
     {
-        dest = source;
+        size_t beginx = 0;
+        size_t endx = source.W();
 
-        int dir = 1;
-
-        for (size_t y = 0; y != source.H(); y++)
+        if (dir == -1)
         {
-            size_t beginx = 0;
-            size_t endx = source.W();
-
-            if (dir == -1)
-            {
-                beginx = source.W() - 1;
-                endx = -1;
-            }
-
-            for (size_t x = beginx; x != endx; x += dir)
-            {
-                //  The color we'd like this pixel to be
-                float source_color = dest.at(x, y);
-
-                //  Increasing the stability value will makes the grayscale choose previous frame's pixel more often
-                //  Images will be "stable", but there will be some "ghosting artifacts"
-                double stability2 = stability;
-
-                //  We chose either back or white for this pixel
-                //  Starting with the current color, including error propagated form previous pixels,
-                //  we decide that:
-                //  If previous frame pixel was black, we stay back if color<0.5+stability/2
-                //  If previous frame pixel was white, we stay white if color>0.5-stability/2
-                float color = source_color <= 0.5 - (previous.at(x, y) - 0.5) * stability2 ? 0 : 1;
-                dest.at(x, y) = color;
-
-                //  By doing this, we made an error (too much white or too much black)
-                //  that we need to keep track of
-                float error = source_color - color;
-
-                //  We reduce bleed (can also be encoded in the quantization matrix)
-                error *= bleed;
-
-                //  We now distribute the error between the next values, according to the selected algorith
-                //  (if they exist). The values may over or underflow
-                //  but it is fine as pixels can be <0 or >1
-
-                for (auto &t : algo.targets)
-                {
-                    float e = error * t.amount;
-                    size_t tx = x + t.dx * dir;
-                    size_t ty = y + t.dy;
-                    if (tx < source.W() && ty < source.H())
-                        dest.at(tx, ty) = dest.at(tx, ty) + e;
-                }
-            }
-
-            if (two_ways)
-                dir = -dir;
+            beginx = source.W() - 1;
+            endx = -1;
         }
+
+        for (size_t x = beginx; x != endx; x += dir)
+        {
+            //  The color we'd like this pixel to be
+            float source_color = dest.at(x, y);
+
+            //  Increasing the stability value will makes the grayscale choose previous frame's pixel more often
+            //  Images will be "stable", but there will be some "ghosting artifacts"
+            double stability2 = stability;
+
+            //  We chose either back or white for this pixel
+            //  Starting with the current color, including error propagated form previous pixels,
+            //  we decide that:
+            //  If previous frame pixel was black, we stay back if color<0.5+stability/2
+            //  If previous frame pixel was white, we stay white if color>0.5-stability/2
+            float color = source_color <= 0.5 - (previous.at(x, y) - 0.5) * stability2 ? 0 : 1;
+            dest.at(x, y) = color;
+
+            //  By doing this, we made an error (too much white or too much black)
+            //  that we need to keep track of
+            float error = source_color - color;
+
+            //  We reduce bleed (can also be encoded in the quantization matrix)
+            error *= bleed;
+
+            //  We now distribute the error between the next values, according to the selected algorith
+            //  (if they exist). The values may over or underflow
+            //  but it is fine as pixels can be <0 or >1
+
+            for (auto &t : algo.targets)
+            {
+                float e = error * t.amount;
+                size_t tx = x + t.dx * dir;
+                size_t ty = y + t.dy;
+                if (tx < source.W() && ty < source.H())
+                    dest.at(tx, ty) = dest.at(tx, ty) + e;
+            }
+        }
+
+        if (two_ways)
+            dir = -dir;
     }
+}
 
 } // namespace macflim

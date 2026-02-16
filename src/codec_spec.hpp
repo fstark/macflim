@@ -1,108 +1,105 @@
 #pragma once
 
-#include <format>
-#include <string>
-#include <memory>
-#include <cstdint>
 #include "common.hpp"
-#include "errors.hpp"
 #include "compressor.hpp"
+#include "errors.hpp"
 #include "imgcompress.hpp"
 #include "ruler.hpp"
+#include <cstdint>
+#include <format>
+#include <memory>
+#include <string>
 
 namespace macflim
 {
 
-    struct codec_spec
+struct codec_spec
+{
+    uint8_t signature;
+    double penalty;
+    std::shared_ptr<compressor> coder;
+};
+
+//  Codec factory functions
+static inline std::shared_ptr<compressor> make_z16_codec(size_t W, size_t H)
+{
+    return std::make_shared<vertical_compressor<uint16_t>>(W, H, uint16_ruler::ruler);
+}
+
+static inline std::shared_ptr<compressor> make_z32_codec(size_t W, size_t H)
+{
+    return std::make_shared<vertical_compressor<uint32_t>>(W, H, uint32_ruler::ruler);
+}
+
+static inline std::shared_ptr<compressor> make_z32old_codec(size_t W, size_t H)
+{
+    static bit_ruler<uint32_t> br32;
+    return std::make_shared<vertical_compressor<uint32_t>>(W, H, br32);
+}
+
+static inline std::shared_ptr<compressor> make_invert_codec(size_t W, size_t H)
+{
+    return std::make_shared<invert_compressor>(W, H);
+}
+
+static inline std::shared_ptr<compressor> make_lines_codec(size_t W, size_t H)
+{
+    return std::make_shared<copy_line_compressor>(W, H);
+}
+
+static inline std::shared_ptr<compressor> make_null_codec(size_t W, size_t H)
+{
+    return std::make_shared<null_compressor>(W, H);
+}
+
+struct codec_entry
+{
+    const char *name;
+    uint8_t signature;
+    double penalty;
+    std::shared_ptr<compressor> (*factory)(size_t, size_t);
+};
+
+static constexpr codec_entry codec_table[] = {
+    {"z16", 0x01, 0.45, make_z16_codec},       {"z32", 0x02, 1.00, make_z32_codec},
+    {"z32old", 0x02, 1.00, make_z32old_codec}, {"invert", 0x03, 1.00, make_invert_codec},
+    {"lines", 0x04, 1.00, make_lines_codec},   {"null", 0x00, 1.00, make_null_codec},
+};
+
+inline codec_spec make_codec(const std::string &spec_string, size_t W, size_t H)
+{
+    auto spec_array = split(spec_string, ":");
+    auto name = spec_array[0];
+    std::string parameters_string = "";
+
+    if (spec_array.size() > 1)
+        parameters_string = spec_array[1];
+
+    for (const auto &entry : codec_table)
     {
-        uint8_t signature;
-        double penalty;
-        std::shared_ptr<compressor> coder;
-    };
-
-    //  Codec factory functions
-    static inline std::shared_ptr<compressor> make_z16_codec(size_t W, size_t H)
-    {
-        return std::make_shared<vertical_compressor<uint16_t>>(W, H, uint16_ruler::ruler);
-    }
-
-    static inline std::shared_ptr<compressor> make_z32_codec(size_t W, size_t H)
-    {
-        return std::make_shared<vertical_compressor<uint32_t>>(W, H, uint32_ruler::ruler);
-    }
-
-    static inline std::shared_ptr<compressor> make_z32old_codec(size_t W, size_t H)
-    {
-        static bit_ruler<uint32_t> br32;
-        return std::make_shared<vertical_compressor<uint32_t>>(W, H, br32);
-    }
-
-    static inline std::shared_ptr<compressor> make_invert_codec(size_t W, size_t H)
-    {
-        return std::make_shared<invert_compressor>(W, H);
-    }
-
-    static inline std::shared_ptr<compressor> make_lines_codec(size_t W, size_t H)
-    {
-        return std::make_shared<copy_line_compressor>(W, H);
-    }
-
-    static inline std::shared_ptr<compressor> make_null_codec(size_t W, size_t H)
-    {
-        return std::make_shared<null_compressor>(W, H);
-    }
-
-    struct codec_entry
-    {
-        const char *name;
-        uint8_t signature;
-        double penalty;
-        std::shared_ptr<compressor> (*factory)(size_t, size_t);
-    };
-
-    static constexpr codec_entry codec_table[] = {
-        {"z16", 0x01, 0.45, make_z16_codec},
-        {"z32", 0x02, 1.00, make_z32_codec},
-        {"z32old", 0x02, 1.00, make_z32old_codec},
-        {"invert", 0x03, 1.00, make_invert_codec},
-        {"lines", 0x04, 1.00, make_lines_codec},
-        {"null", 0x00, 1.00, make_null_codec},
-    };
-
-    inline codec_spec make_codec(const std::string &spec_string, size_t W, size_t H)
-    {
-        auto spec_array = split(spec_string, ":");
-        auto name = spec_array[0];
-        std::string parameters_string = "";
-
-        if (spec_array.size() > 1)
-            parameters_string = spec_array[1];
-
-        for (const auto &entry : codec_table)
+        if (name == entry.name)
         {
-            if (name == entry.name)
+            codec_spec spec;
+            spec.signature = entry.signature;
+            spec.penalty = entry.penalty;
+            spec.coder = entry.factory(W, H);
+
+            for (auto &param_string : split(parameters_string, ","))
             {
-                codec_spec spec;
-                spec.signature = entry.signature;
-                spec.penalty = entry.penalty;
-                spec.coder = entry.factory(W, H);
-
-                for (auto &param_string : split(parameters_string, ","))
-                {
-                    auto v = split(param_string, "=");
-                    std::string pname = v[0];
-                    std::string pvalue = "";
-                    if (v.size() > 1)
-                        pvalue = v[1];
-                    spec.coder->set_parameter(pname, pvalue);
-                }
-
-                return spec;
+                auto v = split(param_string, "=");
+                std::string pname = v[0];
+                std::string pvalue = "";
+                if (v.size() > 1)
+                    pvalue = v[1];
+                spec.coder->set_parameter(pname, pvalue);
             }
-        }
 
-        std::clog << std::format("Unknown codec: [{}]\n", name);
-        throw config_error("Unknown codec", name);
+            return spec;
+        }
     }
+
+    std::clog << std::format("Unknown codec: [{}]\n", name);
+    throw config_error("Unknown codec", name);
+}
 
 } // namespace macflim

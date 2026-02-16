@@ -64,6 +64,9 @@ $(TARGET): $(OBJS)
 clean:
 	rm -f ../flimmaker ../flimmaker.exe $(OBJS) $(OBJS:.o=.d)
 
+format:
+	clang-format -i *.cpp *.hpp
+
 # Pattern rule for compiling .cpp files to .o files
 $(OBJS): %.o: %.cpp
 	${CPP} $(CXXFLAGS) -MMD -MP -c $< -o $@
