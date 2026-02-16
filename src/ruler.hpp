@@ -10,6 +10,9 @@
 
 #include "common.hpp"
 
+namespace macflim
+{
+
 template <typename T>
 class ruler
 {
@@ -169,4 +172,6 @@ public:
         return v;
     }
 };
+
+} // namespace macflim
 

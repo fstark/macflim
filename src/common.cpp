@@ -6,6 +6,9 @@
 #include <iomanip>
 #include <assert.h>
 
+namespace macflim
+{
+
 /** Replaces the format by the value v
  * Format can use %d and %0nd (%01d, %02d, etc...)
  * Result is similar to sprintf
@@ -202,3 +205,5 @@ void delete_files_of_pattern(const std::string &pattern)
     } while (!remove(filepath.c_str()));
     std::clog << std::format("{} files deleted\n", i);
 }
+
+} // namespace macflim

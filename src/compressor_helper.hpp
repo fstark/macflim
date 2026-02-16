@@ -22,7 +22,7 @@ namespace macflim
     class compressor_helper
     {
         Ditherer &ditherer_;
-        SubtitleBurner &subtitle_burner_;
+        subtitle_burner &subtitle_burner_;
         bitmap current_fb_; //  The bitmap displayed on screen at each step [#### check creation]
         const std::vector<codec_spec> &codecs_;
         const double fps_; //  Input fps
@@ -42,7 +42,7 @@ namespace macflim
     public:
         compressor_helper(
             Ditherer &ditherer,
-            SubtitleBurner &subtitle_burner,
+            subtitle_burner &subtitle_burner,
             const std::vector<codec_spec> &codecs,
             const double fps,
             const size_t byterate,

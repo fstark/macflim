@@ -2,6 +2,9 @@
 
 using namespace std::string_literals;
 
+namespace macflim
+{
+
 //  Parse srt timestamp string
 std::optional<std::tuple<timestamp_t, timestamp_t>> read_timestamps(const std::string &timestamps)
 {
@@ -94,3 +97,5 @@ std::vector<subtitle> subtitles_extract(const std::vector<subtitle> &subtitles, 
 
     return result;
 }
+
+} // namespace macflim

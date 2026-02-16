@@ -1,6 +1,9 @@
 #include "flimcompressor.hpp"
 #include "profile.hpp"
 
+namespace macflim
+{
+
 void flimcompressor::compress(const encoding_profile &profile, const std::string &watermark, initial_frame_mode initial_mode, bool loop)
 {
     // Parse codec specs into codec objects
@@ -46,7 +49,7 @@ void flimcompressor::compress(const encoding_profile &profile, const std::string
 
     // Create dithering infrastructure for encoding
     Ditherer d{previous, dp};
-    SubtitleBurner sb{subtitles_};
+    subtitle_burner sb{subtitles_};
     compressor_helper ch{d, sb, codecs, fps_, profile.byterate(), audio_, profile.group()};
 
     // Process first image if not already used for initial frame
@@ -76,3 +79,4 @@ void flimcompressor::compress(const encoding_profile &profile, const std::string
 
     frames_ = ch.get_frames();
 }
+} // namespace macflim

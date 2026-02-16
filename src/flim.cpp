@@ -5,6 +5,9 @@
 #include <cstdio>
 #include <cstring>
 
+namespace macflim
+{
+
 //  --- Fletcher checksum ---
 
 void fletcher(long &checksum, const std::vector<uint8_t> &data)
@@ -141,11 +144,11 @@ std::vector<uint8_t> flim::serialize_header() const
 uint16_t flim::compute_checksum() const
 {
     long checksum = 0;
-    ::fletcher(checksum, serialize_header());
+    fletcher(checksum, serialize_header());
 
     for (auto &blob : blobs_)
     {
-        ::fletcher(checksum, blob);
+        fletcher(checksum, blob);
     }
 
     return checksum;
@@ -230,3 +233,5 @@ void flim::add_initial(const bitmap &fb)
 {
     add_framebuffer(component_initial, fb);
 }
+
+} // namespace macflim

@@ -13,9 +13,9 @@ extern "C"
 #include <array>
 #include <format>
 
-using namespace macflim;
-
-extern bool sDebug;
+namespace macflim
+{
+    extern bool sDebug;
 
 // RAII wrappers for FFmpeg resources
 namespace {
@@ -579,3 +579,5 @@ std::vector<sound_frame_t> decode_audio(const std::string &movie_path, timestamp
 
     return result;
 }
+
+} // namespace macflim

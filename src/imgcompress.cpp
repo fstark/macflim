@@ -1,5 +1,8 @@
 #include "imgcompress.hpp"
 
+namespace macflim
+{
+
 //  ------------------------------------------------------------------
 //  Almost completely tested implementation of packbits
 //  Compresses 'length' bytes from 'buffer' into 'out', and return the compressed size
@@ -194,3 +197,5 @@ void packz32opt_test()
 
     assert( res0==out0 );
 }
+
+} // namespace macflim

@@ -50,7 +50,7 @@ namespace macflim
             else
                 throw config_error("Unknown dithering option", std::to_string(dp_.dither_));
 
-            ::watermark(dithered_image, dp_.watermark_);
+            watermark(dithered_image, dp_.watermark_);
 
             //  The new dithered grayscale is the previous one
             dithered_image_ = dithered_image;

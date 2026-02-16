@@ -45,20 +45,6 @@
 #endif
 #include "common.hpp"
 #include "flimencoder.hpp"
-
-using namespace std::string_literals;
-using namespace macflim;
-
-// True if the global '-g' option was set
-bool sDebug = false;
-
-// If defined, we add a "stamp" to each stream, to know where it is coming from
-#define noSTAMP
-
-#ifdef STAMP
-static int sStream = 0;
-#endif
-
 #include "grayscale.hpp"
 #include "reader.hpp"
 #include "filesystem_reader.hpp"
@@ -68,6 +54,33 @@ static int sStream = 0;
 #include "flimutil.hpp"
 #include "imgcompress.hpp"
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+
+using namespace std::string_literals;
+
+// If defined, we add a "stamp" to each stream, to know where it is coming from
+#define noSTAMP
+
+#ifdef STAMP
+static int sStream = 0;
+#endif
+
+#ifndef VERSION
+#define VERSION "dev-unknown"
+#endif
+
+namespace macflim
+{
+
+// True if the global '-g' option was set
+bool sDebug = false;
+
+const char *version = VERSION;
+
 // Write a bunch of bytes in a file
 void write_data(const char *file, uint8_t *data, size_t len)
 {
@@ -76,11 +89,6 @@ void write_data(const char *file, uint8_t *data, size_t len)
         fputc(*data++, f);
     fclose(f);
 }
-
-#ifndef VERSION
-#define VERSION "dev-unknown"
-#endif
-const char *version = VERSION;
 
 #ifndef _WIN32
 void segfault_handler(int signal)
@@ -96,12 +104,6 @@ void segfault_handler(int signal)
     backtrace_symbols_fd(array, size, STDERR_FILENO);
     exit(1);
 }
-#endif
-
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <unistd.h>
 #endif
 
 const std::string temp_file()
@@ -128,7 +130,7 @@ const std::string temp_file()
 
 // The main function, does all the work
 // flimmaker [-g] --in <%d.pgm> --from <index> --to <index> --cover <index> --audio <audio.wav> --flim <file>
-int main(int argc, char **argv)
+int run_main(int argc, char **argv)
 {
 #ifndef _WIN32
     signal(SIGSEGV, segfault_handler);
@@ -154,9 +156,9 @@ int main(int argc, char **argv)
                 exit(EXIT_FAILURE);
             }
 
-            subs = ::read_subtitles(ifs);
+            subs = read_subtitles(ifs);
             ifs.close();
-            subs = ::subtitles_extract(subs, opts.from_index, opts.duration);
+            subs = subtitles_extract(subs, opts.from_index, opts.duration);
         }
 
         // If input-file is a URL, use yt-dlp to retrieve content
@@ -268,4 +270,11 @@ int main(int argc, char **argv)
     }
 
     return EXIT_SUCCESS;
+}
+
+} // namespace macflim
+
+int main(int argc, char **argv)
+{
+    return macflim::run_main(argc, argv);
 }

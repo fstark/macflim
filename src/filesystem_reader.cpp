@@ -2,6 +2,9 @@
 
 #include <format>
 
+namespace macflim
+{
+
 /*
  * A filesystem reader can read 512x342 8 bits pgm files numbered from 1. Audio has to be raw 8 bits unsigned.
  */
@@ -73,3 +76,4 @@ std::unique_ptr<input_reader> make_filesystem_reader(
 {
     return std::make_unique<filesystem_reader>(input_file, fps, audio_arg, from_index, to_index);
 }
+} // namespace macflim

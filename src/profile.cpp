@@ -1,5 +1,8 @@
 #include "profile.hpp"
 
+namespace macflim
+{
+
 bool encoding_profile::set_dither(std::string dither)
 {
     if (dither == "ordered")
@@ -112,3 +115,5 @@ std::string encoding_profile::description() const
 
     return cmd.str();
 }
+
+} // namespace macflim

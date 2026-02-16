@@ -5,6 +5,9 @@
 #include <format>
 #include <iostream>
 
+namespace macflim
+{
+
 // Forward declarations
 extern const char *version;
 extern const std::string temp_file();
@@ -435,3 +438,5 @@ program_options parse_arguments(int argc, char **argv)
 
     return opts;
 }
+
+} // namespace macflim

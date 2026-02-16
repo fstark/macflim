@@ -13,9 +13,9 @@ extern "C"
 #include <libavutil/opt.h>
 }
 
-using namespace macflim;
-
-extern bool sDebug;
+namespace macflim
+{
+    extern bool sDebug;
 
 // RAII wrappers for FFmpeg resources
 namespace {
@@ -458,3 +458,5 @@ std::unique_ptr<output_writer> make_null_writer()
 {
     return std::make_unique<null_writer>();
 }
+
+} // namespace macflim

@@ -12,6 +12,9 @@
 #include "frame.hpp"
 #include "imgcompress.hpp"
 
+namespace macflim
+{
+
 //  --- Component types in a flim file ---
 
 enum eComponentType
@@ -158,3 +161,5 @@ public:
     void add_poster(const bitmap &fb);
     void add_initial(const bitmap &fb);
 };
+
+} // namespace macflim

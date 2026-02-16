@@ -8,6 +8,9 @@
 
 #include "grayscale.hpp"
 
+namespace macflim
+{
+
 template <typename T>
 std::array<uint8_t, sizeof(T)> bytes_from_value_be(T v)
 {
@@ -307,3 +310,5 @@ public:
         std::copy(p, p + bytelen, out);
     }
 };
+
+} // namespace macflim

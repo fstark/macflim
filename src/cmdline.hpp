@@ -6,6 +6,9 @@
 #include <vector>
 #include <limits>
 
+namespace macflim
+{
+
 extern bool sDebug;
 
 struct program_options
@@ -48,3 +51,5 @@ struct program_options
 void usage(const std::string name);
 
 program_options parse_arguments(int argc, char **argv);
+
+} // namespace macflim

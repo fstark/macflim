@@ -11,6 +11,9 @@
 
 #include "grayscale.hpp"
 
+namespace macflim
+{
+
 /// A macintosh formatted sound frame (370 bytes)
 class sound_frame_t
 {
@@ -76,3 +79,5 @@ public:
     //  Get the next sound sample, mac format
     virtual std::unique_ptr<sound_frame_t> next_sound() = 0;
 };
+
+} // namespace macflim

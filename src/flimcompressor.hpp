@@ -21,7 +21,10 @@ using macflim::compressor_helper;
 using macflim::Ditherer;
 using macflim::dithering_parameters;
 using macflim::make_codec;
-using macflim::SubtitleBurner;
+using macflim::subtitle_burner;
+
+namespace macflim
+{
 
 /**
  * The flimcompressor manages higher aspects of the compression
@@ -49,3 +52,5 @@ public:
 
     void compress(const encoding_profile &profile, const std::string &watermark, initial_frame_mode initial_mode = initial_frame_mode::optional, bool loop = false);
 };
+
+} // namespace macflim

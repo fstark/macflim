@@ -8,13 +8,13 @@
 namespace macflim
 {
 
-    class SubtitleBurner
+    class subtitle_burner
     {
         std::vector<subtitle> subtitles_; //  Copy of the subtitle list
         size_t current_index_ = 0;        //  Index of current subtitle
 
     public:
-        SubtitleBurner(const std::vector<subtitle> &subtitles) : subtitles_{subtitles}
+        subtitle_burner(const std::vector<subtitle> &subtitles) : subtitles_{subtitles}
         {
         }
 
@@ -31,7 +31,7 @@ namespace macflim
                     {
                         if (!current_subtitle.text.empty())
                         {
-                            ::burn_subtitle(img, current_subtitle.text.front());
+                            burn_subtitle(img, current_subtitle.text.front());
                         }
                     }
                     else

@@ -2,6 +2,9 @@
 
 #include "reader.hpp"
 
+namespace macflim
+{
+
 std::unique_ptr<input_reader> make_filesystem_reader(
 	std::string &input_file,
 	double fps,
@@ -9,3 +12,5 @@ std::unique_ptr<input_reader> make_filesystem_reader(
 	size_t from_index,
 	size_t to_index
 );
+
+} // namespace macflim

@@ -3,11 +3,11 @@
 #include <string>
 #include "grayscale.hpp"
 
-// Forward declaration
-class encoding_profile;
-
 namespace macflim
 {
+
+// Forward declaration
+class encoding_profile;
 
     struct dithering_parameters
     {

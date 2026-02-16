@@ -6,6 +6,9 @@
 #include <vector>
 #include <string>
 
+namespace macflim
+{
+
 enum class initial_frame_mode
 {
     none,     // No initial frame generated
@@ -150,3 +153,5 @@ public:
 
     std::string description() const;
 };
+
+} // namespace macflim

@@ -15,6 +15,9 @@
 #include "ruler.hpp"
 #include "imgcompress.hpp"
 
+namespace macflim
+{
+
 /**
  * Encapsulate a way to compress a single frame transition
  */
@@ -438,3 +441,5 @@ public:
         return res;
     }
 };
+
+} // namespace macflim

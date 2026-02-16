@@ -10,6 +10,9 @@
 #include <optional>
 #include <vector>
 
+namespace macflim
+{
+
 struct frame
 {
     frame( size_t W, size_t H ) : source{std::in_place, W, H}, result{std::in_place, W, H} {}
@@ -95,3 +98,5 @@ private:
     //  Private default constructor for deserialize()
     frame() = default;
 };
+
+} // namespace macflim

@@ -10,6 +10,9 @@
 #include <iostream>
 #include <format>
 
+namespace macflim
+{
+
 static void print_summary(const flim &fl)
 {
     //  Comment starts after "FLIM\n"
@@ -364,3 +367,5 @@ int flimutil_main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 }
+
+} // namespace macflim

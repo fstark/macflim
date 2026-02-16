@@ -9,6 +9,9 @@
 #include "flimcompressor.hpp"
 #include "frame.hpp"
 
+namespace macflim
+{
+
 int flimencoder::clamp(double v, int a, int b)
 {
     int res = v + 0.5;
@@ -261,3 +264,5 @@ void flimencoder::make_flim(const std::string flim_pathname, input_reader *reade
         }
     }
 }
+
+} // namespace macflim

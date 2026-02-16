@@ -10,6 +10,12 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <memory.h>
+#include <vector>
+#include <array>
+#include <iostream>
+
+namespace macflim
+{
 
 int packbits( uint8_t *out, const uint8_t *buffer, int length );
 
@@ -20,9 +26,6 @@ int packbits( uint8_t *out, const uint8_t *buffer, int length );
 //  ------------------------------------------------------------------
 int packz32( uint32_t *out, const uint32_t *const buffer, int length );
 void packz32_test();
-
-#include <vector>
-#include <array>
 
 template <typename T>
 void write1( T &out, uint32_t v )
@@ -140,8 +143,6 @@ struct run
         return res;
     }
 };
-
-#include <iostream>
 
 const size_t kHeaderSize = 2;
 
@@ -429,3 +430,5 @@ public:
 
 
 void packz32opt_test();
+
+} // namespace macflim

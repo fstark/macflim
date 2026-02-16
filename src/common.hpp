@@ -5,6 +5,9 @@
 #include <vector>
 #include <assert.h>
 
+namespace macflim
+{
+
 ///  A timestamps in seconds
 typedef double timestamp_t;
 
@@ -52,3 +55,5 @@ void test_simplesprintf();
 
 /// Test seconds_from_string function
 void test_seconds_from_string();
+
+} // namespace macflim

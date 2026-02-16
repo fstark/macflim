@@ -5,7 +5,8 @@
 #include <iostream>
 #include <math.h>
 
-using namespace macflim;
+namespace macflim
+{
 
 //  ------------------------------------------------------------------
 //  Copy image (#### : is operator=?)
@@ -942,3 +943,5 @@ void error_diffusion(grayscale &dest, const grayscale &source, const grayscale &
             dir = -dir;
     }
 }
+
+} // namespace macflim

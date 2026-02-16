@@ -11,6 +11,9 @@
 #include <algorithm>
 #include "common.hpp"
 
+namespace macflim
+{
+
 //  ------------------------------------------------------------------
 //  A grayscale class and various associated utilities
 //  ------------------------------------------------------------------
@@ -80,4 +83,6 @@ bool read_grayscale( grayscale &result, const char *file );
 void write_grayscale( const char *file, const grayscale &img );
 
 void copy( grayscale &destination, const grayscale &source, bool black_bars=true, double anchor_x=0.5, double anchor_y=0.5 );
+
+} // namespace macflim
 

@@ -10,6 +10,9 @@
 #include "reader.hpp"
 #include "writer.hpp"
 
+namespace macflim
+{
+
 extern bool sDebug;
 
 class flimencoder
@@ -52,3 +55,5 @@ public:
 
     void make_flim(const std::string flim_pathname, input_reader *reader, std::vector<sound_frame_t> audio_samples, const std::vector<std::unique_ptr<output_writer>> &writers);
 };
+
+} // namespace macflim
