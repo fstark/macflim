@@ -1,3 +1,7 @@
+## Formatting
+
+Before committing, use ``cd src && make format`` to run clang-format on all .cpp and .hpp files in the src directory. This will ensure consistent code style across the codebase.
+
 ## Testing
 
 Test the code using ``cd src && make test``
@@ -5,6 +9,10 @@ Test the code using ``cd src && make test``
 ## class naming:
 
 Classes and structs should use snake_case naming (e.g., `encoding_profile`, ...)
+
+## namespaces
+
+All function and variables should be in ``namespace macflim``. Use a single `namespace macflim { ... }` block in each .cpp/.hpp file to contain all definitions, rather than multiple nested namespaces or using `using namespace`.
 
 ## logging strategy:
 
