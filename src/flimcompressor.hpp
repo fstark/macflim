@@ -26,31 +26,31 @@ using macflim::subtitle_burner;
 namespace macflim
 {
 
-/**
- * The flimcompressor manages higher aspects of the compression
- */
+    /**
+     * The flimcompressor manages higher aspects of the compression
+     */
 
-class flimcompressor
-{
-private:
-    size_t W_;
-    size_t H_;
+    class flimcompressor
+    {
+    private:
+        size_t W_;
+        size_t H_;
 
-    std::function<std::optional<grayscale>()> next_image_;
-    const std::vector<sound_frame_t> &audio_;
-    const double fps_;
-    std::vector<subtitle> subtitles_;
+        std::function<std::optional<grayscale>()> next_image_;
+        const std::vector<sound_frame_t> &audio_;
+        const double fps_;
+        std::vector<subtitle> subtitles_;
 
-    std::vector<frame> frames_;
-    std::optional<bitmap> initial_fb_;
+        std::vector<frame> frames_;
+        std::optional<bitmap> initial_fb_;
 
-public:
-    flimcompressor(size_t W, size_t H, std::function<std::optional<grayscale>()> next_image, const std::vector<sound_frame_t> &audio, double fps, const std::vector<subtitle> &subtitles) : W_{W}, H_{H}, next_image_{std::move(next_image)}, audio_{audio}, fps_{fps}, subtitles_{subtitles} {}
+    public:
+        flimcompressor(size_t W, size_t H, std::function<std::optional<grayscale>()> next_image, const std::vector<sound_frame_t> &audio, double fps, const std::vector<subtitle> &subtitles) : W_{W}, H_{H}, next_image_{std::move(next_image)}, audio_{audio}, fps_{fps}, subtitles_{subtitles} {}
 
-    const std::vector<frame> &get_frames() const { return frames_; }
-    const std::optional<bitmap> &get_initial() const { return initial_fb_; }
+        const std::vector<frame> &get_frames() const { return frames_; }
+        const std::optional<bitmap> &get_initial() const { return initial_fb_; }
 
-    void compress(const encoding_profile &profile, const std::string &watermark, initial_frame_mode initial_mode = initial_frame_mode::optional, bool loop = false);
-};
+        void compress(const encoding_profile &profile, const std::string &watermark, initial_frame_mode initial_mode = initial_frame_mode::optional, bool loop = false);
+    };
 
 } // namespace macflim

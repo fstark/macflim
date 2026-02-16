@@ -6,8 +6,8 @@
 namespace macflim
 {
 
-// Forward declaration
-class encoding_profile;
+    // Forward declaration
+    class encoding_profile;
 
     struct dithering_parameters
     {
