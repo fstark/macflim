@@ -208,10 +208,6 @@ int run_main(int argc, char **argv)
 #endif
     try
     {
-        test_simplesprintf();
-        packz32opt_test();
-        test_seconds_from_string();
-
         auto opts = parse_arguments(argc, argv);
         auto subs = load_subtitles(opts);
         resolve_input_file(opts);

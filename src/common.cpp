@@ -65,58 +65,6 @@ std::string simplesprintf(const std::string &format, int v)
     return result.str();
 }
 
-void test_simplesprintf()
-{
-    // Test cases
-    std::string result;
-
-    // Test %d
-    result = simplesprintf("%d", 42);
-    assert(result == "42");
-
-    // Test %1d
-    result = simplesprintf("%1d", 42);
-    assert(result == "42");
-
-    // Test %03d
-    result = simplesprintf("%03d", 42);
-    assert(result == "042");
-
-    // Test %05d
-    result = simplesprintf("%05d", 42);
-    assert(result == "00042");
-
-    // Test no format
-    result = simplesprintf("xxx", 42);
-    assert(result == "xxx");
-
-    // Test double format
-    result = simplesprintf("%d%d", 42);
-    assert(result == "4242");
-
-    // Test extra chars
-    result = simplesprintf("v=%d!", 42);
-    assert(result == "v=42!");
-
-    // Test invalid format
-    try
-    {
-        result = simplesprintf("%s", 42);
-        assert(false); // Should not reach here
-    }
-    catch (const std::runtime_error &e)
-    {
-        assert(true); // Expected exception
-    }
-
-    // Test mixed text and format
-    result = simplesprintf("Value: %d", 42);
-    assert(result == "Value: 42");
-
-    result = simplesprintf("Value: %03d", 42);
-    assert(result == "Value: 042");
-}
-
 std::vector<std::string> split(std::string_view s, std::string_view delimiter)
 {
     size_t pos_start = 0, pos_end, delim_len = delimiter.length();
@@ -188,16 +136,6 @@ timestamp_t seconds_from_string(std::string_view s)
         }
     }
     return d;
-}
-
-void test_seconds_from_string()
-{
-    assert(seconds_from_string("42") == 42);
-    assert(seconds_from_string("05:31") == 331);
-    assert(seconds_from_string("2:4") == 124);
-    assert(seconds_from_string("02:04.470") == 124.47);
-    assert(seconds_from_string("1230.2") == 1230.2);
-    assert(seconds_from_string("0001:1:1:3.1toto") == 219663.1);
 }
 
 void delete_files_of_pattern(const std::string &pattern)

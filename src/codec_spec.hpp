@@ -103,7 +103,6 @@ static constexpr codec_entry codec_table[] = {
         }
     }
 
-    std::clog << std::format("Unknown codec: [{}]\n", name);
     throw config_error("Unknown codec", name);
 }
 

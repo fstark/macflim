@@ -46,7 +46,8 @@ release: CXXFLAGS += -O3
 debug: $(TARGET)
 release: $(TARGET)
 
-test: release
+test: release unit_tests
+	./unit_tests
 	cd ../tests && bash run_tests.sh
 
 test-reference: release
@@ -61,12 +62,23 @@ OBJS = grayscale.o writer.o ruler.o watermark.o imgcompress.o filesystem_reader.
 $(TARGET): $(OBJS)
 	${CPP} ${CXXFLAGS} $(LDLIBS) $(OBJS) -lavformat -lavcodec -lavutil -o $(TARGET)
 
+# Unit test files
+TEST_OBJS = test_main.o test_common.o test_imgcompress.o test_bitmap.o test_codecs.o \
+            test_encoding_result.o test_frame.o test_profile.o test_ditherer.o
+TEST_SHARED_OBJS = common.o imgcompress.o ruler.o profile.o grayscale.o \
+                   dithering_parameters.o watermark.o
+
+-include $(TEST_OBJS:.o=.d)
+
+unit_tests: $(TEST_OBJS) $(TEST_SHARED_OBJS)
+	${CPP} ${CXXFLAGS} $(TEST_OBJS) $(TEST_SHARED_OBJS) -o unit_tests
+
 clean:
-	rm -f ../flimmaker ../flimmaker.exe $(OBJS) $(OBJS:.o=.d)
+	rm -f ../flimmaker ../flimmaker.exe $(OBJS) $(OBJS:.o=.d) unit_tests $(TEST_OBJS) $(TEST_OBJS:.o=.d)
 
 format:
 	clang-format -i *.cpp *.hpp
 
 # Pattern rule for compiling .cpp files to .o files
-$(OBJS): %.o: %.cpp
+$(OBJS) $(TEST_OBJS): %.o: %.cpp
 	${CPP} $(CXXFLAGS) -MMD -MP -c $< -o $@

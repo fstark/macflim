@@ -24,7 +24,6 @@ int packbits(uint8_t *out, const uint8_t *buffer, int length);
 //  Pack the data by 32 bits blocks, compressing consecutive zeroes
 //  ------------------------------------------------------------------
 int packz32(uint32_t *out, const uint32_t *const buffer, int length);
-void packz32_test();
 
 template <typename T> void write1(T &out, uint32_t v)
 {
@@ -344,13 +343,13 @@ class packzmap
 
     [[nodiscard]] size_t size() const
     {
-        if (byte_size_ > header_cost_ + N_ * elem_cost_)
-        {
-            std::cerr << std::format("Byte size  : {}\n", byte_size_);
-            std::cerr << std::format("Header Cost: {}\n", header_cost_);
-            std::cerr << std::format("Elem Cost  : {}\n", elem_cost_);
-            std::cerr << std::format("N          : {}\n", N_);
-        }
+        // if (byte_size_ > header_cost_ + N_ * elem_cost_)
+        // {
+        //     std::cerr << std::format("Byte size  : {}\n", byte_size_);
+        //     std::cerr << std::format("Header Cost: {}\n", header_cost_);
+        //     std::cerr << std::format("Elem Cost  : {}\n", elem_cost_);
+        //     std::cerr << std::format("N          : {}\n", N_);
+        // }
         assert(byte_size_ <= header_cost_ * 2 + N_ * elem_cost_);
         return byte_size_;
     }
@@ -427,7 +426,5 @@ class packzmap
 
 // inline std::vector<uint32_t> packz32opt( const std::vector<uint32_t> &data, const std::vector<bool> &pack, size_t
 // max_pack = 21888 ) { return packz32opt( std::begin(data), std::begin(pack), std::end(pack), max_pack ); }
-
-void packz32opt_test();
 
 } // namespace macflim
