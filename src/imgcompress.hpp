@@ -281,7 +281,7 @@ class packzmap
 {
   private:
     std::vector<bool> mask_;
-    size_t N;
+    size_t N_;
 
     size_t byte_size_;
 
@@ -315,23 +315,23 @@ class packzmap
     //  Fills hole if free or better
     void auto_fill(size_t n)
     {
-        assert(n < N);
-        // if (n>N)
+        assert(n < N_);
+        // if (n>N_)
         // exit(1);
         if (!mask_[n])
         {
-            if (n > 0 && n < N - 1 && mask_[n - 1] && mask_[n + 1])
+            if (n > 0 && n < N_ - 1 && mask_[n - 1] && mask_[n + 1])
                 set(n);
             if (n == 0 && mask_[1])
                 set(0);
-            if (n == N - 1 && mask_[N - 2])
-                set(N - 1);
+            if (n == N_ - 1 && mask_[N_ - 2])
+                set(N_ - 1);
         }
     }
 
   public:
     packzmap(size_t map_size, size_t header_cost, size_t elem_cost)
-        : mask_(map_size), N{map_size}, header_cost_{header_cost}, elem_cost_{elem_cost}
+        : mask_(map_size), N_{map_size}, header_cost_{header_cost}, elem_cost_{elem_cost}
     {
         std::fill(std::begin(mask_), std::end(mask_), false);
         byte_size_ = header_cost_; //  End marker
@@ -344,14 +344,14 @@ class packzmap
 
     [[nodiscard]] size_t size() const
     {
-        if (byte_size_ > header_cost_ + N * elem_cost_)
+        if (byte_size_ > header_cost_ + N_ * elem_cost_)
         {
             std::cerr << std::format("Byte size  : {}\n", byte_size_);
             std::cerr << std::format("Header Cost: {}\n", header_cost_);
             std::cerr << std::format("Elem Cost  : {}\n", elem_cost_);
-            std::cerr << std::format("N          : {}\n", N);
+            std::cerr << std::format("N          : {}\n", N_);
         }
-        assert(byte_size_ <= header_cost_ * 2 + N * elem_cost_);
+        assert(byte_size_ <= header_cost_ * 2 + N_ * elem_cost_);
         return byte_size_;
     }
 
@@ -359,7 +359,7 @@ class packzmap
     {
         // std::clog << n << ":" << byte_size_ << "/" << dbg_calc_size() << " ";
 
-        assert(n < N);
+        assert(n < N_);
 
         if (mask_[n])
             return size();
@@ -371,13 +371,13 @@ class packzmap
             byte_size_ -= header_cost_;
 
         //  Collapses with next
-        if (n < N - 1 && mask_[n + 1])
+        if (n < N_ - 1 && mask_[n + 1])
             byte_size_ -= header_cost_;
 
         //  Auto-optimize
         if (n > 0)
             auto_fill(n - 1);
-        if (n + 1 < N)
+        if (n + 1 < N_)
             auto_fill(n + 1);
 
         return size();
@@ -385,15 +385,15 @@ class packzmap
 
     size_t clear(size_t n)
     {
-        assert(n < N);
+        assert(n < N_);
 
         if (!mask_[n])
             return size();
 
         // if (n==0 && mask_[1])
         //     std::clog << "WEIRD CLEAR @0\n";
-        // if (n==N-1 && mask_[N-2])
-        //     std::clog << "WEIRD CLEAR @N-1\n";
+        // if (n==N_-1 && mask_[N_-2])
+        //     std::clog << "WEIRD CLEAR @N_-1\n";
 
         mask_[n] = false;
         //  by default, removes one data, but adds a header
@@ -405,7 +405,7 @@ class packzmap
             byte_size_ -= header_cost_;
 
         //  Collapses with previous if next empty (don't add header)
-        if (n < N - 1 && !mask_[n + 1])
+        if (n < N_ - 1 && !mask_[n + 1])
             byte_size_ -= header_cost_;
         //  If both, we removes both header and data
 
@@ -418,7 +418,7 @@ class packzmap
             return false;
         if (n > 0 && mask_[n - 1])
             return true;
-        if (n < N - 1 && mask_[n + 1])
+        if (n < N_ - 1 && mask_[n + 1])
             return true;
 
         return false;

@@ -48,11 +48,11 @@ static void print_info(const flim &fl)
     fi.deserialize(data->data(), data->size());
 
     std::cout << std::format("\nInfo:\n");
-    std::cout << std::format("  Dimensions: {}x{}\n", fi.width_, fi.height_);
-    std::cout << std::format("  Silent: {}\n", fi.silent_ ? "yes" : "no");
-    std::cout << std::format("  Frames: {}\n", fi.frame_count_);
-    std::cout << std::format("  Total ticks: {}\n", fi.total_ticks_);
-    std::cout << std::format("  Byterate: {}\n", fi.byterate_);
+    std::cout << std::format("  Dimensions: {}x{}\n", fi.width, fi.height);
+    std::cout << std::format("  Silent: {}\n", fi.silent ? "yes" : "no");
+    std::cout << std::format("  Frames: {}\n", fi.frame_count);
+    std::cout << std::format("  Total ticks: {}\n", fi.total_ticks);
+    std::cout << std::format("  Byterate: {}\n", fi.byterate);
 }
 
 static void print_toc(const flim &fl)

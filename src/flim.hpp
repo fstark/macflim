@@ -48,30 +48,30 @@ struct component_entry
 /// Stored in the info component and serialized to/from disk.
 struct flim_info
 {
-    size_t width_;       //  2 bytes
-    size_t height_;      //  2 bytes
-    bool silent_;        //  2 bytes
-    size_t frame_count_; //  4 bytes
-    size_t total_ticks_; //  4 bytes
-    size_t byterate_;    //  2 bytes
+    size_t width;       //  2 bytes
+    size_t height;      //  2 bytes
+    bool silent;        //  2 bytes
+    size_t frame_count; //  4 bytes
+    size_t total_ticks; //  4 bytes
+    size_t byterate;    //  2 bytes
 
-    flim_info() : width_(0), height_(0), silent_(false), frame_count_(0), total_ticks_(0), byterate_(0) {}
+    flim_info() : width(0), height(0), silent(false), frame_count(0), total_ticks(0), byterate(0) {}
 
     flim_info(size_t width, size_t height, bool silent, size_t frame_count, size_t total_ticks, size_t byterate)
-        : width_(width), height_(height), silent_(silent), frame_count_(frame_count), total_ticks_(total_ticks),
-          byterate_(byterate)
+        : width(width), height(height), silent(silent), frame_count(frame_count), total_ticks(total_ticks),
+          byterate(byterate)
     {
     }
 
     void serialize(std::vector<uint8_t> &out) const
     {
         auto o = std::back_inserter(out);
-        write2(o, width_);
-        write2(o, height_);
-        write2(o, silent_ ? 1 : 0);
-        write4(o, frame_count_);
-        write4(o, total_ticks_);
-        write2(o, byterate_);
+        write2(o, width);
+        write2(o, height);
+        write2(o, silent ? 1 : 0);
+        write4(o, frame_count);
+        write4(o, total_ticks);
+        write2(o, byterate);
     }
 
     void deserialize(const uint8_t *data, size_t size)
@@ -79,12 +79,12 @@ struct flim_info
         if (size < 16)
             return;
         const uint8_t *p = data;
-        width_ = read2(p);
-        height_ = read2(p);
-        silent_ = read2(p) != 0;
-        frame_count_ = read4(p);
-        total_ticks_ = read4(p);
-        byterate_ = read2(p);
+        width = read2(p);
+        height = read2(p);
+        silent = read2(p) != 0;
+        frame_count = read4(p);
+        total_ticks = read4(p);
+        byterate = read2(p);
     }
 };
 

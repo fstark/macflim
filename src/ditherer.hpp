@@ -39,24 +39,24 @@ class ditherer
     void dither(const grayscale &img)
     {
         grayscale resized_image(W_, H_); //  note: was 512x342
-        copy(resized_image, img, dp_.bars_, dp_.anchor_x_, dp_.anchor_y_);
+        copy(resized_image, img, dp_.bars, dp_.anchor_x, dp_.anchor_y);
 
         //  We filter the grayscale of the "right size", for things like corners, etc...
-        grayscale filtered_image = filter(resized_image, dp_.filters_.c_str());
+        grayscale filtered_image = filter(resized_image, dp_.filters.c_str());
 
         grayscale dithered_image(W_, H_); //  The next dithered image
 
-        if (dp_.dither_ == grayscale::dithering::error_diffusion)
-            error_diffusion(dithered_image, filtered_image, dithered_image_, dp_.stability_,
-                            *get_error_diffusion_by_name(dp_.error_algorithm_), dp_.error_bleed_, dp_.error_bidi_);
-        else if (dp_.dither_ == grayscale::dithering::ordered)
+        if (dp_.dither == grayscale::dithering::error_diffusion)
+            error_diffusion(dithered_image, filtered_image, dithered_image_, dp_.stability,
+                            *get_error_diffusion_by_name(dp_.error_algorithm), dp_.error_bleed, dp_.error_bidi);
+        else if (dp_.dither == grayscale::dithering::ordered)
             ordered_dither(dithered_image, filtered_image, dithered_image_);
-        else if (dp_.dither_ == grayscale::dithering::blue_noise)
+        else if (dp_.dither == grayscale::dithering::blue_noise)
             blue_noise_dither(dithered_image, filtered_image, dithered_image_);
         else
-            throw config_error("Unknown dithering option", std::to_string(static_cast<int>(dp_.dither_)));
+            throw config_error("Unknown dithering option", std::to_string(static_cast<int>(dp_.dither)));
 
-        watermark(dithered_image, dp_.watermark_);
+        watermark(dithered_image, dp_.watermark);
 
         //  The new dithered grayscale is the previous one
         dithered_image_ = dithered_image;
