@@ -4,7 +4,7 @@ Before committing, use ``cd src && make format`` to run clang-format on all .cpp
 
 ## Testing
 
-Test the code using ``cd src && make test``
+Test the code using ``cd src && make unit_tests && ./unit_tests``. This will compile and run the unit tests defined in the codebase, which use the doctest framework.
 
 ## class naming:
 

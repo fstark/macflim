@@ -69,6 +69,10 @@ However, as you use ``"constant"s`` instead of ``std::string("constant")`` for c
 
 For security, keep using simplesprintf for string formatting that comes from the command line.
 
+## Testing
+
+When writing new code, you always write one or several unit tests.
+
 ## Build
 
 You use plain Makefile for build.

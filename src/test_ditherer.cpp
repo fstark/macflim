@@ -17,32 +17,32 @@ static grayscale uniform_gray(float value)
 static dithering_parameters make_error_dp()
 {
     return dithering_parameters{
-        false,              // bars
-        "c",                // filters
-        0.5,                // anchor_x
-        0.5,                // anchor_y
+        false, // bars
+        "c",   // filters
+        0.5,   // anchor_x
+        0.5,   // anchor_y
         grayscale::dithering::error_diffusion,
-        "floyd",            // error_algorithm
-        0.3,                // stability
-        0.99f,              // error_bleed
-        false,              // error_bidi
-        ""                  // watermark
+        "floyd", // error_algorithm
+        0.3,     // stability
+        0.99f,   // error_bleed
+        false,   // error_bidi
+        ""       // watermark
     };
 }
 
 static dithering_parameters make_ordered_dp()
 {
     return dithering_parameters{
-        false,              // bars
-        "c",                // filters
-        0.5,                // anchor_x
-        0.5,                // anchor_y
+        false, // bars
+        "c",   // filters
+        0.5,   // anchor_x
+        0.5,   // anchor_y
         grayscale::dithering::ordered,
-        "floyd",            // error_algorithm
-        0.3,                // stability
-        0.99f,              // error_bleed
-        false,              // error_bidi
-        ""                  // watermark
+        "floyd", // error_algorithm
+        0.3,     // stability
+        0.99f,   // error_bleed
+        false,   // error_bidi
+        ""       // watermark
     };
 }
 

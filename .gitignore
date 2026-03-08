@@ -39,6 +39,7 @@ VERSION
 *.flim
 flimutil
 flimmaker
+unit_tests
 .DS_Store
 
 # Due to git being confused by symlinks
