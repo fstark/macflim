@@ -1,12 +1,12 @@
 #pragma once
 
-#include <assert.h>
-#include <math.h>
+#include "constants.hpp"
+
+#include <cassert>
+#include <cmath>
 #include <string>
 #include <string_view>
 #include <vector>
-
-#include "constants.hpp"
 
 namespace macflim
 {

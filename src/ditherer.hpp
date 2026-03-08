@@ -4,6 +4,7 @@
 #include "errors.hpp"
 #include "grayscale.hpp"
 #include "watermark.hpp"
+
 #include <cstddef>
 
 namespace macflim

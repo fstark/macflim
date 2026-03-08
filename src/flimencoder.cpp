@@ -1,14 +1,14 @@
 #include "flimencoder.hpp"
 
-#include <cassert>
-#include <format>
-#include <numeric>
-
 #include "bitmap.hpp"
 #include "file_handle.hpp"
 #include "flim.hpp"
 #include "flimcompressor.hpp"
 #include "frame.hpp"
+
+#include <cassert>
+#include <format>
+#include <numeric>
 
 namespace macflim
 {

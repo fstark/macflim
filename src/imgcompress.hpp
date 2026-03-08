@@ -1,17 +1,16 @@
 #pragma once
 
-#include <format>
-
 //  ------------------------------------------------------------------
 //  Compression utilities for B&W images
 //  ------------------------------------------------------------------
 
 #include <array>
-#include <assert.h>
+#include <cassert>
 #include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <format>
 #include <iostream>
-#include <memory.h>
-#include <stdlib.h>
 #include <vector>
 
 namespace macflim

@@ -1,12 +1,12 @@
 #pragma once
 
+#include "grayscale.hpp"
+
 #include <bit>
 #include <cstdint>
 #include <cstring>
 #include <random>
 #include <vector>
-
-#include "grayscale.hpp"
 
 namespace macflim
 {

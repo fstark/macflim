@@ -1,14 +1,13 @@
 #pragma once
 
+#include "common.hpp"
+
 #include <bitset>
+#include <cassert>
 #include <cstdint>
 #include <iostream>
-#include <numeric>
-// #include <bit>
-#include <cassert>
 #include <limits>
-
-#include "common.hpp"
+#include <numeric>
 
 namespace macflim
 {

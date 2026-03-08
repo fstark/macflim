@@ -1,3 +1,5 @@
+#include "flimutil.hpp"
+
 #include "bitmap.hpp"
 #include "errors.hpp"
 #include "file_handle.hpp"

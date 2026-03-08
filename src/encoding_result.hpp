@@ -2,6 +2,7 @@
 
 #include "bitmap.hpp"
 #include "codec_spec.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <vector>

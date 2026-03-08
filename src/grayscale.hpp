@@ -1,15 +1,13 @@
 #pragma once
 
-#include <cstdint>
+#include "common.hpp"
 
+#include <algorithm>
 #include <cassert>
+#include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
-
-#include <functional>
-
-#include "common.hpp"
-#include <algorithm>
 
 namespace macflim
 {

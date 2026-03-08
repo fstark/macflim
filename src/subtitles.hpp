@@ -1,12 +1,12 @@
 #pragma once
 
+#include "common.hpp"
+
 #include <iostream>
 #include <optional>
 #include <string>
 #include <tuple>
 #include <vector>
-
-#include "common.hpp"
 
 namespace macflim
 {

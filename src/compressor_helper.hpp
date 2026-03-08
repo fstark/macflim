@@ -9,6 +9,7 @@
 #include "qhistogram.hpp"
 #include "reader.hpp"
 #include "subtitle_burner.hpp"
+
 #include <algorithm>
 #include <cassert>
 #include <cstddef>

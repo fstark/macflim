@@ -11,6 +11,7 @@
 #include "profile.hpp"
 #include "reader.hpp"
 #include "subtitle_burner.hpp"
+
 #include <format>
 #include <functional>
 #include <optional>

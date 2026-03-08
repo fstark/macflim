@@ -1,6 +1,8 @@
-#include <string>
+#pragma once
 
 #include "grayscale.hpp"
+
+#include <string>
 
 namespace macflim
 {

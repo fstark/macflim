@@ -1,4 +1,5 @@
 #include "dithering_parameters.hpp"
+
 #include "profile.hpp"
 
 namespace macflim

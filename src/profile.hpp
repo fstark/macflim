@@ -3,6 +3,7 @@
 #include "constants.hpp"
 #include "errors.hpp"
 #include "grayscale.hpp"
+
 #include <sstream>
 #include <string>
 #include <vector>

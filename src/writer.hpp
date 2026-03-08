@@ -1,12 +1,11 @@
 #pragma once
 
 #include "grayscale.hpp"
+#include "reader.hpp"
 
 #include <array>
 #include <cstdint>
 #include <memory>
-
-#include "reader.hpp"
 
 namespace macflim
 {

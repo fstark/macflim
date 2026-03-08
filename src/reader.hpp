@@ -1,15 +1,15 @@
 #pragma once
 
+#include "common.hpp"
+#include "constants.hpp"
+#include "grayscale.hpp"
+
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <iostream>
 #include <memory>
 #include <string>
-
-#include "common.hpp"
-#include "constants.hpp"
-#include "grayscale.hpp"
 
 namespace macflim
 {

@@ -1,11 +1,12 @@
 #include "grayscale.hpp"
+
 #include "constants.hpp"
 #include "errors.hpp"
 #include "file_handle.hpp"
 
+#include <cmath>
 #include <format>
 #include <iostream>
-#include <math.h>
 
 namespace macflim
 {

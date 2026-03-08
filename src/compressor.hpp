@@ -1,5 +1,10 @@
 #pragma once
 
+#include "bitmap.hpp"
+#include "common.hpp"
+#include "imgcompress.hpp"
+#include "ruler.hpp"
+
 #include <algorithm>
 #include <bit>
 #include <bitset>
@@ -9,11 +14,6 @@
 #include <limits>
 #include <numeric>
 #include <vector>
-
-#include "bitmap.hpp"
-#include "common.hpp"
-#include "imgcompress.hpp"
-#include "ruler.hpp"
 
 namespace macflim
 {

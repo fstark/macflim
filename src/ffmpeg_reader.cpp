@@ -1,5 +1,9 @@
 #include "ffmpeg_reader.hpp"
+
 #include "errors.hpp"
+
+#include <array>
+#include <format>
 
 extern "C"
 {
@@ -9,9 +13,6 @@ extern "C"
 #include <libavutil/samplefmt.h>
 #include <libavutil/timestamp.h>
 }
-
-#include <array>
-#include <format>
 
 namespace macflim
 {

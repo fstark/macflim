@@ -20,33 +20,10 @@
  */
 
 #include "cmdline.hpp"
-#include "errors.hpp"
-#include "file_handle.hpp"
-
-#include <stdlib.h>
-#ifndef _WIN32
-#include <execinfo.h>
-#include <signal.h>
-#include <unistd.h>
-#endif
-#include <array>
-#include <assert.h>
-#include <filesystem>
-#include <format>
-#include <fstream>
-#include <iostream>
-#include <limits>
-#include <math.h>
-#include <memory.h>
-#include <memory>
-#include <stdio.h>
-#include <vector>
-#define noLZG
-#ifdef LZG
-#include "lzg.h"
-#endif
 #include "common.hpp"
+#include "errors.hpp"
 #include "ffmpeg_reader.hpp"
+#include "file_handle.hpp"
 #include "filesystem_reader.hpp"
 #include "flimencoder.hpp"
 #include "flimutil.hpp"
@@ -55,6 +32,26 @@
 #include "reader.hpp"
 #include "subtitles.hpp"
 #include "writer.hpp"
+
+#include <array>
+#include <cassert>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <filesystem>
+#include <format>
+#include <fstream>
+#include <iostream>
+#include <limits>
+#include <memory>
+#include <vector>
+
+#ifndef _WIN32
+#include <execinfo.h>
+#include <signal.h>
+#include <unistd.h>
+#endif
 
 #ifdef _WIN32
 #include <windows.h>

@@ -5,6 +5,7 @@
 #include "errors.hpp"
 #include "imgcompress.hpp"
 #include "ruler.hpp"
+
 #include <cstdint>
 #include <format>
 #include <memory>

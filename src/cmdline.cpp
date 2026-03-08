@@ -1,6 +1,8 @@
 #include "cmdline.hpp"
+
 #include "flimutil.hpp"
 #include "grayscale.hpp"
+
 #include <cstring>
 #include <format>
 #include <iostream>

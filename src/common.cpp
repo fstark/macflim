@@ -1,6 +1,6 @@
 #include "common.hpp"
 
-#include <assert.h>
+#include <cassert>
 #include <format>
 #include <iomanip>
 #include <iostream>

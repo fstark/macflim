@@ -1,4 +1,5 @@
 #include "writer.hpp"
+
 #include "errors.hpp"
 
 #include <format>

@@ -2,16 +2,16 @@
 
 //  Flim file format types, reading, and writing
 
+#include "file_handle.hpp"
+#include "frame.hpp"
+#include "imgcompress.hpp"
+
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <string>
 #include <vector>
-
-#include "file_handle.hpp"
-#include "frame.hpp"
-#include "imgcompress.hpp"
 
 namespace macflim
 {

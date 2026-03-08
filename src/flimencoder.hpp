@@ -1,14 +1,13 @@
 #pragma once
 
+#include "profile.hpp"
+#include "reader.hpp"
+#include "subtitles.hpp"
+#include "writer.hpp"
+
 #include <memory>
 #include <string>
 #include <vector>
-
-#include "profile.hpp"
-#include "subtitles.hpp"
-
-#include "reader.hpp"
-#include "writer.hpp"
 
 namespace macflim
 {

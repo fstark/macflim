@@ -1,4 +1,5 @@
 #include "flimcompressor.hpp"
+
 #include "profile.hpp"
 
 namespace macflim
