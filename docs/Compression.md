@@ -1,171 +1,130 @@
-In order to play sound, I need to gain space in files:
+# Flim file format
 
-Compression is achived by storing the xor between consecutive frames, and compressing this data. Hopefully, it should be smaller, as the encoding try to keep the error diffusion pixels at the same place.
+Compression stores xor deltas between consecutive frames, compressed via vertical strip or line-copy codecs. Dithering stability keeps pixels coherent across frames, reducing delta size.
 
-# Last try at describing the flim file format
+## File layout
 
-Flim length is a multiple of 2, by adding an optional 0x00
+    1022 bytes: comment block
+        bytes 0-4: 'F','L','I','M',0x0d (magic)
+        bytes 5-1021: zero-padded string (encoding command, so ``head -2 x.flim`` works)
+    2 bytes: Fletcher-16 checksum (big-endian) of everything after
+    2 bytes: version (= 0x0001)
+    2 bytes: component count
+    For each component:
+        2 bytes: type
+        4 bytes: offset (from start of blob data area)
+        4 bytes: size
+    Blob data (concatenated component payloads)
 
-4 Bytes: 'F', 'L', 'I', 'M'
-1 Byte: 0x0d
+Unknown component types should be ignored.
 
-1017 bytes: comment (used to store the encoding command, so ``head -2 x.flim`` gives the command used)
+## Component types
 
-2 bytes: Flecter checksum of the rest of the file.
+### 0x00: info (16 bytes)
 
-Rest of the file:
-
-2 bytes: 0x1 == version 1
-2 bytes: entries in the header
-For each entry:
-    2 bytes: type
-    4 bytes: offset to data (starting just after this header)
-    4 bytes: data size
-
-Type of entries:
-    0x00: movie info
-    0x01: movie data
-    0x02: table of content (more later)
-    0x03: poster
-
-Unknown entries should be ignored.
-
-Movie info data (entry 0x00):
     2 bytes: width
     2 bytes: height
-    2 bytes: 0 = with sound, 1 = silent
-    4 bytes: number of frames (screen updates)
-    4 bytes: number of ticks (60th of a second)
+    2 bytes: silent (0 = sound, 1 = silent)
+    4 bytes: frame count
+    4 bytes: total ticks (1/60s units)
+    2 bytes: byterate
 
+### 0x01: movie
 
-# New new format:
+Frames serialized sequentially (see frame encoding below).
+
+### 0x02: table of contents
+
+Array of uint16, one per frame: byte size of that frame in the movie component. Enables seeking.
+
+### 0x03: poster
+
+Raw bitmap data, 128×86 pixels.
+
+### 0x04: initial frame
+
+    2 bytes: type tag (0x00)
+    2 bytes: width
+    2 bytes: height
+    Raw bitmap bytes
+
+Used to initialize the framebuffer before playback (for looping or seeking).
 
 ## Definitions
 
-### Tick: A tick is a Macintosh tick of 1/60th of a second. 370 bytes of sound must be provided at every frame
+**Tick**: 1/60th of a second. 370 bytes of 8-bit unsigned audio per tick (≈22050 Hz).
 
-### Frame definition
+**Frame**: A single screen update + its associated audio. Frame rate is variable.
 
-A frame is a single screen update. The frame rate is variable, as it is often not a sub-multiple of 60. Also, for compression purposes, some frame may be skipped.
+## Frame encoding
 
-### Block definition
+Each frame in the movie component:
 
-A block is a set of 20 frames, asynchronously loaded from disk.
+    2 bytes: ticks
+    Sound block:
+        2 bytes: sound_size
+        If sound_size == 2: no audio
+        If sound_size > 2 (= ticks * 370 + 8):
+            2 bytes: ffMode (0)
+            4 bytes: rate (65536)
+            ticks * 370 bytes: audio samples
+    Video block:
+        2 bytes: video_size (includes this size field)
+        video_size - 2 bytes: encoded video data
 
-*It would be a good idea to get rid of this concept and store a directory of frame pointers in the flim header. This would enable run-time optimisation of read. Also, by adding a directory of pre-calulated frames, it would enable to seek withing flims*
+## Video encoding
 
-*However, there still need to be such concept in the encoder to define the "lossy optimisation boudaries"*
+All video data starts with a 4-byte header: ``0x00 0x00 0x00 <codec_signature>``, followed by codec-specific data.
 
-## Concept
+### 0x00: null
 
-We do a single sound driver write and a single screen update per frame.
+No payload. No screen update.
 
-## Encoding is a succession of blocks, containing a list of frames.
+### 0x01: z16 (vertical strips, 16-bit)
 
-    4 bytes block size [block_size]
-    block_size bytes
+Column-major 16-bit words. Stream of runs:
 
-Note: *Movie is supposed to start with a black screen*
+    uint16 header: upper 8 bits = offset delta, lower 8 bits = word count
+    count * 2 bytes: data (big-endian uint16 values)
+    ...
+    0x0000: terminator
 
-# Frame encoding
+Empty runs (count=0) bridge offset gaps > 255.
 
-A frame always encode a single sound buffer, followed by a single screen update buffer
+### 0x02: z32 (vertical strips, 32-bit)
 
-    4 bytes data size
-        2 bytes: ticks count == tick_counts
-            6 bytes FFsynth header
-            tick_counts * 370 bytes of sounds
-        2 bytes: video encoding
-            variable count of data bytes
+Column-major 32-bit words. Stream of runs:
 
-# Video encoding
+    uint32 header: upper 16 bits = count - 1, lower 16 bits = (offset + 1) * 4
+    count * 4 bytes: data (big-endian uint32 values)
+    ...
+    0x00000000: terminator
 
-## 0x0000 : skip
+### 0x03: invert
 
-no databytes. no screen updates
+Inverts all bits on screen. No payload.
 
-## 0x0001 : fulldata
+### 0x04: lines
 
-21888 bytes of data, representing the full screen
+Copies a contiguous block of lines from the target image:
 
-## 0x0002 : bytexor
+    uint16: byte_count (line_count * bytes_per_row)
+    uint16: byte_offset (start_line * bytes_per_row)
+    byte_count bytes: raw pixel data
 
-A stream of packbits-like bytes describing xor updates to the previous image
+Selects the line range that maximizes pixel changes.
 
-    1 - 127=n => xor the next n bytes with onscreen data
-    -1 - -128=n => skip -n bytes
-    0 => end of data
+## Lossy compression
 
+**Byterate**: bytes of video data per tick. Frame budget = byterate × ticks.
 
-# Additional ideas of video encoding:
+**Codec penalty**: effective budget = budget × penalty. z16 penalty = 0.45, others = 1.0.
 
-## Pre-pack skip + xor
+**Codec selection**: all configured codecs encode each frame independently; the result with highest quality (bitmap proximity) wins.
 
-    Encoding 3:
-        n1 n2 [n2*2 bytes of data]
-        => skip n1*2 bytes, xor the n2*2 next bytes of data
-        [n1,n2] = [0,0] => end of data
+**Vertical compressor budget**: screen positions are prioritized by perceptual delta (highest first). Positions are added until the budget is exhausted.
 
-## Word and long versions of xor encoding
-
-## Packbits full screen for seeking purposes
-
-# Lossy compression
-
-Lossy compression is enabled by incresing the stability of the encoded image. A higher stability makes the image similar to the previous one.
-
-The byterate of the resulting compressed image is computed as bytes/frames. There are 370 bytes of sound per ticks, so ``xor-diff / ticks + 370`` is the byterate.
-
-The byterate can be lowered by:
-* Increase stability
-    increasing stability will make consecutive images more similar, and consume less bytes
-* Increasing the tick
-    as ticks are 2 or 3 of length, a frame on a 2 length tick can be extended to a 3 tick length, as to make more room for a sudden transition
-    => if next frame tick is 3, make current frame 3 ticks.
-* Interleave
-    hard to encode image can be removed, and replaced by half-of the scanlines of the previous image and half of the scanlines of the next image. It will effectively disapear, but will be twice smaller
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-4) SIZE
-    4) 'FLIM'
-    2) #frame 20
-    2) filler2
-        2) sound_mode
-        4) fixed
-        370) sound
-        2) vid_size
-        xx) video
+**Stability**: controls dithering hysteresis. The binarization threshold shifts based on the previous frame's pixel value. Higher stability → fewer pixel changes → less data to compress, at the cost of ghosting.
 
 
 
