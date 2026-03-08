@@ -25,11 +25,11 @@ class ditherer
     {
     }
 
-    size_t W() const
+    [[nodiscard]] size_t W() const
     {
         return W_;
     }
-    size_t H() const
+    [[nodiscard]] size_t H() const
     {
         return H_;
     }

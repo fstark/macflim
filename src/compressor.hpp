@@ -176,13 +176,13 @@ template <typename T> class vertical_compressor : public compressor
     const ruler<T> &ruler_;
 
     /// Width in underlying type
-    size_t get_T_width() const
+    [[nodiscard]] size_t get_T_width() const
     {
         return get_bytes_width() / sizeof(T);
     }
 
     /// Number of element of type for the whole screen
-    size_t get_T_size() const
+    [[nodiscard]] size_t get_T_size() const
     {
         return get_T_width() * H_;
     }

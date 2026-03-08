@@ -518,7 +518,7 @@ inline int correct(int v)
     return v;
 }
 
-bool read_grayscale(grayscale &result, const char *file)
+bool read_grayscale(grayscale &result, std::string_view file)
 {
     grayscale image(constants::mac_screen_width, constants::mac_screen_height);
     fill(image, 0);
@@ -526,7 +526,7 @@ bool read_grayscale(grayscale &result, const char *file)
     file_handle f;
     try
     {
-        f = file_handle(file, "rb");
+        f = file_handle(std::string(file), "rb");
     }
     catch (const std::runtime_error &)
     {
@@ -550,12 +550,12 @@ bool read_grayscale(grayscale &result, const char *file)
 //  ------------------------------------------------------------------
 //  Generates a PGM image
 //  ------------------------------------------------------------------
-void write_grayscale(const char *file, const grayscale &img)
+void write_grayscale(std::string_view file, const grayscale &img)
 {
     file_handle f;
     try
     {
-        f = file_handle(file, "wb");
+        f = file_handle(std::string(file), "wb");
     }
     catch (const std::runtime_error &)
     {
@@ -761,7 +761,7 @@ dither_algorithm algos[] = {
         {{2 / 4.0, 1, 0}, {1 / 4.0, -1, 1}, {1 / 4.0, 0, 1}},
     }};
 
-const dither_algorithm *get_error_diffusion_by_name(const std::string &name)
+const dither_algorithm *get_error_diffusion_by_name(std::string_view name)
 {
     for (const auto &a : algos)
         if (a.name == name)
@@ -770,7 +770,7 @@ const dither_algorithm *get_error_diffusion_by_name(const std::string &name)
     return nullptr;
 }
 
-void error_diffusion_algorithms(std::function<void(const std::string name, const std::string desciption)> f)
+void error_diffusion_algorithms(std::function<void(std::string_view name, std::string_view description)> f)
 {
     for (const auto &a : algos)
         f(a.name, a.description);

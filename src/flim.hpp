@@ -35,7 +35,7 @@ struct component_entry
     uint32_t offset;
     uint32_t size;
 
-    const char *type_name() const
+    [[nodiscard]] const char *type_name() const
     {
         static constexpr const char *names[] = {"info", "movie", "toc", "poster", "initial"};
         return type < std::size(names) ? names[type] : "unknown";
@@ -44,6 +44,8 @@ struct component_entry
 
 //  --- The info component of a flim, as stored on disk ---
 
+/// Metadata about a Flim file including dimensions, frame count, and playback timing.
+/// Stored in the info component and serialized to/from disk.
 struct flim_info
 {
     size_t width_;       //  2 bytes

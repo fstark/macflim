@@ -12,26 +12,26 @@ namespace macflim
 {
 
 ///  A timestamps in seconds
-typedef double timestamp_t;
+using timestamp_t = double;
 
 ///  Compare two timestamps
 ///  They are identical if they are within 1/22050 of a second
-inline bool equals(timestamp_t a, timestamp_t b)
+constexpr bool equals(timestamp_t a, timestamp_t b)
 {
     return std::fabs(a - b) < 1.0 / 22050;
 }
 
 /// Convert frame number and fps to tick count (60 ticks per second)
-inline size_t ticks_from_frame(size_t n, double fps)
+constexpr size_t ticks_from_frame(size_t n, double fps)
 {
     return n / fps * constants::ticks_per_second + .5;
 }
 
 /// Split a string by delimiter
-std::vector<std::string> split(const std::string &s, const std::string &delimiter);
+std::vector<std::string> split(std::string_view s, std::string_view delimiter);
 
 /// Alternate implementation of std::popcount, to support non compliant C++20 compilers (MacOS 10.15)
-[[nodiscard]] inline int mypopcount(unsigned n)
+[[nodiscard]] constexpr int mypopcount(unsigned n)
 {
     int count = 0;
     while (n)
@@ -55,7 +55,7 @@ std::vector<std::string> split(const std::string &s, const std::string &delimite
 /// 02:04.470 => 124.47
 /// 1230.2 => 1230.2
 /// 0001:1:1:3.1toto => 219663.1
-timestamp_t seconds_from_string(const char *s);
+timestamp_t seconds_from_string(std::string_view s);
 
 ///  Delete files matching pattern
 void delete_files_of_pattern(const std::string &pattern);

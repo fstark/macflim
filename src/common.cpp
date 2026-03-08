@@ -114,20 +114,20 @@ void test_simplesprintf()
     assert(result == "Value: 042");
 }
 
-std::vector<std::string> split(const std::string &s, const std::string &delimiter)
+std::vector<std::string> split(std::string_view s, std::string_view delimiter)
 {
     size_t pos_start = 0, pos_end, delim_len = delimiter.length();
     std::string token;
     std::vector<std::string> res;
 
-    while ((pos_end = s.find(delimiter, pos_start)) != std::string::npos)
+    while ((pos_end = s.find(delimiter, pos_start)) != std::string_view::npos)
     {
-        token = s.substr(pos_start, pos_end - pos_start);
+        token = std::string(s.substr(pos_start, pos_end - pos_start));
         pos_start = pos_end + delim_len;
         res.push_back(token);
     }
 
-    res.push_back(s.substr(pos_start));
+    res.push_back(std::string(s.substr(pos_start)));
     return res;
 }
 
@@ -157,27 +157,31 @@ static int num_from_string(const char **s)
     return n;
 }
 
-timestamp_t seconds_from_string(const char *s)
+timestamp_t seconds_from_string(std::string_view s)
 {
+    // Convert to temporary C string for pointer arithmetic
+    std::string temp(s);
+    const char *str = temp.c_str();
+
     double d = 0;
     for (;;)
     {
-        if (*s >= '0' && *s <= '9')
-            d = d * 60 + num_from_string(&s);
-        if (*s != ':')
+        if (*str >= '0' && *str <= '9')
+            d = d * 60 + num_from_string(&str);
+        if (*str != ':')
             break;
-        s++;
+        str++;
     }
-    if (!*s)
+    if (!*str)
         return d;
-    if (*s == '.')
+    if (*str == '.')
     {
         double f = 1;
-        s++;
-        while (*s >= '0' && *s <= '9')
+        str++;
+        while (*str >= '0' && *str <= '9')
         {
             f /= 10;
-            d += f * (*s++ - '0');
+            d += f * (*str++ - '0');
         }
     }
     return d;

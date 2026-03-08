@@ -68,12 +68,12 @@ class bitmap
     size_t W_;                  //  Width in pixels
     size_t H_;                  //  Height in pixels
 
-    size_t get_rowbytes() const
+    [[nodiscard]] size_t get_rowbytes() const
     {
         return W_ / 8;
     }
 
-    template <typename T> size_t get_width() const
+    template <typename T> [[nodiscard]] size_t get_width() const
     {
         return get_rowbytes() / sizeof(T);
     }
@@ -209,11 +209,11 @@ class bitmap
             v = distribution(generator);
     }
 
-    size_t W() const
+    [[nodiscard]] size_t W() const
     {
         return W_;
     }
-    size_t H() const
+    [[nodiscard]] size_t H() const
     {
         return H_;
     }
@@ -270,7 +270,7 @@ class bitmap
         return result;
     }
 
-    size_t pixel_count() const
+    [[nodiscard]] size_t pixel_count() const
     {
         size_t count = 0;
         for (auto &v : data_)

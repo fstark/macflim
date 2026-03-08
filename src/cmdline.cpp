@@ -94,7 +94,7 @@ void usage(const std::string name)
     std::cerr << std::format(
         "\nList of error diffusion algorithms for the --error_diffusion option (default 'floyd'):\n");
 
-    error_diffusion_algorithms([](const std::string name, const std::string description)
+    error_diffusion_algorithms([](std::string_view name, std::string_view description)
                                { std::cerr << std::format("               {:>16} : {}\n", name, description); });
 
     std::cerr << std::format("use '{}' --help' for displaying this help page.\n", name);

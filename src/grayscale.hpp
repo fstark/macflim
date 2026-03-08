@@ -38,11 +38,11 @@ class grayscale
     grayscale(const grayscale &) = default;
     grayscale &operator=(const grayscale &) = default;
 
-    size_t W() const
+    [[nodiscard]] size_t W() const
     {
         return W_;
     }
-    size_t H() const
+    [[nodiscard]] size_t H() const
     {
         return H_;
     }
@@ -83,13 +83,13 @@ void blue_noise_dither(grayscale &dest, const grayscale &source, const grayscale
 
 struct dither_algorithm;
 
-[[nodiscard]] const dither_algorithm *get_error_diffusion_by_name(const std::string &name);
-void error_diffusion_algorithms(std::function<void(const std::string name, const std::string desciption)> f);
+[[nodiscard]] const dither_algorithm *get_error_diffusion_by_name(std::string_view name);
+void error_diffusion_algorithms(std::function<void(std::string_view name, std::string_view description)> f);
 void error_diffusion(grayscale &dest, const grayscale &source, const grayscale &previous, float stability,
                      const dither_algorithm &algo, float bleed = 1, bool two_ways = false);
 
-[[nodiscard]] bool read_grayscale(grayscale &result, const char *file);
-void write_grayscale(const char *file, const grayscale &img);
+[[nodiscard]] bool read_grayscale(grayscale &result, std::string_view file);
+void write_grayscale(std::string_view file, const grayscale &img);
 
 void copy(grayscale &destination, const grayscale &source, bool black_bars = true, double anchor_x = 0.5,
           double anchor_y = 0.5);

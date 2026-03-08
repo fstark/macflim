@@ -13,6 +13,7 @@ You are responsible of the code and Makfiles in src/
 ## Style
 
 You write all function in a macflim namespace, and you put all declarations in header files and definitions in .cpp files. You use include ``#pragma once`` in header files.
+
 All classes, functions and variable names are in snake_case
 All private and protected instance fields end with an underscore, and all local variables do not end with an underscore.
 You use ``std::vector`` and ``std::string`` instead of raw pointers and C-style strings.
@@ -52,7 +53,27 @@ However, as you use ``"constant"s`` instead of ``std::string("constant")`` for c
 
 For security, keep using simplesprintf for string formatting that comes from the command line.
 
+### Include Order
+
+**In .hpp files:**
+1. Project includes (alphabetical)
+2. (blank line)
+3. System includes (alphabetical)
+
+Prefer forward declarations over includes when only pointers/references are needed.
+
+**In .cpp files:**
+1. Own .hpp
+2. (blank line)
+3. Project includes (alphabetical)
+4. (blank line)
+5. System includes (alphabetical)
+
 ## Build
 
 You use plain Makefile for build.
 You build the software by ``cd src && make``. You run tests by ``cd src && make test``.
+
+## Acceptable but arguably bad code
+
+You are ok with the global ``bool sDebug;``.

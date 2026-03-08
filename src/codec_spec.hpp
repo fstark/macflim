@@ -23,37 +23,39 @@ struct codec_spec
 };
 
 //  Codec factory functions
-static inline std::shared_ptr<compressor> make_z16_codec(size_t W, size_t H)
+[[nodiscard]] static inline std::shared_ptr<compressor> make_z16_codec(size_t W, size_t H)
 {
     return std::make_shared<vertical_compressor<uint16_t>>(W, H, uint16_ruler::ruler);
 }
 
-static inline std::shared_ptr<compressor> make_z32_codec(size_t W, size_t H)
+[[nodiscard]] static inline std::shared_ptr<compressor> make_z32_codec(size_t W, size_t H)
 {
     return std::make_shared<vertical_compressor<uint32_t>>(W, H, uint32_ruler::ruler);
 }
 
-static inline std::shared_ptr<compressor> make_z32old_codec(size_t W, size_t H)
+[[nodiscard]] static inline std::shared_ptr<compressor> make_z32old_codec(size_t W, size_t H)
 {
     static bit_ruler<uint32_t> br32;
     return std::make_shared<vertical_compressor<uint32_t>>(W, H, br32);
 }
 
-static inline std::shared_ptr<compressor> make_invert_codec(size_t W, size_t H)
+[[nodiscard]] static inline std::shared_ptr<compressor> make_invert_codec(size_t W, size_t H)
 {
     return std::make_shared<invert_compressor>(W, H);
 }
 
-static inline std::shared_ptr<compressor> make_lines_codec(size_t W, size_t H)
+[[nodiscard]] static inline std::shared_ptr<compressor> make_lines_codec(size_t W, size_t H)
 {
     return std::make_shared<copy_line_compressor>(W, H);
 }
 
-static inline std::shared_ptr<compressor> make_null_codec(size_t W, size_t H)
+[[nodiscard]] static inline std::shared_ptr<compressor> make_null_codec(size_t W, size_t H)
 {
     return std::make_shared<null_compressor>(W, H);
 }
 
+/// Codec registry entry mapping name to factory and metadata.
+/// Used in codec_table to register available compression codecs.
 struct codec_entry
 {
     const char *name;
@@ -68,7 +70,7 @@ static constexpr codec_entry codec_table[] = {
     {"lines", 0x04, 1.00, make_lines_codec},   {"null", 0x00, 1.00, make_null_codec},
 };
 
-inline codec_spec make_codec(const std::string &spec_string, size_t W, size_t H)
+[[nodiscard]] inline codec_spec make_codec(std::string_view spec_string, size_t W, size_t H)
 {
     auto spec_array = split(spec_string, ":");
     auto name = spec_array[0];

@@ -88,7 +88,7 @@ class offset_t
   public:
     offset_t(size_t width, size_t height) : width_{width}, height_{height} {}
 
-    size_t linear()
+    [[nodiscard]] size_t linear()
     {
         return offset_;
     }
@@ -289,7 +289,7 @@ class packzmap
     size_t header_cost_;
     size_t elem_cost_;
 
-    size_t dbg_calc_size() const
+    [[nodiscard]] size_t dbg_calc_size() const
     {
         size_t res = header_cost_;
         bool state = false;
@@ -343,7 +343,7 @@ class packzmap
         return mask_;
     }
 
-    size_t size() const
+    [[nodiscard]] size_t size() const
     {
         if (byte_size_ > header_cost_ + N * elem_cost_)
         {
