@@ -17,13 +17,13 @@ namespace macflim
 
 //  --- Component types in a flim file ---
 
-enum eComponentType
+enum class component_type : uint16_t
 {
-    component_info = 0,
-    component_movie = 1,
-    component_toc = 2,
-    component_poster = 3,
-    component_initial = 4
+    info = 0,
+    movie = 1,
+    toc = 2,
+    poster = 3,
+    initial = 4
 };
 
 //  --- Component directory entry (on-disk layout) ---
@@ -151,17 +151,17 @@ class flim
     }
 
     //  Find first component of a given type, returns nullptr if not found
-    const std::vector<uint8_t> *find_component_data(eComponentType type) const
+    const std::vector<uint8_t> *find_component_data(component_type type) const
     {
         for (size_t i = 0; i < components_.size(); i++)
-            if (components_[i].type == type)
+            if (components_[i].type == static_cast<uint16_t>(type))
                 return &blobs_[i];
         return nullptr;
     }
 
     //  --- Building ---
 
-    void add_component(eComponentType type, const std::vector<uint8_t> &data);
+    void add_component(component_type type, const std::vector<uint8_t> &data);
 
     //  Adds the flim info component
     void add(const flim_info &fi);
@@ -169,7 +169,7 @@ class flim
     //  Adds all the frames and generates the movie and toc components
     void add(const std::vector<frame> &frames);
 
-    void add_framebuffer(eComponentType type, const bitmap &fb);
+    void add_framebuffer(component_type type, const bitmap &fb);
     void add_poster(const bitmap &fb);
     void add_initial(const bitmap &fb);
 };

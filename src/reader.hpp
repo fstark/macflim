@@ -8,7 +8,7 @@
 #include <string>
 
 #include "common.hpp"
-
+#include "constants.hpp"
 #include "grayscale.hpp"
 
 namespace macflim
@@ -18,7 +18,7 @@ namespace macflim
 class sound_frame_t
 {
   public:
-    static const size_t size = 370;
+    static constexpr size_t size = constants::sound_frame_bytes;
 
   protected:
     std::array<uint8_t, size> data_;
@@ -86,7 +86,6 @@ class input_reader
 
     //  Return next grayscale until no more images are available
     virtual std::unique_ptr<grayscale> next() = 0;
-    // virtual std::vector<image> images() = 0;
 
     //  Get the next sound sample, mac format
     virtual std::unique_ptr<sound_frame_t> next_sound() = 0;

@@ -101,7 +101,7 @@ void segfault_handler(int signal)
     size = backtrace(array, 10);
 
     // print out all the frames to stderr
-    fprintf(stderr, "Error: signal %d:\n", signal);
+    std::cerr << std::format("Error: signal {}:\n", signal);
     backtrace_symbols_fd(array, size, STDERR_FILENO);
     exit(1);
 }
@@ -113,16 +113,16 @@ const std::string temp_file()
 #ifdef _WIN32
     char temp_path[MAX_PATH];
     if (GetTempPath(MAX_PATH, temp_path) == 0)
-        throw "Failed to get temporary path\n";
+        throw io_error("Failed to get temporary path", "<temp>");
     char temp_file[MAX_PATH];
     if (GetTempFileName(temp_path, "flim", 0, temp_file) == 0)
-        throw "Failed to create temporary file\n";
+        throw io_error("Failed to create temporary file", temp_path);
     cache_file = temp_file;
 #else
     char cache_file_template[] = "/tmp/flimmaker_cache_XXXXXX";
     int cache_fd = mkstemp(cache_file_template);
     if (cache_fd == -1)
-        throw "Failed to create temporary file\n";
+        throw io_error("Failed to create temporary file", "/tmp");
     cache_file = cache_file_template;
     close(cache_fd);
 #endif
@@ -153,7 +153,7 @@ int run_main(int argc, char **argv)
 
             if (!ifs.good())
             {
-                std::cerr << "ERROR: Cannot open subtitle file [" << opts.srt_file << "]\n";
+                std::cerr << std::format("ERROR: Cannot open subtitle file [{}]\n", opts.srt_file);
                 exit(EXIT_FAILURE);
             }
 
@@ -168,7 +168,7 @@ int run_main(int argc, char **argv)
             if (std::filesystem::exists(opts.cache_file))
             {
                 opts.input_file = opts.cache_file;
-                std::clog << "Using cached file: '" << opts.cache_file << "'\n";
+                std::clog << std::format("Using cached file: '{}'\n", opts.cache_file);
             }
             else
             {
@@ -178,12 +178,12 @@ int run_main(int argc, char **argv)
                 int res = system(buffer.c_str());
                 if (res != 0)
                 {
-                    std::clog << "yt-dlp not installed or failing, falling back to youtube-dl (code " << res << ")\n";
+                    std::clog << std::format("yt-dlp not installed or failing, falling back to youtube-dl (code {})\n", res);
                     buffer = std::format("youtube-dl '{}' -f mp4 --output '{}'", opts.input_file, opts.cache_file);
                     res = system(buffer.c_str());
                     if (res != 0)
                     {
-                        std::clog << "youtube-dl failed with error " << res << "\n";
+                        std::clog << std::format("youtube-dl failed with error {}\n", res);
                         exit(EXIT_FAILURE);
                     }
                 }
@@ -204,13 +204,13 @@ int run_main(int argc, char **argv)
             opts.watermark += opts.custom_profile.description();
         }
 
-        std::clog << "Encoding arguments :\n" << opts.custom_profile.description() << "\n";
+        std::clog << std::format("Encoding arguments :\n{}\n", opts.custom_profile.description());
 
         std::unique_ptr<input_reader> r;
         if (ends_with(opts.input_file, ".pgm"))
         {
-            std::clog << "Reading pgm from '" << opts.input_file << "' pattern, at " << opts.fps
-                      << " frames per second, using '" << opts.audio_file << "' audio file\n";
+            std::clog << std::format("Reading pgm from '{}' pattern, at {} frames per second, using '{}' audio file\n",
+                                     opts.input_file, opts.fps, opts.audio_file);
             std::clog << "( use --fps and --audio to change fps and audio )\n";
             r = make_filesystem_reader(opts.input_file, opts.fps, opts.audio_file, opts.from_index, opts.to_index);
         }
@@ -260,13 +260,13 @@ int run_main(int argc, char **argv)
 
         if (opts.downloaded_file && opts.generated_cache)
         {
-            std::clog << "Removing '" << opts.cache_file << "'\n";
+            std::clog << std::format("Removing '{}'\n", opts.cache_file);
             unlink(opts.cache_file.c_str());
         }
     }
     catch (const std::exception &error)
     {
-        std::cerr << "**** ERROR: [" << error.what() << "]\n";
+        std::cerr << std::format("**** ERROR: [{}]\n", error.what());
         return EXIT_FAILURE;
     }
 

@@ -33,7 +33,7 @@ static void print_summary(const flim &fl)
 
 static void print_info(const flim &fl)
 {
-    auto *data = fl.find_component_data(component_info);
+    auto *data = fl.find_component_data(component_type::info);
     if (!data)
         return;
 
@@ -50,7 +50,7 @@ static void print_info(const flim &fl)
 
 static void print_toc(const flim &fl)
 {
-    auto *data = fl.find_component_data(component_toc);
+    auto *data = fl.find_component_data(component_type::toc);
     if (!data)
         return;
 
@@ -72,7 +72,7 @@ static void print_toc(const flim &fl)
 
 static bool extract_poster(const flim &fl, const std::string &outpath)
 {
-    auto *data = fl.find_component_data(component_poster);
+    auto *data = fl.find_component_data(component_type::poster);
     if (!data)
     {
         std::cerr << "No poster component found\n";
@@ -190,8 +190,8 @@ static void dump_frame_data(const std::vector<uint8_t> &frame_data, size_t frame
 
 static bool dump_frame(const flim &fl, size_t frame_number, bool raw)
 {
-    auto *toc_data = fl.find_component_data(component_toc);
-    auto *movie_data = fl.find_component_data(component_movie);
+    auto *toc_data = fl.find_component_data(component_type::toc);
+    auto *movie_data = fl.find_component_data(component_type::movie);
 
     if (!toc_data)
     {
@@ -234,7 +234,7 @@ static bool dump_frame(const flim &fl, size_t frame_number, bool raw)
 
 static bool extract_initial(const flim &fl, const std::string &outpath)
 {
-    auto *data = fl.find_component_data(component_initial);
+    auto *data = fl.find_component_data(component_type::initial);
     if (!data)
     {
         std::cerr << std::format("No initial frame component found\n");

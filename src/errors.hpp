@@ -46,7 +46,7 @@ class ffmpeg_error : public flim_error
         return full_message_.c_str();
     }
 
-    int error_code() const noexcept
+    [[nodiscard]] int error_code() const noexcept
     {
         return error_code_;
     }
@@ -70,7 +70,7 @@ class io_error : public flim_error
         return full_message_.c_str();
     }
 
-    const std::string &path() const noexcept
+    [[nodiscard]] const std::string &path() const noexcept
     {
         return path_;
     }

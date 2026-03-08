@@ -50,7 +50,7 @@ void flimencoder::set_fps(double fps)
 {
     fps_ = fps;
 }
-void flimencoder::set_comment(const std::string comment)
+void flimencoder::set_comment(const std::string &comment)
 {
     comment_ = comment;
 }
@@ -59,7 +59,7 @@ void flimencoder::set_cover(size_t cover_begin, size_t cover_end)
     cover_begin_ = cover_begin;
     cover_end_ = cover_end;
 }
-void flimencoder::set_watermark(const std::string watermark)
+void flimencoder::set_watermark(const std::string &watermark)
 {
     watermark_ = watermark;
 }
@@ -165,13 +165,13 @@ void flimencoder::make_flim(const std::string flim_pathname, input_reader *reade
 
     auto poster_small_bw = poster_small;
 
-    if (profile_.dither() == grayscale::error_diffusion)
+    if (profile_.dither() == grayscale::dithering::error_diffusion)
         error_diffusion(poster_small_bw, poster_small, previous, 0,
                         *get_error_diffusion_by_name(profile_.error_algorithm()), profile_.error_bleed(),
                         profile_.error_bidi());
-    else if (profile_.dither() == grayscale::ordered)
+    else if (profile_.dither() == grayscale::dithering::ordered)
         ordered_dither(poster_small_bw, poster_small, previous);
-    else if (profile_.dither() == grayscale::blue_noise)
+    else if (profile_.dither() == grayscale::dithering::blue_noise)
         blue_noise_dither(poster_small_bw, poster_small, previous);
 
     write_grayscale("/tmp/poster1.pgm", poster_filtered);

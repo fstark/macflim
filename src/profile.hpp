@@ -1,5 +1,6 @@
 #pragma once
 
+#include "constants.hpp"
 #include "errors.hpp"
 #include "grayscale.hpp"
 #include <sstream>
@@ -22,8 +23,8 @@ enum class initial_frame_mode
 class encoding_profile
 {
   protected:
-    size_t W_ = 512;
-    size_t H_ = 342;
+    size_t W_ = constants::mac_screen_width;
+    size_t H_ = constants::mac_screen_height;
 
     size_t byterate_ = 2000;
     double stability_ = 0.3;
@@ -34,7 +35,7 @@ class encoding_profile
     double anchor_x_ = 0.5; //  Horizontal anchor: 0=left, 0.5=center, 1=right
     double anchor_y_ = 0.5; //  Vertical anchor: 0=top, 0.5=center, 1=bottom
 
-    grayscale::dithering dither_ = grayscale::error_diffusion;
+    grayscale::dithering dither_ = grayscale::dithering::error_diffusion;
     std::string error_algorithm_ = "floyd";
     float error_bleed_ = 1;
     bool error_bidi_ = false;

@@ -3,7 +3,10 @@
 #include <assert.h>
 #include <math.h>
 #include <string>
+#include <string_view>
 #include <vector>
+
+#include "constants.hpp"
 
 namespace macflim
 {
@@ -21,14 +24,14 @@ inline bool equals(timestamp_t a, timestamp_t b)
 /// Convert frame number and fps to tick count (60 ticks per second)
 inline size_t ticks_from_frame(size_t n, double fps)
 {
-    return n / fps * 60 + .5;
+    return n / fps * constants::ticks_per_second + .5;
 }
 
 /// Split a string by delimiter
 std::vector<std::string> split(const std::string &s, const std::string &delimiter);
 
 /// Alternate implementation of std::popcount, to support non compliant C++20 compilers (MacOS 10.15)
-inline int mypopcount(unsigned n)
+[[nodiscard]] inline int mypopcount(unsigned n)
 {
     int count = 0;
     while (n)
@@ -40,10 +43,10 @@ inline int mypopcount(unsigned n)
 }
 
 /// Boolean from string
-bool bool_from(const std::string &v);
+[[nodiscard]] bool bool_from(std::string_view v);
 
 /// Check if string ends with suffix
-bool ends_with(std::string const &value, std::string const &ending);
+[[nodiscard]] bool ends_with(std::string_view value, std::string_view ending);
 
 /// Converts a timestamp into a second count
 /// 42 => 42

@@ -43,9 +43,9 @@ class flimencoder
     flimencoder(const encoding_profile &profile) : profile_{profile} {}
 
     void set_fps(double fps);
-    void set_comment(const std::string comment);
+    void set_comment(const std::string &comment);
     void set_cover(size_t cover_begin, size_t cover_end);
-    void set_watermark(const std::string watermark);
+    void set_watermark(const std::string &watermark);
     void set_pgm_poster_pattern(const std::string &pattern);
     void set_pgm_diff_pattern(const std::string &pattern);
     void set_pgm_change_pattern(const std::string &pattern);

@@ -1,4 +1,5 @@
 #include "grayscale.hpp"
+#include "constants.hpp"
 #include "errors.hpp"
 
 #include <format>
@@ -404,27 +405,27 @@ grayscale quantize(const grayscale &img, int n)
 //  ------------------------------------------------------------------
 //  Apply a filter on an image
 //  ------------------------------------------------------------------
-typedef enum
+enum class filter_type : char
 {
-    kBlur = 'b',
-    kSharpen = 's',
-    kGamma = 'g',
-    kRoundCorners = 'c',
-    kZoomOut = 'z',
-    kZoomIn = 'Z',
-    kQuantize16 = 'q',
-    kFlip = 'f',
-    kInvert = 'i',
-    kBlack = 'k', //  Remove the darkest x%
-    kWhite = 'w', //  Remove the whitest x%
-    kDebug = '@'
-} eFilters;
+    blur = 'b',
+    sharpen = 's',
+    gamma = 'g',
+    round_corners = 'c',
+    zoom_out = 'z',
+    zoom_in = 'Z',
+    quantize16 = 'q',
+    flip = 'f',
+    invert = 'i',
+    black = 'k', //  Remove the darkest x%
+    white = 'w', //  Remove the whitest x%
+    debug = '@'
+};
 
-grayscale filter(const grayscale &from, eFilters filter, double arg = 0)
+grayscale filter(const grayscale &from, filter_type filter, double arg = 0)
 {
     switch (filter)
     {
-    case kBlur:
+    case filter_type::blur:
     {
         if (!arg || arg == 3)
             return blur3(from);
@@ -432,31 +433,31 @@ grayscale filter(const grayscale &from, eFilters filter, double arg = 0)
             return blur5(from);
         throw config_error("Blur filter can have 3 or 5 as an argument", std::to_string((int)arg));
     }
-    case kSharpen:
+    case filter_type::sharpen:
         return sharpen(from);
-    case kGamma:
+    case filter_type::gamma:
         return gamma(from, arg ? arg : 1.6);
-    case kRoundCorners:
+    case filter_type::round_corners:
         return round_corners(from);
-    case kZoomOut:
+    case filter_type::zoom_out:
         return zoom_out(from, arg ? arg : 32);
-    case kZoomIn:
+    case filter_type::zoom_in:
         return zoom_in(from, arg ? arg : 32);
-    case kQuantize16:
+    case filter_type::quantize16:
         return quantize(from, arg ? arg : 17);
-    case kFlip:
+    case filter_type::flip:
         return flip(from);
-    case kInvert:
+    case filter_type::invert:
         return invert(from);
-    case kBlack:
+    case filter_type::black:
         return black(from, arg ? arg : 1 / 16.0);
-    case kWhite:
+    case filter_type::white:
         return white(from, arg ? arg : 1 / 16.0);
-    case kDebug:
+    case filter_type::debug:
         return debug_filter(from);
     }
-    std::cerr << std::format("**** ERROR: filter ['{}'] ({}) unknown\n", (char)filter, (int)filter);
-    throw config_error("Unknown filter", std::string(1, (char)filter));
+    std::cerr << std::format("**** ERROR: filter ['{}'] ({}) unknown\n", static_cast<char>(filter), static_cast<int>(filter));
+    throw config_error("Unknown filter", std::string(1, static_cast<char>(filter)));
 }
 
 inline bool extract_filter(const char *&p, char &f, double &arg)
@@ -500,7 +501,7 @@ grayscale filter(const grayscale &from, const char *filters)
     double arg;
 
     while (extract_filter(filters, f, arg))
-        res = filter(res, (eFilters)f, arg);
+        res = filter(res, static_cast<filter_type>(f), arg);
 
     return res;
 }
@@ -510,26 +511,16 @@ grayscale filter(const grayscale &from, const char *filters)
 //  ------------------------------------------------------------------
 inline int correct(int v)
 {
-    if (v <= 0x01)
-        v = 0;
-    if (v >= 0xfc)
-        v = 0xff;
+    if (v <= constants::pixel_min_threshold)
+        v = constants::pixel_min;
+    if (v >= constants::pixel_max_threshold)
+        v = constants::pixel_max;
     return v;
 }
 
-// int correct( int v )
-// {
-//     v = ((v+8)/16)*16;
-//     if (v>=255)
-//         v = 255;
-//     return v;
-// }
-
 bool read_grayscale(grayscale &result, const char *file)
 {
-    // fprintf( stderr, "Reading [%s]\n", file );
-
-    grayscale image(512, 342);
+    grayscale image(constants::mac_screen_width, constants::mac_screen_height);
     fill(image, 0);
 
     FILE *f = fopen(file, "rb");
@@ -543,25 +534,12 @@ bool read_grayscale(grayscale &result, const char *file)
     for (size_t y = 0; y != image.H(); y++)
         for (size_t x = 0; x != image.W(); x++)
         { // img[x][y] = ((int)(fgetc(f)/255.0*16))/16.0;
-            image.at(x, y) = correct(fgetc(f)) / 255.0;
+            image.at(x, y) = correct(fgetc(f)) / static_cast<double>(constants::pixel_max);
         }
 
     fclose(f);
 
     result = image;
-
-    //  result = sharpen( image );
-    //  result = blur5(blur5(blur5(blur5( image ))));
-    // result = sharpen(sharpen(blur5( image )));
-
-    // result = blur5( image );
-
-    //    result = gamma( image, 1.6 );
-    //    result = blur5( image );
-    //    result = sharpen( result );
-    //    result = sharpen( result );
-    //    result = zoom_out( result );
-    //  result = filter( image, "gs" );
 
     return true;
 }
@@ -571,8 +549,6 @@ bool read_grayscale(grayscale &result, const char *file)
 //  ------------------------------------------------------------------
 void write_grayscale(const char *file, const grayscale &img)
 {
-    // fprintf( stderr, "Writing [%s]\n", file );
-
     FILE *f = fopen(file, "wb");
 
     if (!f)
@@ -581,10 +557,11 @@ void write_grayscale(const char *file, const grayscale &img)
         return;
     }
 
-    fprintf(f, "P5\n%zu %zu\n255\n", img.W(), img.H());
+    auto header = std::format("P5\n{} {}\n{}\n", img.W(), img.H(), constants::pixel_max);
+    fwrite(header.c_str(), 1, header.size(), f);
     for (size_t y = 0; y != img.H(); y++)
         for (size_t x = 0; x != img.W(); x++)
-            fputc(img.at(x, y) * 255, f);
+            fputc(img.at(x, y) * constants::pixel_max, f);
 
     fclose(f);
 }

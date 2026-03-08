@@ -64,7 +64,7 @@ class compressor
 
 class null_compressor : public compressor
 {
-    virtual std::string name() const
+    std::string name() const override
     {
         return "null";
     };
@@ -72,8 +72,8 @@ class null_compressor : public compressor
   public:
     null_compressor(size_t width, size_t height) : compressor{width, height} {}
 
-    virtual std::vector<uint8_t> compress([[maybe_unused]] bitmap &current, [[maybe_unused]] const bitmap &target,
-                                          /* weigths, */ [[maybe_unused]] size_t budget) const
+    std::vector<uint8_t> compress([[maybe_unused]] bitmap &current, [[maybe_unused]] const bitmap &target,
+                                  /* weigths, */ [[maybe_unused]] size_t budget) const override
     {
         return {};
     }
@@ -81,7 +81,7 @@ class null_compressor : public compressor
 
 class invert_compressor : public compressor
 {
-    virtual std::string name() const
+    std::string name() const override
     {
         return "invert";
     };
@@ -89,8 +89,8 @@ class invert_compressor : public compressor
   public:
     invert_compressor(size_t width, size_t height) : compressor{width, height} {}
 
-    virtual std::vector<uint8_t> compress(bitmap &current, [[maybe_unused]] const bitmap &target,
-                                          /* weigths, */ [[maybe_unused]] size_t budget) const
+    std::vector<uint8_t> compress(bitmap &current, [[maybe_unused]] const bitmap &target,
+                                  /* weigths, */ [[maybe_unused]] size_t budget) const override
     {
         current = current.inverted();
         return {};
@@ -99,17 +99,17 @@ class invert_compressor : public compressor
 
 class copy_line_compressor : public compressor
 {
-    virtual std::string name() const
+    std::string name() const override
     {
         return "lines";
     };
 
-    virtual bool set_parameter(const std::string parameter, const std::string value)
+    bool set_parameter(const std::string parameter, const std::string value) override
     {
         return compressor::set_parameter(parameter, value);
     }
 
-    virtual std::vector<uint8_t> compress(bitmap &current, const bitmap &target, /* weigths, */ size_t budget) const
+    std::vector<uint8_t> compress(bitmap &current, const bitmap &target, /* weigths, */ size_t budget) const override
     {
         bitmap result{current};
 
@@ -165,7 +165,7 @@ class copy_line_compressor : public compressor
  */
 template <typename T> class vertical_compressor : public compressor
 {
-    virtual std::string name() const
+    std::string name() const override
     {
         return std::format("z{}", sizeof(T) * 8);
     }
@@ -260,7 +260,7 @@ template <typename T> class vertical_compressor : public compressor
         return offset;
     }
 
-    virtual std::vector<uint8_t> compress(bitmap &current, const bitmap &target, /* weigths, */ size_t budget) const
+    std::vector<uint8_t> compress(bitmap &current, const bitmap &target, /* weigths, */ size_t budget) const override
     {
         // std::cerr << "BUDGET:" << budget << "\n";
 

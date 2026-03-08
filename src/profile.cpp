@@ -6,11 +6,11 @@ namespace macflim
 bool encoding_profile::set_dither(std::string dither)
 {
     if (dither == "ordered")
-        dither_ = grayscale::ordered;
+        dither_ = grayscale::dithering::ordered;
     else if (dither == "error")
-        dither_ = grayscale::error_diffusion;
+        dither_ = grayscale::dithering::error_diffusion;
     else if (dither == "blue")
-        dither_ = grayscale::blue_noise;
+        dither_ = grayscale::dithering::blue_noise;
     else
         throw macflim::config_error("Wrong dither option : only 'ordered', 'error', and 'blue' are supported", dither);
     return true;
@@ -70,11 +70,11 @@ std::string encoding_profile::dither_string() const
 {
     switch (dither_)
     {
-    case grayscale::error_diffusion:
+    case grayscale::dithering::error_diffusion:
         return "error";
-    case grayscale::ordered:
+    case grayscale::dithering::ordered:
         return "ordered";
-    case grayscale::blue_noise:
+    case grayscale::dithering::blue_noise:
         return "blue";
     }
     return "???";
@@ -89,7 +89,7 @@ std::string encoding_profile::description() const
     cmd << " --group " << (group_ ? "true" : "false");
     cmd << " --bars " << (bars_ ? "true" : "false");
     cmd << " --dither " << dither_string();
-    if (dither_ == grayscale::error_diffusion)
+    if (dither_ == grayscale::dithering::error_diffusion)
     {
         cmd << " --error-stability " << stability_;
         cmd << " --error-algorithm " << error_algorithm_;

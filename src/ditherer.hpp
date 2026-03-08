@@ -45,15 +45,15 @@ class Ditherer
 
         grayscale dithered_image(W_, H_); //  The next dithered image
 
-        if (dp_.dither_ == grayscale::error_diffusion)
+        if (dp_.dither_ == grayscale::dithering::error_diffusion)
             error_diffusion(dithered_image, filtered_image, dithered_image_, dp_.stability_,
                             *get_error_diffusion_by_name(dp_.error_algorithm_), dp_.error_bleed_, dp_.error_bidi_);
-        else if (dp_.dither_ == grayscale::ordered)
+        else if (dp_.dither_ == grayscale::dithering::ordered)
             ordered_dither(dithered_image, filtered_image, dithered_image_);
-        else if (dp_.dither_ == grayscale::blue_noise)
+        else if (dp_.dither_ == grayscale::dithering::blue_noise)
             blue_noise_dither(dithered_image, filtered_image, dithered_image_);
         else
-            throw config_error("Unknown dithering option", std::to_string(dp_.dither_));
+            throw config_error("Unknown dithering option", std::to_string(static_cast<int>(dp_.dither_)));
 
         watermark(dithered_image, dp_.watermark_);
 

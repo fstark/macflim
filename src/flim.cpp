@@ -180,7 +180,7 @@ void flim::write(FILE *f) const
 
 //  --- Building helpers ---
 
-void flim::add_component(eComponentType type, const std::vector<uint8_t> &data)
+void flim::add_component(component_type type, const std::vector<uint8_t> &data)
 {
     components_.push_back({static_cast<uint16_t>(type), 0, static_cast<uint32_t>(data.size())});
     blobs_.push_back(data);
@@ -190,7 +190,7 @@ void flim::add(const flim_info &fi)
 {
     std::vector<uint8_t> data;
     fi.serialize(data);
-    add_component(component_info, data);
+    add_component(component_type::info, data);
 }
 
 void flim::add(const std::vector<frame> &frames)
@@ -207,11 +207,11 @@ void flim::add(const std::vector<frame> &frames)
         write2(ot, movie_data.size() - prev_size);
     }
 
-    add_component(component_movie, movie_data);
-    add_component(component_toc, toc_data);
+    add_component(component_type::movie, movie_data);
+    add_component(component_type::toc, toc_data);
 }
 
-void flim::add_framebuffer(eComponentType type, const bitmap &fb)
+void flim::add_framebuffer(component_type type, const bitmap &fb)
 {
     std::vector<uint8_t> data;
     auto bi = std::back_inserter(data);
@@ -226,12 +226,12 @@ void flim::add_framebuffer(eComponentType type, const bitmap &fb)
 void flim::add_poster(const bitmap &fb)
 {
     std::vector<uint8_t> data = fb.raw_values_natural<uint8_t>();
-    add_component(component_poster, data);
+    add_component(component_type::poster, data);
 }
 
 void flim::add_initial(const bitmap &fb)
 {
-    add_framebuffer(component_initial, fb);
+    add_framebuffer(component_type::initial, fb);
 }
 
 } // namespace macflim

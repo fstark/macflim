@@ -22,13 +22,21 @@ namespace macflim
 //  Sometime, a pixel can be <0 or >1, when error propagates during dithering
 class grayscale
 {
-  public:
+  private:
     std::vector<float> grayscale_;
     size_t W_;
     size_t H_;
 
   public:
     grayscale(size_t W, size_t H) : grayscale_(W * H), W_{W}, H_{H} {}
+
+    // Explicit move semantics for large data
+    grayscale(grayscale &&) noexcept = default;
+    grayscale &operator=(grayscale &&) noexcept = default;
+
+    // Default copy operations
+    grayscale(const grayscale &) = default;
+    grayscale &operator=(const grayscale &) = default;
 
     size_t W() const
     {
@@ -43,20 +51,16 @@ class grayscale
     {
         assert(x < W_);
         assert(y < H_);
-        assert(x < W_);
-        assert(y < H_);
         return grayscale_[x + y * W_];
     }
     float &at(size_t x, size_t y)
     {
         assert(x < W_);
         assert(y < H_);
-        assert(x < W_);
-        assert(y < H_);
         return grayscale_[x + y * W_];
     }
 
-    enum dithering
+    enum class dithering
     {
         error_diffusion = 0,
         ordered = 1,
@@ -72,19 +76,19 @@ class grayscale
 };
 
 void fill(grayscale &img, float value = 0.5);
-grayscale round_corners(const grayscale &img);
-grayscale filter(const grayscale &from, const char *filters);
+[[nodiscard]] grayscale round_corners(const grayscale &img);
+[[nodiscard]] grayscale filter(const grayscale &from, const char *filters);
 void ordered_dither(grayscale &dest, const grayscale &source, const grayscale &previous);
 void blue_noise_dither(grayscale &dest, const grayscale &source, const grayscale &previous);
 
 struct dither_algorithm;
 
-const dither_algorithm *get_error_diffusion_by_name(const std::string &name);
+[[nodiscard]] const dither_algorithm *get_error_diffusion_by_name(const std::string &name);
 void error_diffusion_algorithms(std::function<void(const std::string name, const std::string desciption)> f);
 void error_diffusion(grayscale &dest, const grayscale &source, const grayscale &previous, float stability,
                      const dither_algorithm &algo, float bleed = 1, bool two_ways = false);
 
-bool read_grayscale(grayscale &result, const char *file);
+[[nodiscard]] bool read_grayscale(grayscale &result, const char *file);
 void write_grayscale(const char *file, const grayscale &img);
 
 void copy(grayscale &destination, const grayscale &source, bool black_bars = true, double anchor_x = 0.5,

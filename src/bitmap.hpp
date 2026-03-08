@@ -188,6 +188,14 @@ class bitmap
 
     ~bitmap() {}
 
+    // Explicit move semantics for large data
+    bitmap(bitmap &&) noexcept = default;
+    bitmap &operator=(bitmap &&) noexcept = default;
+
+    // Default copy operations
+    bitmap(const bitmap &) = default;
+    bitmap &operator=(const bitmap &) = default;
+
     void fill(uint8_t value)
     {
         std::fill(std::begin(data_), std::end(data_), value);

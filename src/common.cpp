@@ -131,14 +131,14 @@ std::vector<std::string> split(const std::string &s, const std::string &delimite
     return res;
 }
 
-bool bool_from(const std::string &v)
+bool bool_from(std::string_view v)
 {
     if (v == "true")
         return true;
     return false;
 }
 
-bool ends_with(std::string const &value, std::string const &ending)
+bool ends_with(std::string_view value, std::string_view ending)
 {
     if (ending.size() > value.size())
         return false;
