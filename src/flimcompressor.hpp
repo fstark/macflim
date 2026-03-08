@@ -16,13 +16,6 @@
 #include <optional>
 #include <vector>
 
-using macflim::codec_spec;
-using macflim::compressor_helper;
-using macflim::Ditherer;
-using macflim::dithering_parameters;
-using macflim::make_codec;
-using macflim::subtitle_burner;
-
 namespace macflim
 {
 

@@ -5,6 +5,7 @@
 #include <numeric>
 
 #include "bitmap.hpp"
+#include "file_handle.hpp"
 #include "flim.hpp"
 #include "flimcompressor.hpp"
 #include "frame.hpp"
@@ -230,9 +231,8 @@ void flimencoder::make_flim(const std::string flim_pathname, input_reader *reade
     if (fc.get_initial())
         ef.add_initial(*fc.get_initial());
 
-    FILE *movie_file = fopen(flim_pathname.c_str(), "wb");
-    ef.write(movie_file);
-    fclose(movie_file);
+    file_handle movie_file(flim_pathname, "wb");
+    ef.write(movie_file.get());
 
     // Production output via writers (mp4, gif, pgm)
     if (writers.size())
@@ -261,12 +261,12 @@ void flimencoder::make_flim(const std::string flim_pathname, input_reader *reade
                         double secs = tick_count / 60.0;
                         int mins = (int)(secs / 60);
                         double rsecs = secs - mins * 60;
-                        std::cerr << std::format("Writing output: tick {}/{} ({}:{:05.2f}s) {}%\r", tick_count,
+                        std::clog << std::format("Writing output: tick {}/{} ({}:{:05.2f}s) {}%\r", tick_count,
                                                  total_ticks, mins, rsecs, tick_count * 100 / total_ticks);
                     }
                 }
             }
-            std::cerr << std::format("\n");
+            std::clog << std::format("\n");
         }
     }
 

@@ -11,7 +11,7 @@ namespace macflim
 
 /// This will dither a series of images, using the previous ones to minimize artifacts
 /// Size of the output is the same as the size of the initial image
-class Ditherer
+class ditherer
 {
     size_t W_, H_;             //  Width and height of the generated image
     grayscale dithered_image_; //  The currently dithered image
@@ -20,7 +20,7 @@ class Ditherer
     const dithering_parameters dp_;
 
   public:
-    Ditherer(const grayscale &initial_image, const dithering_parameters &dp)
+    ditherer(const grayscale &initial_image, const dithering_parameters &dp)
         : W_{initial_image.W()}, H_{initial_image.H()}, dithered_image_{initial_image}, dp_{dp}
     {
     }

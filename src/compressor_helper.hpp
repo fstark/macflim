@@ -21,7 +21,7 @@ namespace macflim
 
 class compressor_helper
 {
-    Ditherer &ditherer_;
+    ditherer &ditherer_;
     subtitle_burner &subtitle_burner_;
     bitmap current_fb_; //  The bitmap displayed on screen at each step [#### check creation]
     const std::vector<codec_spec> &codecs_;
@@ -40,11 +40,11 @@ class compressor_helper
     qhistogram<BucketCount> histo_;
 
   public:
-    compressor_helper(Ditherer &ditherer, subtitle_burner &subtitle_burner, const std::vector<codec_spec> &codecs,
+    compressor_helper(ditherer &d, subtitle_burner &subtitle_burner, const std::vector<codec_spec> &codecs,
                       const double fps, const size_t byterate, const std::vector<sound_frame_t> &audio,
                       const bool group)
-        : ditherer_{ditherer}, subtitle_burner_{subtitle_burner}, current_fb_{ditherer_.current()}, codecs_{codecs},
-          fps_{fps}, byterate_{byterate}, audio_{audio}, group_{group}
+        : ditherer_{d}, subtitle_burner_{subtitle_burner}, current_fb_{ditherer_.current()}, codecs_{codecs}, fps_{fps},
+          byterate_{byterate}, audio_{audio}, group_{group}
     {
         current_tick_ = 0;
         in_fr_ = 0;

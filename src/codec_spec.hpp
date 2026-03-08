@@ -13,6 +13,8 @@
 namespace macflim
 {
 
+/// Configuration for a compression codec including its signature and performance penalty
+/// Used to select and configure codecs for frame compression
 struct codec_spec
 {
     uint8_t signature;

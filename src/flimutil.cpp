@@ -1,5 +1,6 @@
 #include "bitmap.hpp"
 #include "errors.hpp"
+#include "file_handle.hpp"
 #include "flim.hpp"
 
 #include <cstdio>
@@ -326,20 +327,22 @@ int flimutil_main(int argc, char **argv)
             argv++;
         }
 
-        FILE *f = fopen(path.c_str(), "rb");
-        if (!f)
+        file_handle f;
+        try
+        {
+            f = file_handle(path, "rb");
+        }
+        catch (const std::runtime_error &)
         {
             std::cerr << std::format("Cannot open '{}'\n", path);
             return EXIT_FAILURE;
         }
 
         flim fl;
-        if (!fl.read(f))
+        if (!fl.read(f.get()))
         {
-            fclose(f);
             return EXIT_FAILURE;
         }
-        fclose(f);
 
         print_summary(fl);
 

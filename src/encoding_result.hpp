@@ -9,6 +9,8 @@
 namespace macflim
 {
 
+/// Encapsulates the result of encoding a frame transition with a specific codec
+/// Stores the encoded data, resulting bitmap, and quality metrics for comparison
 class encoding_result
 {
     const codec_spec &codec_;         //  Used codec

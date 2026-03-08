@@ -190,7 +190,7 @@ program_options parse_arguments(int argc, char **argv)
         {
             argc--;
             argv++;
-            opts.width = atoi(*argv);
+            opts.width = std::stoi(*argv);
             if ((opts.width % 32) != 0)
             {
                 opts.width = (opts.width / 32) * 32;
@@ -201,25 +201,25 @@ program_options parse_arguments(int argc, char **argv)
         {
             argc--;
             argv++;
-            opts.height = atoi(*argv);
+            opts.height = std::stoi(*argv);
         }
         else if (!strcmp(*argv, "--byterate"))
         {
             argc--;
             argv++;
-            opts.custom_profile.set_byterate(atoi(*argv));
+            opts.custom_profile.set_byterate(std::stoi(*argv));
         }
         else if (!strcmp(*argv, "--fps"))
         {
             argc--;
             argv++;
-            opts.fps = atof(*argv);
+            opts.fps = std::stod(*argv);
         }
         else if (!strcmp(*argv, "--fps-ratio"))
         {
             argc--;
             argv++;
-            opts.custom_profile.set_fps_ratio(atoi(*argv));
+            opts.custom_profile.set_fps_ratio(std::stoi(*argv));
         }
         else if (!strcmp(*argv, "--group"))
         {
@@ -243,7 +243,7 @@ program_options parse_arguments(int argc, char **argv)
         {
             argc--;
             argv++;
-            opts.to_index = atof(*argv);
+            opts.to_index = std::stod(*argv);
         }
         else if (!strcmp(*argv, "--duration"))
         {

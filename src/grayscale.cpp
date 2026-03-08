@@ -1,6 +1,7 @@
 #include "grayscale.hpp"
 #include "constants.hpp"
 #include "errors.hpp"
+#include "file_handle.hpp"
 
 #include <format>
 #include <iostream>
@@ -456,7 +457,8 @@ grayscale filter(const grayscale &from, filter_type filter, double arg = 0)
     case filter_type::debug:
         return debug_filter(from);
     }
-    std::cerr << std::format("**** ERROR: filter ['{}'] ({}) unknown\n", static_cast<char>(filter), static_cast<int>(filter));
+    std::cerr << std::format("**** ERROR: filter ['{}'] ({}) unknown\n", static_cast<char>(filter),
+                             static_cast<int>(filter));
     throw config_error("Unknown filter", std::string(1, static_cast<char>(filter)));
 }
 
@@ -523,21 +525,24 @@ bool read_grayscale(grayscale &result, const char *file)
     grayscale image(constants::mac_screen_width, constants::mac_screen_height);
     fill(image, 0);
 
-    FILE *f = fopen(file, "rb");
-
-    if (!f)
+    file_handle f;
+    try
+    {
+        f = file_handle(file, "rb");
+    }
+    catch (const std::runtime_error &)
+    {
         return false;
+    }
 
     for (int i = 0; i != 15; i++)
-        fgetc(f);
+        fgetc(f.get());
 
     for (size_t y = 0; y != image.H(); y++)
         for (size_t x = 0; x != image.W(); x++)
         { // img[x][y] = ((int)(fgetc(f)/255.0*16))/16.0;
-            image.at(x, y) = correct(fgetc(f)) / static_cast<double>(constants::pixel_max);
+            image.at(x, y) = correct(fgetc(f.get())) / static_cast<double>(constants::pixel_max);
         }
-
-    fclose(f);
 
     result = image;
 
@@ -549,21 +554,22 @@ bool read_grayscale(grayscale &result, const char *file)
 //  ------------------------------------------------------------------
 void write_grayscale(const char *file, const grayscale &img)
 {
-    FILE *f = fopen(file, "wb");
-
-    if (!f)
+    file_handle f;
+    try
+    {
+        f = file_handle(file, "wb");
+    }
+    catch (const std::runtime_error &)
     {
         std::cerr << std::format("Cannot open [{}]\n", file);
         return;
     }
 
     auto header = std::format("P5\n{} {}\n{}\n", img.W(), img.H(), constants::pixel_max);
-    fwrite(header.c_str(), 1, header.size(), f);
+    fwrite(header.c_str(), 1, header.size(), f.get());
     for (size_t y = 0; y != img.H(); y++)
         for (size_t x = 0; x != img.W(); x++)
-            fputc(img.at(x, y) * constants::pixel_max, f);
-
-    fclose(f);
+            fputc(img.at(x, y) * constants::pixel_max, f.get());
 }
 
 //  ------------------------------------------------------------------

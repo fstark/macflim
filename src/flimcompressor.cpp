@@ -34,8 +34,8 @@ void flimcompressor::compress(const encoding_profile &profile, const std::string
     // Generate initial frame if requested or if looping is enabled
     if (loop || initial_mode != initial_frame_mode::none)
     {
-        // Create temporary Ditherer to generate initial frame
-        Ditherer temp_d{previous, dp};
+        // Create temporary ditherer to generate initial frame
+        ditherer temp_d{previous, dp};
         temp_d.dither(*first_opt);
         initial_fb_ = bitmap{temp_d.current()};
 
@@ -49,7 +49,7 @@ void flimcompressor::compress(const encoding_profile &profile, const std::string
     }
 
     // Create dithering infrastructure for encoding
-    Ditherer d{previous, dp};
+    ditherer d{previous, dp};
     subtitle_burner sb{subtitles_};
     compressor_helper ch{d, sb, codecs, fps_, profile.byterate(), audio_, profile.group()};
 

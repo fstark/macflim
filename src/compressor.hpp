@@ -37,7 +37,7 @@ class compressor
 
     static size_t size_t_from(const std::string &v)
     {
-        return atoi(v.c_str());
+        return std::stoull(v);
     }
 
   public:

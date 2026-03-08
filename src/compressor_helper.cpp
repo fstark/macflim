@@ -64,7 +64,7 @@ double compressor_helper::add(const grayscale &source)
             double time_s = current_tick_ / 60.0;
             int min = (int)(time_s / 60);
             double sec = time_s - min * 60;
-            std::cerr << std::format("Encoded frame {} ({}:{:05.2f}s)\r", frames_.size(), min, sec);
+            std::clog << std::format("Encoded frame {} ({}:{:05.2f}s)\r", frames_.size(), min, sec);
         }
 
         current_fb_ = best_result->image();

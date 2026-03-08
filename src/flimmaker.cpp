@@ -21,6 +21,7 @@
 
 #include "cmdline.hpp"
 #include "errors.hpp"
+#include "file_handle.hpp"
 
 #include <stdlib.h>
 #ifndef _WIN32
@@ -61,8 +62,6 @@
 #include <unistd.h>
 #endif
 
-using namespace std::string_literals;
-
 // If defined, we add a "stamp" to each stream, to know where it is coming from
 #define noSTAMP
 
@@ -85,10 +84,9 @@ const char *version = VERSION;
 // Write a bunch of bytes in a file
 void write_data(const char *file, uint8_t *data, size_t len)
 {
-    FILE *f = fopen(file, "wb");
+    file_handle f(file, "wb");
     while (len--)
-        fputc(*data++, f);
-    fclose(f);
+        fputc(*data++, f.get());
 }
 
 #ifndef _WIN32
@@ -178,7 +176,8 @@ int run_main(int argc, char **argv)
                 int res = system(buffer.c_str());
                 if (res != 0)
                 {
-                    std::clog << std::format("yt-dlp not installed or failing, falling back to youtube-dl (code {})\n", res);
+                    std::clog << std::format("yt-dlp not installed or failing, falling back to youtube-dl (code {})\n",
+                                             res);
                     buffer = std::format("youtube-dl '{}' -f mp4 --output '{}'", opts.input_file, opts.cache_file);
                     res = system(buffer.c_str());
                     if (res != 0)

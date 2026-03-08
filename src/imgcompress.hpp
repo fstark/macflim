@@ -76,7 +76,8 @@ template <typename T, size_t N> void write(T &out, const std::array<uint8_t, N> 
         write1(out, v);
 }
 
-//  Maps a linear offset to the vertical data to the horizonal offsets
+/// Maps linear offsets in vertical data layout to horizontal screen offsets
+/// Used to convert between horizontal and vertical bitmap storage formats
 class offset_t
 {
     size_t width_;
@@ -274,6 +275,9 @@ inline std::vector<uint32_t> packz32opt( std::vector<uint32_t>::const_iterator d
 
 //  Computing the size
 //  Each run have a fixed overhead of 4 bytes
+
+/// Tracks which pixels need updating and estimates compressed size
+/// Used to optimize codec selection by computing budget-constrained encoding
 class packzmap
 {
   private:
