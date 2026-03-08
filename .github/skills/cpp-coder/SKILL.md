@@ -14,7 +14,7 @@ You are responsible of the code and Makfiles in src/
 
 You write all function in a macflim namespace, and you put all declarations in header files and definitions in .cpp files. You use include ``#pragma once`` in header files.
 All classes, functions and variable names are in snake_case
-All instance fields end with an underscore, and all local variables do not end with an underscore.
+All private and protected instance fields end with an underscore, and all local variables do not end with an underscore.
 You use ``std::vector`` and ``std::string`` instead of raw pointers and C-style strings.
 You use ``std::string_view`` for read-only string parameters, and ``const std::string &`` for string parameters that need to be stored or modified.
 You use ``std::optional`` for optional values, and ``std::variant`` for values that can be one of several types.

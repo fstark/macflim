@@ -52,7 +52,7 @@ using AVCodecContextPtr = std::unique_ptr<AVCodecContext, AVCodecContextDeleter>
 using AVFramePtr = std::unique_ptr<AVFrame, AVFrameDeleter>;
 } // namespace
 
-class ffmpeg_writer : public output_writer
+class ffmpeg_writer final : public output_writer
 {
     size_t W_; // Should be in output_writer
     size_t H_;
@@ -383,13 +383,13 @@ class ffmpeg_writer : public output_writer
             std::clog << std::format("#### End of video stream\n");
     }
 
-    virtual void write_frame(const grayscale &img, const sound_frame_t &snd)
+    void write_frame(const grayscale &img, const sound_frame_t &snd) override
     {
         pushFrame(img, snd);
     }
 };
 
-class gif_writer : public output_writer
+class gif_writer final : public output_writer
 {
     size_t count_ = 0;
     size_t num_ = 0;
@@ -398,7 +398,7 @@ class gif_writer : public output_writer
   public:
     gif_writer(const std::string filename) : filename_{filename} {}
 
-    virtual void write_frame(const grayscale &img, [[maybe_unused]] const sound_frame_t &snd)
+    void write_frame(const grayscale &img, [[maybe_unused]] const sound_frame_t &snd) override
     {
         if ((count_ % 3) == 0)
         {
@@ -434,7 +434,7 @@ std::unique_ptr<output_writer> make_gif_writer(const std::string &movie_path, [[
     return std::make_unique<gif_writer>(movie_path);
 }
 
-class pgm_writer : public output_writer
+class pgm_writer final : public output_writer
 {
     std::string pattern_;
     size_t frame_num_ = 1;
@@ -446,7 +446,7 @@ class pgm_writer : public output_writer
         delete_files_of_pattern(pattern_);
     }
 
-    virtual void write_frame(const grayscale &img, [[maybe_unused]] const sound_frame_t &snd) override
+    void write_frame(const grayscale &img, [[maybe_unused]] const sound_frame_t &snd) override
     {
         std::string buffer = std::vformat(pattern_, std::make_format_args(frame_num_));
         write_grayscale(buffer.c_str(), img);
@@ -459,10 +459,10 @@ std::unique_ptr<output_writer> make_pgm_writer(const std::string &pattern)
     return std::make_unique<pgm_writer>(pattern);
 }
 
-class null_writer : public output_writer
+class null_writer final : public output_writer
 {
   public:
-    virtual void write_frame([[maybe_unused]] const grayscale &img, [[maybe_unused]] const sound_frame_t &snd) {}
+    void write_frame([[maybe_unused]] const grayscale &img, [[maybe_unused]] const sound_frame_t &snd) override {}
 };
 
 std::unique_ptr<output_writer> make_null_writer()

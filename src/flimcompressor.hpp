@@ -23,6 +23,8 @@ namespace macflim
  * The flimcompressor manages higher aspects of the compression
  */
 
+/// Manages the complete compression pipeline for a sequence of images.
+/// Coordinates dithering, codec selection, budgeting, and frame generation.
 class flimcompressor
 {
   private:
@@ -44,11 +46,11 @@ class flimcompressor
     {
     }
 
-    const std::vector<frame> &get_frames() const
+    [[nodiscard]] const std::vector<frame> &get_frames() const
     {
         return frames_;
     }
-    const std::optional<bitmap> &get_initial() const
+    [[nodiscard]] const std::optional<bitmap> &get_initial() const
     {
         return initial_fb_;
     }

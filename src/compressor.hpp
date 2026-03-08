@@ -44,8 +44,8 @@ class compressor
     compressor(size_t width, size_t height) : W_{width}, H_{height} {}
 
     virtual ~compressor() {}
-    virtual std::vector<uint8_t> compress(bitmap &current, const bitmap &target,
-                                          /* weigths, */ size_t budget) const = 0;
+    [[nodiscard]] virtual std::vector<uint8_t> compress(bitmap &current, const bitmap &target,
+                                                        /* weigths, */ size_t budget) const = 0;
 
     virtual bool set_parameter(const std::string parameter, const std::string value)
     {
@@ -54,15 +54,16 @@ class compressor
         return false;
     }
 
-    virtual std::string name() const = 0;
+    [[nodiscard]] virtual std::string name() const = 0;
 
-    virtual std::string description() const
+    [[nodiscard]] virtual std::string description() const
     {
         return name();
     }
 };
 
-class null_compressor : public compressor
+/// Null compressor that makes no changes to the current bitmap.
+class null_compressor final : public compressor
 {
     std::string name() const override
     {
@@ -79,7 +80,8 @@ class null_compressor : public compressor
     }
 };
 
-class invert_compressor : public compressor
+/// Invert compressor that flips all pixels in the current bitmap.
+class invert_compressor final : public compressor
 {
     std::string name() const override
     {
@@ -97,7 +99,8 @@ class invert_compressor : public compressor
     }
 };
 
-class copy_line_compressor : public compressor
+/// Copy line compressor that copies full scanlines from target to current bitmap.
+class copy_line_compressor final : public compressor
 {
     std::string name() const override
     {

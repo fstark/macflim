@@ -8,7 +8,7 @@ namespace macflim
 /*
  * A filesystem reader can read 512x342 8 bits pgm files numbered from 1. Audio has to be raw 8 bits unsigned.
  */
-class filesystem_reader : public input_reader
+class filesystem_reader final : public input_reader
 {
     std::string file_pattern_;
     double frame_rate_;
@@ -33,12 +33,12 @@ class filesystem_reader : public input_reader
         current_image_index_ = from_frame_;
     }
 
-    virtual double frame_rate()
+    double frame_rate() override
     {
         return frame_rate_;
     }
 
-    virtual std::unique_ptr<grayscale> next()
+    std::unique_ptr<grayscale> next() override
     {
         auto img = std::make_unique<grayscale>(512, 342); //  'cause read_grayscale don't support anything else for now
 
@@ -66,7 +66,7 @@ class filesystem_reader : public input_reader
         return img;
     }
 
-    virtual std::unique_ptr<sound_frame_t> next_sound()
+    std::unique_ptr<sound_frame_t> next_sound() override
     {
         return nullptr;
     } //  #### THIS IS COMPLETELY WRONG

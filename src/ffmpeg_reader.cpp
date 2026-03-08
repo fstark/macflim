@@ -133,7 +133,7 @@ class sound_buffer
 
 /// Lazy video-only reader: decodes one video frame per next() call.
 /// Audio is handled separately via the decode_audio() free function.
-class ffmpeg_reader : public input_reader
+class ffmpeg_reader final : public input_reader
 {
     AVFormatContextPtr format_context_;
     const AVCodec *video_decoder_;
@@ -315,13 +315,13 @@ class ffmpeg_reader : public input_reader
         }
     }
 
-    virtual double frame_rate()
+    double frame_rate() override
     {
         return av_q2d(video_stream_->r_frame_rate);
     }
 
     /// Lazily decode and return the next video frame, or nullptr when done.
-    virtual std::unique_ptr<grayscale> next()
+    std::unique_ptr<grayscale> next() override
     {
         if (done_)
             return nullptr;
@@ -377,7 +377,7 @@ class ffmpeg_reader : public input_reader
     }
 
     /// Audio is handled by the separate decode_audio() function
-    virtual std::unique_ptr<sound_frame_t> next_sound()
+    std::unique_ptr<sound_frame_t> next_sound() override
     {
         return nullptr;
     }

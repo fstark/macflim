@@ -18,8 +18,8 @@ namespace macflim
 //  A grayscale class and various associated utilities
 //  ------------------------------------------------------------------
 
-//  This is a grayscale image, represented as a bunch of floating point values (0==black and 1==white)
-//  Sometime, a pixel can be <0 or >1, when error propagates during dithering
+/// Grayscale image represented as floating point values (0=black, 1=white).
+/// Used as the intermediate format for dithering and image processing operations.
 class grayscale
 {
   private:

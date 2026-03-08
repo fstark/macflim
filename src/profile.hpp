@@ -48,11 +48,11 @@ class encoding_profile
     std::vector<std::string> codec_specs_;
 
   public:
-    size_t width() const
+    [[nodiscard]] size_t width() const
     {
         return W_;
     }
-    size_t height() const
+    [[nodiscard]] size_t height() const
     {
         return H_;
     }
@@ -70,7 +70,7 @@ class encoding_profile
         H_ = H;
     }
 
-    size_t byterate() const
+    [[nodiscard]] size_t byterate() const
     {
         return byterate_;
     }
@@ -82,7 +82,7 @@ class encoding_profile
     //  Technically, we could put the half-rate/fps_ratio mecanism in the reader phase
     //  to avoid reading unecessary images, but it is more generic to put it here
     //  as it could allows to extend to dynamic half rate [yagni]
-    int fps_ratio() const
+    [[nodiscard]] int fps_ratio() const
     {
         return fps_ratio_;
     }
@@ -91,7 +91,7 @@ class encoding_profile
         fps_ratio_ = fps_ratio;
     }
 
-    bool group() const
+    [[nodiscard]] bool group() const
     {
         return group_;
     }
@@ -100,7 +100,7 @@ class encoding_profile
         group_ = group;
     }
 
-    std::string filters() const
+    [[nodiscard]] std::string filters() const
     {
         return filters_;
     }
@@ -109,7 +109,7 @@ class encoding_profile
         filters_ = filters;
     }
 
-    bool bars() const
+    [[nodiscard]] bool bars() const
     {
         return bars_;
     }
@@ -118,7 +118,7 @@ class encoding_profile
         bars_ = bars;
     }
 
-    double anchor_x() const
+    [[nodiscard]] double anchor_x() const
     {
         return anchor_x_;
     }
@@ -127,7 +127,7 @@ class encoding_profile
         anchor_x_ = anchor_x;
     }
 
-    double anchor_y() const
+    [[nodiscard]] double anchor_y() const
     {
         return anchor_y_;
     }
@@ -136,7 +136,7 @@ class encoding_profile
         anchor_y_ = anchor_y;
     }
 
-    grayscale::dithering dither() const
+    [[nodiscard]] grayscale::dithering dither() const
     {
         return dither_;
     }
@@ -146,7 +146,7 @@ class encoding_profile
         dither_ = dither;
     }
 
-    std::string error_algorithm() const
+    [[nodiscard]] std::string error_algorithm() const
     {
         return error_algorithm_;
     }
@@ -155,7 +155,7 @@ class encoding_profile
         error_algorithm_ = algo;
     }
 
-    float error_bleed() const
+    [[nodiscard]] float error_bleed() const
     {
         return error_bleed_;
     }
@@ -164,7 +164,7 @@ class encoding_profile
         error_bleed_ = bleed;
     }
 
-    bool error_bidi() const
+    [[nodiscard]] bool error_bidi() const
     {
         return error_bidi_;
     }
@@ -173,7 +173,7 @@ class encoding_profile
         error_bidi_ = error_bidi;
     }
 
-    double stability() const
+    [[nodiscard]] double stability() const
     {
         return stability_;
     }
@@ -182,7 +182,7 @@ class encoding_profile
         stability_ = stability;
     }
 
-    const std::vector<std::string> &codec_specs() const
+    [[nodiscard]] const std::vector<std::string> &codec_specs() const
     {
         return codec_specs_;
     }
@@ -191,7 +191,7 @@ class encoding_profile
         codec_specs_ = specs;
     }
 
-    bool silent() const
+    [[nodiscard]] bool silent() const
     {
         return silent_;
     }
@@ -200,7 +200,7 @@ class encoding_profile
         silent_ = silent;
     }
 
-    initial_frame_mode initial_mode() const
+    [[nodiscard]] initial_frame_mode initial_mode() const
     {
         return initial_mode_;
     }
@@ -210,7 +210,7 @@ class encoding_profile
     }
     void set_initial_mode(const std::string &mode);
 
-    bool loop() const
+    [[nodiscard]] bool loop() const
     {
         return loop_;
     }

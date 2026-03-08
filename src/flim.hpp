@@ -96,6 +96,8 @@ void fletcher(long &checksum, uint16_t data);
 //  Populate by reading from disk (read) or building in memory
 //  (add_component, add, etc.), then write to disk (write).
 
+/// Represents a Flim file with typed components containing video, audio, and metadata.
+/// Used for reading existing Flim files or building new ones in memory before writing to disk.
 class flim
 {
     static constexpr size_t COMMENT_SIZE = 1022;
@@ -107,7 +109,7 @@ class flim
     std::vector<std::vector<uint8_t>> blobs_;
 
     //  Serialize the header directory (version + component table)
-    std::vector<uint8_t> serialize_header() const;
+    [[nodiscard]] std::vector<uint8_t> serialize_header() const;
 
     //  Compute the Fletcher-16 checksum over header + all blobs
     [[nodiscard]] uint16_t compute_checksum() const;
@@ -130,29 +132,29 @@ class flim
 
     //  --- Accessors ---
 
-    const std::string &comment() const
+    [[nodiscard]] const std::string &comment() const
     {
         return comment_;
     }
-    uint16_t version() const
+    [[nodiscard]] uint16_t version() const
     {
         return version_;
     }
-    size_t component_count() const
+    [[nodiscard]] size_t component_count() const
     {
         return components_.size();
     }
-    const component_entry &component(size_t i) const
+    [[nodiscard]] const component_entry &component(size_t i) const
     {
         return components_[i];
     }
-    const std::vector<uint8_t> &component_data(size_t i) const
+    [[nodiscard]] const std::vector<uint8_t> &component_data(size_t i) const
     {
         return blobs_[i];
     }
 
     //  Find first component of a given type, returns nullptr if not found
-    const std::vector<uint8_t> *find_component_data(component_type type) const
+    [[nodiscard]] const std::vector<uint8_t> *find_component_data(component_type type) const
     {
         for (size_t i = 0; i < components_.size(); i++)
             if (components_[i].type == static_cast<uint16_t>(type))
