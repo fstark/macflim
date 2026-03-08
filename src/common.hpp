@@ -16,7 +16,7 @@ using timestamp_t = double;
 
 ///  Compare two timestamps
 ///  They are identical if they are within 1/22050 of a second
-constexpr bool equals(timestamp_t a, timestamp_t b)
+inline bool equals(timestamp_t a, timestamp_t b)
 {
     return std::fabs(a - b) < 1.0 / 22050;
 }
