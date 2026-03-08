@@ -17,32 +17,27 @@ Defining these as named constants (e.g. `constexpr size_t kMacScreenW = 512`) in
 
 ## 3. Refactor long functions (>30 lines)
 
-**Status:** The top 6 longest functions have been successfully refactored into smaller helper functions.
+**Status:** 6 functions fully refactored below threshold, 1 removed as dead code. `flimcompressor::compress` partially reduced but still exceeds 30 lines.
 
-Functions should target ≤20 lines, with a hard limit of 30 lines (debug statements excluded; `test_*` functions exempt). The remaining 22 functions that exceed the 30-line limit should be broken down into smaller, more focused helper functions:
+Functions should target ≤20 lines, with a hard limit of 30 lines (debug statements excluded; `test_*` functions exempt). The remaining 8 functions that exceed the 30-line limit should be broken down into smaller, more focused helper functions:
 
-1. **pushFrame** - [writer.cpp](src/writer.cpp#L87-L183) - **97 lines**
-2. **flimutil_main** - [flimutil.cpp](src/flimutil.cpp#L239-L325) - **87 lines**
-3. **usage** - [cmdline.cpp](src/cmdline.cpp#L17-L88) - **72 lines**
-4. **flimcompressor::compress** - [flimcompressor.cpp](src/flimcompressor.cpp#L11-L81) - **71 lines**
-5. **dump_frame_data** - [flimutil.cpp](src/flimutil.cpp#L91-L161) - **71 lines**
-6. **compressor_helper::add** - [compressor_helper.cpp](src/compressor_helper.cpp#L11-L80) - **70 lines**
-7. **packbits** - [imgcompress.cpp](src/imgcompress.cpp#L10-L74) - **65 lines**
-8. **error_diffusion** - [grayscale.cpp](src/grayscale.cpp#L683-L740) - **58 lines**
-9. **old_quantize** - [grayscale.cpp](src/grayscale.cpp#L625-L678) - **54 lines**
-10. **next (ffmpeg_reader)** - [ffmpeg_reader.cpp](src/ffmpeg_reader.cpp#L234-L282) - **49 lines**
-11. **simplesprintf** - [common.cpp](src/common.cpp#L12-L57) - **46 lines**
-12. **filter (with filter_type)** - [grayscale.cpp](src/grayscale.cpp#L451-L488) - **38 lines**
-13. **~ffmpeg_writer destructor** - [writer.cpp](src/writer.cpp#L398-L432) - **35 lines**
-14. **dump_frame** - [flimutil.cpp](src/flimutil.cpp#L163-L196) - **34 lines**
-15. **receive_video_frame** - [ffmpeg_reader.cpp](src/ffmpeg_reader.cpp#L109-L136) - **28 lines**
-16. **init_video_context** - [ffmpeg_reader.cpp](src/ffmpeg_reader.cpp#L138-L165) - **28 lines**
-17. **blur5** - [grayscale.cpp](src/grayscale.cpp#L123-L149) - **27 lines**
-18. **debug_filter** - [grayscale.cpp](src/grayscale.cpp#L237-L263) - **27 lines**
-19. **blur3** - [grayscale.cpp](src/grayscale.cpp#L94-L120) - **27 lines**
-20. **read_grayscale** - [grayscale.cpp](src/grayscale.cpp#L525-L550) - **26 lines**
-21. **sharpen** - [grayscale.cpp](src/grayscale.cpp#L72-L92) - **21 lines**
-22. **write_grayscale** - [grayscale.cpp](src/grayscale.cpp#L555-L573) - **21 lines**
+1. **next (ffmpeg_reader)** - [ffmpeg_reader.cpp](src/ffmpeg_reader.cpp#L331-L385) - **55 lines**
+2. **simplesprintf** - [common.cpp](src/common.cpp#L16-L63) - **48 lines**
+3. **flimcompressor::compress** - [flimcompressor.cpp](src/flimcompressor.cpp#L41-L86) - **46 lines**
+4. **dump_frame** - [flimutil.cpp](src/flimutil.cpp#L198-L239) - **42 lines**
+5. **~ffmpeg_writer destructor** - [writer.cpp](src/writer.cpp#L342-L382) - **41 lines**
+6. **filter (with filter_type)** - [grayscale.cpp](src/grayscale.cpp#L426-L464) - **39 lines**
+7. **receive_video_frame** - [ffmpeg_reader.cpp](src/ffmpeg_reader.cpp#L157-L188) - **32 lines**
+8. **blur3** - [grayscale.cpp](src/grayscale.cpp#L102-L131) - **30 lines**
 
-Items 15-22 are near the 30-line threshold and may be acceptable as-is depending on complexity.
+Items 7-8 are at the 30-line threshold and may be acceptable as-is depending on complexity.
 
+**Completed:**
+- **old_quantize** — removed (dead code, never called)
+- **compressor_helper::add** - [compressor_helper.cpp](src/compressor_helper.cpp#L45-L76) - **32 lines** (was 70) — extracted `gather_audio`, `encode_best`, `log_encoding_progress`
+- **packbits** - [imgcompress.cpp](src/imgcompress.cpp#L48-L69) - **22 lines** (was 65) — extracted `find_next_run`, `emit_literals`, `emit_run`
+- **flimutil_main** - [flimutil.cpp](src/flimutil.cpp#L329-L353) - **25 lines** (was 64) — extracted `parse_flimutil_args`, `execute_flimutil_options`
+- **error_diffusion** - [grayscale.cpp](src/grayscale.cpp#L807-L824) - **18 lines** (was 61) — extracted `quantize_and_distribute`
+- **usage** - [cmdline.cpp](src/cmdline.cpp#L76-L93) - **18 lines** (was 72) — moved `usage_help_text` to namespace scope
+- **pushFrame** - [writer.cpp](src/writer.cpp#L185-L193) - **9 lines** (was 97) — extracted `render_video_frame`, `encode_video_packet`, `resample_audio`, `feed_audio`
+- **dump_frame_data** - [flimutil.cpp](src/flimutil.cpp#L182-L197) - **16 lines** (was 71) — extracted `dump_hex`, `dump_sound_info`, `dump_video_info`

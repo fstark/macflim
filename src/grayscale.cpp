@@ -777,141 +777,46 @@ void error_diffusion_algorithms(std::function<void(std::string_view name, std::s
         f(a.name, a.description);
 }
 
-#if 1
-//  ------------------------------------------------------------------
-//  Motion floyd-steinberg
-//  This will create a black/white 'dest' grayscale from a grayscale 'source'
-//  while trying to respect the placement of pixels
-//  from the black/white 'previous' image
-//  ------------------------------------------------------------------
-void old_quantize(grayscale &dest, const grayscale &source, const grayscale &previous, float stability)
-{
-    dest = source;
-
-    for (size_t y = 0; y != source.H(); y++)
-        for (size_t x = 0; x != source.W(); x++)
-        {
-            //  The color we'd like this pixel to be
-            float source_color = dest.at(x, y);
-
-            //  Increasing the stability value will makes the grayscale choose previous frame's pixel more often
-            //  Images will be "stable", but there will be some "ghosting artifacts"
-
-            double stability2 = stability;
-
-            /*
-                        //  We lookup at the real color we are targetting
-                        float real_color = source[x][y];
-
-                        //  We look at our position in the dithering matrix
-                        int xd = x%8;
-                        int yd = y%8;
-
-                        //  We look if we are in the threshold
-                        bool threshold = dither[xd][yd]<real_color*63;
-
-                        if (threshold)
-                            stability2 *= 1.5;
-                        else
-                            stability2 /= 1.5;
-            */
-
-            //  We chose either back or white for this pixel
-            //  Starting with the current color, including error propagated form previous pixels,
-            //  we decide that:
-            //  If previous frame pixel was black, we stay back if color<0.5+stability/2
-            //  If previous frame pixel was white, we stay white if color>0.5-stability/2
-            float color = source_color <= 0.5 - (previous.at(x, y) - 0.5) * stability2 ? 0 : 1;
-            dest.at(x, y) = color;
-
-            //  By doing this, we made an error (too much white or too much black)
-            //  that we need to keep track of
-            float error = source_color - color;
-
-            // if (fabs(error)<0.10)
-            //     error = 0;
-
-            //  We now distribute the error between the 4 next values
-            //  (if they exist). The values may over or underflow
-            //  but it is fine as pixels can be <0 or >1
-            float e0 = error * 7 / 16;
-            float e1 = error * 3 / 16;
-            float e2 = error * 5 / 16;
-            float e3 = error * 1 / 16;
-
-            if (x < source.W() - 1)
-                dest.at(x + 1, y) = dest.at(x + 1, y) + e0;
-            if (x > 0 && y < source.H() - 1)
-                dest.at(x - 1, y + 1) = dest.at(x - 1, y + 1) + e1;
-            if (y < source.H() - 1)
-                dest.at(x, y + 1) = dest.at(x, y + 1) + e2;
-            if (x < source.W() - 1 && y < source.H() - 1)
-                dest.at(x + 1, y + 1) = dest.at(x + 1, y + 1) + e3;
-        }
-}
-#endif
-
 //  ------------------------------------------------------------------
 //  Error diffusion quantization, with bleed and motion stability
 //  This will create a black/white 'dest' grayscale from a grayscale 'source'
 //  while trying to respect the placement of pixels
 //  from the black/white 'previous' image
 //  ------------------------------------------------------------------
+//  Quantize one pixel and distribute error to neighbors according to the algorithm
+static void quantize_and_distribute(grayscale &dest, const grayscale &previous, size_t x, size_t y, float stability,
+                                    const dither_algorithm &algo, float bleed, int dir)
+{
+    float source_color = dest.at(x, y);
+
+    //  Stability biases toward the previous frame's pixel value to reduce flicker
+    float color = source_color <= 0.5 - (previous.at(x, y) - 0.5) * static_cast<double>(stability) ? 0 : 1;
+    dest.at(x, y) = color;
+
+    //  Distribute the quantization error to neighbors, scaled by bleed
+    float error = (source_color - color) * bleed;
+    for (auto &t : algo.targets)
+    {
+        size_t tx = x + t.dx * dir;
+        size_t ty = y + t.dy;
+        if (tx < dest.W() && ty < dest.H())
+            dest.at(tx, ty) = dest.at(tx, ty) + error * t.amount;
+    }
+}
+
 void error_diffusion(grayscale &dest, const grayscale &source, const grayscale &previous, float stability,
                      const dither_algorithm &algo, float bleed, bool two_ways)
 {
     dest = source;
 
     int dir = 1;
-
     for (size_t y = 0; y != source.H(); y++)
     {
-        size_t beginx = 0;
-        size_t endx = source.W();
-
-        if (dir == -1)
-        {
-            beginx = source.W() - 1;
-            endx = -1;
-        }
+        size_t beginx = dir == 1 ? 0 : source.W() - 1;
+        size_t endx = dir == 1 ? source.W() : static_cast<size_t>(-1);
 
         for (size_t x = beginx; x != endx; x += dir)
-        {
-            //  The color we'd like this pixel to be
-            float source_color = dest.at(x, y);
-
-            //  Increasing the stability value will makes the grayscale choose previous frame's pixel more often
-            //  Images will be "stable", but there will be some "ghosting artifacts"
-            double stability2 = stability;
-
-            //  We chose either back or white for this pixel
-            //  Starting with the current color, including error propagated form previous pixels,
-            //  we decide that:
-            //  If previous frame pixel was black, we stay back if color<0.5+stability/2
-            //  If previous frame pixel was white, we stay white if color>0.5-stability/2
-            float color = source_color <= 0.5 - (previous.at(x, y) - 0.5) * stability2 ? 0 : 1;
-            dest.at(x, y) = color;
-
-            //  By doing this, we made an error (too much white or too much black)
-            //  that we need to keep track of
-            float error = source_color - color;
-
-            //  We reduce bleed (can also be encoded in the quantization matrix)
-            error *= bleed;
-
-            //  We now distribute the error between the next values, according to the selected algorith
-            //  (if they exist). The values may over or underflow
-            //  but it is fine as pixels can be <0 or >1
-
-            for (auto &t : algo.targets)
-            {
-                float e = error * t.amount;
-                size_t tx = x + t.dx * dir;
-                size_t ty = y + t.dy;
-                if (tx < source.W() && ty < source.H())
-                    dest.at(tx, ty) = dest.at(tx, ty) + e;
-            }
-        }
+            quantize_and_distribute(dest, previous, x, y, stability, algo, bleed, dir);
 
         if (two_ways)
             dir = -dir;

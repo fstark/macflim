@@ -19,9 +19,7 @@ namespace macflim
 extern const char *version;
 extern const std::string temp_file();
 
-void usage(const std::string name)
-{
-    static constexpr std::string_view help_text = R"(Usage
+static constexpr std::string_view usage_help_text = R"(Usage
 {} INPUT [OPTIONS ...]
   INPUT can be either a mp4 file name, a movie URL or a 'pgm' pattern.'
 
@@ -73,7 +71,9 @@ void usage(const std::string name)
     --debug BOOLEAN             : enables various debug options
 )";
 
-    std::cerr << std::format(help_text, name);
+void usage(const std::string name)
+{
+    std::cerr << std::format(usage_help_text, name);
 
     std::cerr << std::format("\nList of profiles names for the --profile option (default 'se30'):\n");
     for (auto n : {"128k", "512k", "xl", "plus", "se", "portable", "se30", "perfect"})

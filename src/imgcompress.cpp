@@ -8,6 +8,43 @@ namespace macflim
 //  Compresses 'length' bytes from 'buffer' into 'out', and return the compressed size
 //  (unused for now)
 //  ------------------------------------------------------------------
+//  Find the next pair of identical adjacent bytes, or return end if none
+static const uint8_t *find_next_run(const uint8_t *buffer, const uint8_t *end)
+{
+    for (const uint8_t *p = buffer; p < end - 1; p++)
+        if (p[0] == p[1])
+            return p;
+    return end;
+}
+
+//  Emit literal (non-repeating) bytes, up to 128 at a time
+static void emit_literals(uint8_t *&out, const uint8_t *&buffer, const uint8_t *literal_end)
+{
+    uint32_t len = literal_end - buffer;
+    while (len)
+    {
+        uint8_t sub_length = len > 128 ? 128 : len;
+        len -= sub_length;
+        *out++ = sub_length - 1;
+        while (sub_length--)
+            *out++ = *buffer++;
+    }
+}
+
+//  Emit a run of identical bytes, up to 128
+static void emit_run(uint8_t *&out, const uint8_t *&buffer, const uint8_t *end)
+{
+    uint8_t c = *buffer;
+    int len = 0;
+    while (buffer < end && *buffer == c && len < 128)
+    {
+        len++;
+        buffer++;
+    }
+    *out++ = -len + 1;
+    *out++ = c;
+}
+
 int packbits(uint8_t *out, const uint8_t *buffer, int length)
 {
     const uint8_t *orig = out;
@@ -15,58 +52,17 @@ int packbits(uint8_t *out, const uint8_t *buffer, int length)
 
     while (buffer < end)
     {
-        //  We look for the next pair of identical characters
-        const uint8_t *next_pair = buffer;
-        for (next_pair = buffer; next_pair < end - 1; next_pair++)
-            if (next_pair[0] == next_pair[1])
-                break;
+        const uint8_t *next_pair = find_next_run(buffer, end);
 
-        //  If we didn't find a pair up to the last two chars, we skip to the end
-        if (next_pair == end - 1)
-            next_pair = end;
-
-        //  All character until next_pair don't repeat
         if (next_pair != buffer)
-        {
-            //  We have to write len litterals
-            uint32_t len = next_pair - buffer;
-            while (len)
-            {
-                //  We can write at most 128 literals in one go
-                uint8_t sub_length = len > 128 ? 128 : len;
-                len -= sub_length;
-                *out++ = sub_length - 1;
-                while (sub_length--)
-                    *out++ = *buffer++;
-            }
-        }
+            emit_literals(out, buffer, next_pair);
 
         assert(buffer == next_pair);
-
-        //  Now, we are at the start of the next run, or at the end of the stream
         if (buffer == end)
             break;
 
-        assert(buffer < end - 1); //  As we have a run, we have at least two chars
-
-        uint8_t c = *buffer;
-
-        //  Find the len of the run
-        int len = 0;
-        while (*buffer == c)
-        {
-            len++;
-            buffer++;
-            if (len == 128)
-                break;
-            if (buffer == end)
-                break;
-        }
-
-        *out++ = -len + 1;
-        *out++ = c;
-
-        //  We don't care about the fact that the run may continue, it will be handled by the next loop iteration
+        assert(buffer < end - 1);
+        emit_run(out, buffer, end);
     }
 
     return out - orig;

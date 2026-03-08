@@ -58,6 +58,11 @@ class compressor_helper
     double add(const grayscale &source);
 
     [[nodiscard]] std::vector<frame> get_frames() const;
+
+  private:
+    [[nodiscard]] std::vector<uint8_t> gather_audio(size_t local_ticks);
+    [[nodiscard]] encoding_result encode_best(const bitmap &fb, size_t video_budget);
+    void log_encoding_progress() const;
 };
 
 } // namespace macflim

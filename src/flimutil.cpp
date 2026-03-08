@@ -295,6 +295,37 @@ static const std::unordered_map<std::string_view, flimutil_flag_handler> &flimut
     return table;
 }
 
+static flimutil_options parse_flimutil_args(int argc, char **argv)
+{
+    flimutil_options opts;
+    const auto &dispatch = flimutil_dispatch_table();
+    arg_iterator args(argc, argv);
+
+    while (args.has_next())
+    {
+        auto arg = args.next();
+        auto it = dispatch.find(arg);
+        if (it == dispatch.end())
+            throw std::runtime_error(std::format("Unknown option '{}'", arg));
+        it->second(args, opts);
+    }
+    return opts;
+}
+
+static void execute_flimutil_options(const flim &fl, const flimutil_options &opts)
+{
+    if (opts.show_info)
+        print_info(fl);
+    if (opts.show_toc)
+        print_toc(fl);
+    if (!opts.poster_outpath.empty())
+        extract_poster(fl, opts.poster_outpath);
+    if (!opts.initial_outpath.empty())
+        extract_initial(fl, opts.initial_outpath);
+    if (opts.frame_number >= 0)
+        dump_frame(fl, opts.frame_number, opts.raw);
+}
+
 int flimutil_main(int argc, char **argv)
 {
     try
@@ -303,58 +334,20 @@ int flimutil_main(int argc, char **argv)
         argc--;
         argv++;
 
-        flimutil_options opts;
-        const auto &dispatch = flimutil_dispatch_table();
-        arg_iterator args(argc, argv);
+        auto opts = parse_flimutil_args(argc, argv);
 
-        while (args.has_next())
-        {
-            auto arg = args.next();
-            auto it = dispatch.find(arg);
-            if (it == dispatch.end())
-            {
-                std::cerr << std::format("Unknown option '{}'\n", arg);
-                return EXIT_FAILURE;
-            }
-            it->second(args, opts);
-        }
-
-        file_handle f;
-        try
-        {
-            f = file_handle(path, "rb");
-        }
-        catch (const std::runtime_error &)
-        {
-            std::cerr << std::format("Cannot open '{}'\n", path);
-            return EXIT_FAILURE;
-        }
-
+        file_handle f(path, "rb");
         flim fl;
         fl.read(f);
 
         print_summary(fl);
-
-        if (opts.show_info)
-            print_info(fl);
-
-        if (opts.show_toc)
-            print_toc(fl);
-
-        if (!opts.poster_outpath.empty())
-            extract_poster(fl, opts.poster_outpath);
-
-        if (!opts.initial_outpath.empty())
-            extract_initial(fl, opts.initial_outpath);
-
-        if (opts.frame_number >= 0)
-            dump_frame(fl, opts.frame_number, opts.raw);
+        execute_flimutil_options(fl, opts);
 
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)
     {
-        std::cerr << "**** ERROR: [" << error.what() << "]\n";
+        std::cerr << std::format("**** ERROR: [{}]\n", error.what());
         return EXIT_FAILURE;
     }
 }
