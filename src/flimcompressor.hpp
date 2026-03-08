@@ -58,6 +58,11 @@ class flimcompressor
 
     void compress(const encoding_profile &profile, const std::string &watermark,
                   initial_frame_mode initial_mode = initial_frame_mode::optional, bool loop = false);
+
+  private:
+    void generate_initial_frame(const grayscale &first_image, grayscale &previous, initial_frame_mode initial_mode,
+                                const dithering_parameters &dp, bool &process_first_image);
+    void add_trailing_loop_frames(compressor_helper &ch, const grayscale &first_image);
 };
 
 } // namespace macflim

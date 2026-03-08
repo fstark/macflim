@@ -86,47 +86,42 @@ class ffmpeg_writer final : public output_writer
     size_t audio_pos = 0;
     int audio_frame_counter = 0;
 
-    void pushFrame(const grayscale &img, const sound_frame_t &snd)
+    void ensure_video_frame_allocated()
     {
-        int err;
-        if (!videoFrame)
-        {
-            videoFrame.reset(av_frame_alloc());
-            if (!videoFrame)
-            {
-                throw flim_error("Failed to allocate video frame");
-            }
-            videoFrame->format = AV_PIX_FMT_YUV420P;
-            videoFrame->width = video_context->width;
-            videoFrame->height = video_context->height;
-            if ((err = av_frame_get_buffer(videoFrame.get(), 32)) < 0)
-            {
-                std::cerr << std::format("Failed to allocate picture buffer: {}\n", err);
-                return;
-            }
-            av_frame_make_writable(videoFrame.get());
+        if (videoFrame)
+            return;
 
-            memset(videoFrame->data[1], 128, H_ / 2 * videoFrame->linesize[1]);
-            memset(videoFrame->data[2], 128, H_ / 2 * videoFrame->linesize[2]);
-        }
+        videoFrame.reset(av_frame_alloc());
+        if (!videoFrame)
+            throw flim_error("Failed to allocate video frame");
+
+        videoFrame->format = AV_PIX_FMT_YUV420P;
+        videoFrame->width = video_context->width;
+        videoFrame->height = video_context->height;
+        int err = av_frame_get_buffer(videoFrame.get(), 32);
+        if (err < 0)
+            throw ffmpeg_error("Failed to allocate picture buffer", err);
+
+        av_frame_make_writable(videoFrame.get());
+        memset(videoFrame->data[1], 128, H_ / 2 * videoFrame->linesize[1]);
+        memset(videoFrame->data[2], 128, H_ / 2 * videoFrame->linesize[2]);
+    }
+
+    void render_video_frame(const grayscale &img)
+    {
+        ensure_video_frame_allocated();
 
         uint8_t *p = videoFrame->data[0];
         for (size_t y = 0; y != H_; y++)
-        {
             for (size_t x = 0; x != W_; x++)
-            {
-                auto v = img.at(x, y);
-                *p++ = v <= 0.5 ? 0 : 255;
-            }
-        }
+                *p++ = img.at(x, y) <= 0.5 ? 0 : 255;
+    }
 
-        videoFrame->pts = 1500 * frameCounter;
-
-        if ((err = avcodec_send_frame(video_context.get(), videoFrame.get())) < 0)
-        {
-            std::cerr << std::format("Failed to send frame: {}\n", err);
-            return;
-        }
+    void encode_video_packet()
+    {
+        int err = avcodec_send_frame(video_context.get(), videoFrame.get());
+        if (err < 0)
+            throw ffmpeg_error("Failed to send video frame", err);
 
         AVPacket pkt;
         av_init_packet(&pkt);
@@ -138,17 +133,18 @@ class ffmpeg_writer final : public output_writer
             av_interleaved_write_frame(ofctx.get(), &pkt);
             av_packet_unref(&pkt);
         }
+    }
 
+    void resample_audio(const sound_frame_t &snd)
+    {
+        for (int i = 0; i != 735; i++)
+            audio_44[i] = (*(snd.begin() + (int)(i / 735.0 * 370)) - 128.0) / 128;
+    }
+
+    void feed_audio()
+    {
         float *audio_p = (float *)audio_frame->data[0];
 
-        // AUDIO
-        // We convert to 44KHz
-        for (int i = 0; i != 735; i++)
-        {
-            audio_44[i] = (*(snd.begin() + (int)(i / 735.0 * 370)) - 128.0) / 128;
-        }
-
-        // How many samples left to send?
         if (audio_pos + 735 >= 1024)
         {
             memcpy(audio_p + audio_pos, audio_44, (1024 - audio_pos) * sizeof(float));
@@ -156,30 +152,43 @@ class ffmpeg_writer final : public output_writer
             audio_frame->pts = audio_frame_counter * 1024;
             audio_frame_counter++;
 
-            err = avcodec_send_frame(audio_context.get(), audio_frame.get());
+            int err = avcodec_send_frame(audio_context.get(), audio_frame.get());
             if (err < 0)
                 throw ffmpeg_error("Error sending the frame to the encoder", err);
+
+            AVPacket pkt;
+            av_init_packet(&pkt);
+            pkt.data = NULL;
+            pkt.size = 0;
 
             err = avcodec_receive_packet(audio_context.get(), &pkt);
             if (err == AVERROR(EAGAIN) || err == AVERROR_EOF)
                 return;
-            else if (err < 0)
+            if (err < 0)
                 throw ffmpeg_error("Error encoding audio frame", err);
 
-            pkt.stream_index = 1; // Corrected this line
-
+            pkt.stream_index = 1;
             av_interleaved_write_frame(ofctx.get(), &pkt);
             av_packet_unref(&pkt);
 
-            memcpy(audio_p, audio_44 + 1024 - audio_pos, (735 - 1024 + audio_pos) * sizeof(float));
-            audio_pos = 735 - 1024 + audio_pos;
+            size_t consumed = 1024 - audio_pos;
+            memcpy(audio_p, audio_44 + consumed, (735 - consumed) * sizeof(float));
+            audio_pos = 735 - consumed;
         }
         else
         {
             memcpy(audio_p + audio_pos, audio_44, 735 * sizeof(float));
             audio_pos += 735;
         }
+    }
 
+    void pushFrame(const grayscale &img, const sound_frame_t &snd)
+    {
+        render_video_frame(img);
+        videoFrame->pts = 1500 * frameCounter;
+        encode_video_packet();
+        resample_audio(snd);
+        feed_audio();
         frameCounter++;
     }
 

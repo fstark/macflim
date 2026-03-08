@@ -1,5 +1,6 @@
 #include "cmdline.hpp"
 
+#include "arg_iterator.hpp"
 #include "errors.hpp"
 #include "flimutil.hpp"
 #include "grayscale.hpp"
@@ -20,74 +21,59 @@ extern const std::string temp_file();
 
 void usage(const std::string name)
 {
-    std::cerr << std::format("Usage\n");
-    std::cerr << std::format("{} INPUT [OPTIONS ...]\n", name);
-    std::cerr << std::format("  INPUT can be either a mp4 file name, a movie URL or a 'pgm' pattern.'\n");
+    static constexpr std::string_view help_text = R"(Usage
+{} INPUT [OPTIONS ...]
+  INPUT can be either a mp4 file name, a movie URL or a 'pgm' pattern.'
 
-    std::cerr << std::format("\n  Input options:\n");
-    std::cerr << std::format("    --from TIME                 : time offset to start extracting from\n");
-    std::cerr << std::format(
-        "    --duration TIME             : time duration of the extracted clip (default: full media)\n");
-    std::cerr << std::format(
-        "    --poster TIME               : frame to extract the poster from (by default 1/3 of duration)ß\n");
-    std::cerr << std::format(
-        "    --fps FPS                   : for 'pgm' pattern, specifies the framerate to be used\n");
-    std::cerr << std::format(
-        "    --audio FILE                : for 'pgm', specifices a separate u8 22200 Hz wav file with audio\n");
-    std::cerr << std::format("    --srt FILE                  : burns the subtitle file into the flim\n");
+  Input options:
+    --from TIME                 : time offset to start extracting from
+    --duration TIME             : time duration of the extracted clip (default: full media)
+    --poster TIME               : frame to extract the poster from (by default 1/3 of duration)
+    --fps FPS                   : for 'pgm' pattern, specifies the framerate to be used
+    --audio FILE                : for 'pgm', specifies a separate u8 22200 Hz wav file with audio
+    --srt FILE                  : burns the subtitle file into the flim
 
-    std::cerr << std::format("\n  Output options:\n");
-    std::cerr << std::format(
-        "    --flim FILE                 : name of the flim file to create (by default 'out.flim')\n");
-    std::cerr << std::format("    --mp4 FILE                  : outputs a 60fps mp4 file with the result\n");
-    std::cerr << std::format("    --gif FILE                  : outputs a 20fps gif file with the result\n");
-    std::cerr << std::format("    --pgm PATTERN               : output every generated grayscale in a pgm file\n");
-    std::cerr << std::format("    --pgm-poster PATTERN        : output poster thumbnails (128x86) of input images\n");
-    std::cerr << std::format("    --pgm-diff PATTERN          : output difference between encoded result and source\n");
-    std::cerr << std::format("    --pgm-change PATTERN        : output difference between consecutive frames\n");
-    std::cerr << std::format("    --pgm-target PATTERN        : output target source images\n");
+  Output options:
+    --flim FILE                 : name of the flim file to create (by default 'out.flim')
+    --mp4 FILE                  : outputs a 60fps mp4 file with the result
+    --gif FILE                  : outputs a 20fps gif file with the result
+    --pgm PATTERN               : output every generated grayscale in a pgm file
+    --pgm-poster PATTERN        : output poster thumbnails (128x86) of input images
+    --pgm-diff PATTERN          : output difference between encoded result and source
+    --pgm-change PATTERN        : output difference between consecutive frames
+    --pgm-target PATTERN        : output target source images
 
-    std::cerr << std::format("\n  Encoding options:\n");
-    std::cerr << std::format("    --profile PROFILE           : presents the specific encoding profile, which sets a "
-                             "suitable default for all encoding options\n");
-    std::cerr << std::format("      Default is 'se30'. See below for description of profiles.\n");
-    std::cerr << std::format("    --silent BOOLEAN            : set to true for silent flims\n");
-    std::cerr << std::format("    --byterate BYTERATE         : bytes per ticks available for video compression\n");
-    std::cerr << std::format("    --fps-ratio BOOLEAN         : ratio of images from the source to drop.\n");
-    std::cerr << std::format("    --group BOOLEAN             : if true, packs ticks together to present screen "
-                             "updates at the same rate as the input media. Only works on a se30.\n");
-    std::cerr << std::format(
-        "    --bars BOOLEAN              : if false, grayscale is zoomed in so there are no black bars.\n");
-    std::cerr << std::format("    --anchor-x FLOAT            : horizontal anchor point for grayscale extraction "
-                             "(0=left, 0.5=center, 1=right)\n");
-    std::cerr << std::format("    --anchor-y FLOAT            : vertical anchor point for grayscale extraction (0=top, "
-                             "0.5=center, 1=bottom)\n");
-    std::cerr << std::format("    --dither DITHER             : specifies the type of dithering to be used.\n");
-    std::cerr << std::format("      'ordered' will use a 4x4 ordered dither matrix.\n");
-    std::cerr << std::format("      'error' will use an error diffusion algorithm.\n");
-    std::cerr << std::format("      'blue' will use blue noise dithering.\n");
-    std::cerr << std::format("    --error-algorithm ALGORITHM : error diffusion algorithm to be used\n");
-    std::cerr << std::format("      Default 'floyd'. See below for the list of valid error dithering algorithms.\n");
-    std::cerr << std::format(
-        "    --error-stability FLOAT     : amount of error to be accumulated before changing a screen pixel\n");
-    std::cerr << std::format("    --error-bidi BOOLEAN        : if true, error diffusion is applied in different "
-                             "direction for even and odd scanlines.\n");
-    std::cerr << std::format(
-        "    --error-bleed PERCENT       : how much error is moved from a pixel to the neighbours.\n");
-    std::cerr << std::format("    --filters FILTERS           : specifies a set of filters to be applied on grayscale "
-                             "afgter resizing, but before dithering\n");
-    std::cerr << std::format("    --codec CODEC               : adds a specific codec to the encoding. The first "
-                             "--codec parameter clears the profile codec list\n");
-    std::cerr << std::format("    --initial-frame MODE        : initial frame generation: 'false'=none, "
-                             "'optional'=backwards compatible (default), 'true'=required\n");
-    std::cerr << std::format("    --loop BOOLEAN              : add trailing frames for perfect loop (default false, "
-                             "requires initial frame)\n");
+  Encoding options:
+    --profile PROFILE           : presents the specific encoding profile, which sets a suitable default for all encoding options
+      Default is 'se30'. See below for description of profiles.
+    --silent BOOLEAN            : set to true for silent flims
+    --byterate BYTERATE         : bytes per ticks available for video compression
+    --fps-ratio BOOLEAN         : ratio of images from the source to drop.
+    --group BOOLEAN             : if true, packs ticks together to present screen updates at the same rate as the input media. Only works on a se30.
+    --bars BOOLEAN              : if false, grayscale is zoomed in so there are no black bars.
+    --anchor-x FLOAT            : horizontal anchor point for grayscale extraction (0=left, 0.5=center, 1=right)
+    --anchor-y FLOAT            : vertical anchor point for grayscale extraction (0=top, 0.5=center, 1=bottom)
+    --dither DITHER             : specifies the type of dithering to be used.
+      'ordered' will use a 4x4 ordered dither matrix.
+      'error' will use an error diffusion algorithm.
+      'blue' will use blue noise dithering.
+    --error-algorithm ALGORITHM : error diffusion algorithm to be used
+      Default 'floyd'. See below for the list of valid error dithering algorithms.
+    --error-stability FLOAT     : amount of error to be accumulated before changing a screen pixel
+    --error-bidi BOOLEAN        : if true, error diffusion is applied in different direction for even and odd scanlines.
+    --error-bleed PERCENT       : how much error is moved from a pixel to the neighbours.
+    --filters FILTERS           : specifies a set of filters to be applied on grayscale after resizing, but before dithering
+    --codec CODEC               : adds a specific codec to the encoding. The first --codec parameter clears the profile codec list
+    --initial-frame MODE        : initial frame generation: 'false'=none, 'optional'=backwards compatible (default), 'true'=required
+    --loop BOOLEAN              : add trailing frames for perfect loop (default false, requires initial frame)
 
-    std::cerr << std::format("\n  Misc options:\n");
-    std::cerr << std::format("    --watermark STRING          : adds the string to the upper left corner of the "
-                             "generated flim for identification purposes.\n");
-    std::cerr << std::format("      use 'auto' to use the encoding parameters as watermark\n");
-    std::cerr << std::format("    --debug BOOLEAN             : enables various debug options\n");
+  Misc options:
+    --watermark STRING          : adds the string to the upper left corner of the generated flim for identification purposes.
+      use 'auto' to use the encoding parameters as watermark
+    --debug BOOLEAN             : enables various debug options
+)";
+
+    std::cerr << std::format(help_text, name);
 
     std::cerr << std::format("\nList of profiles names for the --profile option (default 'se30'):\n");
     for (auto n : {"128k", "512k", "xl", "plus", "se", "portable", "se30", "perfect"})
@@ -105,48 +91,6 @@ void usage(const std::string name)
 
     std::cerr << std::format("use '{}' --help' for displaying this help page.\n", name);
 }
-
-/// Simple iterator over argc/argv that safely consumes arguments.
-class arg_iterator
-{
-    int argc_;
-    char **argv_;
-
-  public:
-    arg_iterator(int argc, char **argv) : argc_{argc}, argv_{argv} {}
-
-    [[nodiscard]] bool has_next() const
-    {
-        return argc_ > 0;
-    }
-
-    /// Return current arg and advance. Throws if exhausted.
-    std::string_view next()
-    {
-        if (argc_ <= 0)
-            throw flim_error("Expected argument but reached end of command line");
-        std::string_view result = *argv_;
-        argc_--;
-        argv_++;
-        return result;
-    }
-
-    /// Return current arg without advancing.
-    [[nodiscard]] std::string_view peek() const
-    {
-        if (argc_ <= 0)
-            throw flim_error("Expected argument but reached end of command line");
-        return *argv_;
-    }
-
-    /// Consume and return the next argument value (the one after a flag).
-    std::string_view next_value()
-    {
-        if (argc_ <= 0)
-            throw flim_error("Expected value after flag but reached end of command line");
-        return next();
-    }
-};
 
 using flag_handler = std::function<void(arg_iterator &, program_options &)>;
 

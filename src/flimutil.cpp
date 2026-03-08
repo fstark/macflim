@@ -1,16 +1,20 @@
 #include "flimutil.hpp"
 
+#include "arg_iterator.hpp"
 #include "bitmap.hpp"
 #include "errors.hpp"
 #include "file_handle.hpp"
 #include "flim.hpp"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <format>
+#include <functional>
 #include <iostream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace macflim
@@ -93,102 +97,102 @@ static bool extract_poster(const flim &fl, const std::string &outpath)
     return true;
 }
 
+static void dump_hex(const uint8_t *data, size_t size, std::string_view indent)
+{
+    for (size_t i = 0; i < size; i++)
+    {
+        if (i % 16 == 0)
+            std::cout << std::format("{}{:04x}: ", indent, i);
+        std::cout << std::format("{:02x} ", data[i]);
+        if (i % 16 == 15 || i == size - 1)
+            std::cout << std::format("\n");
+    }
+}
+
+static void dump_sound_info(const frame &f)
+{
+    if (f.audio.empty())
+    {
+        std::cout << std::format("  Sound block size: 2 bytes\n");
+        return;
+    }
+
+    size_t sound_block_size = f.ticks * 370 + 8;
+    std::cout << std::format("  Sound block size: {} bytes\n", sound_block_size);
+    std::cout << std::format("    ffMode: 0x0000\n");
+    std::cout << std::format("    Rate: 65536 (0x00010000)\n");
+    std::cout << std::format("    Audio data: {} bytes\n", f.audio.size());
+
+    size_t bytes_per_tick = 370;
+    size_t num_ticks = (f.audio.size() + bytes_per_tick - 1) / bytes_per_tick;
+    for (size_t tick = 0; tick < num_ticks && tick < f.ticks; tick++)
+    {
+        size_t tick_offset = tick * bytes_per_tick;
+        size_t tick_size =
+            (tick_offset + bytes_per_tick <= f.audio.size()) ? bytes_per_tick : (f.audio.size() - tick_offset);
+
+        std::cout << std::format("    tick {}: [", tick);
+        size_t preview_bytes = std::min(tick_size, size_t{8});
+        for (size_t i = 0; i < preview_bytes; i++)
+            std::cout << std::format("{:02x} ", f.audio[tick_offset + i]);
+        if (tick_size > preview_bytes)
+            std::cout << std::format("... ");
+        std::cout << std::format("] ({} bytes)\n", tick_size);
+    }
+}
+
+static void dump_video_info(const frame &f)
+{
+    std::cout << std::format("  Video block size: {} bytes\n", f.video.size());
+    if (f.video.size() < 4)
+        return;
+
+    uint8_t codec_sig = f.video[3];
+    const char *codec_name = "unknown";
+    switch (codec_sig)
+    {
+    case 0x00:
+        codec_name = "null";
+        break;
+    case 0x01:
+        codec_name = "z16";
+        break;
+    case 0x02:
+        codec_name = "z32";
+        break;
+    case 0x03:
+        codec_name = "invert";
+        break;
+    case 0x04:
+        codec_name = "lines";
+        break;
+    }
+    std::cout << std::format("  Codec: 0x{:02x} ({})\n", codec_sig, codec_name);
+
+    size_t ops_size = f.video.size() - 4;
+    std::cout << std::format("  Operations: {} bytes\n", ops_size);
+
+    if (ops_size > 0)
+    {
+        std::cout << std::format("  Data:\n");
+        dump_hex(f.video.data() + 4, ops_size, "    ");
+    }
+}
+
 static void dump_frame_data(const std::vector<uint8_t> &frame_data, size_t frame_number, bool raw)
 {
     std::cout << std::format("\nFrame {} (size: {} bytes):\n", frame_number, frame_data.size());
 
-    //  Raw mode: just dump hex bytes
     if (raw)
     {
-        for (size_t i = 0; i < frame_data.size(); i++)
-        {
-            if (i % 16 == 0)
-                std::cout << std::format("  {:04x}: ", i);
-            std::cout << std::format("{:02x} ", frame_data[i]);
-            if (i % 16 == 15 || i == frame_data.size() - 1)
-                std::cout << std::format("\n");
-        }
+        dump_hex(frame_data.data(), frame_data.size(), "  ");
         return;
     }
 
     frame f = frame::deserialize(frame_data.data(), frame_data.size());
-
     std::cout << std::format("  Ticks: {}\n", f.ticks);
-
-    //  Sound
-    if (f.audio.empty())
-    {
-        std::cout << std::format("  Sound block size: 2 bytes\n");
-    }
-    else
-    {
-        size_t sound_block_size = f.ticks * 370 + 8;
-        std::cout << std::format("  Sound block size: {} bytes\n", sound_block_size);
-        std::cout << std::format("    ffMode: 0x0000\n");
-        std::cout << std::format("    Rate: 65536 (0x00010000)\n");
-        std::cout << std::format("    Audio data: {} bytes\n", f.audio.size());
-
-        size_t bytes_per_tick = 370;
-        size_t num_ticks = (f.audio.size() + bytes_per_tick - 1) / bytes_per_tick;
-        for (size_t tick = 0; tick < num_ticks && tick < f.ticks; tick++)
-        {
-            size_t tick_offset = tick * bytes_per_tick;
-            size_t tick_size =
-                (tick_offset + bytes_per_tick <= f.audio.size()) ? bytes_per_tick : (f.audio.size() - tick_offset);
-
-            std::cout << std::format("    tick {}: [", tick);
-            size_t preview_bytes = tick_size < 8 ? tick_size : 8;
-            for (size_t i = 0; i < preview_bytes; i++)
-                std::cout << std::format("{:02x} ", f.audio[tick_offset + i]);
-            if (tick_size > preview_bytes)
-                std::cout << std::format("... ");
-            std::cout << std::format("] ({} bytes)\n", tick_size);
-        }
-    }
-
-    //  Video
-    std::cout << std::format("  Video block size: {} bytes\n", f.video.size());
-
-    if (f.video.size() >= 4)
-    {
-        uint8_t codec_sig = f.video[3];
-        const char *codec_name = "unknown";
-        switch (codec_sig)
-        {
-        case 0x00:
-            codec_name = "null";
-            break;
-        case 0x01:
-            codec_name = "z16";
-            break;
-        case 0x02:
-            codec_name = "z32";
-            break;
-        case 0x03:
-            codec_name = "invert";
-            break;
-        case 0x04:
-            codec_name = "lines";
-            break;
-        }
-        std::cout << std::format("  Codec: 0x{:02x} ({})\n", codec_sig, codec_name);
-
-        size_t ops_size = f.video.size() - 4;
-        std::cout << std::format("  Operations: {} bytes\n", ops_size);
-
-        if (ops_size > 0)
-        {
-            std::cout << std::format("  Data:\n");
-            for (size_t i = 0; i < ops_size; i++)
-            {
-                if (i % 16 == 0)
-                    std::cout << std::format("    {:04x}: ", i);
-                std::cout << std::format("{:02x} ", f.video[4 + i]);
-                if (i % 16 == 15 || i == ops_size - 1)
-                    std::cout << std::format("\n");
-            }
-        }
-    }
+    dump_sound_info(f);
+    dump_video_info(f);
 }
 
 static bool dump_frame(const flim &fl, size_t frame_number, bool raw)
@@ -263,6 +267,34 @@ static bool extract_initial(const flim &fl, const std::string &outpath)
     return true;
 }
 
+struct flimutil_options
+{
+    bool show_info = false;
+    bool show_toc = false;
+    std::string poster_outpath;
+    std::string initial_outpath;
+    int frame_number = -1;
+    bool raw = false;
+};
+
+using flimutil_flag_handler = std::function<void(arg_iterator &, flimutil_options &)>;
+
+static const std::unordered_map<std::string_view, flimutil_flag_handler> &flimutil_dispatch_table()
+{
+    static const std::unordered_map<std::string_view, flimutil_flag_handler> table = {
+        {"--info", []([[maybe_unused]] arg_iterator &args, flimutil_options &opts) { opts.show_info = true; }},
+        {"--toc", []([[maybe_unused]] arg_iterator &args, flimutil_options &opts) { opts.show_toc = true; }},
+        {"--raw", []([[maybe_unused]] arg_iterator &args, flimutil_options &opts) { opts.raw = true; }},
+        {"--poster", [](arg_iterator &args, flimutil_options &opts)
+         { opts.poster_outpath = std::string(args.optional_value("out.pgm")); }},
+        {"--initial", [](arg_iterator &args, flimutil_options &opts)
+         { opts.initial_outpath = std::string(args.optional_value("out.pgm")); }},
+        {"--frame", [](arg_iterator &args, flimutil_options &opts)
+         { opts.frame_number = std::stoi(std::string(args.next_value())); }},
+    };
+    return table;
+}
+
 int flimutil_main(int argc, char **argv)
 {
     try
@@ -271,62 +303,20 @@ int flimutil_main(int argc, char **argv)
         argc--;
         argv++;
 
-        //  Parse options
-        bool show_info = false;
-        bool show_toc = false;
-        std::string poster_outpath;
-        std::string initial_outpath;
-        int frame_number = -1;
-        bool raw = false;
+        flimutil_options opts;
+        const auto &dispatch = flimutil_dispatch_table();
+        arg_iterator args(argc, argv);
 
-        while (argc)
+        while (args.has_next())
         {
-            if (!strcmp(*argv, "--info"))
-                show_info = true;
-            else if (!strcmp(*argv, "--toc"))
-                show_toc = true;
-            else if (!strcmp(*argv, "--poster"))
+            auto arg = args.next();
+            auto it = dispatch.find(arg);
+            if (it == dispatch.end())
             {
-                argc--;
-                argv++;
-                if (!argc || (*argv)[0] == '-')
-                {
-                    poster_outpath = "out.pgm";
-                    continue;
-                }
-                poster_outpath = *argv;
-            }
-            else if (!strcmp(*argv, "--initial"))
-            {
-                argc--;
-                argv++;
-                if (!argc || (*argv)[0] == '-')
-                {
-                    initial_outpath = "out.pgm";
-                    continue;
-                }
-                initial_outpath = *argv;
-            }
-            else if (!strcmp(*argv, "--frame"))
-            {
-                argc--;
-                argv++;
-                if (!argc)
-                {
-                    std::cerr << std::format("--frame requires a frame number\n");
-                    return EXIT_FAILURE;
-                }
-                frame_number = atoi(*argv);
-            }
-            else if (!strcmp(*argv, "--raw"))
-                raw = true;
-            else
-            {
-                std::cerr << std::format("Unknown option '{}'\n", *argv);
+                std::cerr << std::format("Unknown option '{}'\n", arg);
                 return EXIT_FAILURE;
             }
-            argc--;
-            argv++;
+            it->second(args, opts);
         }
 
         file_handle f;
@@ -345,20 +335,20 @@ int flimutil_main(int argc, char **argv)
 
         print_summary(fl);
 
-        if (show_info)
+        if (opts.show_info)
             print_info(fl);
 
-        if (show_toc)
+        if (opts.show_toc)
             print_toc(fl);
 
-        if (!poster_outpath.empty())
-            extract_poster(fl, poster_outpath);
+        if (!opts.poster_outpath.empty())
+            extract_poster(fl, opts.poster_outpath);
 
-        if (!initial_outpath.empty())
-            extract_initial(fl, initial_outpath);
+        if (!opts.initial_outpath.empty())
+            extract_initial(fl, opts.initial_outpath);
 
-        if (frame_number >= 0)
-            dump_frame(fl, frame_number, raw);
+        if (opts.frame_number >= 0)
+            dump_frame(fl, opts.frame_number, opts.raw);
 
         return EXIT_SUCCESS;
     }
