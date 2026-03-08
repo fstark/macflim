@@ -195,6 +195,24 @@ static void dump_frame_data(const std::vector<uint8_t> &frame_data, size_t frame
     dump_video_info(f);
 }
 
+/// Calculate frame offset and size from TOC data.
+/// Returns {offset_in_movie, frame_size} for the requested frame number.
+static std::pair<size_t, uint16_t> calculate_frame_bounds(const uint8_t *toc_data, size_t frame_number)
+{
+    const uint8_t *tp = toc_data;
+    size_t offset = 0;
+    uint16_t frame_size = 0;
+
+    for (size_t i = 0; i <= frame_number; i++)
+    {
+        frame_size = read2(tp);
+        if (i < frame_number)
+            offset += frame_size;
+    }
+
+    return {offset, frame_size};
+}
+
 static bool dump_frame(const flim &fl, size_t frame_number, bool raw)
 {
     auto *toc_data = fl.find_component_data(component_type::toc);
@@ -219,17 +237,7 @@ static bool dump_frame(const flim &fl, size_t frame_number, bool raw)
         return false;
     }
 
-    //  Calculate frame offset and size from TOC
-    const uint8_t *tp = toc_data->data();
-    size_t offset = 0;
-    uint16_t frame_size = 0;
-
-    for (size_t i = 0; i <= frame_number; i++)
-    {
-        frame_size = read2(tp);
-        if (i < frame_number)
-            offset += frame_size;
-    }
+    auto [offset, frame_size] = calculate_frame_bounds(toc_data->data(), frame_number);
 
     //  Extract frame data from movie blob
     std::vector<uint8_t> frame_data(movie_data->begin() + offset, movie_data->begin() + offset + frame_size);

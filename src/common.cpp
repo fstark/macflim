@@ -9,6 +9,23 @@
 namespace macflim
 {
 
+/// Parse a width specifier from a format string (%Nd where N is width).
+/// Advances iterator past the complete specifier and returns the width.
+static int parse_width_specifier(std::string::const_iterator &it, std::string::const_iterator end)
+{
+    int width = 0;
+    while (it != end && std::isdigit(*it))
+    {
+        width = width * 10 + (*it - '0');
+        ++it;
+    }
+
+    if (it != end && *it == 'd')
+        return width;
+
+    throw std::runtime_error("Invalid format string %: expected 'd'");
+}
+
 /** Replaces the format by the value v
  * Format can use %d and %0nd (%01d, %02d, etc...)
  * Result is similar to sprintf
@@ -30,22 +47,8 @@ std::string simplesprintf(const std::string &format, int v)
             else if (std::isdigit(*it))
             {
                 ++it;
-                int width = 0;
-
-                while (it != format.end() && std::isdigit(*it))
-                {
-                    width = width * 10 + (*it - '0');
-                    ++it;
-                }
-
-                if (it != format.end() && *it == 'd')
-                {
-                    result << std::setw(width) << std::setfill('0') << v;
-                }
-                else
-                {
-                    throw std::runtime_error("Invalid format string %: expected 'd'");
-                }
+                int width = parse_width_specifier(it, format.end());
+                result << std::setw(width) << std::setfill('0') << v;
             }
             else
             {

@@ -186,6 +186,26 @@ class ffmpeg_reader final : public input_reader
         }
     }
 
+    /// Send a video packet to the decoder with error handling.
+    /// Returns true if packet was successfully sent (or EAGAIN/EOF which are recoverable).
+    /// Sets done_ flag and returns false on fatal errors.
+    bool send_video_packet_checked(AVPacket *pkt)
+    {
+        int ret = avcodec_send_packet(video_codec_context_.get(), pkt);
+        av_packet_unref(pkt);
+
+        if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF)
+        {
+            char errbuf[AV_ERROR_MAX_STRING_SIZE];
+            av_strerror(ret, errbuf, AV_ERROR_MAX_STRING_SIZE);
+            std::cerr << "Error sending video packet: " << errbuf << std::endl;
+            done_ = true;
+            return false;
+        }
+
+        return true;
+    }
+
     void init_video_context()
     {
         video_codec_context_.reset(avcodec_alloc_context3(video_decoder_));
@@ -350,16 +370,8 @@ class ffmpeg_reader final : public input_reader
         {
             if (pkt_->stream_index == ixv)
             {
-                int ret = avcodec_send_packet(video_codec_context_.get(), pkt_.get());
-                av_packet_unref(pkt_.get());
-                if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF)
-                {
-                    char errbuf[AV_ERROR_MAX_STRING_SIZE];
-                    av_strerror(ret, errbuf, AV_ERROR_MAX_STRING_SIZE);
-                    std::cerr << "Error sending video packet: " << errbuf << std::endl;
-                    done_ = true;
+                if (!send_video_packet_checked(pkt_.get()))
                     return nullptr;
-                }
 
                 if (receive_video_frame(*result))
                 {

@@ -330,21 +330,8 @@ class ffmpeg_writer final : public output_writer
         av_dump_format(ofctx.get(), 0, filename.c_str(), 1);
     }
 
-  public:
-    ffmpeg_writer(const std::string filename, size_t W, size_t H) : W_(W), H_(H)
+    void flush_delayed_video_frames()
     {
-        init_output_format(filename);
-        init_video_stream();
-        init_audio_stream();
-        open_output_file(filename);
-    }
-
-    ~ffmpeg_writer()
-    {
-        if (sDebug)
-            std::clog << std::format("~ffmpeg_writer()\n");
-
-        // DELAYED FRAMES
         AVPacket pkt;
         av_init_packet(&pkt);
         pkt.data = NULL;
@@ -363,6 +350,23 @@ class ffmpeg_writer final : public output_writer
                 break;
             }
         }
+    }
+
+  public:
+    ffmpeg_writer(const std::string filename, size_t W, size_t H) : W_(W), H_(H)
+    {
+        init_output_format(filename);
+        init_video_stream();
+        init_audio_stream();
+        open_output_file(filename);
+    }
+
+    ~ffmpeg_writer()
+    {
+        if (sDebug)
+            std::clog << std::format("~ffmpeg_writer()\n");
+
+        flush_delayed_video_frames();
 
         av_write_trailer(ofctx.get());
         if (!(oformat->flags & AVFMT_NOFILE))
