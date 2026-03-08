@@ -11,7 +11,7 @@
 namespace macflim
 {
 
-//  A subtitle
+/// Represents a subtitle with start/stop times and text lines.
 struct subtitle
 {
     timestamp_t start;

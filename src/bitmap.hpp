@@ -218,7 +218,7 @@ class bitmap
         return H_;
     }
 
-    template <typename T> std::vector<T> raw_vertical() const
+    template <typename T> [[nodiscard]] std::vector<T> raw_vertical() const
     {
         std::vector<T> res;
         pack_vertical_be<T, decltype(std::back_inserter(res))>(std::back_inserter(res));
@@ -226,12 +226,12 @@ class bitmap
         return res;
     }
 
-    template <typename T> std::vector<T> raw_values() const
+    template <typename T> [[nodiscard]] std::vector<T> raw_values() const
     {
         return raw_vertical<T>();
     }
 
-    template <typename T> std::vector<T> raw_values_natural() const
+    template <typename T> [[nodiscard]] std::vector<T> raw_values_natural() const
     {
         std::vector<T> res;
         pack_horizontal_be<T, decltype(std::back_inserter(res))>(std::back_inserter(res));
@@ -239,7 +239,7 @@ class bitmap
         return res;
     }
 
-    grayscale as_image() const
+    [[nodiscard]] grayscale as_image() const
     {
         grayscale res(W_, H_);
         for (size_t y = 0; y != H_; y++)

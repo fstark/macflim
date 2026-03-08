@@ -13,6 +13,7 @@
 namespace macflim
 {
 
+/// Abstract base for computing distance metrics between packed bitmap values.
 template <typename T> class ruler
 {
   public:
@@ -20,6 +21,7 @@ template <typename T> class ruler
     virtual ~ruler() {}
 };
 
+/// Precomputed distance table for 8-bit packed values.
 class uint8_ruler : public ruler<uint8_t>
 {
     size_t distance_[256][256];

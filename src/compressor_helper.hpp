@@ -19,6 +19,7 @@
 namespace macflim
 {
 
+/// Manages frame compression workflow including dithering, codec selection, and budget allocation.
 class compressor_helper
 {
     ditherer &ditherer_;
@@ -55,7 +56,7 @@ class compressor_helper
     // Returns the quality metric (proximity to target)
     double add(const grayscale &source);
 
-    std::vector<frame> get_frames() const;
+    [[nodiscard]] std::vector<frame> get_frames() const;
 };
 
 } // namespace macflim

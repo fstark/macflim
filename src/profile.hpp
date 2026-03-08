@@ -140,7 +140,7 @@ class encoding_profile
     {
         return dither_;
     }
-    bool set_dither(std::string dither);
+    void set_dither(std::string dither);
     void set_dither(grayscale::dithering dither)
     {
         dither_ = dither;
@@ -208,7 +208,7 @@ class encoding_profile
     {
         initial_mode_ = mode;
     }
-    bool set_initial_mode(const std::string &mode);
+    void set_initial_mode(const std::string &mode);
 
     bool loop() const
     {

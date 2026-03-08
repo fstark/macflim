@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "file_handle.hpp"
 #include "frame.hpp"
 #include "imgcompress.hpp"
 
@@ -109,11 +110,11 @@ class flim
     std::vector<uint8_t> serialize_header() const;
 
     //  Compute the Fletcher-16 checksum over header + all blobs
-    uint16_t compute_checksum() const;
+    [[nodiscard]] uint16_t compute_checksum() const;
 
     //  Write helpers
-    static void write_u16(FILE *f, uint16_t v);
-    static void write_bytes(FILE *f, const std::vector<uint8_t> &v);
+    static void write_u16(const file_handle &fh, uint16_t v);
+    static void write_bytes(const file_handle &fh, const std::vector<uint8_t> &v);
 
   public:
     //  Construct an empty flim for building in memory
@@ -124,8 +125,8 @@ class flim
 
     //  --- Disk I/O ---
 
-    bool read(FILE *f);
-    void write(FILE *f) const;
+    void read(const file_handle &fh);
+    void write(const file_handle &fh) const;
 
     //  --- Accessors ---
 

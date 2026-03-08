@@ -13,6 +13,7 @@
 namespace macflim
 {
 
+/// Unit of encoded data for a single screen update with video delta and audio.
 struct frame
 {
     frame(size_t W, size_t H) : source{std::in_place, W, H}, result{std::in_place, W, H} {}

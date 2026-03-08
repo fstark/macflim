@@ -8,6 +8,7 @@
 namespace macflim
 {
 
+/// Burns subtitles onto grayscale images at appropriate timestamps.
 class subtitle_burner
 {
     std::vector<subtitle> subtitles_; //  Copy of the subtitle list

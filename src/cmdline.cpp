@@ -405,7 +405,11 @@ program_options parse_arguments(int argc, char **argv)
         {
             argc--;
             argv++;
-            if (!opts.custom_profile.set_initial_mode(*argv))
+            try
+            {
+                opts.custom_profile.set_initial_mode(*argv);
+            }
+            catch (const config_error &e)
             {
                 std::cerr << "Invalid initial-frame mode '" << *argv << "'. Use 'false', 'optional', or 'true'\n";
                 ::exit(EXIT_FAILURE);

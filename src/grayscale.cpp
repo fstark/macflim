@@ -487,8 +487,6 @@ inline bool extract_filter(const char *&p, char &f, double &arg)
         }
     }
 
-    // printf( "filter==%c arg==%f\n", f, arg );
-
     return true;
 }
 

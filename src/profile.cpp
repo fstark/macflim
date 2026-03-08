@@ -3,7 +3,7 @@
 namespace macflim
 {
 
-bool encoding_profile::set_dither(std::string dither)
+void encoding_profile::set_dither(std::string dither)
 {
     if (dither == "ordered")
         dither_ = grayscale::dithering::ordered;
@@ -13,10 +13,9 @@ bool encoding_profile::set_dither(std::string dither)
         dither_ = grayscale::dithering::blue_noise;
     else
         throw macflim::config_error("Wrong dither option : only 'ordered', 'error', and 'blue' are supported", dither);
-    return true;
 }
 
-bool encoding_profile::set_initial_mode(const std::string &mode)
+void encoding_profile::set_initial_mode(const std::string &mode)
 {
     if (mode == "false" || mode == "none")
         initial_mode_ = initial_frame_mode::none;
@@ -25,8 +24,7 @@ bool encoding_profile::set_initial_mode(const std::string &mode)
     else if (mode == "true" || mode == "required")
         initial_mode_ = initial_frame_mode::required;
     else
-        return false;
-    return true;
+        throw config_error("Invalid initial mode: must be 'none', 'optional', or 'required'", mode);
 }
 
 std::vector<std::string> encoding_profile::parse_codec_array(const char *const *codec_array)

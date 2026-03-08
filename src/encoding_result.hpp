@@ -26,18 +26,18 @@ class encoding_result
     }
 
     //  Encoded video with codec signature and trailer (#### why trailer?)
-    std::vector<uint8_t> get_video_encoded_data() const
+    [[nodiscard]] std::vector<uint8_t> get_video_encoded_data() const
     {
         std::vector<uint8_t> result = {0x00, 0x00, 0x00, codec_.signature};
         result.insert(std::end(result), std::begin(data_), std::end(data_));
         return result;
     }
 
-    double quality() const
+    [[nodiscard]] double quality() const
     {
         return quality_;
     }
-    const bitmap &image() const
+    [[nodiscard]] const bitmap &image() const
     {
         return image_;
     }

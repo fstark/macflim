@@ -339,10 +339,7 @@ int flimutil_main(int argc, char **argv)
         }
 
         flim fl;
-        if (!fl.read(f.get()))
-        {
-            return EXIT_FAILURE;
-        }
+        fl.read(f);
 
         print_summary(fl);
 

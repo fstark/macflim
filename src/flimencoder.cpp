@@ -232,7 +232,7 @@ void flimencoder::make_flim(const std::string flim_pathname, input_reader *reade
         ef.add_initial(*fc.get_initial());
 
     file_handle movie_file(flim_pathname, "wb");
-    ef.write(movie_file.get());
+    ef.write(movie_file);
 
     // Production output via writers (mp4, gif, pgm)
     if (writers.size())

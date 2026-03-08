@@ -1,5 +1,6 @@
 #include "flim.hpp"
 
+#include "errors.hpp"
 #include <cstdio>
 #include <cstring>
 #include <format>
@@ -44,41 +45,31 @@ flim::flim(const std::string &comment) : comment_{comment}
 
 //  --- flim::read ---
 
-bool flim::read(FILE *f)
+void flim::read(const file_handle &fh)
 {
+    FILE *f = fh.get();
     //  Read comment block
     char comment_buf[COMMENT_SIZE + 1];
     if (fread(comment_buf, 1, COMMENT_SIZE, f) != COMMENT_SIZE)
-    {
-        std::cerr << std::format("Failed to read comment block\n");
-        return false;
-    }
+        throw flim_error("Failed to read comment block");
     comment_buf[COMMENT_SIZE] = 0;
 
     if (memcmp(comment_buf, "FLIM\n", 5) != 0)
-    {
-        std::cerr << std::format("Not a valid flim file (bad signature)\n");
-        return false;
-    }
+        throw flim_error("Not a valid flim file (bad signature)");
+
     comment_ = comment_buf;
 
     //  Read checksum (2 bytes, big-endian)
     uint8_t checksum_bytes[CHECKSUM_SIZE];
     if (fread(checksum_bytes, 1, CHECKSUM_SIZE, f) != CHECKSUM_SIZE)
-    {
-        std::cerr << std::format("Failed to read checksum\n");
-        return false;
-    }
+        throw flim_error("Failed to read checksum");
     const uint8_t *cp = checksum_bytes;
     /*uint16_t stored_checksum =*/read2(cp);
 
     //  Read header: version (2 bytes) + component count (2 bytes)
     uint8_t header_prefix[4];
     if (fread(header_prefix, 1, 4, f) != 4)
-    {
-        std::cerr << std::format("Failed to read header\n");
-        return false;
-    }
+        throw flim_error("Failed to read header");
     const uint8_t *hp = header_prefix;
     version_ = read2(hp);
     uint16_t component_count = read2(hp);
@@ -87,10 +78,7 @@ bool flim::read(FILE *f)
     components_.resize(component_count);
     std::vector<uint8_t> dir_data(component_count * 10);
     if (fread(dir_data.data(), 1, dir_data.size(), f) != dir_data.size())
-    {
-        std::cerr << std::format("Failed to read component directory\n");
-        return false;
-    }
+        throw flim_error("Failed to read component directory");
 
     const uint8_t *dp = dir_data.data();
     for (int i = 0; i < component_count; i++)
@@ -108,13 +96,8 @@ bool flim::read(FILE *f)
         blobs_[i].resize(components_[i].size);
         fseek(f, data_start + components_[i].offset, SEEK_SET);
         if (fread(blobs_[i].data(), 1, blobs_[i].size(), f) != blobs_[i].size())
-        {
-            std::cerr << std::format("Failed to read component {} data\n", i);
-            return false;
-        }
+            throw flim_error(std::format("Failed to read component {} data", i));
     }
-
-    return true;
 }
 
 //  --- flim::serialize_header ---
@@ -156,26 +139,29 @@ uint16_t flim::compute_checksum() const
 
 //  --- flim::write ---
 
-void flim::write_u16(FILE *f, uint16_t v)
+void flim::write_u16(const file_handle &fh, uint16_t v)
 {
+    FILE *f = fh.get();
     uint8_t b = v / 256;
     ::fwrite(&b, 1, 1, f);
     b = v % 256;
     ::fwrite(&b, 1, 1, f);
 }
 
-void flim::write_bytes(FILE *f, const std::vector<uint8_t> &v)
+void flim::write_bytes(const file_handle &fh, const std::vector<uint8_t> &v)
 {
+    FILE *f = fh.get();
     ::fwrite(v.data(), v.size(), 1, f);
 }
 
-void flim::write(FILE *f) const
+void flim::write(const file_handle &fh) const
 {
+    FILE *f = fh.get();
     ::fwrite(comment_.c_str(), COMMENT_SIZE, 1, f);
-    write_u16(f, compute_checksum());
-    write_bytes(f, serialize_header());
+    write_u16(fh, compute_checksum());
+    write_bytes(fh, serialize_header());
     for (auto &blob : blobs_)
-        write_bytes(f, blob);
+        write_bytes(fh, blob);
 }
 
 //  --- Building helpers ---
