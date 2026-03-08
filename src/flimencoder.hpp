@@ -11,6 +11,12 @@
 
 namespace macflim
 {
+class flimcompressor;
+struct frame;
+} // namespace macflim
+
+namespace macflim
+{
 
 extern bool sDebug;
 
@@ -37,6 +43,14 @@ class flimencoder
 
     int clamp(double v, int a, int b);
     std::vector<uint8_t> normalize_sound(std::vector<double> sound_samples, size_t len);
+
+    grayscale process_poster(const grayscale &poster_image);
+    void write_diagnostic_pgms(const std::vector<frame> &frames);
+    void write_flim_file(const std::string &pathname, const std::vector<frame> &frames, const grayscale &poster_bw,
+                         const flimcompressor &fc);
+    void write_output_frames(const std::vector<frame> &frames, const std::vector<sound_frame_t> &audio_samples,
+                             const std::vector<std::unique_ptr<output_writer>> &writers);
+    void write_covers(const std::vector<frame> &frames);
 
   public:
     flimencoder(const encoding_profile &profile) : profile_{profile} {}

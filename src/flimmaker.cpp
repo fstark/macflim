@@ -124,6 +124,81 @@ const std::string temp_file()
     return cache_file;
 }
 
+std::vector<subtitle> load_subtitles(program_options &opts)
+{
+    if (opts.srt_file.empty())
+        return {};
+
+    std::ifstream ifs;
+    ifs.open(opts.srt_file, std::ifstream::in);
+    if (!ifs.good())
+    {
+        std::cerr << std::format("ERROR: Cannot open subtitle file [{}]\n", opts.srt_file);
+        exit(EXIT_FAILURE);
+    }
+
+    auto subs = read_subtitles(ifs);
+    ifs.close();
+    return subtitles_extract(subs, opts.from_index, opts.duration);
+}
+
+void resolve_input_file(program_options &opts)
+{
+    if (opts.input_file.rfind("https://", 0) != 0)
+        return;
+
+    if (std::filesystem::exists(opts.cache_file))
+    {
+        opts.input_file = opts.cache_file;
+        std::clog << std::format("Using cached file: '{}'\n", opts.cache_file);
+        return;
+    }
+
+    std::string buffer = std::format("yt-dlp '{}' -f mp4 --output '{}'", opts.input_file, opts.cache_file);
+    int res = system(buffer.c_str());
+    if (res != 0)
+    {
+        std::clog << std::format("yt-dlp not installed or failing, falling back to youtube-dl (code {})\n", res);
+        buffer = std::format("youtube-dl '{}' -f mp4 --output '{}'", opts.input_file, opts.cache_file);
+        res = system(buffer.c_str());
+        if (res != 0)
+        {
+            std::clog << std::format("youtube-dl failed with error {}\n", res);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    opts.input_file = opts.cache_file;
+    opts.downloaded_file = true;
+}
+
+std::unique_ptr<input_reader> create_input_reader(program_options &opts)
+{
+    if (ends_with(opts.input_file, ".pgm"))
+    {
+        std::clog << std::format("Reading pgm from '{}' pattern, at {} frames per second, using '{}' audio file\n",
+                                 opts.input_file, opts.fps, opts.audio_file);
+        std::clog << "( use --fps and --audio to change fps and audio )\n";
+        return make_filesystem_reader(opts.input_file, opts.fps, opts.audio_file, opts.from_index, opts.to_index);
+    }
+
+    auto r = make_ffmpeg_reader(opts.input_file, opts.from_index, opts.duration);
+    opts.fps = r->frame_rate();
+    return r;
+}
+
+std::vector<std::unique_ptr<output_writer>> create_output_writers(const program_options &opts)
+{
+    std::vector<std::unique_ptr<output_writer>> w;
+    if (!opts.mp4_file.empty())
+        w.push_back(make_ffmpeg_writer(opts.mp4_file, opts.custom_profile.width(), opts.custom_profile.height()));
+    if (!opts.gif_file.empty())
+        w.push_back(make_gif_writer(opts.gif_file, opts.custom_profile.width(), opts.custom_profile.height()));
+    if (!opts.pgm_pattern.empty())
+        w.push_back(make_pgm_writer(opts.pgm_pattern));
+    return w;
+}
+
 // The main function, does all the work
 // flimmaker [-g] --in <%d.pgm> --from <index> --to <index> --cover <index> --audio <audio.wav> --flim <file>
 int run_main(int argc, char **argv)
@@ -138,57 +213,8 @@ int run_main(int argc, char **argv)
         test_seconds_from_string();
 
         auto opts = parse_arguments(argc, argv);
-
-        std::vector<subtitle> subs;
-
-        if (opts.srt_file != "")
-        {
-            std::ifstream ifs;
-            ifs.open(opts.srt_file, std::ifstream::in);
-
-            if (!ifs.good())
-            {
-                std::cerr << std::format("ERROR: Cannot open subtitle file [{}]\n", opts.srt_file);
-                exit(EXIT_FAILURE);
-            }
-
-            subs = read_subtitles(ifs);
-            ifs.close();
-            subs = subtitles_extract(subs, opts.from_index, opts.duration);
-        }
-
-        // If input-file is a URL, use yt-dlp to retrieve content
-        if (opts.input_file.rfind("https://", 0) == 0)
-        {
-            if (std::filesystem::exists(opts.cache_file))
-            {
-                opts.input_file = opts.cache_file;
-                std::clog << std::format("Using cached file: '{}'\n", opts.cache_file);
-            }
-            else
-            {
-                auto input_url = opts.input_file;
-
-                std::string buffer = std::format("yt-dlp '{}' -f mp4 --output '{}'", opts.input_file, opts.cache_file);
-                int res = system(buffer.c_str());
-                if (res != 0)
-                {
-                    std::clog << std::format("yt-dlp not installed or failing, falling back to youtube-dl (code {})\n",
-                                             res);
-                    buffer = std::format("youtube-dl '{}' -f mp4 --output '{}'", opts.input_file, opts.cache_file);
-                    res = system(buffer.c_str());
-                    if (res != 0)
-                    {
-                        std::clog << std::format("youtube-dl failed with error {}\n", res);
-                        exit(EXIT_FAILURE);
-                    }
-                }
-
-                // Switch input file
-                opts.input_file = opts.cache_file;
-                opts.downloaded_file = true;
-            }
-        }
+        auto subs = load_subtitles(opts);
+        resolve_input_file(opts);
 
         if (opts.poster_ts == -1 && ends_with(opts.input_file, ".pgm"))
             opts.poster_ts = opts.duration / 3;
@@ -202,43 +228,23 @@ int run_main(int argc, char **argv)
 
         std::clog << std::format("Encoding arguments :\n{}\n", opts.custom_profile.description());
 
-        std::unique_ptr<input_reader> r;
-        if (ends_with(opts.input_file, ".pgm"))
-        {
-            std::clog << std::format("Reading pgm from '{}' pattern, at {} frames per second, using '{}' audio file\n",
-                                     opts.input_file, opts.fps, opts.audio_file);
-            std::clog << "( use --fps and --audio to change fps and audio )\n";
-            r = make_filesystem_reader(opts.input_file, opts.fps, opts.audio_file, opts.from_index, opts.to_index);
-        }
-        else
-        {
-            r = make_ffmpeg_reader(opts.input_file, opts.from_index, opts.duration);
-            opts.fps = r->frame_rate();
-        }
+        auto r = create_input_reader(opts);
 
-        // Pass 1: decode audio separately (before video pass)
+        // Decode audio separately (before video pass)
         std::vector<sound_frame_t> audio_samples;
         if (!opts.custom_profile.silent() && !ends_with(opts.input_file, ".pgm"))
-        {
             audio_samples = decode_audio(opts.input_file, opts.from_index, opts.duration);
-        }
 
         // Compute poster timestamp now that we know actual content duration
         if (opts.poster_ts == -1)
         {
             if (!audio_samples.empty())
-                opts.poster_ts = (audio_samples.size() / 60.0) / 3; // 1/3 of actual audio duration
+                opts.poster_ts = (audio_samples.size() / 60.0) / 3;
             else
                 opts.poster_ts = opts.duration / 3;
         }
 
-        std::vector<std::unique_ptr<output_writer>> w;
-        if (opts.mp4_file != "")
-            w.push_back(make_ffmpeg_writer(opts.mp4_file, opts.custom_profile.width(), opts.custom_profile.height()));
-        if (opts.gif_file != "")
-            w.push_back(make_gif_writer(opts.gif_file, opts.custom_profile.width(), opts.custom_profile.height()));
-        if (opts.pgm_pattern != "")
-            w.push_back(make_pgm_writer(opts.pgm_pattern));
+        auto w = create_output_writers(opts);
 
         auto encoder = flimencoder(opts.custom_profile);
         encoder.set_fps(opts.fps);

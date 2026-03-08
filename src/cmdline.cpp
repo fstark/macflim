@@ -1,11 +1,15 @@
 #include "cmdline.hpp"
 
+#include "errors.hpp"
 #include "flimutil.hpp"
 #include "grayscale.hpp"
 
 #include <cstring>
 #include <format>
+#include <functional>
 #include <iostream>
+#include <string_view>
+#include <unordered_map>
 
 namespace macflim
 {
@@ -102,342 +106,67 @@ void usage(const std::string name)
     std::cerr << std::format("use '{}' --help' for displaying this help page.\n", name);
 }
 
-program_options parse_arguments(int argc, char **argv)
+/// Simple iterator over argc/argv that safely consumes arguments.
+class arg_iterator
 {
-    program_options opts;
-    opts.cache_file = temp_file();
+    int argc_;
+    char **argv_;
 
-    const std::string cmd_name{argv[0]};
+  public:
+    arg_iterator(int argc, char **argv) : argc_{argc}, argv_{argv} {}
 
-    opts.comment = "FLIM\n";
+    [[nodiscard]] bool has_next() const
+    {
+        return argc_ > 0;
+    }
+
+    /// Return current arg and advance. Throws if exhausted.
+    std::string_view next()
+    {
+        if (argc_ <= 0)
+            throw flim_error("Expected argument but reached end of command line");
+        std::string_view result = *argv_;
+        argc_--;
+        argv_++;
+        return result;
+    }
+
+    /// Return current arg without advancing.
+    [[nodiscard]] std::string_view peek() const
+    {
+        if (argc_ <= 0)
+            throw flim_error("Expected argument but reached end of command line");
+        return *argv_;
+    }
+
+    /// Consume and return the next argument value (the one after a flag).
+    std::string_view next_value()
+    {
+        if (argc_ <= 0)
+            throw flim_error("Expected value after flag but reached end of command line");
+        return next();
+    }
+};
+
+using flag_handler = std::function<void(arg_iterator &, program_options &)>;
+
+std::string build_comment_string(int argc, char **argv)
+{
+    std::string comment = "FLIM\n";
     for (int i = 0; i != argc; i++)
     {
         if (i != 0)
-            opts.comment += " ";
-        opts.comment += argv[i];
+            comment += " ";
+        comment += argv[i];
     }
-    opts.comment += "\nflimmaker-version: ";
-    opts.comment += version;
-    opts.comment += "\n";
+    comment += "\nflimmaker-version: ";
+    comment += version;
+    comment += "\n";
+    return comment;
+}
 
-    if (!encoding_profile::profile_named(opts.profile_name, opts.custom_profile))
-    {
-        std::cerr << std::format("Cannot find default profile '{}'\n", opts.profile_name);
-        ::exit(EXIT_FAILURE);
-    }
-
-    argc--;
-    argv++;
-
-    //  If the first argument is a .flim file, switch to flim utility mode
-    if (argc > 0 && ends_with(std::string(*argv), ".flim"))
-    {
-        ::exit(flimutil_main(argc, argv));
-    }
-
-    while (argc)
-    {
-        if (!strcmp(*argv, "--help"))
-        {
-            usage(cmd_name);
-            ::exit(EXIT_SUCCESS);
-        }
-
-        if (strncmp(*argv, "--", 2))
-        {
-            if (opts.input_file != "")
-            {
-                std::cerr << std::format("Input file specified twice: '{}' and '{}'\n", opts.input_file, *argv);
-                ::exit(EXIT_FAILURE);
-            }
-            opts.input_file = *argv;
-        }
-        else if (!strcmp(*argv, "--cache"))
-        {
-            argc--;
-            argv++;
-            opts.cache_file = *argv;
-            opts.generated_cache = false;
-        }
-        else if (!strcmp(*argv, "--mp4"))
-        {
-            argc--;
-            argv++;
-            opts.mp4_file = *argv;
-        }
-        else if (!strcmp(*argv, "--srt"))
-        {
-            argc--;
-            argv++;
-            opts.srt_file = *argv;
-        }
-        else if (!strcmp(*argv, "--gif"))
-        {
-            argc--;
-            argv++;
-            opts.gif_file = *argv;
-        }
-        else if (!strcmp(*argv, "--profile"))
-        {
-            argc--;
-            argv++;
-            opts.profile_name = *argv;
-            if (!encoding_profile::profile_named(opts.profile_name, opts.custom_profile))
-            {
-                std::cerr << "Cannot find encoding profile '" << *argv << "'\n";
-                ::exit(EXIT_FAILURE);
-            }
-        }
-        else if (!strcmp(*argv, "--width"))
-        {
-            argc--;
-            argv++;
-            opts.width = std::stoi(*argv);
-            if ((opts.width % 32) != 0)
-            {
-                opts.width = (opts.width / 32) * 32;
-                std::cerr << "Width must be multiple of 32, rounding it down to '" << opts.width << "'\n";
-            }
-        }
-        else if (!strcmp(*argv, "--height"))
-        {
-            argc--;
-            argv++;
-            opts.height = std::stoi(*argv);
-        }
-        else if (!strcmp(*argv, "--byterate"))
-        {
-            argc--;
-            argv++;
-            opts.custom_profile.set_byterate(std::stoi(*argv));
-        }
-        else if (!strcmp(*argv, "--fps"))
-        {
-            argc--;
-            argv++;
-            opts.fps = std::stod(*argv);
-        }
-        else if (!strcmp(*argv, "--fps-ratio"))
-        {
-            argc--;
-            argv++;
-            opts.custom_profile.set_fps_ratio(std::stoi(*argv));
-        }
-        else if (!strcmp(*argv, "--group"))
-        {
-            argc--;
-            argv++;
-            opts.custom_profile.set_group(bool_from(*argv));
-        }
-        else if (!strcmp(*argv, "--debug"))
-        {
-            argc--;
-            argv++;
-            sDebug = bool_from(*argv);
-        }
-        else if (!strcmp(*argv, "--from"))
-        {
-            argc--;
-            argv++;
-            opts.from_index = seconds_from_string(*argv);
-        }
-        else if (!strcmp(*argv, "--to"))
-        {
-            argc--;
-            argv++;
-            opts.to_index = std::stod(*argv);
-        }
-        else if (!strcmp(*argv, "--duration"))
-        {
-            argc--;
-            argv++;
-            opts.duration = seconds_from_string(*argv);
-        }
-        else if (!strcmp(*argv, "--cover-from"))
-        {
-            argc--;
-            argv++;
-            opts.cover_from = atoi(*argv);
-        }
-        else if (!strcmp(*argv, "--cover-to"))
-        {
-            argc--;
-            argv++;
-            opts.cover_to = atoi(*argv);
-        }
-        else if (!strcmp(*argv, "--cover"))
-        {
-            argc--;
-            argv++;
-            opts.cover_from = atoi(*argv);
-            opts.cover_to = opts.cover_from + 23;
-        }
-        else if (!strcmp(*argv, "--poster"))
-        {
-            argc--;
-            argv++;
-            opts.poster_ts = seconds_from_string(*argv);
-        }
-        else if (!strcmp(*argv, "--anchor-x"))
-        {
-            argc--;
-            argv++;
-            opts.custom_profile.set_anchor_x(atof(*argv));
-        }
-        else if (!strcmp(*argv, "--anchor-y"))
-        {
-            argc--;
-            argv++;
-            opts.custom_profile.set_anchor_y(atof(*argv));
-        }
-        else if (!strcmp(*argv, "--audio"))
-        {
-            argc--;
-            argv++;
-            opts.audio_file = *argv;
-        }
-        else if (!strcmp(*argv, "--flim"))
-        {
-            argc--;
-            argv++;
-            opts.flim_file = *argv;
-        }
-        else if (!strcmp(*argv, "--pgm"))
-        {
-            argc--;
-            argv++;
-            opts.pgm_pattern = *argv;
-        }
-        else if (!strcmp(*argv, "--pgm-poster"))
-        {
-            argc--;
-            argv++;
-            opts.pgm_poster_pattern = *argv;
-        }
-        else if (!strcmp(*argv, "--pgm-diff"))
-        {
-            argc--;
-            argv++;
-            opts.diff_pattern = *argv;
-        }
-        else if (!strcmp(*argv, "--pgm-change"))
-        {
-            argc--;
-            argv++;
-            opts.change_pattern = *argv;
-        }
-        else if (!strcmp(*argv, "--pgm-target"))
-        {
-            argc--;
-            argv++;
-            opts.target_pattern = *argv;
-        }
-        else if (!strcmp(*argv, "--comment"))
-        {
-            argc--;
-            argv++;
-            opts.comment += "comment: ";
-            opts.comment += *argv;
-            opts.comment += "\n";
-        }
-        else if (!strcmp(*argv, "--watermark"))
-        {
-            argc--;
-            argv++;
-            if (!strcmp(*argv, "auto"))
-                opts.auto_watermark = true;
-            else
-                opts.watermark = *argv;
-        }
-        else if (!strcmp(*argv, "--filters"))
-        {
-            argc--;
-            argv++;
-            opts.custom_profile.set_filters(*argv);
-        }
-        else if (!strcmp(*argv, "--bars"))
-        {
-            argc--;
-            argv++;
-            opts.custom_profile.set_bars(bool_from(*argv));
-        }
-        else if (!strcmp(*argv, "--codec"))
-        {
-            argc--;
-            argv++;
-            opts.user_codec_specs.push_back(*argv);
-        }
-        else if (!strcmp(*argv, "--dither"))
-        {
-            argc--;
-            argv++;
-            opts.custom_profile.set_dither(*argv);
-        }
-        else if (!strcmp(*argv, "--error-stability"))
-        {
-            argc--;
-            argv++;
-            opts.custom_profile.set_stability(atof(*argv));
-        }
-        else if (!strcmp(*argv, "--error-algorithm"))
-        {
-            argc--;
-            argv++;
-            opts.custom_profile.set_error_algorithm(*argv);
-        }
-        else if (!strcmp(*argv, "--error-bleed"))
-        {
-            argc--;
-            argv++;
-            opts.custom_profile.set_error_bleed(atof(*argv));
-        }
-        else if (!strcmp(*argv, "--error-bidi"))
-        {
-            argc--;
-            argv++;
-            opts.custom_profile.set_error_bidi(bool_from(*argv));
-        }
-        else if (!strcmp(*argv, "--silent"))
-        {
-            argc--;
-            argv++;
-            opts.custom_profile.set_silent(bool_from(*argv));
-        }
-        else if (!strcmp(*argv, "--initial-frame"))
-        {
-            argc--;
-            argv++;
-            try
-            {
-                opts.custom_profile.set_initial_mode(*argv);
-            }
-            catch (const config_error &e)
-            {
-                std::cerr << "Invalid initial-frame mode '" << *argv << "'. Use 'false', 'optional', or 'true'\n";
-                ::exit(EXIT_FAILURE);
-            }
-        }
-        else if (!strcmp(*argv, "--loop"))
-        {
-            argc--;
-            argv++;
-            opts.custom_profile.set_loop(bool_from(*argv));
-        }
-        else if (!strcmp(*argv, "--version"))
-        {
-            std::cout << "flimmaker version " << version << "\n";
-            ::exit(EXIT_SUCCESS);
-        }
-        else
-        {
-            std::cerr << "Unknown argument " << *argv << "\n";
-            ::exit(EXIT_FAILURE);
-        }
-
-        argc--;
-        argv++;
-    }
-
+void validate_and_finalize(program_options &opts, const std::string &cmd_name)
+{
     // Apply profile's natural dimensions if user didn't override them
     if (opts.width == 0)
         opts.width = opts.custom_profile.width();
@@ -448,19 +177,244 @@ program_options parse_arguments(int argc, char **argv)
     opts.custom_profile.set_size(opts.width, opts.height);
 
     // If user specified custom codecs, override profile codec specs
-    if (opts.user_codec_specs.size() > 0)
+    if (!opts.user_codec_specs.empty())
     {
         std::vector<std::string> specs = {"null"};
         specs.insert(specs.end(), opts.user_codec_specs.begin(), opts.user_codec_specs.end());
         opts.custom_profile.set_codec_specs(specs);
     }
 
-    if (opts.input_file == "")
+    if (opts.input_file.empty())
     {
         usage(cmd_name);
         ::exit(EXIT_FAILURE);
     }
+}
 
+/// Build the dispatch table mapping --flag to handler.
+/// Each handler consumes its value from the iterator.
+const std::unordered_map<std::string_view, flag_handler> &flag_dispatch_table()
+{
+    static const std::unordered_map<std::string_view, flag_handler> table = {
+        // --- Simple string assignments ---
+        {"--cache",
+         [](arg_iterator &args, program_options &opts)
+         {
+             opts.cache_file = std::string(args.next_value());
+             opts.generated_cache = false;
+         }},
+        {"--mp4", [](arg_iterator &args, program_options &opts) { opts.mp4_file = std::string(args.next_value()); }},
+        {"--srt", [](arg_iterator &args, program_options &opts) { opts.srt_file = std::string(args.next_value()); }},
+        {"--gif", [](arg_iterator &args, program_options &opts) { opts.gif_file = std::string(args.next_value()); }},
+        {"--audio",
+         [](arg_iterator &args, program_options &opts) { opts.audio_file = std::string(args.next_value()); }},
+        {"--flim",
+         [](arg_iterator &args, program_options &opts) { opts.flim_file = std::string(args.next_value()); }},
+        {"--pgm",
+         [](arg_iterator &args, program_options &opts) { opts.pgm_pattern = std::string(args.next_value()); }},
+        {"--pgm-poster",
+         [](arg_iterator &args, program_options &opts)
+         { opts.pgm_poster_pattern = std::string(args.next_value()); }},
+        {"--pgm-diff",
+         [](arg_iterator &args, program_options &opts) { opts.diff_pattern = std::string(args.next_value()); }},
+        {"--pgm-change",
+         [](arg_iterator &args, program_options &opts) { opts.change_pattern = std::string(args.next_value()); }},
+        {"--pgm-target",
+         [](arg_iterator &args, program_options &opts) { opts.target_pattern = std::string(args.next_value()); }},
+        {"--comment",
+         [](arg_iterator &args, program_options &opts)
+         {
+             opts.comment += "comment: ";
+             opts.comment += args.next_value();
+             opts.comment += "\n";
+         }},
+
+        // --- Profile field setters ---
+        {"--byterate",
+         [](arg_iterator &args, program_options &opts)
+         { opts.custom_profile.set_byterate(std::stoi(std::string(args.next_value()))); }},
+        {"--fps",
+         [](arg_iterator &args, program_options &opts) { opts.fps = std::stod(std::string(args.next_value())); }},
+        {"--fps-ratio",
+         [](arg_iterator &args, program_options &opts)
+         { opts.custom_profile.set_fps_ratio(std::stoi(std::string(args.next_value()))); }},
+        {"--group",
+         [](arg_iterator &args, program_options &opts)
+         { opts.custom_profile.set_group(bool_from(args.next_value())); }},
+        {"--bars",
+         [](arg_iterator &args, program_options &opts)
+         { opts.custom_profile.set_bars(bool_from(args.next_value())); }},
+        {"--anchor-x",
+         [](arg_iterator &args, program_options &opts)
+         { opts.custom_profile.set_anchor_x(atof(std::string(args.next_value()).c_str())); }},
+        {"--anchor-y",
+         [](arg_iterator &args, program_options &opts)
+         { opts.custom_profile.set_anchor_y(atof(std::string(args.next_value()).c_str())); }},
+        {"--filters",
+         [](arg_iterator &args, program_options &opts)
+         { opts.custom_profile.set_filters(std::string(args.next_value())); }},
+        {"--dither",
+         [](arg_iterator &args, program_options &opts)
+         { opts.custom_profile.set_dither(std::string(args.next_value())); }},
+        {"--error-stability",
+         [](arg_iterator &args, program_options &opts)
+         { opts.custom_profile.set_stability(atof(std::string(args.next_value()).c_str())); }},
+        {"--error-algorithm",
+         [](arg_iterator &args, program_options &opts)
+         { opts.custom_profile.set_error_algorithm(std::string(args.next_value())); }},
+        {"--error-bleed",
+         [](arg_iterator &args, program_options &opts)
+         { opts.custom_profile.set_error_bleed(atof(std::string(args.next_value()).c_str())); }},
+        {"--error-bidi",
+         [](arg_iterator &args, program_options &opts)
+         { opts.custom_profile.set_error_bidi(bool_from(args.next_value())); }},
+        {"--silent",
+         [](arg_iterator &args, program_options &opts)
+         { opts.custom_profile.set_silent(bool_from(args.next_value())); }},
+        {"--codec",
+         [](arg_iterator &args, program_options &opts)
+         { opts.user_codec_specs.push_back(std::string(args.next_value())); }},
+
+        // --- Special-case handlers ---
+        {"--debug",
+         [](arg_iterator &args, program_options &) { sDebug = bool_from(args.next_value()); }},
+        {"--profile",
+         [](arg_iterator &args, program_options &opts)
+         {
+             opts.profile_name = std::string(args.next_value());
+             if (!encoding_profile::profile_named(opts.profile_name, opts.custom_profile))
+             {
+                 std::cerr << std::format("Cannot find encoding profile '{}'\n", opts.profile_name);
+                 ::exit(EXIT_FAILURE);
+             }
+         }},
+        {"--width",
+         [](arg_iterator &args, program_options &opts)
+         {
+             opts.width = std::stoi(std::string(args.next_value()));
+             if ((opts.width % 32) != 0)
+             {
+                 opts.width = (opts.width / 32) * 32;
+                 std::cerr << std::format("Width must be multiple of 32, rounding it down to '{}'\n", opts.width);
+             }
+         }},
+        {"--height",
+         [](arg_iterator &args, program_options &opts)
+         { opts.height = std::stoi(std::string(args.next_value())); }},
+        {"--from",
+         [](arg_iterator &args, program_options &opts) { opts.from_index = seconds_from_string(args.next_value()); }},
+        {"--to",
+         [](arg_iterator &args, program_options &opts)
+         { opts.to_index = std::stod(std::string(args.next_value())); }},
+        {"--duration",
+         [](arg_iterator &args, program_options &opts) { opts.duration = seconds_from_string(args.next_value()); }},
+        {"--cover-from",
+         [](arg_iterator &args, program_options &opts)
+         { opts.cover_from = atoi(std::string(args.next_value()).c_str()); }},
+        {"--cover-to",
+         [](arg_iterator &args, program_options &opts)
+         { opts.cover_to = atoi(std::string(args.next_value()).c_str()); }},
+        {"--cover",
+         [](arg_iterator &args, program_options &opts)
+         {
+             opts.cover_from = atoi(std::string(args.next_value()).c_str());
+             opts.cover_to = opts.cover_from + 23;
+         }},
+        {"--poster",
+         [](arg_iterator &args, program_options &opts) { opts.poster_ts = seconds_from_string(args.next_value()); }},
+        {"--watermark",
+         [](arg_iterator &args, program_options &opts)
+         {
+             auto val = args.next_value();
+             if (val == "auto")
+                 opts.auto_watermark = true;
+             else
+                 opts.watermark = std::string(val);
+         }},
+        {"--initial-frame",
+         [](arg_iterator &args, program_options &opts)
+         {
+             auto val = std::string(args.next_value());
+             try
+             {
+                 opts.custom_profile.set_initial_mode(val);
+             }
+             catch (const config_error &)
+             {
+                 std::cerr << std::format(
+                     "Invalid initial-frame mode '{}'. Use 'false', 'optional', or 'true'\n", val);
+                 ::exit(EXIT_FAILURE);
+             }
+         }},
+        {"--loop",
+         [](arg_iterator &args, program_options &opts)
+         { opts.custom_profile.set_loop(bool_from(args.next_value())); }},
+        {"--version",
+         []([[maybe_unused]] arg_iterator &args, [[maybe_unused]] program_options &opts)
+         {
+             std::cout << "flimmaker version " << version << "\n";
+             ::exit(EXIT_SUCCESS);
+         }},
+    };
+    return table;
+}
+
+program_options parse_arguments(int argc, char **argv)
+{
+    program_options opts;
+    opts.cache_file = temp_file();
+    const std::string cmd_name{argv[0]};
+    opts.comment = build_comment_string(argc, argv);
+
+    if (!encoding_profile::profile_named(opts.profile_name, opts.custom_profile))
+    {
+        std::cerr << std::format("Cannot find default profile '{}'\n", opts.profile_name);
+        ::exit(EXIT_FAILURE);
+    }
+
+    argc--;
+    argv++;
+
+    // If the first argument is a .flim file, switch to flim utility mode
+    if (argc > 0 && ends_with(std::string(*argv), ".flim"))
+        ::exit(flimutil_main(argc, argv));
+
+    const auto &dispatch = flag_dispatch_table();
+    arg_iterator args(argc, argv);
+
+    while (args.has_next())
+    {
+        auto arg = args.next();
+
+        if (arg == "--help")
+        {
+            usage(cmd_name);
+            ::exit(EXIT_SUCCESS);
+        }
+
+        // Positional argument (no -- prefix) = input file
+        if (arg.substr(0, 2) != "--")
+        {
+            if (!opts.input_file.empty())
+            {
+                std::cerr << std::format("Input file specified twice: '{}' and '{}'\n", opts.input_file, arg);
+                ::exit(EXIT_FAILURE);
+            }
+            opts.input_file = std::string(arg);
+            continue;
+        }
+
+        auto it = dispatch.find(arg);
+        if (it == dispatch.end())
+        {
+            std::cerr << std::format("Unknown argument {}\n", arg);
+            ::exit(EXIT_FAILURE);
+        }
+
+        it->second(args, opts);
+    }
+
+    validate_and_finalize(opts, cmd_name);
     return opts;
 }
 

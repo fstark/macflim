@@ -196,45 +196,32 @@ class ffmpeg_writer final : public output_writer
         std::clog << std::format("\n");
     }
 
-  public:
-    ffmpeg_writer(const std::string filename, size_t W, size_t H)
+    void init_output_format(const std::string &filename)
     {
-        W_ = W;
-        H_ = H;
-
         oformat = av_guess_format(nullptr, filename.c_str(), nullptr);
         if (!oformat)
-        {
             throw io_error("Can't create output format", filename);
-        }
 
         AVFormatContext *raw_ofctx = nullptr;
         int err = avformat_alloc_output_context2(&raw_ofctx, oformat, nullptr, filename.c_str());
         if (err < 0)
-        {
             throw ffmpeg_error("Can't create output context", err, filename);
-        }
         ofctx.reset(raw_ofctx);
+    }
 
-        const AVCodec *video_codec = nullptr;
-        video_codec = avcodec_find_encoder(oformat->video_codec);
+    void init_video_stream()
+    {
+        const AVCodec *video_codec = avcodec_find_encoder(oformat->video_codec);
         if (!video_codec)
-        {
             throw flim_error("Can't create video codec");
-        }
 
         AVStream *stream = avformat_new_stream(ofctx.get(), video_codec);
         if (!stream)
-        {
-            std::cerr << std::format("Can't find format\n");
-        }
+            throw flim_error("Can't create video stream");
 
         video_context.reset(avcodec_alloc_context3(video_codec));
-
         if (!video_context)
-        {
             throw flim_error("Can't create video codec context");
-        }
 
         stream->codecpar->codec_id = oformat->video_codec;
         stream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
@@ -245,9 +232,7 @@ class ffmpeg_writer final : public output_writer
 
         int ret = avcodec_parameters_to_context(video_context.get(), stream->codecpar);
         if (ret < 0)
-        {
             throw ffmpeg_error("Failed to copy codec parameters to context", ret);
-        }
 
         video_context->time_base = (AVRational){1, 30};
         video_context->max_b_frames = 2;
@@ -255,22 +240,19 @@ class ffmpeg_writer final : public output_writer
         video_context->framerate = (AVRational){60, 1};
 
         if (stream->codecpar->codec_id == AV_CODEC_ID_H264)
-        {
             av_opt_set(video_context.get(), "preset", "ultrafast", 0);
-        }
         else if (stream->codecpar->codec_id == AV_CODEC_ID_H265)
-        {
             av_opt_set(video_context.get(), "preset", "ultrafast", 0);
-        }
 
         avcodec_parameters_from_context(stream->codecpar, video_context.get());
 
-        if ((err = avcodec_open2(video_context.get(), video_codec, NULL)) < 0)
-        {
+        int err = avcodec_open2(video_context.get(), video_codec, NULL);
+        if (err < 0)
             throw ffmpeg_error("Failed to open codec", err);
-        }
+    }
 
-        // AUDIO
+    void init_audio_stream()
+    {
         auto audio_codec = avcodec_find_encoder(oformat->audio_codec);
         if (!audio_codec)
             throw flim_error("Audio codec not found");
@@ -287,20 +269,15 @@ class ffmpeg_writer final : public output_writer
         audio_context->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
         audio_context->ch_layout.nb_channels = 1;
 
-        ret = avcodec_open2(audio_context.get(), audio_codec, NULL);
+        int ret = avcodec_open2(audio_context.get(), audio_codec, NULL);
         if (ret < 0)
-        {
             throw ffmpeg_error("Could not open audio codec", ret);
-        }
 
         AVStream *audio_stream = avformat_new_stream(ofctx.get(), audio_codec);
         if (!audio_stream)
-        {
             throw flim_error("Cannot create audio stream");
-        }
 
         audio_stream->id = 1;
-
         audio_stream->time_base = (AVRational){1, 44100};
         avcodec_parameters_from_context(audio_stream->codecpar, audio_context.get());
 
@@ -311,28 +288,29 @@ class ffmpeg_writer final : public output_writer
         audio_frame->format = audio_context->sample_fmt;
         audio_frame->ch_layout = audio_context->ch_layout;
         audio_frame->sample_rate = audio_context->sample_rate;
-        audio_frame->nb_samples = 1024; // 44100/60
-        err = av_frame_get_buffer(audio_frame.get(), 0);
+        audio_frame->nb_samples = 1024;
+        int err = av_frame_get_buffer(audio_frame.get(), 0);
         if (err < 0)
-        {
             throw ffmpeg_error("Error allocating an audio buffer", err);
-        }
 
         if (sDebug)
         {
             std::clog << std::format("Line size = {}\n", audio_frame->linesize[0]);
             std::clog << std::format("Frame size = {}\n", audio_context->frame_size);
         }
+    }
 
+    void open_output_file(const std::string &filename)
+    {
         if (!(oformat->flags & AVFMT_NOFILE))
         {
-            if ((err = avio_open(&ofctx->pb, filename.c_str(), AVIO_FLAG_WRITE)) < 0)
-            {
+            int err = avio_open(&ofctx->pb, filename.c_str(), AVIO_FLAG_WRITE);
+            if (err < 0)
                 throw ffmpeg_error("Failed to open file", err, filename);
-            }
         }
 
-        if ((err = avformat_write_header(ofctx.get(), NULL)) < 0)
+        int err = avformat_write_header(ofctx.get(), NULL);
+        if (err < 0)
         {
             char buffer[1025];
             av_strerror(err, buffer, 1024);
@@ -341,6 +319,15 @@ class ffmpeg_writer final : public output_writer
         }
 
         av_dump_format(ofctx.get(), 0, filename.c_str(), 1);
+    }
+
+  public:
+    ffmpeg_writer(const std::string filename, size_t W, size_t H) : W_(W), H_(H)
+    {
+        init_output_format(filename);
+        init_video_stream();
+        init_audio_stream();
+        open_output_file(filename);
     }
 
     ~ffmpeg_writer()

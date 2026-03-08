@@ -154,7 +154,26 @@ void flimencoder::make_flim(const std::string flim_pathname, input_reader *reade
 
     std::clog << std::format("**** fps: {}/{}={}\n", fps_, profile_.fps_ratio(), fps_ / profile_.fps_ratio());
 
-    //  Poster processing
+    auto poster_small_bw = process_poster(poster_image);
+
+    // Compress
+    flimcompressor fc{profile_.width(), profile_.height(),           next_image_with_first,
+                      audio_samples,    fps_ / profile_.fps_ratio(), subtitles_};
+
+    fc.compress(profile_, watermark_, profile_.initial_mode(), profile_.loop());
+
+    auto frames = fc.get_frames();
+
+    std::clog << std::format("\n**** # of input images: {}\n", image_count);
+
+    write_diagnostic_pgms(frames);
+    write_flim_file(flim_pathname, frames, poster_small_bw, fc);
+    write_output_frames(frames, audio_samples, writers);
+    write_covers(frames);
+}
+
+grayscale flimencoder::process_poster(const grayscale &poster_image)
+{
     auto filters_string = profile_.filters();
     grayscale poster_filtered = filter(poster_image, filters_string.c_str());
 
@@ -179,45 +198,41 @@ void flimencoder::make_flim(const std::string flim_pathname, input_reader *reade
     write_grayscale("/tmp/poster2.pgm", poster_small);
     write_grayscale("/tmp/poster3.pgm", poster_small_bw);
 
-    // Compress
-    flimcompressor fc{profile_.width(), profile_.height(),           next_image_with_first,
-                      audio_samples,    fps_ / profile_.fps_ratio(), subtitles_};
+    return poster_small_bw;
+}
 
-    fc.compress(profile_, watermark_, profile_.initial_mode(), profile_.loop());
+void flimencoder::write_diagnostic_pgms(const std::vector<frame> &frames)
+{
+    if (!pgm_diff_writer_ && !pgm_change_writer_ && !pgm_target_writer_)
+        return;
 
-    auto frames = fc.get_frames();
+    bitmap previous_frame{profile_.width(), profile_.height()};
+    previous_frame.fill(0xff);
 
-    std::clog << std::format("\n**** # of input images: {}\n", image_count);
-
-    // Diagnostic PGM generation - frame analysis
-    // (pgm_poster_writer_ is no longer supported without images_ vector)
-    if (pgm_diff_writer_ || pgm_change_writer_ || pgm_target_writer_)
+    for (auto &frame : frames)
     {
-        bitmap previous_frame{profile_.width(), profile_.height()};
-        previous_frame.fill(0xff);
-
-        for (auto &frame : frames)
+        if (pgm_diff_writer_)
         {
-            if (pgm_diff_writer_)
-            {
-                auto logimg = (*frame.result ^ *frame.source).inverted().as_image();
-                pgm_diff_writer_->write_frame(logimg, {});
-            }
-            if (pgm_change_writer_)
-            {
-                auto logimg = (*frame.result ^ previous_frame).inverted().as_image();
-                pgm_change_writer_->write_frame(logimg, {});
-                previous_frame = *frame.result;
-            }
-            if (pgm_target_writer_)
-            {
-                auto logimg = frame.source->as_image();
-                pgm_target_writer_->write_frame(logimg, {});
-            }
+            auto logimg = (*frame.result ^ *frame.source).inverted().as_image();
+            pgm_diff_writer_->write_frame(logimg, {});
+        }
+        if (pgm_change_writer_)
+        {
+            auto logimg = (*frame.result ^ previous_frame).inverted().as_image();
+            pgm_change_writer_->write_frame(logimg, {});
+            previous_frame = *frame.result;
+        }
+        if (pgm_target_writer_)
+        {
+            auto logimg = frame.source->as_image();
+            pgm_target_writer_->write_frame(logimg, {});
         }
     }
+}
 
-    // Generate FLIM file
+void flimencoder::write_flim_file(const std::string &pathname, const std::vector<frame> &frames,
+                                  const grayscale &poster_bw, const flimcompressor &fc)
+{
     flim ef{comment_};
     size_t total_ticks =
         std::accumulate(std::begin(frames), std::end(frames), 0, [](size_t a, const frame &f) { return a + f.ticks; });
@@ -225,61 +240,61 @@ void flimencoder::make_flim(const std::string flim_pathname, input_reader *reade
                  frames.size(),    total_ticks,       profile_.byterate()};
     ef.add(fi);
     ef.add(frames);
-    ef.add_poster(poster_small_bw);
+    ef.add_poster(poster_bw);
 
-    // Add initial frame if generated
     if (fc.get_initial())
         ef.add_initial(*fc.get_initial());
 
-    file_handle movie_file(flim_pathname, "wb");
+    file_handle movie_file(pathname, "wb");
     ef.write(movie_file);
+}
 
-    // Production output via writers (mp4, gif, pgm)
-    if (writers.size())
+void flimencoder::write_output_frames(const std::vector<frame> &frames, const std::vector<sound_frame_t> &audio_samples,
+                                      const std::vector<std::unique_ptr<output_writer>> &writers)
+{
+    size_t total_ticks = 0;
+    for (auto &frame : frames)
+        total_ticks += frame.ticks;
+
+    for (auto &writer : writers)
     {
-        size_t total_ticks = 0;
+        auto sound = std::begin(audio_samples);
+        size_t tick_count = 0;
+
         for (auto &frame : frames)
-            total_ticks += frame.ticks;
-
-        for (auto &writer : writers)
         {
-            auto sound = std::begin(audio_samples);
-            size_t tick_count = 0;
-
-            for (auto &frame : frames)
+            for (size_t i = 0; i != frame.ticks; i++)
             {
-                for (size_t i = 0; i != frame.ticks; i++)
+                sound_frame_t snd;
+                if (!profile_.silent())
+                    if (sound < std::end(audio_samples))
+                        snd = *sound++;
+                writer->write_frame(frame.result->as_image(), snd);
+                tick_count++;
+                if (tick_count % 60 == 0 || tick_count == total_ticks)
                 {
-                    sound_frame_t snd;
-                    if (!profile_.silent())
-                        if (sound < std::end(audio_samples))
-                            snd = *sound++;
-                    writer->write_frame(frame.result->as_image(), snd);
-                    tick_count++;
-                    if (tick_count % 60 == 0 || tick_count == total_ticks)
-                    {
-                        double secs = tick_count / 60.0;
-                        int mins = (int)(secs / 60);
-                        double rsecs = secs - mins * 60;
-                        std::clog << std::format("Writing output: tick {}/{} ({}:{:05.2f}s) {}%\r", tick_count,
-                                                 total_ticks, mins, rsecs, tick_count * 100 / total_ticks);
-                    }
+                    double secs = tick_count / 60.0;
+                    int mins = (int)(secs / 60);
+                    double rsecs = secs - mins * 60;
+                    std::clog << std::format("Writing output: tick {}/{} ({}:{:05.2f}s) {}%\r", tick_count, total_ticks,
+                                             mins, rsecs, tick_count * 100 / total_ticks);
                 }
             }
-            std::clog << std::format("\n");
         }
+        std::clog << std::format("\n");
     }
+}
 
-    // Cover generation
+void flimencoder::write_covers(const std::vector<frame> &frames)
+{
     for (size_t i = cover_begin_; i <= cover_end_; i++)
     {
-        if (i < frames.size())
-        {
-            std::clog << std::format("COVER {}\n", i);
-            std::string buffer = std::format("cover-{:06}.pgm", i - cover_begin_ + 1);
-            auto logimg = frames[i].result->as_image();
-            write_grayscale(buffer.c_str(), logimg);
-        }
+        if (i >= frames.size())
+            continue;
+        std::clog << std::format("COVER {}\n", i);
+        std::string buffer = std::format("cover-{:06}.pgm", i - cover_begin_ + 1);
+        auto logimg = frames[i].result->as_image();
+        write_grayscale(buffer.c_str(), logimg);
     }
 }
 
