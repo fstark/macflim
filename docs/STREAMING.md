@@ -494,9 +494,11 @@ These changes prepare the codebase for streaming without implementing any stream
 
 **Known issue found:** The `lines` codec has a pre-existing infinite loop when `budget < get_bytes_width()` (64 bytes) — `target_count` becomes 0 and the loop step is 0. Not introduced by this refactoring.
 
-### 8.2. Extract frame delta decoder
+### 8.2. Extract frame delta decoder — DONE
 
 **Goal:** Standalone C++ function to apply encoded video deltas to a bitmap, for use by both server-side screen simulation and the Linux test player.
+
+**Implementation:** `src/decoder.hpp` / `src/decoder.cpp` — two `apply_delta()` overloads (with/without codec header). Decodes all five codecs (null, z16, z32, invert, lines) including vertical-packing conversion. Throws `std::runtime_error` for unknown signatures or truncated data.
 
 The decode logic already exists embedded in the encoder at [src/compressor.hpp L429–L447](../src/compressor.hpp#L429) (marked with `#### Decompresses -- needs to be moved to the right object`). Reference implementations also exist in [macsrc/Codec.c](../macsrc/Codec.c) (68K C/asm: `UnpackZ32_same`, `UnpackZ32_all`, etc.).
 
@@ -530,9 +532,11 @@ Codec formats to decode:
 
 **Note:** z16 and z32 operate on **vertical-packed** data (columns contiguous in memory). The decoder must unpack/repack accordingly, matching the encoder's vertical packing behavior in `bitmap::raw_values<T>()`.
 
-### 8.3. Add round-trip unit tests
+### 8.3. Add round-trip unit tests — DONE
 
 **Goal:** Verify that `encode_frame()` + `apply_delta()` produces identical results to the encoder's internal state tracking.
+
+**Implementation:** `src/test/test_decoder.cpp` — 5 basic `apply_delta` tests (null, invert, double-invert, error handling) + 16 round-trip tests covering all codecs individually and combined, including progressive multi-frame convergence. All tests verify bit-for-bit equality between encoder's result bitmap and decoder's reconstructed bitmap.
 
 Test approach:
 - Create a `bitmap` with known content (e.g. checkerboard, random, blank)
@@ -616,8 +620,8 @@ Separate Makefile target: `make streaming-player`. Links against SDL2 + project 
 ### New files (Phase 1 refactoring)
 - `src/encode_frame.hpp` / `.cpp` — extracted single-frame encoding function ✓
 - `src/test/test_encode_frame.cpp` — unit tests for `encode_frame()` ✓
-- `src/decoder.hpp` / `.cpp` — frame delta decoder (`apply_delta()`)
-- `src/test/test_encode_decode.cpp` — round-trip encode+decode tests
+- `src/decoder.hpp` / `.cpp` — frame delta decoder (`apply_delta()`) ✓
+- `src/test/test_decoder.cpp` — round-trip encode+decode tests ✓
 
 ### Modified files (Phase 1 refactoring)
 - `src/compressor_helper.cpp` — refactored `add()` to call `encode_frame()` internally ✓
