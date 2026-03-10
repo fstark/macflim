@@ -31,14 +31,14 @@ bitmap client_state_tracker::current_client_screen() const
 {
     //  Start from confirmed state and optimistically apply all in-flight deltas
     bitmap screen = simulated_fb_;
-    for (const auto &frame : in_flight_)
-        apply_delta(screen, frame.delta);
+    for (const auto &delta : in_flight_)
+        apply_delta(screen, delta);
     return screen;
 }
 
-void client_state_tracker::record_sent(uint32_t seq, std::vector<uint8_t> delta)
+void client_state_tracker::record_sent(std::vector<uint8_t> delta)
 {
-    in_flight_.push_back({seq, std::move(delta)});
+    in_flight_.push_back(std::move(delta));
 }
 
 void client_state_tracker::process_feedback(uint32_t last_displayed_seq, const std::vector<uint8_t> &history_bytes)
@@ -47,21 +47,27 @@ void client_state_tracker::process_feedback(uint32_t last_displayed_seq, const s
     if (last_displayed_seq <= simulated_seq_)
         return;
 
-    //  Replay deltas from simulated_fb_ forward, selectively applying based on history bitmap
+    //  Replay deltas from simulated_fb_ forward, selectively applying based on history bitmap.
+    //  Frames are consecutive: front of deque is simulated_seq_+1, next is +2, etc.
     bitmap screen = simulated_fb_;
-    while (!in_flight_.empty() && in_flight_.front().seq <= last_displayed_seq)
+    uint32_t frame_seq = simulated_seq_ + 1;
+    while (!in_flight_.empty() && frame_seq <= last_displayed_seq)
     {
-        const auto &frame = in_flight_.front();
-
-        if (was_displayed(frame.seq, last_displayed_seq, history_bytes))
-            apply_delta(screen, frame.delta);
+        if (was_displayed(frame_seq, last_displayed_seq, history_bytes))
+            apply_delta(screen, in_flight_.front());
         //  Missed frames: skip — screen unchanged for that delta
 
         in_flight_.pop_front();
+        ++frame_seq;
     }
 
     simulated_fb_ = std::move(screen);
     simulated_seq_ = last_displayed_seq;
+}
+
+uint32_t client_state_tracker::next_seq() const
+{
+    return simulated_seq_ + static_cast<uint32_t>(in_flight_.size()) + 1;
 }
 
 uint32_t client_state_tracker::simulated_seq() const

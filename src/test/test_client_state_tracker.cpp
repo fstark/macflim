@@ -69,6 +69,7 @@ TEST_CASE("client_state_tracker: fresh tracker returns initial screen")
 
     CHECK(tracker.current_client_screen() == blank);
     CHECK(tracker.simulated_seq() == 0);
+    CHECK(tracker.next_seq() == 1);
     CHECK(tracker.in_flight_count() == 0);
 }
 
@@ -84,7 +85,7 @@ TEST_CASE("client_state_tracker: record_sent makes frame visible in current_clie
 
     //  Tracker starts from the same initial screen
     client_state_tracker tracker(current);
-    tracker.record_sent(1, delta);
+    tracker.record_sent(delta);
 
     //  current_client_screen should reflect the delta optimistically
     CHECK(tracker.current_client_screen() == encoder_fb);
@@ -102,8 +103,8 @@ TEST_CASE("client_state_tracker: all frames acked advances simulated state")
     auto delta2 = make_delta(encoder_fb, target, codecs, 2000);
 
     client_state_tracker tracker(current);
-    tracker.record_sent(1, delta1);
-    tracker.record_sent(2, delta2);
+    tracker.record_sent(delta1);
+    tracker.record_sent(delta2);
 
     //  Feedback: both displayed
     tracker.process_feedback(2, all_displayed());
@@ -133,9 +134,9 @@ TEST_CASE("client_state_tracker: missed frame produces deterministic wrong state
     auto delta3 = make_delta(encoder_fb, target3, codecs, 2000);
 
     client_state_tracker tracker(initial);
-    tracker.record_sent(1, delta1);
-    tracker.record_sent(2, delta2);
-    tracker.record_sent(3, delta3);
+    tracker.record_sent(delta1);
+    tracker.record_sent(delta2);
+    tracker.record_sent(delta3);
 
     //  Feedback: frame 2 missed (offset 1 from last_displayed_seq=3)
     auto history = with_misses({1}); // bit 1 = seq 2 = missed
@@ -175,8 +176,10 @@ TEST_CASE("client_state_tracker: section 6 worked example — F5-F9 in flight, F
 
     //  Set up tracker at "after frame 4" with seq=4
     client_state_tracker tracker(after_f4);
+    //  Advance simulated_seq_ to 4 so next_seq() starts at 5
+    tracker.process_feedback(4, all_displayed());
     for (size_t i = 0; i < 5; i++)
-        tracker.record_sent(static_cast<uint32_t>(5 + i), deltas[i]);
+        tracker.record_sent(deltas[i]);
 
     CHECK(tracker.in_flight_count() == 5);
 
@@ -229,7 +232,7 @@ TEST_CASE("client_state_tracker: partial feedback leaves remaining frames in fli
 
     client_state_tracker tracker(initial);
     for (uint32_t i = 1; i <= 5; i++)
-        tracker.record_sent(i, deltas[i - 1]);
+        tracker.record_sent(deltas[i - 1]);
 
     //  Partial feedback: only through seq 3
     tracker.process_feedback(3, all_displayed());
@@ -257,9 +260,9 @@ TEST_CASE("client_state_tracker: progressive feedback in two steps")
     auto d3 = make_delta(encoder_fb, t3, codecs, 2000);
 
     client_state_tracker tracker(initial);
-    tracker.record_sent(1, d1);
-    tracker.record_sent(2, d2);
-    tracker.record_sent(3, d3);
+    tracker.record_sent(d1);
+    tracker.record_sent(d2);
+    tracker.record_sent(d3);
 
     //  First feedback: through seq 2, all displayed
     tracker.process_feedback(2, all_displayed());
