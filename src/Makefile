@@ -71,10 +71,10 @@ TEST_OBJS = test/test_main.o test/test_common.o test/test_imgcompress.o test/tes
             test/test_packzmap.o test/test_flim_file.o test/test_flim_errors.o test/test_grayscale_conversions.o test/test_grayscale_filters.o \
             test/test_dithering_parameters.o test/test_watermark.o test/test_subtitles.o test/test_grayscale_io.o \
             test/test_cmdline.o test/test_compressor_helper.o test/test_flimcompressor.o test/test_flimencoder.o \
-            test/test_filesystem_reader.o test/test_encode_frame.o test/test_decoder.o test/test_stubs.o
+            test/test_filesystem_reader.o test/test_encode_frame.o test/test_decoder.o test/test_client_state_tracker.o test/test_stubs.o
 TEST_SHARED_OBJS = common.o imgcompress.o ruler.o profile.o grayscale.o \
                    dithering_parameters.o watermark.o flim.o subtitles.o \
-                   cmdline.o compressor_helper.o encode_frame.o decoder.o flimcompressor.o flimutil.o \
+                   cmdline.o compressor_helper.o encode_frame.o decoder.o streaming/client_state_tracker.o flimcompressor.o flimutil.o \
                    ffmpeg_reader.o filesystem_reader.o flimencoder.o writer.o
 
 -include $(TEST_OBJS:.o=.d)
@@ -86,7 +86,7 @@ unit_tests: $(TEST_OBJS) $(TEST_SHARED_OBJS)
 # Usage: make coverage
 # Rebuilds tests with coverage instrumentation, runs them, and generates HTML report
 coverage:
-	@rm -f *.gcda *.gcno *.gcov coverage*.html coverage*.css test/*.gcda test/*.gcno test/*.gcov
+	@rm -f *.gcda *.gcno *.gcov coverage*.html coverage*.css test/*.gcda test/*.gcno test/*.gcov streaming/*.gcda streaming/*.gcno streaming/*.gcov
 	@rm -f $(TEST_OBJS) $(TEST_SHARED_OBJS)
 	$(MAKE) unit_tests CXXFLAGS="$(CXXFLAGS) --coverage"
 	./unit_tests
@@ -95,13 +95,13 @@ coverage:
 	@echo "Coverage report generated: coverage.html"
 
 coverage-clean:
-	rm -f *.gcda *.gcno *.gcov coverage*.html coverage*.css test/*.gcda test/*.gcno test/*.gcov
+	rm -f *.gcda *.gcno *.gcov coverage*.html coverage*.css test/*.gcda test/*.gcno test/*.gcov streaming/*.gcda streaming/*.gcno streaming/*.gcov
 
 clean: coverage-clean
-	rm -f ../flimmaker ../flimmaker.exe $(OBJS) $(OBJS:.o=.d) unit_tests $(TEST_OBJS) $(TEST_OBJS:.o=.d) test/*.o test/*.d
+	rm -f ../flimmaker ../flimmaker.exe $(OBJS) $(OBJS:.o=.d) unit_tests $(TEST_OBJS) $(TEST_OBJS:.o=.d) test/*.o test/*.d streaming/*.o streaming/*.d
 
 format:
-	clang-format -i *.cpp *.hpp test/*.cpp
+	clang-format -i *.cpp *.hpp test/*.cpp streaming/*.cpp streaming/*.hpp
 
 # Pattern rule for compiling .cpp files to .o files
 %.o: %.cpp
@@ -111,3 +111,9 @@ format:
 # Add -I. to allow test files to include headers from parent directory
 test/%.o: test/%.cpp
 	${CPP} $(CXXFLAGS) -I. -MMD -MP -c $< -o $@
+
+# Pattern rule for compiling streaming .cpp files to .o files
+streaming/%.o: streaming/%.cpp
+	${CPP} $(CXXFLAGS) -I. -MMD -MP -c $< -o $@
+
+-include streaming/*.d
