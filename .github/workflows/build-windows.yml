@@ -62,7 +62,7 @@ jobs:
     - name: Run tests
       run: |
         cd src
-        make test
+        make test CPP=g++
     
     - name: Package with DLLs
       run: |
