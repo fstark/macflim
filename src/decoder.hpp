@@ -17,7 +17,6 @@ void apply_delta(bitmap &screen, const std::vector<uint8_t> &encoded_data);
 
 /// Apply an encoded video delta with the codec signature provided separately.
 /// data points to the codec-specific payload (no header).
-void apply_delta(bitmap &screen, uint8_t codec_signature,
-                 const uint8_t *data, size_t len);
+void apply_delta(bitmap &screen, uint8_t codec_signature, const uint8_t *data, size_t len);
 
 } // namespace macflim

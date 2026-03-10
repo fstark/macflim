@@ -130,8 +130,7 @@ static void decode_invert(bitmap &screen)
     screen = bitmap{raw, screen.W(), screen.H(), false};
 }
 
-void apply_delta(bitmap &screen, uint8_t codec_signature,
-                 const uint8_t *data, size_t len)
+void apply_delta(bitmap &screen, uint8_t codec_signature, const uint8_t *data, size_t len)
 {
     switch (codec_signature)
     {

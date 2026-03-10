@@ -2,6 +2,7 @@
 
 #include "bitmap.hpp"
 #include "common.hpp"
+#include "decoder.hpp"
 #include "imgcompress.hpp"
 #include "ruler.hpp"
 
@@ -414,16 +415,18 @@ template <typename T> class vertical_compressor : public compressor
             res.push_back(0x00);
             res.push_back(0x00);
             res.push_back(0x00);
+
+            apply_delta(current, 0x02, res.data(), res.size());
         }
 
         //  Encode Z16
         if (sizeof(T) == 2)
         {
-            size_t current = 0;
+            size_t z16_offset = 0;
             for (auto &run : closer)
             {
-                uint16_t header = ((run.offset - current) << 8) + run.data.size(); //  oooooooo 0 sssssss
-                current = run.offset;
+                uint16_t header = ((run.offset - z16_offset) << 8) + run.data.size(); //  oooooooo 0 sssssss
+                z16_offset = run.offset;
 
                 auto v = bytes_from_value_be(header);
                 res.insert(std::end(res), std::begin(v), std::end(v));
@@ -432,32 +435,9 @@ template <typename T> class vertical_compressor : public compressor
             }
             res.push_back(0x00);
             res.push_back(0x00);
+
+            apply_delta(current, 0x01, res.data(), res.size());
         }
-
-        //  #### Decompresses -- needs to be moved to the right object
-        for (auto &run : closer)
-        {
-            size_t offset = run.offset * sizeof(T);
-
-            assert(run.offset < get_T_size());
-
-            size_t scr_x = offset % get_bytes_width();
-            size_t scr_y = offset / get_bytes_width();
-
-            scr_x /= sizeof(T);
-
-            offset = scr_x * target.H() + scr_y;
-
-            for (auto &v : run.data)
-            {
-                assert(offset < get_T_size());
-                current_data_[offset] = v;
-                delta_[offset] = 0;
-                offset++;
-            }
-        }
-
-        current = bitmap{current_data_, W_, H_};
 
         return res;
     }

@@ -59,7 +59,7 @@ In streaming, this assumption breaks — packets can be lost, so what the Mac ac
 
 ### What's missing
 
-- **No standalone decoder.** The encoder *does* decode internally — see the `#### Decompresses -- needs to be moved to the right object` comment at [src/compressor.hpp L429](../src/compressor.hpp#L429) — but it's embedded inside `vertical_compressor::compress()`. The Mac-side player has full decoders in 68K assembly/C at [macsrc/Codec.c](../macsrc/Codec.c). We need a C++ decoder function that can apply a frame's encoded delta to a bitmap, for server-side screen simulation and for the Linux test player.
+- **~~No standalone decoder.~~** Done — see [src/decoder.hpp](../src/decoder.hpp) / [src/decoder.cpp](../src/decoder.cpp). The encoder's inline decompression in `compressor.hpp` now calls `apply_delta()` too.
 - **No network I/O** in the encoder codebase.
 - **No feedback loop** — encoding is currently fire-and-forget.
 
@@ -209,25 +209,9 @@ public:
 
 Abstracted behind an interface so we can later support serial/LocalTalk transports. The initial implementation is `udp_transport` using POSIX sockets with non-blocking I/O.
 
-### `frame_decoder`
+### `frame_decoder` — DONE
 
-Standalone decode function — applies an encoded delta to a bitmap. Used by `client_state_tracker` (server-side simulation) and the Linux test player.
-
-```cpp
-// Apply an encoded frame delta to a screen bitmap in-place.
-// codec_signature: 0x00=null, 0x01=z16, 0x02=z32, 0x03=invert, 0x04=lines
-void apply_delta(bitmap &screen,
-                 uint8_t codec_signature,
-                 const uint8_t *data,
-                 size_t len);
-```
-
-This already exists in three forms:
-- **Encoder-side**: embedded in [src/compressor.hpp L429–L447](../src/compressor.hpp#L429) (the `#### Decompresses` block)
-- **Mac player**: 68K C/asm in [macsrc/Codec.c](../macsrc/Codec.c) (`UnpackZ32_same`, `UnpackZ32_all`, etc.)
-- **IDEAS.md**: `unpackzeroesx` reference implementation
-
-The new C++ decoder must be bit-perfect with the encoder's compress output. It should be verified by round-trip tests: `encode_frame()` + `apply_delta()` must produce identical bitmaps to what the encoder's internal state tracking produces.
+Implemented in [src/decoder.hpp](../src/decoder.hpp) / [src/decoder.cpp](../src/decoder.cpp). Two `apply_delta()` overloads (with/without 4-byte codec header). The encoder's inline decompression in `compressor.hpp` now calls `apply_delta()` too. Verified bit-perfect via round-trip tests in [src/test/test_decoder.cpp](../src/test/test_decoder.cpp).
 
 ---
 
@@ -496,31 +480,11 @@ These changes prepare the codebase for streaming without implementing any stream
 
 ### 8.2. Extract frame delta decoder — DONE
 
-**Goal:** Standalone C++ function to apply encoded video deltas to a bitmap, for use by both server-side screen simulation and the Linux test player.
+**Implementation:** [src/decoder.hpp](../src/decoder.hpp) / [src/decoder.cpp](../src/decoder.cpp) — two `apply_delta()` overloads (with/without 4-byte codec header). Decodes all five codecs including vertical-packing conversion. Throws `std::runtime_error` for unknown signatures or truncated data. The inline decompression block in `compressor.hpp` (`#### Decompresses`) has been replaced with a call to `apply_delta()`.
 
-**Implementation:** `src/decoder.hpp` / `src/decoder.cpp` — two `apply_delta()` overloads (with/without codec header). Decodes all five codecs (null, z16, z32, invert, lines) including vertical-packing conversion. Throws `std::runtime_error` for unknown signatures or truncated data.
+Reference implementations: [macsrc/Codec.c](../macsrc/Codec.c) (68K C/asm: `UnpackZ32_same`, `UnpackZ32_all`, etc.).
 
-The decode logic already exists embedded in the encoder at [src/compressor.hpp L429–L447](../src/compressor.hpp#L429) (marked with `#### Decompresses -- needs to be moved to the right object`). Reference implementations also exist in [macsrc/Codec.c](../macsrc/Codec.c) (68K C/asm: `UnpackZ32_same`, `UnpackZ32_all`, etc.).
-
-**Proposed:** New files `src/decoder.hpp` / `src/decoder.cpp`:
-
-```cpp
-namespace macflim
-{
-
-// Apply an encoded video delta to a screen bitmap in-place.
-// The encoded_data should contain the codec header (4 bytes: 0x00 0x00 0x00 <sig>)
-// followed by the codec-specific delta data.
-void apply_delta(bitmap &screen, const std::vector<uint8_t> &encoded_data);
-
-// Variant without codec header — signature provided separately
-void apply_delta(bitmap &screen, uint8_t codec_signature,
-                 const uint8_t *data, size_t len);
-
-} // namespace macflim
-```
-
-Codec formats to decode:
+Codec wire formats:
 
 | Signature | Name | Wire format |
 |---|---|---|
@@ -530,25 +494,11 @@ Codec formats to decode:
 | 0x03 | invert | No data. XOR all screen bytes with 0xFF. |
 | 0x04 | lines | `[uint16 byte_count] [uint16 byte_offset] [byte_count bytes of data]` |
 
-**Note:** z16 and z32 operate on **vertical-packed** data (columns contiguous in memory). The decoder must unpack/repack accordingly, matching the encoder's vertical packing behavior in `bitmap::raw_values<T>()`.
+**Note:** z16 and z32 operate on **vertical-packed** data (columns contiguous in memory). The decoder unpacks/repacks accordingly, matching `bitmap::raw_values<T>()`.
 
 ### 8.3. Add round-trip unit tests — DONE
 
-**Goal:** Verify that `encode_frame()` + `apply_delta()` produces identical results to the encoder's internal state tracking.
-
-**Implementation:** `src/test/test_decoder.cpp` — 5 basic `apply_delta` tests (null, invert, double-invert, error handling) + 16 round-trip tests covering all codecs individually and combined, including progressive multi-frame convergence. All tests verify bit-for-bit equality between encoder's result bitmap and decoder's reconstructed bitmap.
-
-Test approach:
-- Create a `bitmap` with known content (e.g. checkerboard, random, blank)
-- Create a target bitmap (different content)
-- Call `encode_frame(current, target, codecs, budget)` — note the result bitmap
-- Start from a fresh copy of the original `current`
-- Call `apply_delta(fresh_copy, encoded_data)`
-- Assert `fresh_copy == result_bitmap` (bit-for-bit identical)
-
-Repeat with various codec configurations, budget levels (including very tight budgets that force partial updates), and image patterns.
-
-This can use the existing test infrastructure (`make test`) or a simple standalone test binary.
+**Implementation:** [src/test/test_decoder.cpp](../src/test/test_decoder.cpp) — 5 basic `apply_delta` tests + 16 round-trip tests covering all codecs individually and combined, including progressive multi-frame convergence. All tests verify bit-for-bit equality between encoder's result bitmap and decoder's reconstructed bitmap.
 
 ### 8.4. Make byterate a per-frame input — DONE (by design)
 
@@ -626,4 +576,4 @@ Separate Makefile target: `make streaming-player`. Links against SDL2 + project 
 ### Modified files (Phase 1 refactoring)
 - `src/compressor_helper.cpp` — refactored `add()` to call `encode_frame()` internally ✓
 - `src/Makefile` — added new source files and test targets ✓
-- `src/compressor.hpp` — remove the inline `#### Decompresses` block (moved to decoder)
+- `src/compressor.hpp` — inline `#### Decompresses` block replaced with `apply_delta()` call ✓

@@ -85,8 +85,7 @@ TEST_CASE("apply_delta: unknown signature throws")
 // --- Round-trip tests: encode_frame() + apply_delta() must agree ---
 
 //  Helper: run one round-trip test with a specific codec
-static void check_round_trip(const std::string &codec_name, const bitmap &initial, const bitmap &target,
-                             size_t budget)
+static void check_round_trip(const std::string &codec_name, const bitmap &initial, const bitmap &target, size_t budget)
 {
     std::vector<codec_spec> codecs = {make_codec(codec_name, W, H)};
 
@@ -190,9 +189,8 @@ TEST_CASE("round-trip: null codec")
 
 TEST_CASE("round-trip: all codecs, best selection")
 {
-    std::vector<codec_spec> codecs = {make_codec("null", W, H), make_codec("z16", W, H),
-                                      make_codec("z32", W, H), make_codec("invert", W, H),
-                                      make_codec("lines", W, H)};
+    std::vector<codec_spec> codecs = {make_codec("null", W, H), make_codec("z16", W, H), make_codec("z32", W, H),
+                                      make_codec("invert", W, H), make_codec("lines", W, H)};
 
     auto encoder_fb = black_bitmap();
     auto target = random_bitmap(42);
@@ -207,9 +205,8 @@ TEST_CASE("round-trip: all codecs, best selection")
 
 TEST_CASE("round-trip: progressive multi-frame convergence")
 {
-    std::vector<codec_spec> codecs = {make_codec("null", W, H), make_codec("z16", W, H),
-                                      make_codec("z32", W, H), make_codec("invert", W, H),
-                                      make_codec("lines", W, H)};
+    std::vector<codec_spec> codecs = {make_codec("null", W, H), make_codec("z16", W, H), make_codec("z32", W, H),
+                                      make_codec("invert", W, H), make_codec("lines", W, H)};
 
     auto target = random_bitmap(42);
 
