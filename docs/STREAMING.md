@@ -76,7 +76,7 @@ streaming_session
 ├── input_reader              (existing — reads video frames)
 ├── Ditherer                  (existing — grayscale → 1-bit)
 ├── streaming_encoder         (new — wraps encode_frame())
-├── client_state_tracker      (new — simulates client screen)
+├── client_state_tracker      (new — simulates client screen) ✓
 ├── adaptive_rate_controller  (new — adjusts byterate)
 └── transport                 (new — UDP send/receive)
 ```
@@ -557,10 +557,11 @@ Separate Makefile target: `make streaming-player`. Links against SDL2 + project 
 
 ## 12. File Map (new + modified)
 
-### New files (streaming implementation, later)
+### New files (streaming implementation)
+- `src/streaming/client_state_tracker.hpp` / `.cpp` — pixel-perfect screen simulation ✓
+- `src/test/test_client_state_tracker.cpp` — unit tests for `client_state_tracker` ✓
 - `src/streaming_session.hpp` / `.cpp` — top-level streaming session
 - `src/streaming_encoder.hpp` / `.cpp` — wraps `encode_frame()` for streaming
-- `src/client_state_tracker.hpp` / `.cpp` — pixel-perfect screen simulation
 - `src/adaptive_rate_controller.hpp` / `.cpp` — AIMD rate control
 - `src/udp_transport.hpp` / `.cpp` — UDP transport implementation
 - `src/transport.hpp` — abstract transport interface
