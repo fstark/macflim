@@ -26,12 +26,6 @@ struct frame
 
     std::optional<bitmap> result; //  What we actually drew
 
-    //  #### passing silent is inelegant: we should not generate audio data when silenced
-    size_t get_size(bool silent)
-    {
-        return video.size() + silent * audio.size();
-    }
-
     frame(const bitmap &s, const size_t t, const std::vector<uint8_t> &v, const std::vector<uint8_t> &a,
           const bitmap &r)
         : source{s}, ticks{t}, video{v}, audio{a}, result{r}

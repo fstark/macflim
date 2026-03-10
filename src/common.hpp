@@ -57,10 +57,16 @@ std::vector<std::string> split(std::string_view s, std::string_view delimiter);
 /// 0001:1:1:3.1toto => 219663.1
 timestamp_t seconds_from_string(std::string_view s);
 
-/// Simple sprintf-like formatting with %d and %0Nd
-[[nodiscard]] std::string simplesprintf(const std::string &format, int v);
-
 ///  Delete files matching pattern
 void delete_files_of_pattern(const std::string &pattern);
+
+/// Format string with integer (similar to sprintf but simpler)
+/// Supports %d, %Nd (where N is width), %0Nd (zero-padded)
+std::string simplesprintf(const std::string &format, int v);
+
+void test_simplesprintf();
+
+/// Test seconds_from_string function
+void test_seconds_from_string();
 
 } // namespace macflim

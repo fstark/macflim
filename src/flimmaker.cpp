@@ -262,6 +262,18 @@ int run_main(int argc, char **argv)
             unlink(opts.cache_file.c_str());
         }
     }
+    catch (const early_exit &exit)
+    {
+        // Display message to stdout if present (--help, --version)
+        if (exit.has_message())
+            std::cout << exit.what();
+        return exit.exit_code();
+    }
+    catch (const config_error &error)
+    {
+        std::cerr << std::format("**** ERROR: {}\n", error.what());
+        return EXIT_FAILURE;
+    }
     catch (const std::exception &error)
     {
         std::cerr << std::format("**** ERROR: [{}]\n", error.what());

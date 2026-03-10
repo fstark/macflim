@@ -55,7 +55,7 @@ template <size_t N> class qhistogram
                 var95 = i * 1.0 / N;
             if (verbose_)
                 if (samples_[i])
-                    std::cerr << std::format("| {:7.3f}% | {:6} | {:7.3f}% | {:7.3f}% |\n", i * 1.0 / N * 100,
+                    std::clog << std::format("| {:7.3f}% | {:6} | {:7.3f}% | {:7.3f}% |\n", i * 1.0 / N * 100,
                                              samples_[i], (samples_[i] * 1.0 / total_) * 100, percent * 100);
         }
         if (verbose_)

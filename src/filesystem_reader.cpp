@@ -1,6 +1,6 @@
 #include "filesystem_reader.hpp"
 
-#include <format>
+#include "common.hpp"
 
 namespace macflim
 {
@@ -51,7 +51,7 @@ class filesystem_reader final : public input_reader
             return nullptr;
         }
 
-        std::string buffer = std::vformat(file_pattern_, std::make_format_args(current_image_index_));
+        std::string buffer = simplesprintf(file_pattern_.c_str(), current_image_index_);
 
         if (!read_grayscale(*(img.get()), buffer.c_str()))
         {

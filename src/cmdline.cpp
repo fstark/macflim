@@ -9,6 +9,7 @@
 #include <format>
 #include <functional>
 #include <iostream>
+#include <sstream>
 #include <string_view>
 #include <unordered_map>
 
@@ -71,25 +72,29 @@ static constexpr std::string_view usage_help_text = R"(Usage
     --debug BOOLEAN             : enables various debug options
 )";
 
-void usage(const std::string name)
+void print_usage_to_stream(std::ostream &out, const std::string &name)
 {
-    std::cerr << std::format(usage_help_text, name);
+    out << std::format(usage_help_text, name);
 
-    std::cerr << std::format("\nList of profiles names for the --profile option (default 'se30'):\n");
+    out << std::format("\nList of profiles names for the --profile option (default 'se30'):\n");
     for (auto n : {"128k", "512k", "xl", "plus", "se", "portable", "se30", "perfect"})
     {
         encoding_profile p;
         encoding_profile::profile_named(n, p);
-        std::cerr << std::format("        {} : {}\n", n, p.description());
+        out << std::format("        {} : {}\n", n, p.description());
     }
 
-    std::cerr << std::format(
-        "\nList of error diffusion algorithms for the --error_diffusion option (default 'floyd'):\n");
+    out << std::format("\nList of error diffusion algorithms for the --error_diffusion option (default 'floyd'):\n");
 
-    error_diffusion_algorithms([](std::string_view name, std::string_view description)
-                               { std::cerr << std::format("               {:>16} : {}\n", name, description); });
+    error_diffusion_algorithms([&out](std::string_view name, std::string_view description)
+                               { out << std::format("               {:>16} : {}\n", name, description); });
 
-    std::cerr << std::format("use '{}' --help' for displaying this help page.\n", name);
+    out << std::format("use '{}' --help' for displaying this help page.\n", name);
+}
+
+void usage(const std::string name)
+{
+    print_usage_to_stream(std::cerr, name);
 }
 
 using flag_handler = std::function<void(arg_iterator &, program_options &)>;
@@ -109,7 +114,7 @@ std::string build_comment_string(int argc, char **argv)
     return comment;
 }
 
-void validate_and_finalize(program_options &opts, const std::string &cmd_name)
+void validate_and_finalize(program_options &opts, [[maybe_unused]] const std::string &cmd_name)
 {
     // Apply profile's natural dimensions if user didn't override them
     if (opts.width == 0)
@@ -130,8 +135,7 @@ void validate_and_finalize(program_options &opts, const std::string &cmd_name)
 
     if (opts.input_file.empty())
     {
-        usage(cmd_name);
-        ::exit(EXIT_FAILURE);
+        throw config_error("No input file specified", "");
     }
 }
 
@@ -228,8 +232,8 @@ const std::unordered_map<std::string_view, flag_handler> &flag_dispatch_table()
              opts.profile_name = std::string(args.next_value());
              if (!encoding_profile::profile_named(opts.profile_name, opts.custom_profile))
              {
-                 std::cerr << std::format("Cannot find encoding profile '{}'\n", opts.profile_name);
-                 ::exit(EXIT_FAILURE);
+                 throw config_error(std::format("Cannot find encoding profile '{}'", opts.profile_name),
+                                    opts.profile_name);
              }
          }},
         {"--width",
@@ -285,9 +289,9 @@ const std::unordered_map<std::string_view, flag_handler> &flag_dispatch_table()
              }
              catch (const config_error &)
              {
-                 std::cerr << std::format(
-                     "Invalid initial-frame mode '{}'. Use 'false', 'optional', or 'true'\n", val);
-                 ::exit(EXIT_FAILURE);
+                 throw config_error(
+                     std::format("Invalid initial-frame mode '{}'. Use 'false', 'optional', or 'true'", val),
+                     val);
              }
          }},
         {"--loop",
@@ -296,8 +300,7 @@ const std::unordered_map<std::string_view, flag_handler> &flag_dispatch_table()
         {"--version",
          []([[maybe_unused]] arg_iterator &args, [[maybe_unused]] program_options &opts)
          {
-             std::cout << "flimmaker version " << version << "\n";
-             ::exit(EXIT_SUCCESS);
+             throw early_exit(EXIT_SUCCESS, std::format("flimmaker version {}\n", version));
          }},
     };
     return table;
@@ -312,8 +315,7 @@ program_options parse_arguments(int argc, char **argv)
 
     if (!encoding_profile::profile_named(opts.profile_name, opts.custom_profile))
     {
-        std::cerr << std::format("Cannot find default profile '{}'\n", opts.profile_name);
-        ::exit(EXIT_FAILURE);
+        throw config_error(std::format("Cannot find default profile '{}'", opts.profile_name), opts.profile_name);
     }
 
     argc--;
@@ -321,7 +323,7 @@ program_options parse_arguments(int argc, char **argv)
 
     // If the first argument is a .flim file, switch to flim utility mode
     if (argc > 0 && ends_with(std::string(*argv), ".flim"))
-        ::exit(flimutil_main(argc, argv));
+        throw early_exit(flimutil_main(argc, argv));
 
     const auto &dispatch = flag_dispatch_table();
     arg_iterator args(argc, argv);
@@ -332,8 +334,9 @@ program_options parse_arguments(int argc, char **argv)
 
         if (arg == "--help")
         {
-            usage(cmd_name);
-            ::exit(EXIT_SUCCESS);
+            std::ostringstream oss;
+            print_usage_to_stream(oss, cmd_name);
+            throw early_exit(EXIT_SUCCESS, oss.str());
         }
 
         // Positional argument (no -- prefix) = input file
@@ -341,8 +344,8 @@ program_options parse_arguments(int argc, char **argv)
         {
             if (!opts.input_file.empty())
             {
-                std::cerr << std::format("Input file specified twice: '{}' and '{}'\n", opts.input_file, arg);
-                ::exit(EXIT_FAILURE);
+                throw config_error(std::format("Input file specified twice: '{}' and '{}'", opts.input_file, arg),
+                                   std::string(arg));
             }
             opts.input_file = std::string(arg);
             continue;
@@ -351,8 +354,7 @@ program_options parse_arguments(int argc, char **argv)
         auto it = dispatch.find(arg);
         if (it == dispatch.end())
         {
-            std::cerr << std::format("Unknown argument {}\n", arg);
-            ::exit(EXIT_FAILURE);
+            throw config_error(std::format("Unknown argument {}", arg), std::string(arg));
         }
 
         it->second(args, opts);

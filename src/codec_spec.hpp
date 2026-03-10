@@ -34,12 +34,6 @@ struct codec_spec
     return std::make_shared<vertical_compressor<uint32_t>>(W, H, uint32_ruler::ruler);
 }
 
-[[nodiscard]] static inline std::shared_ptr<compressor> make_z32old_codec(size_t W, size_t H)
-{
-    static bit_ruler<uint32_t> br32;
-    return std::make_shared<vertical_compressor<uint32_t>>(W, H, br32);
-}
-
 [[nodiscard]] static inline std::shared_ptr<compressor> make_invert_codec(size_t W, size_t H)
 {
     return std::make_shared<invert_compressor>(W, H);
@@ -67,8 +61,8 @@ struct codec_entry
 
 static constexpr codec_entry codec_table[] = {
     {"z16", 0x01, 0.45, make_z16_codec},       {"z32", 0x02, 1.00, make_z32_codec},
-    {"z32old", 0x02, 1.00, make_z32old_codec}, {"invert", 0x03, 1.00, make_invert_codec},
-    {"lines", 0x04, 1.00, make_lines_codec},   {"null", 0x00, 1.00, make_null_codec},
+    {"invert", 0x03, 1.00, make_invert_codec}, {"lines", 0x04, 1.00, make_lines_codec},
+    {"null", 0x00, 1.00, make_null_codec},
 };
 
 [[nodiscard]] inline codec_spec make_codec(std::string_view spec_string, size_t W, size_t H)

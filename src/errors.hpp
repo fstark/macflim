@@ -100,4 +100,34 @@ class config_error : public flim_error
     }
 };
 
+// Early exit (non-error): mode switch, help display, version, etc.
+class early_exit : public std::exception
+{
+  private:
+    int exit_code_;
+    std::string message_; // Optional message to display on stdout
+
+  public:
+    // Exit with code, no output
+    explicit early_exit(int code) : exit_code_(code), message_() {}
+
+    // Exit with code and message to stdout (--help, --version)
+    early_exit(int code, std::string message) : exit_code_(code), message_(std::move(message)) {}
+
+    [[nodiscard]] int exit_code() const noexcept
+    {
+        return exit_code_;
+    }
+
+    [[nodiscard]] bool has_message() const noexcept
+    {
+        return !message_.empty();
+    }
+
+    const char *what() const noexcept override
+    {
+        return message_.c_str();
+    }
+};
+
 } // namespace macflim

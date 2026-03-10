@@ -288,6 +288,14 @@ grayscale gamma(const grayscale &src, double gamma)
 //  ------------------------------------------------------------------
 grayscale zoom_out(const grayscale &src, double bx)
 {
+    // If zoom parameter is too large, return black image
+    if (bx * 2 >= src.W())
+    {
+        grayscale res = src;
+        fill(res, 0);
+        return res;
+    }
+
     const double a = ((src.W() / 2) - bx) / (src.W() / 2);
     const double by = src.H() / 2 - a * (src.H() / 2);
 
@@ -323,35 +331,13 @@ grayscale zoom_in(const grayscale &src, size_t pixels) //  #### Not wise
 
             // std::clog << x << "->" << from_x << " (" << a << ") " << (x-(int)src.W()/2) << " " << std::flush;
 
-            res.at(x, y) = src.at(from_x, from_y);
+            if (from_x >= 0 && from_x < (int)src.W() && from_y >= 0 && from_y < (int)src.H())
+                res.at(x, y) = src.at(from_x, from_y);
+            else
+                res.at(x, y) = 0;
         }
 
     return res;
-}
-
-//  ------------------------------------------------------------------
-//  Reduce an grayscale to half the size
-//  ------------------------------------------------------------------
-void reduce_grayscale_half(grayscale &dest, const grayscale &source)
-{
-    for (size_t y = 0; y != dest.H(); y++)
-        for (size_t x = 0; x != dest.W(); x++)
-            dest.at(x, y) = (source.at(2 * x, 2 * y) + source.at(2 * x + 1, 2 * y) + source.at(2 * x, 2 * y + 1) +
-                             source.at(2 * x + 1, 2 * y + 1)) /
-                            4;
-}
-
-//  ------------------------------------------------------------------
-//  Copies source into dest, with resize
-//  ------------------------------------------------------------------
-
-void copy_resize(grayscale &dest, const grayscale &source)
-{
-    double rw = source.W() * 1.0 / dest.W();
-    double rh = source.H() * 1.0 / dest.H();
-    for (size_t y = 0; y != dest.H(); y++)
-        for (size_t x = 0; x != dest.W(); x++)
-            dest.at(x, y) = source.at(x * rw, y * rh);
 }
 
 //  ------------------------------------------------------------------
@@ -569,39 +555,6 @@ void write_grayscale(std::string_view file, const grayscale &img)
     for (size_t y = 0; y != img.H(); y++)
         for (size_t x = 0; x != img.W(); x++)
             fputc(img.at(x, y) * constants::pixel_max, f.get());
-}
-
-//  ------------------------------------------------------------------
-//  Basic "standard" floyd-steinberg, suitable for static images
-//  Dest will only contain 0 or 1, corresponding to the dithering of the source
-//  Here for reference, not used
-//  ------------------------------------------------------------------
-void quantize(grayscale &dest, const grayscale &source)
-{
-    dest = source;
-
-    for (size_t y = 0; y != source.H(); y++)
-        for (size_t x = 0; x != source.W(); x++)
-        {
-            float source_color = dest.at(x, y);
-            float color;
-            float error;
-            color = source_color <= 0.5 ? 0 : 1;
-            error = source_color - color;
-            dest.at(x, y) = color;
-            float e0 = error * 7 / 16;
-            float e1 = error * 3 / 16;
-            float e2 = error * 5 / 16;
-            float e3 = error * 1 / 16;
-            if (x < source.W() - 1)
-                dest.at(x + 1, y) = dest.at(x + 1, y) + e0;
-            if (x > 0 && y < source.H() - 1)
-                dest.at(x - 1, y + 1) = dest.at(x - 1, y + 1) + e1;
-            if (y < source.H() - 1)
-                dest.at(x, y + 1) = dest.at(x, y + 1) + e2;
-            if (x < source.W() - 1 && y < source.H() - 1)
-                dest.at(x + 1, y + 1) = dest.at(x + 1, y + 1) + e3;
-        }
 }
 
 static int dither[8][8] = {{0, 32, 8, 40, 2, 34, 10, 42},  {48, 16, 56, 24, 50, 18, 58, 26},

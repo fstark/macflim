@@ -40,6 +40,8 @@ CXXFLAGS += -Wall -Werror -Wno-deprecated-declarations -Wextra -std=c++2a -DVERS
 # Default compile target
 all: release
 
+.PHONY: all debug release test test-reference clean coverage coverage-clean format
+
 debug: CXXFLAGS += -O0 -g -fsanitize=undefined
 release: CXXFLAGS += -O3
 
@@ -64,16 +66,38 @@ $(TARGET): $(OBJS)
 
 # Unit test files
 TEST_OBJS = test_main.o test_common.o test_imgcompress.o test_bitmap.o test_codecs.o \
-            test_encoding_result.o test_frame.o test_profile.o test_ditherer.o
+            test_encoding_result.o test_frame.o test_profile.o test_ditherer.o \
+            test_binary_io.o test_ruler.o test_string_utils.o test_timing.o test_arg_iterator.o \
+            test_packzmap.o test_flim_file.o test_flim_errors.o test_grayscale_conversions.o test_grayscale_filters.o \
+            test_dithering_parameters.o test_watermark.o test_subtitles.o test_grayscale_io.o \
+            test_cmdline.o test_compressor_helper.o test_flimcompressor.o test_flimencoder.o \
+            test_filesystem_reader.o test_stubs.o
 TEST_SHARED_OBJS = common.o imgcompress.o ruler.o profile.o grayscale.o \
-                   dithering_parameters.o watermark.o
+                   dithering_parameters.o watermark.o flim.o subtitles.o \
+                   cmdline.o compressor_helper.o flimcompressor.o flimutil.o \
+                   ffmpeg_reader.o filesystem_reader.o flimencoder.o writer.o
 
 -include $(TEST_OBJS:.o=.d)
 
 unit_tests: $(TEST_OBJS) $(TEST_SHARED_OBJS)
-	${CPP} ${CXXFLAGS} $(TEST_OBJS) $(TEST_SHARED_OBJS) -o unit_tests
+	${CPP} ${CXXFLAGS} $(LDLIBS) $(TEST_OBJS) $(TEST_SHARED_OBJS) -lavformat -lavcodec -lavutil -o unit_tests
 
-clean:
+# Coverage analysis
+# Usage: make coverage
+# Rebuilds tests with coverage instrumentation, runs them, and generates HTML report
+coverage:
+	@rm -f *.gcda *.gcno *.gcov coverage*.html coverage*.css
+	@rm -f $(TEST_OBJS) $(TEST_SHARED_OBJS)
+	$(MAKE) unit_tests CXXFLAGS="$(CXXFLAGS) --coverage"
+	./unit_tests
+	gcovr --gcov-executable gcov-14 --root . --filter='.*\.(cpp|hpp)$$' --exclude='test_.*' --html-details coverage.html --print-summary
+	@echo ""
+	@echo "Coverage report generated: coverage.html"
+
+coverage-clean:
+	rm -f *.gcda *.gcno *.gcov coverage*.html coverage*.css
+
+clean: coverage-clean
 	rm -f ../flimmaker ../flimmaker.exe $(OBJS) $(OBJS:.o=.d) unit_tests $(TEST_OBJS) $(TEST_OBJS:.o=.d)
 
 format:

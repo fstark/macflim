@@ -1,6 +1,7 @@
 #include "doctest.h"
 
 #include "bitmap.hpp"
+#include "grayscale.hpp"
 
 using namespace macflim;
 
@@ -271,4 +272,123 @@ TEST_CASE("bitmap pixel_count: half pattern")
     bitmap b(512, 342);
     b.fill(0xF0); // 4 bits set per byte
     CHECK(b.pixel_count() == 512 * 342 / 2);
+}
+
+// --- as_image ---
+
+TEST_CASE("bitmap as_image: converts to grayscale")
+{
+    bitmap b(8, 2);
+    b.fill(0x00); // all bits 0 = all black pixels
+
+    auto gray = b.as_image();
+    CHECK(gray.W() == 8);
+    CHECK(gray.H() == 2);
+
+    // All pixels should be white (1) because !(0) = 1
+    // The as_image function inverts: bit 0 -> pixel 1, bit 1 -> pixel 0
+    for (size_t y = 0; y < 2; y++)
+        for (size_t x = 0; x < 8; x++)
+            CHECK(gray.at(x, y) == 1);
+}
+
+TEST_CASE("bitmap as_image: white pixels")
+{
+    bitmap b(8, 2);
+    b.fill(0xFF); // all bits 1 = all white pixels (in bitmap representation)
+
+    auto gray = b.as_image();
+
+    // All pixels should be black (0) because !(1) = 0
+    for (size_t y = 0; y < 2; y++)
+        for (size_t x = 0; x < 8; x++)
+            CHECK(gray.at(x, y) == 0);
+}
+
+TEST_CASE("bitmap as_image: pattern")
+{
+    bitmap b(8, 1);
+    // Set pattern: 10101010 (0xAA) - alternating bits
+    b.fill(0xAA);
+
+    auto gray = b.as_image();
+
+    // Pattern is inverted: bit 1 -> pixel 0, bit 0 -> pixel 1
+    CHECK(gray.at(0, 0) == 0); // bit 7 is 1
+    CHECK(gray.at(1, 0) == 1); // bit 6 is 0
+    CHECK(gray.at(2, 0) == 0); // bit 5 is 1
+    CHECK(gray.at(3, 0) == 1); // bit 4 is 0
+    CHECK(gray.at(4, 0) == 0); // bit 3 is 1
+    CHECK(gray.at(5, 0) == 1); // bit 2 is 0
+    CHECK(gray.at(6, 0) == 0); // bit 1 is 1
+    CHECK(gray.at(7, 0) == 1); // bit 0 is 0
+}
+
+// --- extract ---
+
+TEST_CASE("bitmap extract: single byte from uniform bitmap")
+{
+    bitmap b(16, 2);
+    b.fill(0xAB);
+
+    std::vector<uint8_t> extracted;
+    b.extract(std::back_inserter(extracted), 0, 0, 1);
+
+    REQUIRE(extracted.size() == 1);
+    CHECK(extracted[0] == 0xAB);
+}
+
+TEST_CASE("bitmap extract: multiple bytes from uniform bitmap")
+{
+    bitmap b(32, 2);
+    b.fill(0x42);
+
+    std::vector<uint8_t> extracted;
+    b.extract(std::back_inserter(extracted), 0, 0, 4);
+
+    REQUIRE(extracted.size() == 4);
+    for (auto byte : extracted)
+        CHECK(byte == 0x42);
+}
+
+TEST_CASE("bitmap extract: from different positions")
+{
+    bitmap b(32, 4); // 4 bytes per row
+    b.fill(0xF0);
+
+    // Extract from start of first row
+    std::vector<uint8_t> extracted1;
+    b.extract(std::back_inserter(extracted1), 0, 0, 2);
+    REQUIRE(extracted1.size() == 2);
+    CHECK(extracted1[0] == 0xF0);
+    CHECK(extracted1[1] == 0xF0);
+
+    // Extract from middle of row
+    std::vector<uint8_t> extracted2;
+    b.extract(std::back_inserter(extracted2), 2, 0, 2);
+    REQUIRE(extracted2.size() == 2);
+    CHECK(extracted2[0] == 0xF0);
+    CHECK(extracted2[1] == 0xF0);
+}
+
+TEST_CASE("bitmap extract: from second row")
+{
+    bitmap b(16, 4); // 2 bytes per row
+
+    // Fill entire bitmap with 0x00, then copy a different pattern to row 1
+    b.fill(0x00);
+
+    bitmap source(16, 4);
+    source.fill(0xAB);
+
+    // Copy line 1 from source to b (copy 1 line starting at line 1)
+    b.copy_lines_from(source, 1, 1);
+
+    // Extract from row 1
+    std::vector<uint8_t> extracted;
+    b.extract(std::back_inserter(extracted), 0, 1, 2);
+
+    REQUIRE(extracted.size() == 2);
+    CHECK(extracted[0] == 0xAB);
+    CHECK(extracted[1] == 0xAB);
 }

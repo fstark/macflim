@@ -13,6 +13,7 @@ namespace macflim
 {
 class flimcompressor;
 struct frame;
+class flimencoder_tester; // Forward declaration for test access
 } // namespace macflim
 
 namespace macflim
@@ -22,6 +23,8 @@ extern bool sDebug;
 
 class flimencoder
 {
+    friend class flimencoder_tester; // Allow test access to private methods
+
     const encoding_profile &profile_;
 
     std::unique_ptr<output_writer> pgm_poster_writer_;

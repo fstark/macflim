@@ -2,6 +2,9 @@
 
 #include "common.hpp"
 
+#include <cstdio>
+#include <stdexcept>
+
 using namespace macflim;
 
 // --- simplesprintf tests (migrated from common.cpp) ---
@@ -46,6 +49,14 @@ TEST_CASE("simplesprintf: invalid format throws")
     CHECK_THROWS(static_cast<void>(simplesprintf("%s", 42)));
 }
 
+TEST_CASE("simplesprintf: width without 'd' throws")
+{
+    // Format like %5x should throw - digits but not ending in 'd'
+    CHECK_THROWS_AS(simplesprintf("%5x", 42), std::runtime_error);
+    CHECK_THROWS_AS(simplesprintf("%10s", 42), std::runtime_error);
+    CHECK_THROWS_AS(simplesprintf("%3", 42), std::runtime_error);
+}
+
 TEST_CASE("simplesprintf: mixed text and format")
 {
     CHECK(simplesprintf("Value: %d", 42) == "Value: 42");
@@ -82,4 +93,53 @@ TEST_CASE("seconds_from_string: seconds with decimal")
 TEST_CASE("seconds_from_string: hh:mm:ss:ff with trailing text")
 {
     CHECK(seconds_from_string("0001:1:1:3.1toto") == 219663.1);
+}
+
+// --- delete_files_of_pattern tests ---
+
+TEST_CASE("delete_files_of_pattern: deletes numbered files")
+{
+    // Create test files in /tmp/
+    std::string pattern = "/tmp/test_delete_%03d.tmp";
+
+    // Create 5 test files
+    for (int i = 1; i <= 5; i++)
+    {
+        std::string filepath = simplesprintf(pattern, i);
+        FILE *f = fopen(filepath.c_str(), "w");
+        REQUIRE(f != nullptr);
+        fprintf(f, "test file %d\n", i);
+        fclose(f);
+    }
+
+    // Verify files exist
+    for (int i = 1; i <= 5; i++)
+    {
+        std::string filepath = simplesprintf(pattern, i);
+        FILE *f = fopen(filepath.c_str(), "r");
+        REQUIRE(f != nullptr);
+        fclose(f);
+    }
+
+    // Delete them using the pattern
+    delete_files_of_pattern(pattern);
+
+    // Verify files are deleted
+    for (int i = 1; i <= 5; i++)
+    {
+        std::string filepath = simplesprintf(pattern, i);
+        FILE *f = fopen(filepath.c_str(), "r");
+        CHECK(f == nullptr);
+    }
+}
+
+TEST_CASE("delete_files_of_pattern: handles no files gracefully")
+{
+    // Use a pattern that won't match any files
+    std::string pattern = "/tmp/test_nonexistent_file_%05d.tmp";
+
+    // Should not crash, just delete 0 files
+    delete_files_of_pattern(pattern);
+
+    // Nothing to verify - just checking it doesn't crash
 }
