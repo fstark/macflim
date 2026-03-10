@@ -24,16 +24,16 @@ The existing encoding pipeline (all in `namespace macflim`):
 ```
 input_reader → flimencoder → flimcompressor → compressor_helper → flim file
                                                      ↓
-                                               ditherer + compressor(s) + encoding_result
+                                               Ditherer + compressor(s) + encoding_result
 ```
 
 ### The critical inner loop
 
-The heart of encoding is in `compressor_helper::add()` ([src/compressor_helper.cpp](../src/compressor_helper.cpp)), which delegates codec selection to `compressor_helper::encode_best()` ([L21–L30](../src/compressor_helper.cpp#L21)). For each input grayscale frame:
+The heart of encoding is in `compressor_helper::add()` ([src/compressor_helper.cpp](../src/compressor_helper.cpp)). For each input grayscale frame:
 
-1. **Dither** to 1-bit via `ditherer::dither()` → produces a `bitmap` target
+1. **Dither** to 1-bit via `Ditherer::dither()` → produces a `bitmap` target
 2. **Compute budget**: `byterate × ticks` bytes available for video
-3. **Try all codecs** in `encode_best()`: each creates an `encoding_result` that copies `current_fb_`, calls `compress(copy, target, budget)`, measures quality
+3. **Try all codecs** in parallel: each creates an `encoding_result` that copies `current_fb_`, calls `compress(copy, target, budget)`, measures quality
 4. **Pick best** result by `bitmap::proximity()`
 5. **Update** `current_fb_` ← result bitmap (the new screen state)
 6. **Accumulate** encoded frame into `frames_` vector
@@ -50,16 +50,16 @@ In streaming, this assumption breaks — packets can be lost, so what the Mac ac
 | `compressor` subclasses | **Yes** | Stateless per-frame. `compress(current, target, budget)` works with any `current`. |
 | `encoding_result` | **Yes** | Self-contained per-frame encoding attempt. |
 | `codec_spec` / factory | **Yes** | Stateless codec creation via `make_codec()`. |
-| `ditherer` | **Yes** | Stateful across frames (temporal stability), but only on the encoding side. |
-| `encoding_profile` ([src/profile.hpp](../src/profile.hpp)) | **Partially** | Good for initial config. Byterate needs to be dynamic for streaming. |
-| `frame::serialize()` ([src/frame.hpp](../src/frame.hpp)) | **Yes** | Already a good wire format for individual frames. |
-| `compressor_helper` | **Adapt** | Core loop is reusable. The codec-selection logic is already extracted into `encode_best()` method — promoting it to a free function is the remaining step. |
+| `Ditherer` | **Yes** | Stateful across frames (temporal stability), but only on the encoding side. |
+| `encoding_profile` | **Partially** | Good for initial config. Byterate needs to be dynamic for streaming. |
+| `frame::serialize()` | **Yes** | Already a good wire format for individual frames. |
+| `compressor_helper` | **Adapt** | Core loop is reusable but needs to be split: extract a pure single-frame encode function, separate from accumulation/audio/timing. |
 | `flimcompressor` | **Skip** | Thin batch orchestrator. Streaming has its own loop. |
 | `flimencoder` / `flim` | **Skip** | File-format assembly, not needed for streaming. |
 
 ### What's missing
 
-- **No standalone decoder.** The encoder *does* decode internally — see the `#### Decompresses -- needs to be moved to the right object` comment at [src/compressor.hpp L432](../src/compressor.hpp#L432) — but it's embedded inside `vertical_compressor::compress()`. The Mac-side player has full decoders in 68K assembly/C at [macsrc/Codec.c](../macsrc/Codec.c). We need a C++ decoder function that can apply a frame's encoded delta to a bitmap, for server-side screen simulation and for the Linux test player.
+- **No standalone decoder.** The encoder *does* decode internally — see the `#### Decompresses -- needs to be moved to the right object` comment at [src/compressor.hpp L429](../src/compressor.hpp#L429) — but it's embedded inside `vertical_compressor::compress()`. The Mac-side player has full decoders in 68K assembly/C at [macsrc/Codec.c](../macsrc/Codec.c). We need a C++ decoder function that can apply a frame's encoded delta to a bitmap, for server-side screen simulation and for the Linux test player.
 - **No network I/O** in the encoder codebase.
 - **No feedback loop** — encoding is currently fire-and-forget.
 
@@ -73,8 +73,8 @@ All new classes live in `namespace macflim`, use `snake_case` naming per project
 
 ```
 streaming_session
-├── input_reader              (existing — reads video frames, src/reader.hpp)
-├── ditherer                  (existing — grayscale → 1-bit, src/ditherer.hpp)
+├── input_reader              (existing — reads video frames)
+├── Ditherer                  (existing — grayscale → 1-bit)
 ├── streaming_encoder         (new — wraps encode_frame())
 ├── client_state_tracker      (new — simulates client screen)
 ├── adaptive_rate_controller  (new — adjusts byterate)
@@ -89,7 +89,7 @@ Top-level object managing one streaming connection. Owns all components. Runs th
 class streaming_session
 {
     std::unique_ptr<input_reader> reader_;
-    ditherer ditherer_;
+    Ditherer ditherer_;
     streaming_encoder encoder_;
     client_state_tracker tracker_;
     adaptive_rate_controller rate_ctrl_;
@@ -117,7 +117,7 @@ public:
 };
 ```
 
-The implementation is essentially `compressor_helper::encode_best()` ([src/compressor_helper.cpp L21–L30](../src/compressor_helper.cpp#L21)), extracted into a reusable function.
+The implementation is essentially lines 48–66 of the current [compressor_helper.cpp](../src/compressor_helper.cpp), extracted into a reusable function.
 
 ### `client_state_tracker`
 
@@ -223,7 +223,7 @@ void apply_delta(bitmap &screen,
 ```
 
 This already exists in three forms:
-- **Encoder-side**: embedded in [src/compressor.hpp L432–L451](../src/compressor.hpp#L432) (the `#### Decompresses` block)
+- **Encoder-side**: embedded in [src/compressor.hpp L429–L447](../src/compressor.hpp#L429) (the `#### Decompresses` block)
 - **Mac player**: 68K C/asm in [macsrc/Codec.c](../macsrc/Codec.c) (`UnpackZ32_same`, `UnpackZ32_all`, etc.)
 - **IDEAS.md**: `unpackzeroesx` reference implementation
 
@@ -486,51 +486,19 @@ Where `MIN_BYTERATE = 8` (enough for a null codec 4-byte header per frame) and `
 
 These changes prepare the codebase for streaming without implementing any streaming code. They also improve the existing batch pipeline.
 
-### 8.1. Extract `encode_frame()` free function
+### 8.1. Extract `encode_frame()` free function — DONE
 
 **Goal:** Make the core encode-one-frame logic callable independently of `compressor_helper`'s batch state (audio, tick counter, frame accumulation).
 
-**Current code** — already extracted as `compressor_helper::encode_best()` ([src/compressor_helper.cpp L21–L30](../src/compressor_helper.cpp#L21)):
+**Done.** Extracted into [src/encode_frame.hpp](../src/encode_frame.hpp) / [src/encode_frame.cpp](../src/encode_frame.cpp). `compressor_helper::add()` now calls `encode_frame()` internally — zero behavior change, all existing tests pass. Unit tests in [src/test/test_encode_frame.cpp](../src/test/test_encode_frame.cpp) (8 test cases).
 
-```cpp
-// Encode with every codec and return the best result
-encoding_result compressor_helper::encode_best(const bitmap &fb, size_t video_budget)
-{
-    std::vector<encoding_result> results;
-    std::transform(std::begin(codecs_), std::end(codecs_), std::back_inserter(results),
-                   [&](auto &codec) -> encoding_result
-                   { return encoding_result(codec, current_fb_, fb, video_budget); });
-
-    return *std::max_element(results.begin(), results.end(), [](const encoding_result &r1, const encoding_result &r2)
-                             { return r1.quality() < r2.quality(); });
-}
-```
-
-The caller `add()` ([L46–L79](../src/compressor_helper.cpp#L46)) then does `current_fb_ = best.image()` at [L72](../src/compressor_helper.cpp#L72).
-
-**Proposed:** Extract into a free function in new files `src/encode_frame.hpp` / `src/encode_frame.cpp`:
-
-```cpp
-namespace macflim
-{
-
-// Encode a single frame transition. Tries all codecs within budget, returns the best result.
-// After this call, current_fb is updated to reflect what was actually drawn.
-encoding_result encode_frame(bitmap &current_fb,
-                             const bitmap &target,
-                             const std::vector<codec_spec> &codecs,
-                             size_t budget);
-
-} // namespace macflim
-```
-
-Refactor `compressor_helper::add()` to call `encode_frame()` internally (replacing the existing `encode_best()` call) — zero behavior change, existing tests still pass.
+**Known issue found:** The `lines` codec has a pre-existing infinite loop when `budget < get_bytes_width()` (64 bytes) — `target_count` becomes 0 and the loop step is 0. Not introduced by this refactoring.
 
 ### 8.2. Extract frame delta decoder
 
 **Goal:** Standalone C++ function to apply encoded video deltas to a bitmap, for use by both server-side screen simulation and the Linux test player.
 
-The decode logic already exists embedded in the encoder at [src/compressor.hpp L432–L451](../src/compressor.hpp#L432) (marked with `#### Decompresses -- needs to be moved to the right object`). Reference implementations also exist in [macsrc/Codec.c](../macsrc/Codec.c) (68K C/asm: `UnpackZ32_same`, `UnpackZ32_all`, etc.).
+The decode logic already exists embedded in the encoder at [src/compressor.hpp L429–L447](../src/compressor.hpp#L429) (marked with `#### Decompresses -- needs to be moved to the right object`). Reference implementations also exist in [macsrc/Codec.c](../macsrc/Codec.c) (68K C/asm: `UnpackZ32_same`, `UnpackZ32_all`, etc.).
 
 **Proposed:** New files `src/decoder.hpp` / `src/decoder.cpp`:
 
@@ -578,11 +546,9 @@ Repeat with various codec configurations, budget levels (including very tight bu
 
 This can use the existing test infrastructure (`make test`) or a simple standalone test binary.
 
-### 8.4. Make byterate a per-frame input
+### 8.4. Make byterate a per-frame input — DONE (by design)
 
-**Already done by design.** The extracted `encode_frame()` takes `budget` directly. The existing `compressor_helper` computes `budget = byterate_ * ticks` internally, which is fine for the batch path. The streaming path passes a dynamic budget from `adaptive_rate_controller`.
-
-No code change needed — just documenting that the extracted function already supports dynamic budgets.
+The extracted `encode_frame()` takes `budget` directly. The existing `compressor_helper` computes `budget = byterate_ * ticks` internally, which is fine for the batch path. The streaming path passes a dynamic budget from `adaptive_rate_controller`. No code change needed.
 
 ---
 
@@ -647,12 +613,13 @@ Separate Makefile target: `make streaming-player`. Links against SDL2 + project 
 - `src/streaming_player.cpp` — Linux test player (separate binary)
 - `src/protocol.hpp` — packet format definitions and serialization
 
-### New files (Phase 1 refactoring, now)
-- `src/encode_frame.hpp` / `.cpp` — extracted single-frame encoding function
+### New files (Phase 1 refactoring)
+- `src/encode_frame.hpp` / `.cpp` — extracted single-frame encoding function ✓
+- `src/test/test_encode_frame.cpp` — unit tests for `encode_frame()` ✓
 - `src/decoder.hpp` / `.cpp` — frame delta decoder (`apply_delta()`)
-- `tests/test_encode_decode.cpp` — round-trip unit tests
+- `src/test/test_encode_decode.cpp` — round-trip encode+decode tests
 
-### Modified files (Phase 1 refactoring, now)
-- `src/compressor_helper.cpp` — refactor `add()` to call `encode_frame()` internally
-- `src/compressor.hpp` — remove the inline `#### Decompresses` block at L432–L451 (moved to decoder)
-- `src/Makefile` — add new source files and test targets
+### Modified files (Phase 1 refactoring)
+- `src/compressor_helper.cpp` — refactored `add()` to call `encode_frame()` internally ✓
+- `src/Makefile` — added new source files and test targets ✓
+- `src/compressor.hpp` — remove the inline `#### Decompresses` block (moved to decoder)
