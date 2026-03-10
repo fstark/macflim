@@ -276,6 +276,33 @@ TEST_CASE("lines: generous budget copies many lines")
     CHECK(current.proximity(target) > 0.9);
 }
 
+TEST_CASE("lines: zero budget produces no change")
+{
+    auto codec = make_lines_codec(W, H);
+    auto current = random_bitmap(1);
+    bitmap before = current;
+    auto target = random_bitmap(2);
+
+    auto data = codec->compress(current, target, 0);
+
+    CHECK(data.empty());
+    CHECK(current == before);
+}
+
+TEST_CASE("lines: sub-line budget produces no change")
+{
+    auto codec = make_lines_codec(W, H);
+    auto current = random_bitmap(1);
+    bitmap before = current;
+    auto target = random_bitmap(2);
+
+    // Budget smaller than one scanline (64 bytes for 512-wide bitmap)
+    auto data = codec->compress(current, target, ROWBYTES - 1);
+
+    CHECK(data.empty());
+    CHECK(current == before);
+}
+
 TEST_CASE("lines: after compress, copied lines match target")
 {
     auto codec = make_lines_codec(W, H);

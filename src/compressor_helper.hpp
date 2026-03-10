@@ -4,6 +4,7 @@
 #include "codec_spec.hpp"
 #include "common.hpp"
 #include "ditherer.hpp"
+#include "encode_frame.hpp"
 #include "encoding_result.hpp"
 #include "frame.hpp"
 #include "qhistogram.hpp"
@@ -61,7 +62,6 @@ class compressor_helper
 
   private:
     [[nodiscard]] std::vector<uint8_t> gather_audio(size_t local_ticks);
-    [[nodiscard]] encoding_result encode_best(const bitmap &fb, size_t video_budget);
     void log_encoding_progress() const;
 };
 

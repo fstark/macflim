@@ -56,7 +56,7 @@ test-reference: release
 	cd ../tests && bash run_tests.sh --make-reference
 
 # List of object files
-OBJS = grayscale.o writer.o ruler.o watermark.o imgcompress.o filesystem_reader.o ffmpeg_reader.o flimmaker.o common.o flim.o subtitles.o flimutil.o dithering_parameters.o flimcompressor.o compressor_helper.o profile.o flimencoder.o cmdline.o
+OBJS = grayscale.o writer.o ruler.o watermark.o imgcompress.o filesystem_reader.o ffmpeg_reader.o flimmaker.o common.o flim.o subtitles.o flimutil.o dithering_parameters.o flimcompressor.o compressor_helper.o encode_frame.o profile.o flimencoder.o cmdline.o
 
 # Include the dependency files
 -include $(OBJS:.o=.d)
@@ -71,10 +71,10 @@ TEST_OBJS = test/test_main.o test/test_common.o test/test_imgcompress.o test/tes
             test/test_packzmap.o test/test_flim_file.o test/test_flim_errors.o test/test_grayscale_conversions.o test/test_grayscale_filters.o \
             test/test_dithering_parameters.o test/test_watermark.o test/test_subtitles.o test/test_grayscale_io.o \
             test/test_cmdline.o test/test_compressor_helper.o test/test_flimcompressor.o test/test_flimencoder.o \
-            test/test_filesystem_reader.o test/test_stubs.o
+            test/test_filesystem_reader.o test/test_encode_frame.o test/test_stubs.o
 TEST_SHARED_OBJS = common.o imgcompress.o ruler.o profile.o grayscale.o \
                    dithering_parameters.o watermark.o flim.o subtitles.o \
-                   cmdline.o compressor_helper.o flimcompressor.o flimutil.o \
+                   cmdline.o compressor_helper.o encode_frame.o flimcompressor.o flimutil.o \
                    ffmpeg_reader.o filesystem_reader.o flimencoder.o writer.o
 
 -include $(TEST_OBJS:.o=.d)

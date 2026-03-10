@@ -1,5 +1,7 @@
 #include "compressor_helper.hpp"
 
+#include "encode_frame.hpp"
+
 namespace macflim
 {
 
@@ -17,18 +19,6 @@ std::vector<uint8_t> compressor_helper::gather_audio(size_t local_ticks)
     return audio;
 }
 
-// Encode with every codec and return the best result
-encoding_result compressor_helper::encode_best(const bitmap &fb, size_t video_budget)
-{
-    std::vector<encoding_result> results;
-    std::transform(std::begin(codecs_), std::end(codecs_), std::back_inserter(results),
-                   [&](auto &codec) -> encoding_result
-                   { return encoding_result(codec, current_fb_, fb, video_budget); });
-
-    return *std::max_element(results.begin(), results.end(), [](const encoding_result &r1, const encoding_result &r2)
-                             { return r1.quality() < r2.quality(); });
-}
-
 // Log encoding progress to diagnostic output
 void compressor_helper::log_encoding_progress() const
 {
@@ -44,12 +34,15 @@ void compressor_helper::log_encoding_progress() const
 // Returns the quality metric (proximity to target)
 double compressor_helper::add(const grayscale &source)
 {
+    //  Dither the new image
     ditherer_.dither(source);
     grayscale dest = ditherer_.current();
     subtitle_burner_.burn_into(dest, in_fr_ / fps_);
 
+    //  True B&W packed image
     bitmap fb{dest};
 
+    //  Let's see how many ticks we have to display this image
     in_fr_++;
     size_t next_tick = ticks_from_frame(in_fr_, fps_);
     size_t ticks = next_tick - current_tick_;
@@ -62,11 +55,12 @@ double compressor_helper::add(const grayscale &source)
     for (size_t subframe = 0; subframe < num_subframes; subframe++)
     {
         auto audio = gather_audio(local_ticks);
-        auto best = encode_best(fb, byterate_ * local_ticks);
+        //  Encode within budget, trying every codec, keeping the best
+        auto best = encode_frame(current_fb_, fb, codecs_, byterate_ * local_ticks);
 
+        //  Construct the frame with best video and audio
         frames_.push_back(frame{fb, local_ticks, best.get_video_encoded_data(), audio, best.image()});
         log_encoding_progress();
-        current_fb_ = best.image();
     }
 
     auto q = frames_.back().result->proximity(fb);
