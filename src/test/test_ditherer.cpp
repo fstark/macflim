@@ -1,6 +1,6 @@
-#include "doctest.h"
+#include "../doctest.h"
 
-#include "ditherer.hpp"
+#include "../ditherer.hpp"
 
 using namespace macflim;
 

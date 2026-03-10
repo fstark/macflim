@@ -1,6 +1,6 @@
-#include "doctest.h"
+#include "../doctest.h"
 
-#include "codec_spec.hpp"
+#include "../codec_spec.hpp"
 
 using namespace macflim;
 

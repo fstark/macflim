@@ -1,7 +1,7 @@
-#include "doctest.h"
+#include "../doctest.h"
 
-#include "bitmap.hpp"
-#include "grayscale.hpp"
+#include "../bitmap.hpp"
+#include "../grayscale.hpp"
 
 using namespace macflim;
 

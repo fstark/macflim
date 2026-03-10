@@ -1,6 +1,6 @@
-#include "doctest.h"
+#include "../doctest.h"
 
-#include "profile.hpp"
+#include "../profile.hpp"
 
 using namespace macflim;
 

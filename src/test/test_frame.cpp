@@ -1,6 +1,6 @@
-#include "doctest.h"
+#include "../doctest.h"
 
-#include "frame.hpp"
+#include "../frame.hpp"
 
 using namespace macflim;
 

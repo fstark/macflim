@@ -1,6 +1,6 @@
-#include "doctest.h"
+#include "../doctest.h"
 
-#include "imgcompress.hpp"
+#include "../imgcompress.hpp"
 
 #include <cstring>
 #include <vector>

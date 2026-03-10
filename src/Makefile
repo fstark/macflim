@@ -65,13 +65,13 @@ $(TARGET): $(OBJS)
 	${CPP} ${CXXFLAGS} $(LDLIBS) $(OBJS) -lavformat -lavcodec -lavutil -o $(TARGET)
 
 # Unit test files
-TEST_OBJS = test_main.o test_common.o test_imgcompress.o test_bitmap.o test_codecs.o \
-            test_encoding_result.o test_frame.o test_profile.o test_ditherer.o \
-            test_binary_io.o test_ruler.o test_string_utils.o test_timing.o test_arg_iterator.o \
-            test_packzmap.o test_flim_file.o test_flim_errors.o test_grayscale_conversions.o test_grayscale_filters.o \
-            test_dithering_parameters.o test_watermark.o test_subtitles.o test_grayscale_io.o \
-            test_cmdline.o test_compressor_helper.o test_flimcompressor.o test_flimencoder.o \
-            test_filesystem_reader.o test_stubs.o
+TEST_OBJS = test/test_main.o test/test_common.o test/test_imgcompress.o test/test_bitmap.o test/test_codecs.o \
+            test/test_encoding_result.o test/test_frame.o test/test_profile.o test/test_ditherer.o \
+            test/test_binary_io.o test/test_ruler.o test/test_string_utils.o test/test_timing.o test/test_arg_iterator.o \
+            test/test_packzmap.o test/test_flim_file.o test/test_flim_errors.o test/test_grayscale_conversions.o test/test_grayscale_filters.o \
+            test/test_dithering_parameters.o test/test_watermark.o test/test_subtitles.o test/test_grayscale_io.o \
+            test/test_cmdline.o test/test_compressor_helper.o test/test_flimcompressor.o test/test_flimencoder.o \
+            test/test_filesystem_reader.o test/test_stubs.o
 TEST_SHARED_OBJS = common.o imgcompress.o ruler.o profile.o grayscale.o \
                    dithering_parameters.o watermark.o flim.o subtitles.o \
                    cmdline.o compressor_helper.o flimcompressor.o flimutil.o \
@@ -86,23 +86,28 @@ unit_tests: $(TEST_OBJS) $(TEST_SHARED_OBJS)
 # Usage: make coverage
 # Rebuilds tests with coverage instrumentation, runs them, and generates HTML report
 coverage:
-	@rm -f *.gcda *.gcno *.gcov coverage*.html coverage*.css
+	@rm -f *.gcda *.gcno *.gcov coverage*.html coverage*.css test/*.gcda test/*.gcno test/*.gcov
 	@rm -f $(TEST_OBJS) $(TEST_SHARED_OBJS)
 	$(MAKE) unit_tests CXXFLAGS="$(CXXFLAGS) --coverage"
 	./unit_tests
-	gcovr --gcov-executable gcov-14 --root . --filter='.*\.(cpp|hpp)$$' --exclude='test_.*' --html-details coverage.html --print-summary
+	gcovr --gcov-executable gcov-14 --root . --filter='.*\.(cpp|hpp)$$' --exclude='test/' --html-details coverage.html --print-summary
 	@echo ""
 	@echo "Coverage report generated: coverage.html"
 
 coverage-clean:
-	rm -f *.gcda *.gcno *.gcov coverage*.html coverage*.css
+	rm -f *.gcda *.gcno *.gcov coverage*.html coverage*.css test/*.gcda test/*.gcno test/*.gcov
 
 clean: coverage-clean
-	rm -f ../flimmaker ../flimmaker.exe $(OBJS) $(OBJS:.o=.d) unit_tests $(TEST_OBJS) $(TEST_OBJS:.o=.d)
+	rm -f ../flimmaker ../flimmaker.exe $(OBJS) $(OBJS:.o=.d) unit_tests $(TEST_OBJS) $(TEST_OBJS:.o=.d) test/*.o test/*.d
 
 format:
-	clang-format -i *.cpp *.hpp
+	clang-format -i *.cpp *.hpp test/*.cpp
 
 # Pattern rule for compiling .cpp files to .o files
-$(OBJS) $(TEST_OBJS): %.o: %.cpp
+%.o: %.cpp
 	${CPP} $(CXXFLAGS) -MMD -MP -c $< -o $@
+
+# Pattern rule for compiling test .cpp files to .o files
+# Add -I. to allow test files to include headers from parent directory
+test/%.o: test/%.cpp
+	${CPP} $(CXXFLAGS) -I. -MMD -MP -c $< -o $@

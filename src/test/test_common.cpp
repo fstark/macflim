@@ -1,6 +1,6 @@
-#include "doctest.h"
+#include "../doctest.h"
 
-#include "common.hpp"
+#include "../common.hpp"
 
 #include <cstdio>
 #include <stdexcept>

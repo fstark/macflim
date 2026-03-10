@@ -1,6 +1,6 @@
-#include "doctest.h"
+#include "../doctest.h"
 
-#include "encoding_result.hpp"
+#include "../encoding_result.hpp"
 
 using namespace macflim;
 
