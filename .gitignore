@@ -39,6 +39,8 @@ VERSION
 *.flim
 flimutil
 flimmaker
+flimplayer
+flimstreamer
 unit_tests
 .DS_Store
 

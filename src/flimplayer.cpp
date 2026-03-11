@@ -2,7 +2,7 @@
 ///
 /// Usage:
 ///   flimplayer <file.flim>              Local playback from a .flim file
-///   flimplayer macflim://<host>[:<port>] Streaming from a macflim server (TODO)
+///   flimplayer macflim://<host>[:<port>] Stream from a macflim server
 
 #include "bitmap.hpp"
 #include "decoder.hpp"
@@ -10,8 +10,12 @@
 #include "flim.hpp"
 #include "frame.hpp"
 #include "sdl_display.hpp"
+#include "streaming/protocol.hpp"
+#include "streaming/udp_client.hpp"
 
+#include <array>
 #include <chrono>
+#include <csignal>
 #include <cstdlib>
 #include <format>
 #include <iostream>
@@ -144,6 +148,248 @@ int play_flim(std::string_view path, bool no_sync = false)
 } // namespace
 
 // ---------------------------------------------------------------------------
+// Streaming playback (macflim:// protocol)
+// ---------------------------------------------------------------------------
+
+namespace
+{
+
+constexpr uint16_t DEFAULT_PORT = 5004;
+
+/// Parse macflim://host[:port] into host and port components.
+struct server_address
+{
+    std::string host;
+    uint16_t port = DEFAULT_PORT;
+};
+
+server_address parse_macflim_url(std::string_view url)
+{
+    constexpr std::string_view prefix = "macflim://";
+    auto authority = url.substr(prefix.size());
+
+    server_address addr;
+    auto colon = authority.rfind(':');
+    if (colon != std::string_view::npos)
+    {
+        addr.host = std::string(authority.substr(0, colon));
+        addr.port = static_cast<uint16_t>(std::stoi(std::string(authority.substr(colon + 1))));
+    }
+    else
+    {
+        addr.host = std::string(authority);
+    }
+    return addr;
+}
+
+/// Tracks which frame sequence numbers were received, producing FEEDBACK history bitmaps.
+/// Bit layout matches protocol.hpp: bit N of the 128-bit field = (last_displayed_seq - N),
+/// stored little-endian across bytes (bit 0 = LSB of byte 0).
+struct frame_history
+{
+    uint32_t last_displayed = 0;
+    std::array<uint8_t, HISTORY_BYTES> bits = {};
+
+    void record(uint32_t seq)
+    {
+        if (last_displayed == 0)
+        {
+            //  First frame ever received
+            last_displayed = seq;
+            bits[0] = 0x01;
+            return;
+        }
+
+        if (seq > last_displayed)
+        {
+            //  Normal case: new frame advances the window
+            shift_left(seq - last_displayed);
+            bits[0] |= 0x01;
+            last_displayed = seq;
+        }
+        else if (seq < last_displayed)
+        {
+            //  Late arrival: still mark it in the history if in range
+            uint32_t offset = last_displayed - seq;
+            if (offset < HISTORY_BITS)
+                bits[offset / 8] |= static_cast<uint8_t>(1u << (offset % 8));
+        }
+    }
+
+    [[nodiscard]] feedback_packet make_feedback() const
+    {
+        feedback_packet fb;
+        fb.last_displayed_seq = last_displayed;
+        fb.history = bits;
+        return fb;
+    }
+
+  private:
+    void shift_left(uint32_t n)
+    {
+        if (n >= HISTORY_BITS)
+        {
+            bits.fill(0);
+            return;
+        }
+
+        size_t byte_shift = n / 8;
+        size_t bit_shift = n % 8;
+
+        //  Shift whole bytes toward higher indices
+        if (byte_shift > 0)
+        {
+            for (size_t i = HISTORY_BYTES; i-- > byte_shift;)
+                bits[i] = bits[i - byte_shift];
+            for (size_t i = 0; i < byte_shift && i < HISTORY_BYTES; ++i)
+                bits[i] = 0;
+        }
+
+        //  Shift remaining bits within bytes
+        if (bit_shift > 0)
+        {
+            for (size_t i = HISTORY_BYTES; i-- > 1;)
+                bits[i] = static_cast<uint8_t>((bits[i] << bit_shift) | (bits[i - 1] >> (8 - bit_shift)));
+            bits[0] = static_cast<uint8_t>(bits[0] << bit_shift);
+        }
+    }
+};
+
+/// Build a HELLO packet advertising our capabilities.
+hello_packet build_hello()
+{
+    hello_packet hello;
+    hello.width = 512;
+    hello.height = 342;
+    hello.byterate = 6000;
+    hello.dither = 0;
+    hello.num_codecs = 5;
+    hello.codecs = {0x00, 0x01, 0x02, 0x03, 0x04}; // null, z16, z32, invert, lines
+    return hello;
+}
+
+/// Drop statistics tracked during streaming.
+struct drop_stats
+{
+    uint32_t received = 0;    // total FRAME packets pulled from socket
+    uint32_t dropped = 0;     // frames discarded because SPACE was held
+    uint32_t seq_gaps = 0;    // sequence number gaps (frames we never received)
+    uint32_t highest_seq = 0; // highest sequence number seen so far
+    uint32_t feedbacks_sent = 0;
+    uint32_t feedbacks_suppressed = 0; // feedbacks not sent because SPACE was held
+};
+
+int stream_flim(std::string_view url, bool no_sync)
+{
+    auto addr = parse_macflim_url(url);
+    std::clog << std::format("Connecting to {}:{}\n", addr.host, addr.port);
+
+    //  Open UDP socket and perform handshake
+    udp_client client(addr.host, addr.port);
+    client.send_hello(build_hello());
+    std::clog << "HELLO sent, waiting for ACK...\n";
+
+    auto ack = client.wait_for_hello_ack();
+    std::clog << std::format("Session: {}x{}, byterate {}, {} codecs\n", ack.width, ack.height, ack.byterate,
+                             ack.num_codecs);
+
+    //  Set up display — start with all-black (Mac convention: 0xFF = black)
+    bitmap screen(ack.width, ack.height);
+    screen.fill(0xFF);
+    sdl_display display(ack.width, ack.height, 2, std::format("flimplayer — {}:{}", addr.host, addr.port), !no_sync);
+    display.update_screen(screen);
+
+    //  Streaming receive loop
+    frame_history history;
+    drop_stats stats;
+    uint32_t frames_displayed = 0;
+    constexpr auto feedback_interval = std::chrono::milliseconds(100);
+    auto next_feedback = std::chrono::steady_clock::now() + feedback_interval;
+
+    std::clog << "SPACE = simulate packet loss, RETURN = log drop stats\n";
+
+    while (!display.should_quit())
+    {
+        //  Sample keyboard state for interactive controls
+        const uint8_t *keys = SDL_GetKeyboardState(nullptr);
+        bool dropping = keys[SDL_SCANCODE_SPACE] != 0;
+        bool log_stats = keys[SDL_SCANCODE_RETURN] != 0;
+
+        //  Drain all available FRAME packets
+        bool got_frame = false;
+        while (auto pkt = client.receive_packet())
+        {
+            auto fv = parse_frame(pkt->data(), pkt->size());
+            if (!fv)
+                continue;
+
+            ++stats.received;
+
+            //  Track sequence gaps (frames the network lost before reaching us)
+            if (stats.highest_seq > 0 && fv->header.seq > stats.highest_seq + 1)
+                stats.seq_gaps += (fv->header.seq - stats.highest_seq - 1);
+            if (fv->header.seq > stats.highest_seq)
+                stats.highest_seq = fv->header.seq;
+
+            //  SPACE held: simulate client-side packet loss
+            if (dropping)
+            {
+                ++stats.dropped;
+                continue;
+            }
+
+            //  Apply video delta to screen
+            if (fv->video_len > 0)
+            {
+                std::vector<uint8_t> video(fv->video_data, fv->video_data + fv->video_len);
+                apply_delta(screen, video);
+            }
+
+            history.record(fv->header.seq);
+            ++frames_displayed;
+            got_frame = true;
+        }
+
+        //  Update display if we got new frames
+        if (got_frame)
+            display.update_screen(screen);
+
+        //  Send feedback periodically (suppress while dropping to starve the server too)
+        auto now = std::chrono::steady_clock::now();
+        if (history.last_displayed > 0 && now >= next_feedback)
+        {
+            if (dropping)
+            {
+                ++stats.feedbacks_suppressed;
+            }
+            else
+            {
+                client.send_feedback(history.make_feedback());
+                ++stats.feedbacks_sent;
+            }
+            next_feedback = now + feedback_interval;
+        }
+
+        //  RETURN held: log drop statistics
+        if (log_stats)
+            std::clog << std::format("drops: {} client-side ({} SPACE-dropped + {} network-lost), "
+                                     "{} feedbacks sent / {} suppressed\n",
+                                     stats.dropped + stats.seq_gaps, stats.dropped, stats.seq_gaps,
+                                     stats.feedbacks_sent, stats.feedbacks_suppressed);
+
+        //  Brief sleep to avoid busy-spinning when no frames arrive
+        if (!got_frame)
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+
+    std::clog << std::format("Done: {} frames displayed, {} received, {} SPACE-dropped, {} network-lost\n",
+                             frames_displayed, stats.received, stats.dropped, stats.seq_gaps);
+    return EXIT_SUCCESS;
+}
+
+} // namespace
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -176,10 +422,7 @@ int flimplayer_main(int argc, char **argv)
     try
     {
         if (arg.starts_with("macflim://"))
-        {
-            std::cerr << "Streaming mode not yet implemented.\n";
-            return EXIT_FAILURE;
-        }
+            return stream_flim(arg, no_sync);
 
         //  Local .flim file playback
         return play_flim(arg, no_sync);

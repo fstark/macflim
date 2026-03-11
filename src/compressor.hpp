@@ -209,6 +209,27 @@ template <typename T> class vertical_compressor : public compressor
             if (delta_[i])
                 deltas[delta_[i]].push_back(i);
 
+        if (verbose_)
+        {
+            size_t non_empty = 0;
+            size_t total_changed = 0;
+            for (size_t i = 1; i < deltas.size(); i++)
+            {
+                if (!deltas[i].empty())
+                {
+                    ++non_empty;
+                    total_changed += deltas[i].size();
+                }
+            }
+            std::clog << std::format("z{} delta: {} levels (max {}), {} changed / {} total, budget {}\n", sizeof(T) * 8,
+                                     non_empty, mx, total_changed, get_T_size(), max_size);
+            for (size_t i = deltas.size(); i-- > 1;)
+            {
+                if (!deltas[i].empty())
+                    std::clog << std::format("  level {:3d}: {} elements\n", i, deltas[i].size());
+            }
+        }
+
         bool done = false;
 
         for (size_t i = deltas.size() - 1; i != 0; i--)

@@ -1,6 +1,11 @@
 #include "../doctest.h"
 #include "../ruler.hpp"
 
+#include <format>
+#include <iostream>
+#include <limits>
+#include <random>
+
 namespace macflim
 {
 
@@ -309,6 +314,54 @@ TEST_CASE("bit_ruler - uint32_t")
 
     auto d2 = ruler.distance(0x00000000, 0xFFFFFFFF);
     CHECK(d2 >= 32); // All 32 bits differ
+}
+
+TEST_CASE("uint32_ruler - solid vs noise vs noise-to-noise distances")
+{
+    const uint32_ruler &ruler = uint32_ruler::ruler;
+
+    //  Use a fixed seed for reproducibility
+    std::mt19937 rng(42);
+    std::uniform_int_distribution<uint32_t> dist(0, 0xFFFFFFFF);
+
+    constexpr size_t N = 1000;
+
+    size_t solid_to_noise_sum = 0;
+    size_t solid_to_noise_max = 0;
+    size_t solid_to_noise_min = std::numeric_limits<size_t>::max();
+
+    size_t noise_to_noise_sum = 0;
+    size_t noise_to_noise_max = 0;
+    size_t noise_to_noise_min = std::numeric_limits<size_t>::max();
+
+    for (size_t i = 0; i < N; i++)
+    {
+        uint32_t noise_a = dist(rng);
+        uint32_t noise_b = dist(rng);
+
+        //  0xFFFFFFFF (solid black) → random noise
+        size_t d1 = ruler.distance(0xFFFFFFFF, noise_a);
+        solid_to_noise_sum += d1;
+        solid_to_noise_max = std::max(solid_to_noise_max, d1);
+        solid_to_noise_min = std::min(solid_to_noise_min, d1);
+
+        //  random noise → different random noise
+        size_t d2 = ruler.distance(noise_a, noise_b);
+        noise_to_noise_sum += d2;
+        noise_to_noise_max = std::max(noise_to_noise_max, d2);
+        noise_to_noise_min = std::min(noise_to_noise_min, d2);
+    }
+
+    //  Print the results
+    MESSAGE(std::format("solid→noise:  avg={}, min={}, max={}", solid_to_noise_sum / N, solid_to_noise_min,
+                        solid_to_noise_max));
+    MESSAGE(std::format("noise→noise:  avg={}, min={}, max={}", noise_to_noise_sum / N, noise_to_noise_min,
+                        noise_to_noise_max));
+
+    //  Solid-to-noise should be significantly higher than noise-to-noise on average
+    //  because solid has all bits the same — changing to noise requires many flips.
+    //  Noise-to-noise changes roughly half the bits, but many can swap cheaply.
+    CHECK(solid_to_noise_sum > noise_to_noise_sum);
 }
 
 } // namespace macflim
