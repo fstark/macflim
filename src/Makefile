@@ -40,7 +40,7 @@ CXXFLAGS += -Wall -Werror -Wno-deprecated-declarations -Wextra -std=c++2a -DVERS
 # Default compile target
 all: release
 
-.PHONY: all debug release test test-reference clean coverage coverage-clean format
+.PHONY: all debug release test test-reference clean coverage coverage-clean format flimplayer
 
 debug: CXXFLAGS += -O0 -g -fsanitize=undefined
 release: CXXFLAGS += -O3
@@ -71,16 +71,30 @@ TEST_OBJS = test/test_main.o test/test_common.o test/test_imgcompress.o test/tes
             test/test_packzmap.o test/test_flim_file.o test/test_flim_errors.o test/test_grayscale_conversions.o test/test_grayscale_filters.o \
             test/test_dithering_parameters.o test/test_watermark.o test/test_subtitles.o test/test_grayscale_io.o \
             test/test_cmdline.o test/test_compressor_helper.o test/test_flimcompressor.o test/test_flimencoder.o \
-            test/test_filesystem_reader.o test/test_encode_frame.o test/test_decoder.o test/test_client_state_tracker.o test/test_stubs.o
+            test/test_filesystem_reader.o test/test_encode_frame.o test/test_decoder.o test/test_client_state_tracker.o test/test_streaming_loop.o test/test_adaptive_rate_controller.o test/test_protocol.o test/test_stubs.o
 TEST_SHARED_OBJS = common.o imgcompress.o ruler.o profile.o grayscale.o \
                    dithering_parameters.o watermark.o flim.o subtitles.o \
-                   cmdline.o compressor_helper.o encode_frame.o decoder.o streaming/client_state_tracker.o flimcompressor.o flimutil.o \
+                   cmdline.o compressor_helper.o encode_frame.o decoder.o streaming/client_state_tracker.o streaming/adaptive_rate_controller.o streaming/protocol.o flimcompressor.o flimutil.o \
                    ffmpeg_reader.o filesystem_reader.o flimencoder.o writer.o
 
 -include $(TEST_OBJS:.o=.d)
 
 unit_tests: $(TEST_OBJS) $(TEST_SHARED_OBJS)
 	${CPP} ${CXXFLAGS} $(LDLIBS) $(TEST_OBJS) $(TEST_SHARED_OBJS) -lavformat -lavcodec -lavutil -o unit_tests
+
+# --- flimplayer (SDL2-based .flim player and streaming client) ---
+
+SDL2_CFLAGS := $(shell pkg-config --cflags sdl2 2>/dev/null)
+SDL2_LIBS := $(shell pkg-config --libs sdl2 2>/dev/null)
+
+PLAYER_TARGET := ../flimplayer
+PLAYER_OBJS = flimplayer.o common.o imgcompress.o flim.o decoder.o grayscale.o
+
+flimplayer.o: flimplayer.cpp
+	${CPP} $(CXXFLAGS) $(SDL2_CFLAGS) -MMD -MP -c $< -o $@
+
+flimplayer: $(PLAYER_OBJS)
+	${CPP} ${CXXFLAGS} $(LDLIBS) $(PLAYER_OBJS) $(SDL2_LIBS) -o $(PLAYER_TARGET)
 
 # Coverage analysis
 # Usage: make coverage
@@ -98,7 +112,7 @@ coverage-clean:
 	rm -f *.gcda *.gcno *.gcov coverage*.html coverage*.css test/*.gcda test/*.gcno test/*.gcov streaming/*.gcda streaming/*.gcno streaming/*.gcov
 
 clean: coverage-clean
-	rm -f ../flimmaker ../flimmaker.exe $(OBJS) $(OBJS:.o=.d) unit_tests $(TEST_OBJS) $(TEST_OBJS:.o=.d) test/*.o test/*.d streaming/*.o streaming/*.d
+	rm -f ../flimmaker ../flimmaker.exe ../flimplayer $(OBJS) $(OBJS:.o=.d) unit_tests $(TEST_OBJS) $(TEST_OBJS:.o=.d) $(PLAYER_OBJS) $(PLAYER_OBJS:.o=.d) test/*.o test/*.d streaming/*.o streaming/*.d
 
 format:
 	clang-format -i *.cpp *.hpp test/*.cpp streaming/*.cpp streaming/*.hpp
