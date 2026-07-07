@@ -110,16 +110,12 @@ const std::string temp_file()
     if (GetTempPath(MAX_PATH, temp_path) == 0)
         throw io_error("Failed to get temporary path", "<temp>");
     char temp_file[MAX_PATH];
-    if (GetTempFileName(temp_path, "flim", 0, temp_file) == 0)
+    // Use unique=1 to generate a name without creating the file
+    if (GetTempFileName(temp_path, "flim", 1, temp_file) == 0)
         throw io_error("Failed to create temporary file", temp_path);
     cache_file = temp_file;
 #else
-    char cache_file_template[] = "/tmp/flimmaker_cache_XXXXXX";
-    int cache_fd = mkstemp(cache_file_template);
-    if (cache_fd == -1)
-        throw io_error("Failed to create temporary file", "/tmp");
-    cache_file = cache_file_template;
-    close(cache_fd);
+    cache_file = std::format("/tmp/flimmaker_cache_{}", getpid());
 #endif
     return cache_file;
 }
@@ -147,6 +143,8 @@ void resolve_input_file(program_options &opts)
     if (opts.input_file.rfind("https://", 0) != 0)
         return;
 
+    std::clog << std::format("Downloading '{}' to '{}'\n", opts.input_file, opts.cache_file);
+
     if (std::filesystem::exists(opts.cache_file))
     {
         opts.input_file = opts.cache_file;
@@ -155,6 +153,7 @@ void resolve_input_file(program_options &opts)
     }
 
     std::string buffer = std::format("yt-dlp '{}' -f mp4 --output '{}'", opts.input_file, opts.cache_file);
+    std::clog << std::format("execution command: {}\n", buffer);
     int res = system(buffer.c_str());
     if (res != 0)
     {
