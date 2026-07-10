@@ -425,7 +425,10 @@ template <typename T> class vertical_compressor : public compressor
         {
             for (auto &run : closer)
             {
-                uint32_t header = ((run.data.size() - 1) << 16) + ((run.offset + 1) * sizeof(T));
+                size_t byte_offset = (run.offset + 1) * sizeof(T);
+                assert(byte_offset <= 0xFFFF && "z32 byte_offset overflows 16-bit field");
+                assert(run.data.size() - 1 <= 0xFFFF && "z32 count overflows 16-bit field");
+                uint32_t header = ((run.data.size() - 1) << 16) + byte_offset;
 
                 auto v = bytes_from_value_be(header);
                 res.insert(std::end(res), std::begin(v), std::end(v));
