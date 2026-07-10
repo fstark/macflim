@@ -87,7 +87,8 @@ session_stats streaming_session::stats() const
     return {.frames_sent = tracker_.next_seq() - 1,
             .feedbacks_processed = 0, // Could track this if needed
             .current_byterate = rate_ctrl_.current_byterate(),
-            .in_flight = tracker_.in_flight_count()};
+            .in_flight = tracker_.in_flight_count(),
+            .frames_dropped = rate_ctrl_.frames_dropped()};
 }
 
 bitmap streaming_session::client_screen() const

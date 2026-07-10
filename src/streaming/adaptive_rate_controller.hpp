@@ -23,19 +23,21 @@ class adaptive_rate_controller
 
     [[nodiscard]] size_t current_byterate() const;
     [[nodiscard]] size_t max_byterate() const;
+    [[nodiscard]] size_t frames_dropped() const;
 
   private:
     void try_decrease();
     void try_increase();
 
     static constexpr size_t WINDOW = 60;              // 1 second at 60 fps
-    static constexpr size_t INCREASE_THRESHOLD = 120; // 2 full clean windows before increase
+    static constexpr size_t INCREASE_THRESHOLD = 60; // 1 clean window before increase
     static constexpr size_t MIN_BYTERATE = 8;         // Enough for a null codec header
 
     size_t max_byterate_;
     size_t current_byterate_;
     std::deque<bool> outcomes_;    // Sliding window of recent frame outcomes
     size_t consecutive_clean_ = 0; // Consecutive displayed frames (resets on any miss)
+    size_t frames_dropped_ = 0;    // Total missed frames since session start
 };
 
 } // namespace macflim

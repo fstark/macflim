@@ -1,7 +1,7 @@
 /// flimstreamer — streaming server for .flim files over UDP.
 ///
 /// Usage:
-///   flimstreamer [--port <port>] <file.flim>
+///   flimstreamer [--port <port>] [--byterate <n>] <file.flim>
 ///
 /// Loads a .flim file, waits for a client HELLO on the given UDP port (default 5004),
 /// then streams the pre-encoded frames to the client at 60Hz, processing feedback
@@ -42,6 +42,7 @@ constexpr uint16_t DEFAULT_PORT = 5004;
 struct server_config
 {
     uint16_t port = DEFAULT_PORT;
+    size_t max_byterate = 0; // 0 = use flim/client minimum
     std::string flim_path;
 };
 
@@ -53,12 +54,14 @@ server_config parse_args(int argc, char **argv)
         std::string_view arg = argv[i];
         if (arg == "--port" && i + 1 < argc)
             config.port = static_cast<uint16_t>(std::stoi(argv[++i]));
+        else if (arg == "--byterate" && i + 1 < argc)
+            config.max_byterate = static_cast<size_t>(std::stoi(argv[++i]));
         else if (!arg.starts_with("-"))
             config.flim_path = arg;
     }
 
     if (config.flim_path.empty())
-        throw std::runtime_error("Usage: flimstreamer [--port <port>] <file.flim>");
+        throw std::runtime_error("Usage: flimstreamer [--port <port>] [--byterate <n>] <file.flim>");
 
     return config;
 }
@@ -118,6 +121,8 @@ void send_handshake_response(udp_transport &tp, const flim_info &info, const std
 
 int run_server(const server_config &config)
 {
+    if (config.max_byterate > 0)
+        std::clog << std::format("Max byterate override: {}\n", config.max_byterate);
     std::clog << std::format("Loading {}\n", config.flim_path);
     auto info = read_flim_info(config.flim_path);
     std::clog << std::format("{}x{}, {} frames, byterate {}\n", info.width, info.height, info.frame_count,
@@ -139,8 +144,11 @@ int run_server(const server_config &config)
     //  Decode .flim into target bitmaps
     auto source = make_flim_source(config.flim_path);
 
-    //  Use the smaller of client-requested and flim-native byterate
+    //  Use the smallest of server-configured, client-requested, and flim-native byterate
     size_t byterate = std::min<size_t>(hello.byterate, info.byterate);
+    if (config.max_byterate > 0)
+        byterate = std::min(byterate, config.max_byterate);
+    std::clog << std::format("Using byterate {}\n", byterate);
 
     //  Create session and stream at 60Hz
     streaming_session session(std::move(source), std::move(codecs), byterate, std::move(tp), info.width, info.height);
@@ -158,17 +166,16 @@ int run_server(const server_config &config)
         }
 
         auto s = session.stats();
-        if (s.frames_sent % 60 == 0)
-            std::clog << std::format("Frame {}, byterate {}, in-flight {}\n", s.frames_sent, s.current_byterate,
-                                     s.in_flight);
+        std::clog << std::format("\rFrame {}, byterate {}, in-flight {}, dropped {}   ", s.frames_sent,
+                                 s.current_byterate, s.in_flight, s.frames_dropped);
 
         next_tick += tick_duration;
         std::this_thread::sleep_until(next_tick);
     }
 
     auto final_stats = session.stats();
-    std::clog << std::format("Done: {} frames sent, final byterate {}\n", final_stats.frames_sent,
-                             final_stats.current_byterate);
+    std::clog << std::format("\nDone: {} frames sent, final byterate {}, dropped {}\n", final_stats.frames_sent,
+                             final_stats.current_byterate, final_stats.frames_dropped);
 
     return EXIT_SUCCESS;
 }

@@ -18,12 +18,12 @@ void feed_outcomes(adaptive_rate_controller &ctrl, size_t count, bool displayed)
 
 } // namespace
 
-TEST_CASE("adaptive_rate_controller: initial state is 50% of max")
+TEST_CASE("adaptive_rate_controller: initial state is 75% of max")
 {
     adaptive_rate_controller ctrl(6000);
-    CHECK(ctrl.current_byterate() == 3000);
+    CHECK(ctrl.current_byterate() == 4500);
     CHECK(ctrl.max_byterate() == 6000);
-    CHECK(ctrl.budget_for_next_frame() == 3000);
+    CHECK(ctrl.budget_for_next_frame() == 4500);
 }
 
 TEST_CASE("adaptive_rate_controller: initial byterate respects minimum")
@@ -67,23 +67,23 @@ TEST_CASE("adaptive_rate_controller: no decrease at exactly 10% loss")
     CHECK(ctrl.current_byterate() == before);
 }
 
-TEST_CASE("adaptive_rate_controller: increase after 120 consecutive clean frames")
+TEST_CASE("adaptive_rate_controller: increase after 60 consecutive clean frames")
 {
     adaptive_rate_controller ctrl(6000);
     size_t before = ctrl.current_byterate();
 
-    feed_outcomes(ctrl, 120, true);
+    feed_outcomes(ctrl, 60, true);
 
     CHECK(ctrl.current_byterate() > before);
     CHECK(ctrl.current_byterate() == before * 105 / 100);
 }
 
-TEST_CASE("adaptive_rate_controller: no increase before 120 clean frames")
+TEST_CASE("adaptive_rate_controller: no increase before 60 clean frames")
 {
     adaptive_rate_controller ctrl(6000);
     size_t before = ctrl.current_byterate();
 
-    feed_outcomes(ctrl, 119, true);
+    feed_outcomes(ctrl, 59, true);
 
     CHECK(ctrl.current_byterate() == before);
 }
@@ -93,7 +93,7 @@ TEST_CASE("adaptive_rate_controller: increase capped at max_byterate")
     adaptive_rate_controller ctrl(100);
     //  Start at 50, increase several times
     for (int i = 0; i < 50; ++i)
-        feed_outcomes(ctrl, 120, true);
+        feed_outcomes(ctrl, 60, true);
 
     CHECK(ctrl.current_byterate() <= ctrl.max_byterate());
 }
@@ -117,8 +117,8 @@ TEST_CASE("adaptive_rate_controller: single miss resets consecutive clean counte
     adaptive_rate_controller ctrl(6000);
     size_t before = ctrl.current_byterate();
 
-    //  119 clean frames, then 1 miss, then 1 more clean — no increase
-    feed_outcomes(ctrl, 119, true);
+    //  59 clean frames, then 1 miss, then 1 more clean — no increase
+    feed_outcomes(ctrl, 59, true);
     ctrl.record_outcome(false);
     ctrl.record_outcome(true);
 
@@ -150,8 +150,9 @@ TEST_CASE("adaptive_rate_controller: recovery cycle — decrease then increase b
     size_t decreased = ctrl.current_byterate();
     CHECK(decreased < initial);
 
-    //  Recover: 120 clean frames → increase
-    feed_outcomes(ctrl, 120, true);
+
+    //  Recover: 60 clean frames → increase
+    feed_outcomes(ctrl, 60, true);
     CHECK(ctrl.current_byterate() > decreased);
 }
 
@@ -169,7 +170,7 @@ TEST_CASE("adaptive_rate_controller: sustained loss keeps reducing")
         prev = ctrl.current_byterate();
     }
 
-    CHECK(ctrl.current_byterate() < 6000 / 2);
+    CHECK(ctrl.current_byterate() < 6000 * 3 / 4);
 }
 
 TEST_CASE("adaptive_rate_controller: full recovery to max after sustained clean")
@@ -182,11 +183,11 @@ TEST_CASE("adaptive_rate_controller: full recovery to max after sustained clean"
         feed_outcomes(ctrl, 50, true);
         feed_outcomes(ctrl, 10, false);
     }
-    CHECK(ctrl.current_byterate() < 500);
+    CHECK(ctrl.current_byterate() < 750);
 
-    //  Recover fully: many rounds of 120 clean frames
+    //  Recover fully: many rounds of 60 clean frames
     for (int i = 0; i < 200; ++i)
-        feed_outcomes(ctrl, 120, true);
+        feed_outcomes(ctrl, 60, true);
 
     CHECK(ctrl.current_byterate() == 1000);
 }

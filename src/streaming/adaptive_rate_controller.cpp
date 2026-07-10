@@ -6,9 +6,10 @@ namespace macflim
 {
 
 adaptive_rate_controller::adaptive_rate_controller(size_t max_byterate)
-    : max_byterate_{max_byterate}, current_byterate_{max_byterate / 2}
+    : max_byterate_{max_byterate}, current_byterate_{max_byterate * 3 / 4}
 {
-    //  Start conservatively at 50% of max to avoid initial burst losses
+    //  Start at 75% of max — aggressive enough to be useful quickly,
+    //  conservative enough to absorb initial jitter
     current_byterate_ = std::max(current_byterate_, MIN_BYTERATE);
 }
 
@@ -30,6 +31,7 @@ void adaptive_rate_controller::record_outcome(bool displayed)
     }
     else
     {
+        ++frames_dropped_;
         consecutive_clean_ = 0;
         try_decrease();
     }
@@ -75,6 +77,11 @@ size_t adaptive_rate_controller::current_byterate() const
 size_t adaptive_rate_controller::max_byterate() const
 {
     return max_byterate_;
+}
+
+size_t adaptive_rate_controller::frames_dropped() const
+{
+    return frames_dropped_;
 }
 
 } // namespace macflim

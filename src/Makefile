@@ -38,15 +38,15 @@ endif
 CXXFLAGS += -Wall -Werror -Wno-deprecated-declarations -Wextra -std=c++2a -DVERSION=\"$(VERSION)\"
 
 # Default compile target
-all: release flimplayer flimstreamer
+all: release
 
 .PHONY: all debug release test test-reference clean coverage coverage-clean format flimplayer flimstreamer
 
 debug: CXXFLAGS += -O0 -g -fsanitize=undefined
 release: CXXFLAGS += -O3
 
-debug: $(TARGET)
-release: $(TARGET)
+debug: $(TARGET) flimplayer flimstreamer
+release: $(TARGET) flimplayer flimstreamer
 
 test: release unit_tests
 	./unit_tests

@@ -37,6 +37,7 @@ struct session_stats
     uint32_t feedbacks_processed = 0;
     size_t current_byterate = 0;
     size_t in_flight = 0;
+    size_t frames_dropped = 0;
 };
 
 /// Server-side streaming session orchestrator.
