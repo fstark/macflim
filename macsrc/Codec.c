@@ -114,7 +114,7 @@ static void UnpackZ32_same_ref( char *source, struct CodecControlBlock *ccb )
 			//	Decode the stored offset: low 2 bits are high bits of T-offset
 		stored = header & 0xffff;
 		t_offset = (stored >> 2) | ((stored & 3) << 14);
-		byte_offset = t_offset * 4;
+		byte_offset = (t_offset - 1) * 4;
 	
 			//	We convert it to the "destination" offset
 		d = (unsigned long *)(baseAddr+byte_offset);
@@ -178,6 +178,7 @@ static void UnpackZ32_same( char *source, struct CodecControlBlock *ccb )
 
 			;	Get parameters
 		movea.l dest,a4				;	a4 == screenBase
+		subq.l	#4,a4				;	compensate for +1 bias in stored T-offset
 		movea.l source,a3			;	a3 == source data
 		move    rowbytes,d5			;	d5 == rowbytes
 
