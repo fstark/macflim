@@ -131,6 +131,43 @@ TEST_CASE("round-trip: z32 identical bitmaps")
     check_round_trip("z32", bm, bm, 6000);
 }
 
+// --- z32 round-trip with large bitmaps (T-offset > 16383, exercises bit-rotation encoding) ---
+
+static void check_round_trip_large(const std::string &codec_name, size_t w, size_t h, size_t budget)
+{
+    std::vector<codec_spec> codecs = {make_codec(codec_name, w, h)};
+
+    bitmap initial(w, h);
+    initial.fill(0x00);
+    bitmap target(w, h);
+    target.randomize(42);
+
+    auto encoder_fb = initial;
+    auto result = encode_frame(encoder_fb, target, codecs, budget);
+
+    auto decoder_fb = initial;
+    auto encoded_data = result.get_video_encoded_data();
+    apply_delta(decoder_fb, encoded_data);
+
+    INFO("codec: ", codec_name, " size: ", w, "x", h, " budget: ", budget);
+    CHECK(decoder_fb == encoder_fb);
+}
+
+TEST_CASE("round-trip: z32 640x870 (Portrait Display)")
+{
+    check_round_trip_large("z32", 640, 870, 6000);
+}
+
+TEST_CASE("round-trip: z32 640x870 generous budget")
+{
+    check_round_trip_large("z32", 640, 870, 60000);
+}
+
+TEST_CASE("round-trip: z32 640x480")
+{
+    check_round_trip_large("z32", 640, 480, 6000);
+}
+
 // --- z16 round-trip ---
 
 TEST_CASE("round-trip: z16 black to random")

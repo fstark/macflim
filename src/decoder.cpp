@@ -23,14 +23,19 @@ static void decode_z32(bitmap &screen, const uint8_t *data, size_t len)
 
     while (p + 4 <= end)
     {
-        //  Read 4-byte header: (count-1) << 16 | byte_offset
+        //  Read 4-byte header: (count-1) << 16 | stored_offset
         uint32_t header = read4(p);
         if (header == 0)
             break; //  Terminator
 
-        //  Decode the count and horizontal byte offset
+        //  Decode the count
         size_t count = (header >> 16) + 1;
-        size_t byte_offset = (header & 0xFFFF) - 4; //  encoder adds +1 * sizeof(T)
+
+        //  Decode stored offset: low 14 bits of T-offset are in bits 15:2,
+        //  high 2 bits of T-offset are in bits 1:0 (ror word right by 2 to reconstruct)
+        uint16_t stored = header & 0xFFFF;
+        size_t t_offset = ((stored & 0x3) << 14) | (stored >> 2);
+        size_t byte_offset = (t_offset - 1) * sizeof(uint32_t);
 
         //  Convert horizontal byte offset to vertical T-index
         size_t scr_x = (byte_offset % rowbytes) / sizeof(uint32_t);

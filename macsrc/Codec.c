@@ -89,7 +89,10 @@ static void Null_ref( char *source, struct CodecControlBlock *ccb )
 //	  A series of chunks
 //	  4 byte header : (0x00000000 to end)
 //		2 bytes     : count of data to copy, minus 1
-//		2 bytes     : offset from the top of the screen, plus 4
+//		2 bytes     : encoded T-offset (bits 15-2 = T[13:0], bits 1-0 = T[15:14])
+//		              decode: T-offset = (stored >> 2) | ((stored & 3) << 14)
+//		              byte_offset = T-offset * 4
+//		              for offsets < 64K, bits 1-0 are 00 (backward compatible)
 //	  count quads   : data to be copied at vertical 32 pixels line
 //	-------------------------------------------------------------------
 
@@ -102,15 +105,19 @@ static void UnpackZ32_same_ref( char *source, struct CodecControlBlock *ccb )
 
 	while (header=*s++)
 	{
-		register unsigned int offset;
+		register unsigned long stored;
+		register unsigned long t_offset;
+		register unsigned long byte_offset;
 		register unsigned int copy;
 		register unsigned long *d;
 		
-			//	This is the "source" offset on the original screen
-		offset = header&0xffff-4;
+			//	Decode the stored offset: low 2 bits are high bits of T-offset
+		stored = header & 0xffff;
+		t_offset = (stored >> 2) | ((stored & 3) << 14);
+		byte_offset = t_offset * 4;
 	
 			//	We convert it to the "destination" offset
-		d = (unsigned long *)(baseAddr+offset);
+		d = (unsigned long *)(baseAddr+byte_offset);
 
 			//	The number of bytes to copy		
 		copy = (header>>16)+1;
@@ -134,15 +141,17 @@ static void UnpackZ32_all_ref( char *source, struct CodecControlBlock *ccb )
 
 	while (header=*s++)
 	{
-		register unsigned int offset;
+		register unsigned long stored;
+		register unsigned long t_offset;
 		register unsigned int copy;
 		register unsigned long *d;
 		
-			//	This is the "source" offset on the original screen
-		offset = (header&0xffff)/4-1;
+			//	Decode the stored offset: low 2 bits are high bits of T-offset
+		stored = header & 0xffff;
+		t_offset = (stored >> 2) | ((stored & 3) << 14);
 	
 			//	We convert it to the "destination" offset
-		d = offsets[offset];
+		d = offsets[t_offset - 1];
 
 			//	The number of bytes to copy		
 		copy = (header>>16)+1;
@@ -169,16 +178,22 @@ static void UnpackZ32_same( char *source, struct CodecControlBlock *ccb )
 
 			;	Get parameters
 		movea.l dest,a4				;	a4 == screenBase
-		subq.l 	#4,a4				;	minus4, as all offets are +4
 		movea.l source,a3			;	a3 == source data
 		move    rowbytes,d5			;	d5 == rowbytes
 
-@loop:
+			;	Load first header
 		move.l	(a3)+,d7			;	header
 		beq.s	@exit				;	0x00000000 => end of frame
 
+@loop:
+			;	Decode offset: low 2 bits are high bits of T-offset
+			;	ror.w #2 reconstructs T-offset, rol.l #2 multiplies by 4
+		moveq	#0,d0
+		move.w	d7,d0				;	zero-extend stored offset
+		ror.w	#2,d0				;	reconstruct T-offset
+		rol.l	#2,d0				;	T-offset * 4 = byte offset
 		movea.l	a4,a2				;	Screen base
-		add.w	d7,a2				;	Low end of d7 is offset
+		add.l	d0,a2				;	add byte offset
 
 		swap	d7
 
@@ -187,7 +202,8 @@ static void UnpackZ32_same( char *source, struct CodecControlBlock *ccb )
         add 	d5,a2				;	Add rowbytes
 		dbra.w	d7,@loop2
 
-        bra.s     @loop
+		move.l	(a3)+,d7			;	next header
+		bne.s	@loop				;	continue if non-zero
 
 			;	Done
 @exit:
@@ -212,13 +228,20 @@ static void UnpackZ32_all( char *source, struct CodecControlBlock *ccb )
 		movea.l source,a3			;	a3 == source data
 		move.w 	rowbytes,d1			;	d1 == rowbytes
 
-@loop:
+			;	Load first header
 		move.l	(a3)+,d7			;	header
 		beq.s	@exit				;	0x00000000 => end of frame
 
-		movea.l	a4,a2				;	Screen base
-		subq.w #4,d7				;	offsets are +4
-		add d7,a2					;	entry in the offset table
+@loop:
+			;	Decode offset: low 2 bits are high bits of T-offset
+		moveq	#0,d0
+		move.w	d7,d0				;	zero-extend stored offset
+		ror.w	#2,d0				;	reconstruct T-offset
+		subq.w	#1,d0				;	remove +1 bias
+		add.w	d0,d0				;	* 2
+		add.w	d0,d0				;	* 4 (byte offset into table)
+		movea.l	a4,a2				;	offsets table base
+		add.w	d0,a2				;	entry in the offset table
 		move.l (a2), a2				;	offset for the output
 
 		swap	d7
@@ -228,7 +251,8 @@ static void UnpackZ32_all( char *source, struct CodecControlBlock *ccb )
         add 	d1,a2				;	Take stride into account
 		dbra.w	d7,@loop2
 
-        bra.s     @loop
+		move.l	(a3)+,d7			;	next header
+		bne.s	@loop				;	continue if non-zero
 
 			;	Done
 @exit:

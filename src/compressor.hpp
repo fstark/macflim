@@ -425,10 +425,15 @@ template <typename T> class vertical_compressor : public compressor
         {
             for (auto &run : closer)
             {
-                size_t byte_offset = (run.offset + 1) * sizeof(T);
-                assert(byte_offset <= 0xFFFF && "z32 byte_offset overflows 16-bit field");
+                //  Encode T-offset with high 2 bits rotated into low 2 bit positions.
+                //  For T-offset < 16384, this produces the same value as (T-offset * 4),
+                //  maintaining backward compatibility with existing flims.
+                //  Decoder reconstructs T-offset via: ror_word_right_2(stored), then * 4.
+                size_t t_offset = run.offset + 1;
+                assert(t_offset <= 0xFFFF && "z32 T-offset overflows 16-bit field");
                 assert(run.data.size() - 1 <= 0xFFFF && "z32 count overflows 16-bit field");
-                uint32_t header = ((run.data.size() - 1) << 16) + byte_offset;
+                uint16_t stored_offset = ((t_offset & 0x3FFF) << 2) | ((t_offset >> 14) & 0x3);
+                uint32_t header = ((run.data.size() - 1) << 16) + stored_offset;
 
                 auto v = bytes_from_value_be(header);
                 res.insert(std::end(res), std::begin(v), std::end(v));
