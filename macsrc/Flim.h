@@ -145,6 +145,21 @@ struct FlimInfo
 
 struct FlimInfo *FlimGetInfo( FlimPtr flim );
 
+//	-------------------------------------------------------------------
+//	Returns TRUE if flim contains an initial framebuffer stream.
+//	O(1) metadata check only: no I/O and no allocation.
+//	-------------------------------------------------------------------
+
+Boolean FlimHasInitialFrame( FlimPtr flim );
+
+//	-------------------------------------------------------------------
+//	Reads optional initial framebuffer stream.
+//	Returns TRUE and allocates *pixels on success (caller must MyDisposPtr).
+//	Pixels are 1-bit packed rows (rowBytes = width/8).
+//	-------------------------------------------------------------------
+
+Boolean FlimReadInitialFrame( FlimPtr flim, short *width, short *height, Ptr *pixels, Size *pixelSize );
+
 
 
 

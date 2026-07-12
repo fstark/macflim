@@ -633,6 +633,7 @@ typedef enum
 
 static Boolean sZoomed;		//	Did we execute the "zoom-in code" ?
 static Rect sZoomedRect;	//	From which rect did we "zoom-in" (for the zoom-out) ?
+static Boolean sSeamlessLoopEnabled = FALSE;
 
 //	#### Unclear why we use PlayFlim and not PlayFlimFile here.
 //	(I suspect because we don't want to reopen the flim file if we loop
@@ -648,10 +649,14 @@ static eIterateChoice ApplyPlay( LibraryPtr lib, int index, Str255 fName, short 
 	short playback_y;
 	Boolean silent = PreferenceGetIsPlaybackVBL();
 	ePlayResult playResult;
+	Boolean hasInitial = FALSE;
 
 		//	We failed to open, we abort
 	if (!flim)
 		return kIterateStop;
+
+	hasInitial = FlimHasInitialFrame( flim );
+	ScreenClear( gScreen );
 
 	if (!sZoomed)
 	{
@@ -664,12 +669,15 @@ static eIterateChoice ApplyPlay( LibraryPtr lib, int index, Str255 fName, short 
 	playback_x = (gScreen->width - fi->width)/2;
 	playback_y = (gScreen->height - fi->height)/2;
 
-	ScreenClear( gScreen );
-
-	do
+	if (sSeamlessLoopEnabled && hasInitial)
+		playResult = PlayFlimLoop( flim, playback_x, playback_y, silent );
+	else
 	{
-		playResult = PlayFlim( flim, playback_x, playback_y, silent );
-	}	while (playResult==kRestart);
+		do
+		{
+			playResult = PlayFlim( flim, playback_x, playback_y, silent );
+		}	while (playResult==kRestart);
+	}
 
 	switch (playResult)
 	{
@@ -781,12 +789,18 @@ static void UserInterfacePlaySelected( LibraryPtr lib )
 {
 	Ptr savePtr;
 	GrafPtr savePort;
+	int playlistCount;
+	Boolean hasSelection;
 	
 	GetPort( &savePort );
 	SetPort( LibraryGetWindow( lib ) );
 
 	sZoomed = FALSE;
 	HideCursor();
+
+	hasSelection = !LibraryIsSelectionEmpty( lib );
+	playlistCount = hasSelection ? LibraryGetSelectionCount( lib ) : LibraryGetCount( lib );
+	sSeamlessLoopEnabled = PreferenceGetLoop() && (playlistCount == 1);
 	
 //	ComputeMouse();
 //	DrawMouse();
@@ -796,6 +810,8 @@ static void UserInterfacePlaySelected( LibraryPtr lib )
 		UserInterfaceIterateSelection( lib, ApplyPlay, PreferenceGetLoop() );
 	else
 		UserInterfaceIterateAll( lib, ApplyPlay, PreferenceGetLoop() );
+
+	sSeamlessLoopEnabled = FALSE;
 	RestoreScreen( &savePtr );
 	
 	RestoreMouse();

@@ -47,6 +47,7 @@ typedef enum
 	kFlimStreamFlim = 1,
 	kFlimStreamToc = 2,
 	kFlimStreamPoster = 3,
+	kFlimStreamInitial = 4,
 	
 	kFlimStreamDummy = 256	//	To make sure the compiler uses a short to store the enum
 }	eFlimStreamType;
@@ -467,6 +468,64 @@ Boolean FlimGetIsSingleTick( FlimPtr flim )
 struct FlimInfo *FlimGetInfo( FlimPtr flim )
 {
 	return &flim->info;
+}
+
+Boolean FlimHasInitialFrame( FlimPtr flim )
+{
+	if (flim->streamCount <= kFlimStreamInitial)
+		return FALSE;
+
+	return flim->streams[kFlimStreamInitial].size >= 6;
+}
+
+Boolean FlimReadInitialFrame( FlimPtr flim, short *width, short *height, Ptr *pixels, Size *pixelSize )
+{
+	unsigned char *stream;
+	Size streamSize;
+	Size payloadSize;
+	unsigned char *p;
+
+	if (width)
+		*width = 0;
+	if (height)
+		*height = 0;
+	if (pixels)
+		*pixels = NULL;
+	if (pixelSize)
+		*pixelSize = 0;
+
+	if (!FlimHasInitialFrame( flim ))
+		return FALSE;
+
+	stream = (unsigned char *)FlimReadStreamNewPtr( flim, kFlimStreamInitial );
+	if (!stream)
+		return FALSE;
+
+	streamSize = flim->streams[kFlimStreamInitial].size;
+
+	p = stream;
+	/* type */
+	p += 2;
+
+	if (width)
+		*width = (short)(p[0] * 256 + p[1]);
+	p += 2;
+
+	if (height)
+		*height = (short)(p[0] * 256 + p[1]);
+
+	payloadSize = streamSize - 6;
+
+	if (pixels)
+	{
+		*pixels = NewPtrNoFail( payloadSize );
+		my_memcpy( *pixels, stream + 6, payloadSize );
+	}
+	if (pixelSize)
+		*pixelSize = payloadSize;
+
+	MyDisposPtr( stream );
+	return TRUE;
 }
 
 #ifndef MINI_PLAYER

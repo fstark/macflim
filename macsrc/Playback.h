@@ -44,7 +44,7 @@ enum
 	blockClosed = 5			//	We don't use this block anymore
 };
 
-//	-----------------------------¬--------------------------------------
+//	-----------------------------ï¿½--------------------------------------
 //	In-memory block record
 //	-------------------------------------------------------------------
 
@@ -112,6 +112,7 @@ void InitPlayback( void );
 //void RemovePlaybackHandler( void );
 
 ePlayResult PlayFlim( FlimPtr flim, short playback_left, short playback_top, Boolean silent );
+ePlayResult PlayFlimLoop( FlimPtr flim, short playback_left, short playback_top, Boolean silent );
 ePlayResult PlayFlimFile( Str255 fName, short vRefNum, long dirID, eFileAPI api, Boolean silent );
 ePlayResult PlayFlimFileLoop( Str255 fName, short vRefNum, long dirID, eFileAPI api, Boolean silent );
 

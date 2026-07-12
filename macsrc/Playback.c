@@ -267,11 +267,52 @@ static Boolean TestKey( unsigned char *keys, char k )
 	return !!((keys[k>>3]>>(k&7))&1);
 }
 
+static Boolean ApplyInitialFrameIfPresent( FlimPtr flim )
+{
+	short w = 0;
+	short h = 0;
+	Ptr pixels = NULL;
+	Size pixelSize = 0;
+	Size expectedSize;
+	short rowBytes;
+	short y;
+
+	if (!FlimReadInitialFrame( flim, &w, &h, &pixels, &pixelSize ))
+		return FALSE;
+
+	if (!pixels)
+		return FALSE;
+
+	if (w != gScreen->flim_width || h != gScreen->flim_height || (w & 7))
+	{
+		MyDisposPtr( pixels );
+		return FALSE;
+	}
+
+	rowBytes = w / 8;
+	expectedSize = (Size)rowBytes * h;
+	if (pixelSize < expectedSize)
+	{
+		MyDisposPtr( pixels );
+		return FALSE;
+	}
+
+	for (y = 0; y < h; ++y)
+	{
+		my_memcpy( gScreen->baseAddr + (long)y * gScreen->rowBytes,
+				   pixels + (long)y * rowBytes,
+				   rowBytes );
+	}
+
+	MyDisposPtr( pixels );
+	return TRUE;
+}
+
 //	-------------------------------------------------------------------
-//	Plays a file
+//	Plays a file (internal, with loop control)
 //	-------------------------------------------------------------------
 
-ePlayResult PlayFlim( FlimPtr flim, short playback_left, short playback_top, Boolean silent )
+static ePlayResult PlayFlimInternal( FlimPtr flim, short playback_left, short playback_top, Boolean silent, Boolean loop )
 {
 	OSErr err;
 	short fRefNum;
@@ -309,7 +350,8 @@ ePlayResult PlayFlim( FlimPtr flim, short playback_left, short playback_top, Boo
 
 	theResult = kDone;
 
-	ScreenClearVideo( gScreen );
+	if (!ApplyInitialFrameIfPresent( flim ))
+		ScreenClearVideo( gScreen );
 	DrawMouse();	//	The mouse has been removed, put it back
 
 		//	Start of flim
@@ -362,6 +404,7 @@ ePlayResult PlayFlim( FlimPtr flim, short playback_left, short playback_top, Boo
 	CheckBlock( flim, gBlock1 );
 	CheckBlock( flim, gBlock2 );
 
+loop_start:
 	for (index=1;index!=FlimGetBlockCount( flim );index++)
 	{
 			//	Goal is to load the block 'index' from the disk into gReadBlock and start playing it
@@ -391,6 +434,18 @@ ePlayResult PlayFlim( FlimPtr flim, short playback_left, short playback_top, Boo
 
 		dlog_str( "\n MAIN WILL READ\n" );
 		exec_log();
+	}
+
+	if (loop)
+	{
+			//	Seamless loop: while VBL plays the last block, seek back and read block 0
+		FlimSeekStart( flim );
+		FlimReadBlock( flim, 0, gReadBlock );
+		gReadBlock = GetOtherBlock( gReadBlock );
+		theResult = BlockWaitPlayed( gReadBlock );
+		if (theResult!=kDone)
+			goto end;
+		goto loop_start;
 	}
 
 	dlog_str( "\n Wait for last block\n" );
@@ -440,6 +495,16 @@ end:
 #endif
 
 	return theResult;
+}
+
+ePlayResult PlayFlim( FlimPtr flim, short playback_left, short playback_top, Boolean silent )
+{
+	return PlayFlimInternal( flim, playback_left, playback_top, silent, FALSE );
+}
+
+ePlayResult PlayFlimLoop( FlimPtr flim, short playback_left, short playback_top, Boolean silent )
+{
+	return PlayFlimInternal( flim, playback_left, playback_top, silent, TRUE );
 }
 
 ePlayResult PlayFlimFile( Str255 fName, short vRefNum, long dirID, eFileAPI api, Boolean silent )
