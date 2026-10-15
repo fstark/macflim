@@ -61,8 +61,21 @@ class ffmpeg_writer final : public output_writer
     /* check that a given sample format is supported by the encoder */
     static int check_sample_fmt(const AVCodec *codec, enum AVSampleFormat sample_fmt)
     {
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(61, 13, 100)
         const enum AVSampleFormat *p = codec->sample_fmts;
-        while (*p != AV_SAMPLE_FMT_NONE)
+#else
+        const enum AVSampleFormat *p = nullptr;
+
+        avcodec_get_supported_config(
+            nullptr,
+            codec,
+            AV_CODEC_CONFIG_SAMPLE_FORMAT,
+            0,
+            reinterpret_cast<const void **>(&p),
+            nullptr
+        );
+#endif
+        while (p && *p != AV_SAMPLE_FMT_NONE)
         {
             if (sDebug)
                 std::clog << std::format("[{}] ", av_get_sample_fmt_name(*p));
